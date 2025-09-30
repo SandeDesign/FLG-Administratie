@@ -206,8 +206,6 @@ const Employees: React.FC = () => {
     console.log('User role:', userRole);
     console.log('User UID:', user?.uid);
     console.log('User email:', user?.email);
-  }, [user, userRole]);
-
     resolver: yupResolver(employeeSchema)
   });
   
