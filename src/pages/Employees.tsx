@@ -283,39 +283,51 @@ const Employees: React.FC = () => {
 
   const openModal = (employee?: Employee) => {
     setActiveTab(0); // Reset to first tab
-    
+
     if (!employee) {
       // Adding new employee - reset state first
       setEditingEmployee(null);
       reset();
-      
-      // Check if companies exist
+
+      // Check if companies exist - if not, still open modal but show error inside
       if (companies.length === 0) {
-        error('Geen bedrijven', 'Voeg eerst een bedrijf toe voordat je werknemers kunt aanmaken');
+        setIsModalOpen(true);
+        setTimeout(() => {
+          error('Geen bedrijven', 'Voeg eerst een bedrijf toe voordat je werknemers kunt aanmaken');
+        }, 100);
         return;
       }
-      
+
       // Get default company and validate
       const defaultCompany = companies[0];
       if (!defaultCompany || !defaultCompany.id) {
-        error('Ongeldig bedrijf', 'Het geselecteerde bedrijf is ongeldig');
+        setIsModalOpen(true);
+        setTimeout(() => {
+          error('Ongeldig bedrijf', 'Het geselecteerde bedrijf is ongeldig');
+        }, 100);
         return;
       }
-      
+
       // Get available branches for this company
       const availableBranches = branches.filter(b => b.companyId === defaultCompany.id);
       if (availableBranches.length === 0) {
-        error('Geen vestigingen', `Voeg eerst een vestiging toe aan ${defaultCompany.name} voordat je werknemers kunt aanmaken`);
+        setIsModalOpen(true);
+        setTimeout(() => {
+          error('Geen vestigingen', `Voeg eerst een vestiging toe aan ${defaultCompany.name} voordat je werknemers kunt aanmaken`);
+        }, 100);
         return;
       }
-      
+
       // Get default branch and validate
       const defaultBranch = availableBranches[0];
       if (!defaultBranch || !defaultBranch.id) {
-        error('Ongeldige vestiging', 'De geselecteerde vestiging is ongeldig');
+        setIsModalOpen(true);
+        setTimeout(() => {
+          error('Ongeldige vestiging', 'De geselecteerde vestiging is ongeldig');
+        }, 100);
         return;
       }
-      
+
       // Set company and branch values
       setValue('companyId', defaultCompany.id);
       setValue('branchId', defaultBranch.id);
