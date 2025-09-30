@@ -557,6 +557,7 @@ const Employees: React.FC = () => {
         status: 'active',
         salaryHistory: data.salaryHistory ? (Array.isArray(data.salaryHistory) ? data.salaryHistory : []) : [],
       };
+      
       console.log('Employee data being sent to Firebase:', employeeData);
 
       if (editingEmployee) {
