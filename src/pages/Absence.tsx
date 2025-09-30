@@ -13,7 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 
 const Absence: React.FC = () => {
-  const { user } = useAuth();
+  const { user, currentEmployeeId } = useAuth();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [sickLeaveRecords, setSickLeaveRecords] = useState<SickLeave[]>([]);
@@ -22,19 +22,21 @@ const Absence: React.FC = () => {
   const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && currentEmployeeId) {
       loadAbsenceData();
     }
-  }, [user]);
+  }, [user, currentEmployeeId]);
 
   const loadAbsenceData = async () => {
+    if (!user || !currentEmployeeId) return;
+    
     try {
       setLoading(true);
       const currentYear = new Date().getFullYear();
 
       const [records, stats] = await Promise.all([
-        firebaseService.getSickLeaveRecords(user!.uid),
-        firebaseService.getAbsenceStatistics(user!.uid, user!.uid, currentYear),
+        firebaseService.getSickLeaveRecords(user.uid, currentEmployeeId),
+        firebaseService.getAbsenceStatistics(currentEmployeeId, user.uid, currentYear),
       ]);
 
       setSickLeaveRecords(records);
@@ -213,6 +215,7 @@ const Absence: React.FC = () => {
         isOpen={isSickLeaveModalOpen}
         onClose={() => setIsSickLeaveModalOpen(false)}
         onSuccess={loadAbsenceData}
+        employeeId={currentEmployeeId || ''}
       />
 
       {activeSickLeave && (
@@ -221,6 +224,7 @@ const Absence: React.FC = () => {
           onClose={() => setIsRecoveryModalOpen(false)}
           onSuccess={loadAbsenceData}
           sickLeave={activeSickLeave}
+          employeeId={currentEmployeeId || ''}
         />
       )}
     </div>

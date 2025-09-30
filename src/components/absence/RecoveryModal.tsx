@@ -21,9 +21,10 @@ interface RecoveryModalProps {
   onClose: () => void;
   onSuccess: () => void;
   sickLeave: SickLeave;
+  employeeId: string;
 }
 
-const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSuccess, sickLeave }) => {
+const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSuccess, sickLeave, employeeId }) => {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
@@ -48,6 +49,7 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
     try {
       await updateSickLeave(sickLeave.id, user.uid, {
         endDate: new Date(data.endDate),
+        actualReturnDate: new Date(data.endDate),
         workCapacityPercentage: data.workCapacityPercentage,
         status: data.status,
         notes: data.notes,

@@ -12,7 +12,7 @@ import { useToast } from '../hooks/useToast';
 import { formatExpenseType } from '../utils/leaveCalculations';
 
 const Expenses: React.FC = () => {
-  const { user } = useAuth();
+  const { user, currentEmployeeId } = useAuth();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -20,15 +20,17 @@ const Expenses: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && currentEmployeeId) {
       loadExpenses();
     }
-  }, [user]);
+  }, [user, currentEmployeeId]);
 
   const loadExpenses = async () => {
+    if (!user || !currentEmployeeId) return;
+    
     try {
       setLoading(true);
-      const data = await firebaseService.getExpenses(user!.uid);
+      const data = await firebaseService.getExpenses(user.uid, currentEmployeeId);
       setExpenses(data);
     } catch (err) {
       console.error('Error loading expenses:', err);
@@ -214,6 +216,7 @@ const Expenses: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={loadExpenses}
+        employeeId={currentEmployeeId || ''}
       />
     </div>
   );

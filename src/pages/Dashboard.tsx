@@ -60,17 +60,24 @@ const Dashboard: React.FC = () => {
       color: 'text-green-600 bg-green-100',
     },
     {
+      title: 'Verlof Goedkeuren',
+      description: 'Behandel openstaande verlofaanvragen',
+      icon: Calendar,
+      action: () => navigate('/admin/leave-approvals'),
+      color: 'text-purple-600 bg-purple-100',
+    },
+    {
+      title: 'Verzuim Beheren',
+      description: 'Overzicht van actief verzuim en re-integratie',
+      icon: HeartPulse,
+      action: () => navigate('/admin/absence-management'),
+      color: 'text-red-600 bg-red-100',
+    },
+    {
       title: 'Loonstroken Genereren',
       description: 'Genereer PDF loonstroken voor werknemers',
       icon: TrendingUp,
       action: () => navigate('/payslips'),
-      color: 'text-orange-600 bg-orange-100',
-    },
-    {
-      title: 'Regelgeving Updaten',
-      description: 'Controleer op nieuwe wet- en CAO wijzigingen',
-      icon: AlertCircle,
-      action: () => navigate('/regulations'),
       color: 'text-orange-600 bg-orange-100',
     },
   ];
@@ -190,9 +197,12 @@ const Dashboard: React.FC = () => {
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Te Goedkeuren
               </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <button 
+                onClick={() => navigate('/admin/leave-approvals')}
+                className="text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 transition-colors"
+              >
                 {dashboardStats.pendingApprovals}
-              </p>
+              </button>
             </div>
           </div>
         </Card>

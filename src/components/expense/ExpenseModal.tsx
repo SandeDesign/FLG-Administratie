@@ -21,14 +21,14 @@ interface ExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  employeeId: string;
 }
 
-const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess, employeeId }) => {
   const { user } = useAuth();
   const { employees, companies } = useApp();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [employeeId, setEmployeeId] = useState<string>('');
   const [travelRatePerKm, setTravelRatePerKm] = useState(0.23);
 
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<ExpenseFormData>({
@@ -42,16 +42,16 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess 
   const kilometers = watch('kilometers');
 
   useEffect(() => {
-    if (user && employees.length > 0) {
-      const employee = employees[0];
-      setEmployeeId(employee.id);
-
-      const company = companies.find(c => c.id === employee.companyId);
-      if (company?.settings?.travelAllowancePerKm) {
-        setTravelRatePerKm(company.settings.travelAllowancePerKm);
+    if (user && employeeId && employees.length > 0) {
+      const employee = employees.find(e => e.id === employeeId);
+      if (employee) {
+        const company = companies.find(c => c.id === employee.companyId);
+        if (company?.settings?.travelAllowancePerKm) {
+          setTravelRatePerKm(company.settings.travelAllowancePerKm);
+        }
       }
     }
-  }, [user, employees, companies]);
+  }, [user, employeeId, employees, companies]);
 
   useEffect(() => {
     if (expenseType === 'travel' && kilometers && kilometers > 0) {
@@ -79,18 +79,23 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess 
       await createExpense(user.uid, {
         employeeId,
         companyId: employee.companyId,
-        branchId: employee.branchId,
         date: new Date(data.date),
         type: data.type,
         description: data.description,
         amount: data.amount,
         currency: 'EUR',
         status: 'draft',
-        kilometers: data.type === 'travel' ? data.kilometers : undefined,
-        receiptUrl: undefined,
-        category: data.type,
         vatAmount: data.vatAmount || 0,
+        travelDetails: data.type === 'travel' && data.kilometers ? {
+          from: '',
+          to: '',
+          kilometers: data.kilometers,
+          vehicleType: 'car',
+        } : undefined,
+        receipts: [],
         approvals: [],
+        taxable: true,
+        withinTaxFreeAllowance: data.type === 'travel',
       });
 
       success('Declaratie aangemaakt', 'Je declaratie is opgeslagen als concept');

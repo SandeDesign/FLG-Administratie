@@ -16,6 +16,7 @@ import { UserRole } from '../types';
 interface AuthContextType {
   user: User | null;
   userRole: string | null;
+  currentEmployeeId: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { success, error } = useToast();
 
@@ -39,12 +41,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const roleData = await getUserRole(user.uid);
           setUserRole(roleData?.role || null);
+          setCurrentEmployeeId(roleData?.employeeId || null);
         } catch (err) {
           console.error('Error loading user role:', err);
           setUserRole(null);
+          setCurrentEmployeeId(null);
         }
       } else {
         setUserRole(null);
+        setCurrentEmployeeId(null);
       }
 
       setLoading(false);
@@ -151,6 +156,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         userRole,
+        currentEmployeeId,
         loading,
         signIn,
         signUp,

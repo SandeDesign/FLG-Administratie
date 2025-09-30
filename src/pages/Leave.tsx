@@ -13,7 +13,7 @@ import { useToast } from '../hooks/useToast';
 import { formatLeaveType } from '../utils/leaveCalculations';
 
 const Leave: React.FC = () => {
-  const { user } = useAuth();
+  const { user, currentEmployeeId } = useAuth();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -22,19 +22,21 @@ const Leave: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && currentEmployeeId) {
       loadLeaveData();
     }
-  }, [user]);
+  }, [user, currentEmployeeId]);
 
   const loadLeaveData = async () => {
+    if (!user || !currentEmployeeId) return;
+    
     try {
       setLoading(true);
       const currentYear = new Date().getFullYear();
 
       const [requests, balance] = await Promise.all([
-        firebaseService.getLeaveRequests(user!.uid),
-        firebaseService.getLeaveBalance(user!.uid, user!.uid, currentYear),
+        firebaseService.getLeaveRequests(user.uid, currentEmployeeId),
+        firebaseService.getLeaveBalance(currentEmployeeId, user.uid, currentYear),
       ]);
 
       setLeaveRequests(requests);
@@ -186,6 +188,7 @@ const Leave: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={loadLeaveData}
+        employeeId={currentEmployeeId || ''}
       />
     </div>
   );

@@ -19,14 +19,14 @@ interface SickLeaveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  employeeId: string;
 }
 
-const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSuccess, employeeId }) => {
   const { user } = useAuth();
   const { employees } = useApp();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [employeeId, setEmployeeId] = useState<string>('');
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<SickLeaveFormData>({
     defaultValues: {
@@ -34,13 +34,6 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
       workCapacityPercentage: 0,
     }
   });
-
-  useEffect(() => {
-    if (user && employees.length > 0) {
-      const employee = employees[0];
-      setEmployeeId(employee.id);
-    }
-  }, [user, employees]);
 
   const onSubmit = async (data: SickLeaveFormData) => {
     if (!user || !employeeId) {
@@ -56,13 +49,16 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
       await createSickLeave(user.uid, {
         employeeId,
         companyId: employee.companyId,
-        branchId: employee.branchId,
         startDate: new Date(data.startDate),
+        reportedAt: new Date(),
+        reportedBy: user.displayName || user.email || 'Werknemer',
+        reportedVia: 'app',
         workCapacityPercentage: data.workCapacityPercentage,
         status: 'active',
         notes: data.notes,
+        arboServiceContacted: false,
         poortwachterActive: false,
-        poortwachterMilestones: [],
+        doctorVisits: [],
       });
 
       success('Ziekmelding geregistreerd', 'Je ziekmelding is verwerkt. Beterschap!');

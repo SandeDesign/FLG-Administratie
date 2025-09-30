@@ -1,86 +1,163 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { User, Clock, FileText, Settings, LogOut } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Calendar, HeartPulse, Receipt, Clock, TrendingUp } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import { useAuth } from '../contexts/AuthContext';
 
 const EmployeeDashboard: React.FC = () => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Welkom terug!
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
+          Hallo {user?.displayName || user?.email?.split('@')[0]}, hier is je persoonlijke dashboard.
+        </p>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <User className="h-8 w-8 text-blue-600 mr-3" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Werknemers Dashboard
-                </h1>
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <Calendar className="h-8 w-8 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Verlof
+                </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Welkom, {user?.displayName || user?.email}
+                  Aanvragen en saldo
                 </p>
               </div>
             </div>
-            <Button onClick={signOut} variant="ghost">
-              <LogOut className="h-5 w-5 mr-2" />
-              Uitloggen
+          </div>
+          <div className="mt-4">
+            <Link to="/employee-dashboard/leave">
+              <Button size="sm" className="w-full">
+                Verlof Beheren
+              </Button>
+            </Link>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                <HeartPulse className="h-8 w-8 text-red-600" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Verzuim
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Ziek- en betermelden
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Link to="/employee-dashboard/absence">
+              <Button size="sm" className="w-full">
+                Verzuim Beheren
+              </Button>
+            </Link>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                <Receipt className="h-8 w-8 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Declaraties
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Onkosten indienen
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Link to="/employee-dashboard/expenses">
+              <Button size="sm" className="w-full">
+                Declaraties Beheren
+              </Button>
+            </Link>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                <Clock className="h-8 w-8 text-orange-600" />
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Uren
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Gewerkte uren bekijken
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Link to="/employee-dashboard/hours">
+              <Button size="sm" className="w-full">
+                Uren Bekijken
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+
+      {/* Recent Activity */}
+      <Card title="Recente Activiteit" subtitle="Je laatste acties en updates">
+        <div className="space-y-4">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0 mt-1">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-gray-900 dark:text-white">
+                Welkom bij AlloonApp! Je kunt nu verlof aanvragen, verzuim melden en declaraties indienen.
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Vandaag
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Help Section */}
+      <Card title="Hulp & Ondersteuning" subtitle="Veelgestelde vragen en contact">
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Heb je vragen over het gebruik van AlloonApp? Neem contact op met je HR-afdeling of leidinggevende.
+          </p>
+          <div className="flex space-x-4">
+            <Button size="sm" variant="secondary">
+              Veelgestelde Vragen
+            </Button>
+            <Button size="sm" variant="secondary">
+              Contact HR
             </Button>
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Quick Actions */}
-          <Card title="Mijn Uren" subtitle="Bekijk en beheer je gewerkte uren">
-            <div className="flex items-center justify-between">
-              <Clock className="h-12 w-12 text-blue-600" />
-              <Button size="sm" onClick={() => navigate('/hours')}>
-                Uren Bekijken
-              </Button>
-            </div>
-          </Card>
-
-          <Card title="Loonstroken" subtitle="Download je loonstroken">
-            <div className="flex items-center justify-between">
-              <FileText className="h-12 w-12 text-green-600" />
-              <Button size="sm" onClick={() => navigate('/payslips')}>
-                Loonstroken
-              </Button>
-            </div>
-          </Card>
-
-          <Card title="Profiel" subtitle="Beheer je persoonlijke gegevens">
-            <div className="flex items-center justify-between">
-              <Settings className="h-12 w-12 text-orange-600" />
-              <Button size="sm" onClick={() => navigate('/settings')}>
-                Profiel
-              </Button>
-            </div>
-          </Card>
-        </div>
-
-        {/* Welcome Message */}
-        <div className="mt-8">
-          <Card>
-            <div className="text-center py-8">
-              <User className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Welkom bij je Werknemers Dashboard
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Hier kun je je gewerkte uren bekijken, loonstroken downloaden en je persoonlijke gegevens beheren. 
-                Deze functionaliteiten worden binnenkort uitgebreid.
-              </p>
-            </div>
-          </Card>
-        </div>
+      </Card>
       </div>
     </div>
   );

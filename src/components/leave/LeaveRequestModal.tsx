@@ -20,16 +20,16 @@ interface LeaveRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  employeeId: string;
 }
 
-const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, onSuccess, employeeId }) => {
   const { user } = useAuth();
-  const { employees } = useApp();
+  const { employees, companies } = useApp();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [calculatedDays, setCalculatedDays] = useState(0);
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
-  const [employeeId, setEmployeeId] = useState<string>('');
 
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<LeaveRequestFormData>();
 
@@ -37,12 +37,10 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
   const endDate = watch('endDate');
 
   useEffect(() => {
-    if (user && employees.length > 0) {
-      const employee = employees[0];
-      setEmployeeId(employee.id);
-      loadLeaveBalance(employee.id);
+    if (user && employeeId) {
+      loadLeaveBalance(employeeId);
     }
-  }, [user, employees]);
+  }, [user, employeeId]);
 
   const loadLeaveBalance = async (empId: string) => {
     if (!user) return;
@@ -91,7 +89,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
     }
 
     if (data.type === 'vacation' && leaveBalance) {
-      const availableDays = leaveBalance.statutory + leaveBalance.extraStatutory + leaveBalance.accumulated - leaveBalance.taken;
+      const availableDays = leaveBalance.holidayDays.statutory + leaveBalance.holidayDays.extraStatutory + leaveBalance.holidayDays.accumulated - leaveBalance.holidayDays.taken;
       if (calculatedDays > availableDays) {
         showError('Onvoldoende saldo', `Je hebt maar ${availableDays} verlofdagen beschikbaar`);
         return;
@@ -106,11 +104,11 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
       await createLeaveRequest(user.uid, {
         employeeId,
         companyId: employee.companyId,
-        branchId: employee.branchId,
         type: data.type,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         totalDays: calculatedDays,
+        totalHours: calculatedDays * 8,
         reason: data.reason,
         status: 'pending',
       });
@@ -145,25 +143,25 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
               <div>
                 <span className="text-blue-700 dark:text-blue-300">Wettelijk:</span>
                 <span className="ml-2 font-semibold text-blue-900 dark:text-blue-100">
-                  {leaveBalance.statutory} dagen
+                  {leaveBalance.holidayDays.statutory} dagen
                 </span>
               </div>
               <div>
                 <span className="text-blue-700 dark:text-blue-300">Bovenwettelijk:</span>
                 <span className="ml-2 font-semibold text-blue-900 dark:text-blue-100">
-                  {leaveBalance.extraStatutory} dagen
+                  {leaveBalance.holidayDays.extraStatutory} dagen
                 </span>
               </div>
               <div>
                 <span className="text-blue-700 dark:text-blue-300">Opgebouwd:</span>
                 <span className="ml-2 font-semibold text-blue-900 dark:text-blue-100">
-                  {leaveBalance.accumulated} dagen
+                  {leaveBalance.holidayDays.accumulated} dagen
                 </span>
               </div>
               <div>
                 <span className="text-blue-700 dark:text-blue-300">Opgenomen:</span>
                 <span className="ml-2 font-semibold text-blue-900 dark:text-blue-100">
-                  {leaveBalance.taken} dagen
+                  {leaveBalance.holidayDays.taken} dagen
                 </span>
               </div>
             </div>
