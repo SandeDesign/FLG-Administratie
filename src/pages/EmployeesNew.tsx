@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, User, CreditCard as Edit, Trash2, Mail, Phone, Building2, MapPin } from 'lucide-react';
+import { Plus, User, CreditCard as Edit, Trash2, Mail, Phone, Building2, MapPin, UserPlus, CheckCircle, Copy, RefreshCw } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Table from '../components/ui/Table';
@@ -12,7 +12,7 @@ import { Employee, Company, Branch, DUTCH_CAOS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
-import { createEmployee, updateEmployee, deleteEmployee, getBranches } from '../services/firebase';
+import { createEmployee, updateEmployee, deleteEmployee, getBranches, createEmployeeAuthAccount, generateSecurePassword } from '../services/firebase';
 
 interface EmployeeFormData {
   firstName: string;
@@ -44,6 +44,11 @@ const EmployeesNew: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [passwordCopied, setPasswordCopied] = useState(false);
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const { success, error } = useToast();
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<EmployeeFormData>();
@@ -222,6 +227,71 @@ const EmployeesNew: React.FC = () => {
     }
   };
 
+  const openAccountModal = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    const password = generateSecurePassword();
+    setGeneratedPassword(password);
+    setPasswordCopied(false);
+    setIsAccountModalOpen(true);
+  };
+
+  const closeAccountModal = () => {
+    setIsAccountModalOpen(false);
+    setSelectedEmployee(null);
+    setGeneratedPassword('');
+    setPasswordCopied(false);
+  };
+
+  const handleGenerateNewPassword = () => {
+    const password = generateSecurePassword();
+    setGeneratedPassword(password);
+    setPasswordCopied(false);
+  };
+
+  const handleCopyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedPassword);
+      setPasswordCopied(true);
+      success('Gekopieerd', 'Wachtwoord is naar klembord gekopieerd');
+      setTimeout(() => setPasswordCopied(false), 3000);
+    } catch (err) {
+      console.error('Error copying password:', err);
+      error('Kopiëren mislukt', 'Kon wachtwoord niet kopiëren');
+    }
+  };
+
+  const handleCreateAccount = async () => {
+    if (!user || !selectedEmployee) return;
+
+    setCreatingAccount(true);
+    try {
+      await createEmployeeAuthAccount(
+        selectedEmployee.id,
+        user.uid,
+        selectedEmployee.personalInfo.contactInfo.email,
+        generatedPassword
+      );
+
+      await refreshEmployees();
+      const fullName = `${selectedEmployee.personalInfo.firstName} ${selectedEmployee.personalInfo.lastName}`;
+      success('Account aangemaakt', `Account voor ${fullName} is succesvol aangemaakt`);
+      closeAccountModal();
+    } catch (err: any) {
+      console.error('Error creating account:', err);
+      let errorMessage = 'Er is een fout opgetreden bij het aanmaken van het account';
+
+      if (err.code === 'auth/email-already-in-use') {
+        errorMessage = 'Er bestaat al een account met dit e-mailadres';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Ongeldig e-mailadres';
+      }
+
+      error('Account aanmaken mislukt', errorMessage);
+    } finally {
+      setCreatingAccount(false);
+    }
+  };
+
   const getCompanyName = (companyId: string) => {
     return companies.find(c => c.id === companyId)?.name || 'Onbekend';
   };
@@ -250,12 +320,20 @@ const EmployeesNew: React.FC = () => {
     {
       key: 'personalInfo' as keyof Employee,
       label: 'Naam',
-      render: (personalInfo: Employee['personalInfo']) => (
+      render: (personalInfo: Employee['personalInfo'], employee: Employee) => (
         <div className="flex items-center">
           <User className="h-5 w-5 text-gray-400 mr-2" />
           <div>
-            <div className="font-medium">
-              {personalInfo.firstName} {personalInfo.lastName}
+            <div className="flex items-center gap-2">
+              <span className="font-medium">
+                {personalInfo.firstName} {personalInfo.lastName}
+              </span>
+              {employee.hasAccount && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Account
+                </span>
+              )}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
               BSN: {maskBSN(personalInfo.bsn)}
@@ -315,6 +393,19 @@ const EmployeesNew: React.FC = () => {
       label: 'Acties',
       render: (value: any, employee: Employee) => (
         <div className="flex space-x-2">
+          {!employee.hasAccount && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                openAccountModal(employee);
+              }}
+              title="Account aanmaken"
+            >
+              <UserPlus className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             size="sm"
             variant="ghost"
@@ -575,6 +666,96 @@ const EmployeesNew: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={isAccountModalOpen}
+        onClose={closeAccountModal}
+        title="Account Aanmaken voor Werknemer"
+        size="md"
+      >
+        {selectedEmployee && (
+          <div className="space-y-6">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-start">
+                <User className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {selectedEmployee.personalInfo.firstName} {selectedEmployee.personalInfo.lastName}
+                  </h4>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    {selectedEmployee.personalInfo.contactInfo.email}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  E-mailadres
+                </label>
+                <Input
+                  value={selectedEmployee.personalInfo.contactInfo.email}
+                  disabled
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Wachtwoord
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    value={generatedPassword}
+                    readOnly
+                    className="font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleCopyPassword}
+                    title="Kopieer wachtwoord"
+                  >
+                    {passwordCopied ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleGenerateNewPassword}
+                    title="Genereer nieuw wachtwoord"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                <strong>Let op:</strong> Bewaar dit wachtwoord veilig en deel het op een veilige manier met de werknemer.
+                Het wachtwoord wordt na het sluiten van dit venster niet meer getoond.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Button type="button" variant="secondary" onClick={closeAccountModal}>
+                Annuleren
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCreateAccount}
+                loading={creatingAccount}
+              >
+                Account Aanmaken
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
