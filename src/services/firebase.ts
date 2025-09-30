@@ -323,11 +323,15 @@ export const createEmployee = async (userId: string, employee: Omit<Employee, 'i
 };
 
 export const updateEmployee = async (id: string, userId: string, updates: Partial<Employee>): Promise<void> => {
+  console.log('Firebase updateEmployee called with:', { id, userId });
+  console.log('Update data received:', updates);
+  
   // First verify ownership
   const docRef = doc(db, 'employees', id);
   const docSnap = await getDoc(docRef);
   
   if (!docSnap.exists() || docSnap.data().userId !== userId) {
+    console.error('Unauthorized access attempt or document not found');
     throw new Error('Unauthorized');
   }
   
@@ -336,7 +340,21 @@ export const updateEmployee = async (id: string, userId: string, updates: Partia
     updatedAt: new Date()
   });
   
-  await updateDoc(docRef, updateData);
+  console.log('Update data after timestamp conversion:', updateData);
+  
+  try {
+    console.log('Attempting to update document in Firestore...');
+    await updateDoc(docRef, updateData);
+    console.log('Document successfully updated');
+  } catch (error) {
+    console.error('Firestore error in updateEmployee:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    throw error;
+  }
 };
 
 export const deleteEmployee = async (id: string, userId: string): Promise<void> => {
