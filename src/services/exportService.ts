@@ -177,8 +177,8 @@ export const generatePayrollExcel = (calculations: PayrollCalculation[]): string
 
   const rows = calculations.map(calc => [
     calc.employeeId,
-    calc.periodStartDate.toISOString().split('T')[0],
-    calc.periodEndDate.toISOString().split('T')[0],
+    calc.periodStartDate.toISOString().split('T'),
+    calc.periodEndDate.toISOString().split('T'),
     calc.regularHours,
     calc.regularPay,
     calc.overtimeHours,
@@ -291,7 +291,7 @@ export const generateAccountingExport = (calculations: PayrollCalculation[]): Ac
   ]);
 
   const totalDebits = journalEntries.reduce((sum, entry) => sum + entry.amount, 0);
-  const totalCredits = journalEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  const totalCredits = journalEntries.reduce((sum, entry) => sum + entry.amount, 0); // Should be equal to totalDebits in double-entry
 
   return {
     journalEntries,

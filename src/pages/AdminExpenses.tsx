@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Receipt, Check, X, Filter, User, Euro } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Receipt, Check, X, Filter, User, Euro, Building2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -13,23 +13,20 @@ import { formatExpenseType } from '../utils/leaveCalculations';
 
 const AdminExpenses: React.FC = () => {
   const { user } = useAuth();
-  const { companies, employees } = useApp();
+  const { companies, employees, selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [pendingExpenses, setPendingExpenses] = useState<Expense[]>([]);
   const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
   const [filterCompany, setFilterCompany] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('submitted'); // Default to submitted
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadExpenses();
+  const loadExpenses = useCallback(async () => {
+    if (!user || !selectedCompany) {
+      setLoading(false);
+      return;
     }
-  }, [user]);
-
-  const loadExpenses = async () => {
-    if (!user) return;
 
     try {
       setLoading(true);
@@ -40,7 +37,7 @@ const AdminExpenses: React.FC = () => {
       
       // Filter for submitted expenses that need approval
       const pendingExpenseRecords = allExpenseRecords.filter(expense => 
-        expense.status === 'submitted'
+        expense.status === 'submitted' && expense.companyId === selectedCompany.id
       );
       setPendingExpenses(pendingExpenseRecords);
     } catch (err) {
@@ -49,7 +46,11 @@ const AdminExpenses: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadExpenses();
+  }, [loadExpenses]);
 
   const getEmployeeName = (employeeId: string) => {
     const employee = employees.find(e => e.id === employeeId);
@@ -154,11 +155,21 @@ const AdminExpenses: React.FC = () => {
   });
 
   const totalPendingAmount = pendingExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalApprovedAmount = allExpenses.filter(e => e.status === 'approved').reduce((sum, expense) => sum + expense.amount, 0);
-  const totalPaidAmount = allExpenses.filter(e => e.status === 'paid').reduce((sum, expense) => sum + expense.amount, 0);
+  const totalApprovedAmount = allExpenses.filter(e => e.status === 'approved').reduce((sum, expense) => sum + e.amount, 0);
+  const totalPaidAmount = allExpenses.filter(e => e.status === 'paid').reduce((sum, expense) => sum + e.amount, 0);
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (!selectedCompany) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen bedrijf geselecteerd"
+        description="Selecteer een bedrijf om declaraties te beheren."
+      />
+    );
   }
 
   return (

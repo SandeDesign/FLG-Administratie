@@ -242,7 +242,7 @@ export class NotificationService {
       return this.createDefaultPreferences(userId);
     }
 
-    const doc = querySnapshot.docs[0];
+    const doc = querySnapshot.docs;
     return {
       id: doc.id,
       ...convertTimestamps(doc.data()),
@@ -271,7 +271,7 @@ export class NotificationService {
         ...updateData,
       });
     } else {
-      const docRef = doc(db, 'notificationPreferences', querySnapshot.docs[0].id);
+      const docRef = doc(db, 'notificationPreferences', querySnapshot.docs.id);
       await updateDoc(docRef, updateData);
     }
   }

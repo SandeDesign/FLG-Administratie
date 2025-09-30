@@ -5,14 +5,13 @@ import {
   getDoc,
   addDoc,
   updateDoc,
-  deleteDoc,
   query,
   where,
   orderBy,
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { WeeklyTimesheet, TimesheetEntry, TimesheetStatus } from '../types/timesheet';
+import { WeeklyTimesheet, TimesheetEntry } from '../types/timesheet';
 
 const convertTimestamps = (data: any) => {
   const converted = { ...data };

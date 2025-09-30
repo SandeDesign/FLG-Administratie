@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Check, X, Clock } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Check, X, Clock, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -14,44 +14,46 @@ import {
 } from '../services/timesheetService';
 import { getEmployees } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export default function TimesheetApprovals() {
   const { user } = useAuth();
-  const { selectedCompany } = useApp();
-  const { showToast } = useToast();
+  const { selectedCompany, employees } = useApp();
+  const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [timesheets, setTimesheets] = useState<WeeklyTimesheet[]>([]);
-  const [employees, setEmployees] = useState<Map<string, any>>(new Map());
   const [selectedTimesheet, setSelectedTimesheet] = useState<WeeklyTimesheet | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, [user, selectedCompany]);
-
-  const loadData = async () => {
-    if (!user || !selectedCompany) return;
+  const loadData = useCallback(async () => {
+    if (!user || !selectedCompany) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
-      const [pendingTimesheets, allEmployees] = await Promise.all([
-        getPendingTimesheets(user.uid, selectedCompany.id),
-        getEmployees(user.uid, selectedCompany.id)
-      ]);
-
+      const pendingTimesheets = await getPendingTimesheets(user.uid, selectedCompany.id);
       setTimesheets(pendingTimesheets);
-
-      const employeeMap = new Map();
-      allEmployees.forEach(emp => employeeMap.set(emp.id, emp));
-      setEmployees(employeeMap);
     } catch (error) {
       console.error('Error loading timesheet approvals:', error);
-      showToast('Fout bij laden van goedkeuringen', 'error');
+      showError('Fout bij laden', 'Kon urenregistratie goedkeuringen niet laden');
     } finally {
       setLoading(false);
     }
+  }, [user, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const getEmployeeName = (employeeId: string) => {
+    const employee = employees.find(e => e.id === employeeId);
+    return employee 
+      ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
+      : 'Onbekende medewerker';
   };
 
   const handleApprove = async (timesheet: WeeklyTimesheet) => {
@@ -59,11 +61,11 @@ export default function TimesheetApprovals() {
 
     try {
       await approveWeeklyTimesheet(timesheet.id!, timesheet.userId, user.uid);
-      showToast('Uren goedgekeurd', 'success');
+      success('Uren goedgekeurd', 'Urenregistratie succesvol goedgekeurd');
       await loadData();
     } catch (error) {
       console.error('Error approving timesheet:', error);
-      showToast('Fout bij goedkeuren', 'error');
+      showError('Fout bij goedkeuren', 'Kon urenregistratie niet goedkeuren');
     }
   };
 
@@ -73,7 +75,10 @@ export default function TimesheetApprovals() {
   };
 
   const handleRejectConfirm = async () => {
-    if (!selectedTimesheet || !user || !rejectionReason.trim()) return;
+    if (!selectedTimesheet || !user || !rejectionReason.trim()) {
+      showError('Fout', 'Reden voor afwijzing is verplicht.');
+      return;
+    }
 
     try {
       await rejectWeeklyTimesheet(
@@ -82,14 +87,14 @@ export default function TimesheetApprovals() {
         user.uid,
         rejectionReason
       );
-      showToast('Uren afgekeurd', 'success');
+      success('Uren afgekeurd', 'Urenregistratie succesvol afgekeurd');
       setShowRejectModal(false);
       setRejectionReason('');
       setSelectedTimesheet(null);
       await loadData();
     } catch (error) {
       console.error('Error rejecting timesheet:', error);
-      showToast('Fout bij afkeuren', 'error');
+      showError('Fout bij afwijzen', 'Kon urenregistratie niet afwijzen');
     }
   };
 
@@ -98,6 +103,16 @@ export default function TimesheetApprovals() {
       <div className="flex justify-center items-center h-64">
         <LoadingSpinner />
       </div>
+    );
+  }
+
+  if (!selectedCompany) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen bedrijf geselecteerd"
+        description="Selecteer een bedrijf om urenregistraties goed te keuren."
+      />
     );
   }
 
@@ -112,15 +127,16 @@ export default function TimesheetApprovals() {
 
       {timesheets.length === 0 ? (
         <Card>
-          <div className="text-center py-12">
-            <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">Geen uren ter goedkeuring</p>
-          </div>
+          <EmptyState
+            icon={Clock}
+            title="Geen uren ter goedkeuring"
+            description="Er zijn momenteel geen urenregistraties die goedkeuring behoeven."
+          />
         </Card>
       ) : (
         <div className="space-y-4">
           {timesheets.map((timesheet) => {
-            const employee = employees.get(timesheet.employeeId);
+            const employee = employees.find(emp => emp.id === timesheet.employeeId);
             return (
               <Card key={timesheet.id}>
                 <div className="space-y-4">
@@ -243,12 +259,13 @@ export default function TimesheetApprovals() {
           />
           <div className="flex justify-end gap-3">
             <Button
+              type="button"
+              variant="secondary"
               onClick={() => {
                 setShowRejectModal(false);
                 setRejectionReason('');
                 setSelectedTimesheet(null);
               }}
-              variant="secondary"
             >
               Annuleren
             </Button>

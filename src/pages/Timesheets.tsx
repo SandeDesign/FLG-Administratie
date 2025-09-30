@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Clock, Save, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -18,11 +18,12 @@ import {
 } from '../services/timesheetService';
 import { getEmployeeById } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export default function Timesheets() {
   const { user } = useAuth();
-  const { currentEmployeeId } = useApp();
-  const { showToast } = useToast();
+  const { currentEmployeeId, selectedCompany } = useApp();
+  const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,20 +33,24 @@ export default function Timesheets() {
   const [currentTimesheet, setCurrentTimesheet] = useState<WeeklyTimesheet | null>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [user, currentEmployeeId, selectedWeek, selectedYear]);
-
-  const loadData = async () => {
-    if (!user || !currentEmployeeId) return;
+  const loadData = useCallback(async () => {
+    if (!user || !currentEmployeeId || !selectedCompany) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
       const employee = await getEmployeeById(currentEmployeeId);
+      if (!employee) {
+        showError('Fout', 'Werknemergegevens niet gevonden.');
+        setLoading(false);
+        return;
+      }
       setEmployeeData(employee);
 
       const sheets = await getWeeklyTimesheets(
-        employee!.userId,
+        user.uid, // Admin user ID
         currentEmployeeId,
         selectedYear,
         selectedWeek
@@ -54,14 +59,14 @@ export default function Timesheets() {
       setTimesheets(sheets);
 
       if (sheets.length > 0) {
-        setCurrentTimesheet(sheets[0]);
+        setCurrentTimesheet(sheets);
       } else {
         const weekDates = getWeekDates(selectedYear, selectedWeek);
         const emptyEntries: TimesheetEntry[] = weekDates.map(date => ({
-          userId: employee!.userId,
+          userId: user.uid,
           employeeId: currentEmployeeId,
-          companyId: employee!.companyId,
-          branchId: employee!.branchId,
+          companyId: selectedCompany.id,
+          branchId: employee.branchId, // Use employee's branchId
           date,
           regularHours: 0,
           overtimeHours: 0,
@@ -75,10 +80,10 @@ export default function Timesheets() {
         }));
 
         const newTimesheet: WeeklyTimesheet = {
-          userId: employee!.userId,
+          userId: user.uid,
           employeeId: currentEmployeeId,
-          companyId: employee!.companyId,
-          branchId: employee!.branchId,
+          companyId: selectedCompany.id,
+          branchId: employee.branchId,
           weekNumber: selectedWeek,
           year: selectedYear,
           entries: emptyEntries,
@@ -97,11 +102,15 @@ export default function Timesheets() {
       }
     } catch (error) {
       console.error('Error loading timesheets:', error);
-      showToast('Fout bij laden van urenregistratie', 'error');
+      showError('Fout bij laden', 'Kan urenregistratie niet laden');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, currentEmployeeId, selectedCompany, selectedYear, selectedWeek, showError]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const updateEntry = (index: number, field: keyof TimesheetEntry, value: number | string) => {
     if (!currentTimesheet) return;
@@ -118,7 +127,12 @@ export default function Timesheets() {
     setCurrentTimesheet({
       ...currentTimesheet,
       entries: updatedEntries,
-      ...totals,
+      totalRegularHours: totals.regularHours,
+      totalOvertimeHours: totals.overtimeHours,
+      totalEveningHours: totals.eveningHours,
+      totalNightHours: totals.nightHours,
+      totalWeekendHours: totals.weekendHours,
+      totalTravelKilometers: totals.travelKilometers,
       updatedAt: new Date()
     });
   };
@@ -126,52 +140,51 @@ export default function Timesheets() {
   const handleSave = async () => {
     if (!currentTimesheet || !user || !employeeData) return;
 
+    setSaving(true);
     try {
-      setSaving(true);
-
       if (currentTimesheet.id) {
         await updateWeeklyTimesheet(
           currentTimesheet.id,
-          employeeData.userId,
+          user.uid,
           currentTimesheet
         );
-        showToast('Uren opgeslagen', 'success');
+        success('Uren opgeslagen', 'Urenregistratie succesvol opgeslagen');
       } else {
         const id = await createWeeklyTimesheet(
-          employeeData.userId,
+          user.uid,
           currentTimesheet
         );
         setCurrentTimesheet({ ...currentTimesheet, id });
-        showToast('Uren aangemaakt', 'success');
+        success('Uren aangemaakt', 'Urenregistratie succesvol aangemaakt');
       }
     } catch (error) {
       console.error('Error saving timesheet:', error);
-      showToast('Fout bij opslaan', 'error');
+      showError('Fout bij opslaan', 'Kon urenregistratie niet opslaan');
     } finally {
       setSaving(false);
     }
   };
 
   const handleSubmit = async () => {
-    if (!currentTimesheet || !currentTimesheet.id || !employeeData) return;
+    if (!currentTimesheet || !currentTimesheet.id || !user || !employeeData) return;
 
-    if (currentTimesheet.totalRegularHours === 0) {
-      showToast('Er zijn nog geen uren ingevoerd', 'error');
+    if (currentTimesheet.totalRegularHours === 0 && currentTimesheet.totalOvertimeHours === 0 && currentTimesheet.totalTravelKilometers === 0) {
+      showError('Geen uren ingevoerd', 'Voer minimaal één uur of kilometer in om in te dienen');
       return;
     }
 
+    setSaving(true);
     try {
-      setSaving(true);
       await submitWeeklyTimesheet(
         currentTimesheet.id,
-        employeeData.userId,
-        currentEmployeeId
+        user.uid,
+        user.displayName || user.email || 'Werknemer'
       );
-      showToast('Uren ingediend voor goedkeuring', 'success');
+      success('Uren ingediend', 'Urenregistratie succesvol ingediend voor goedkeuring');
       await loadData();
     } catch (error) {
       console.error('Error submitting timesheet:', error);
-      showToast('Fout bij indienen', 'error');
+      showError('Fout bij indienen', 'Kon urenregistratie niet indienen');
     } finally {
       setSaving(false);
     }
@@ -182,7 +195,7 @@ export default function Timesheets() {
     let newYear = selectedYear;
 
     if (newWeek < 1) {
-      newWeek = 52;
+      newWeek = 52; // Assuming 52 weeks in a year for simplicity
       newYear--;
     } else if (newWeek > 52) {
       newWeek = 1;
@@ -206,12 +219,23 @@ export default function Timesheets() {
     );
   }
 
+  if (!currentEmployeeId) {
+    return (
+      <EmptyState
+        icon={Clock}
+        title="Geen werknemer geselecteerd"
+        description="Selecteer een werknemer om uren te registreren."
+      />
+    );
+  }
+
   if (!currentTimesheet) {
     return (
-      <div className="text-center py-12">
-        <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">Geen urenregistratie gevonden</p>
-      </div>
+      <EmptyState
+        icon={Clock}
+        title="Geen urenregistratie gevonden"
+        description="Er is een probleem opgetreden bij het laden of aanmaken van de urenregistratie."
+      />
     );
   }
 

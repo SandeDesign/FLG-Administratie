@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { HeartPulse, AlertTriangle, Calendar, User, Clock } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { HeartPulse, AlertTriangle, Calendar, User, Clock, Building2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -12,26 +12,23 @@ import { useToast } from '../hooks/useToast';
 
 const AdminAbsenceManagement: React.FC = () => {
   const { user } = useAuth();
-  const { companies, employees } = useApp();
+  const { companies, employees, selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeSickLeave, setActiveSickLeave] = useState<SickLeave[]>([]);
 
-  useEffect(() => {
-    if (user) {
-      loadActiveSickLeave();
+  const loadActiveSickLeave = useCallback(async () => {
+    if (!user || !selectedCompany) {
+      setLoading(false);
+      return;
     }
-  }, [user]);
-
-  const loadActiveSickLeave = async () => {
-    if (!user) return;
 
     try {
       setLoading(true);
       // Get ALL sick leave records for this user and filter for active
       const allSickLeaveRecords = await firebaseService.getSickLeaveRecords(user.uid);
       const active = allSickLeaveRecords.filter(record => 
-        record.status === 'active' || record.status === 'partially_recovered'
+        (record.status === 'active' || record.status === 'partially_recovered') && record.companyId === selectedCompany.id
       );
       setActiveSickLeave(active);
     } catch (err) {
@@ -40,7 +37,11 @@ const AdminAbsenceManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadActiveSickLeave();
+  }, [loadActiveSickLeave]);
 
   const getEmployeeName = (employeeId: string) => {
     const employee = employees.find(e => e.id === employeeId);
@@ -89,6 +90,16 @@ const AdminAbsenceManagement: React.FC = () => {
     return <LoadingSpinner />;
   }
 
+  if (!selectedCompany) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen bedrijf geselecteerd"
+        description="Selecteer een bedrijf om verzuim te beheren."
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -119,7 +130,7 @@ const AdminAbsenceManagement: React.FC = () => {
           <div className="flex items-center">
             <AlertTriangle className="h-8 w-8 text-orange-600 mr-3" />
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Langdurig (&gt;6 weken)</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Langdurig (>6 weken)</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {longTermCases.length}
               </p>

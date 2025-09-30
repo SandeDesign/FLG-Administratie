@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Receipt, Plus, Filter } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Receipt, Plus, Filter, Building2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -10,34 +10,36 @@ import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { formatExpenseType } from '../utils/leaveCalculations';
+import { useApp } from '../contexts/AppContext';
 
 const Expenses: React.FC = () => {
   const { user, currentEmployeeId } = useAuth();
+  const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (user && currentEmployeeId) {
-      loadExpenses();
+  const loadExpenses = useCallback(async () => {
+    if (!user || !currentEmployeeId || !selectedCompany) {
+      setLoading(false);
+      return;
     }
-  }, [user, currentEmployeeId]);
-
-  const loadExpenses = async () => {
-    if (!user || !currentEmployeeId) return;
     
     try {
       setLoading(true);
       
-      // Get employee data to find the admin userId
+      // Get employee data to find the admin userId (if different from current user.uid)
+      // In this setup, user.uid is the adminUserId for all data.
       const currentEmployee = await firebaseService.getEmployeeById(currentEmployeeId);
       if (!currentEmployee) {
-        throw new Error('Employee not found');
+        showError('Fout', 'Werknemergegevens niet gevonden.');
+        setLoading(false);
+        return;
       }
       
-      const data = await firebaseService.getExpenses(currentEmployee.userId, currentEmployeeId);
+      const data = await firebaseService.getExpenses(user.uid, currentEmployeeId); // Use user.uid as adminUserId
       setExpenses(data);
     } catch (err) {
       console.error('Error loading expenses:', err);
@@ -45,7 +47,11 @@ const Expenses: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, currentEmployeeId, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadExpenses();
+  }, [loadExpenses]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -94,6 +100,16 @@ const Expenses: React.FC = () => {
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (!currentEmployeeId) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen werknemer geselecteerd"
+        description="Selecteer een werknemer om declaraties te beheren."
+      />
+    );
   }
 
   return (

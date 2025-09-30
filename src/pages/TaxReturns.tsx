@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   FileText,
   Download,
@@ -8,46 +8,62 @@ import {
   AlertTriangle,
   Plus,
   Eye,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { TaxReturn, Company } from '../types';
+import { Company, TaxReturn } from '../types';
 import { getCompanies } from '../services/firebase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
+import { EmptyState } from '../components/ui/EmptyState';
+import { useApp } from '../contexts/AppContext'; // Import useApp
+
+// Placeholder for tax return service functions
+// In a real application, these would be implemented in a dedicated service file
+const getTaxReturns = async (userId: string, companyId: string): Promise<TaxReturn[]> => {
+  // Simulate fetching data
+  return [];
+};
 
 const TaxReturns: React.FC = () => {
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const { companies: appCompanies, selectedCompany: appSelectedCompany } = useApp(); // Get companies from AppContext
+  const { success, error: showError } = useToast();
   const [taxReturns, setTaxReturns] = useState<TaxReturn[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
-  useEffect(() => {
-    if (user) {
-      loadData();
+  const loadData = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, [user]);
-
-  const loadData = async () => {
-    if (!user) return;
 
     try {
       setLoading(true);
-      const companiesData = await getCompanies(user.uid);
-      setCompanies(companiesData);
-      if (companiesData.length > 0) {
-        setSelectedCompany(companiesData[0].id);
+      // Use companies from AppContext
+      if (appCompanies.length > 0) {
+        const companyToSelect = appSelectedCompany || appCompanies;
+        setSelectedCompanyId(companyToSelect.id);
+        // Fetch tax returns for the selected company
+        const returns = await getTaxReturns(user.uid, companyToSelect.id);
+        setTaxReturns(returns);
+      } else {
+        setTaxReturns([]);
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      showToast('Fout bij laden gegevens', 'error');
+      showError('Fout bij laden gegevens', 'Kon loonaangiftegegevens niet laden');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, appCompanies, appSelectedCompany, showError]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const getStatusIcon = (status: TaxReturn['status']) => {
     switch (status) {
@@ -61,6 +77,8 @@ const TaxReturns: React.FC = () => {
         return <CheckCircle className="h-5 w-5 text-blue-500" />;
       case 'draft':
         return <FileText className="h-5 w-5 text-gray-500" />;
+      case 'corrected':
+        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       default:
         return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
     }
@@ -100,6 +118,24 @@ const TaxReturns: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (appCompanies.length === 0) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen bedrijven gevonden"
+        description="Maak eerst een bedrijf aan om loonaangiftes te kunnen beheren."
+        actionLabel="Bedrijf Toevoegen"
+        onAction={() => window.location.href = '/companies'}
+      />
+    );
+  }
+
+  const currentCompany = appCompanies.find(c => c.id === selectedCompanyId);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -109,23 +145,24 @@ const TaxReturns: React.FC = () => {
             Beheer uw loonaangiftes naar de Belastingdienst
           </p>
         </div>
-        <Button variant="primary">
+        <Button variant="primary" onClick={() => showError('Nieuwe aangifte', 'Deze functionaliteit wordt nog geïmplementeerd.')}>
           <Plus className="h-5 w-5 mr-2" />
           Nieuwe aangifte
         </Button>
       </div>
 
-      {companies.length > 0 && (
+      {appCompanies.length > 0 && (
         <div className="flex items-center space-x-4">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label htmlFor="company-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Bedrijf:
           </label>
           <select
-            value={selectedCompany}
-            onChange={(e) => setSelectedCompany(e.target.value)}
+            id="company-select"
+            value={selectedCompanyId}
+            onChange={(e) => setSelectedCompanyId(e.target.value)}
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
           >
-            {companies.map((company) => (
+            {appCompanies.map((company) => (
               <option key={company.id} value={company.id}>
                 {company.name}
               </option>
@@ -140,7 +177,9 @@ const TaxReturns: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Concepten</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">0</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                  {taxReturns.filter(tr => tr.status === 'draft').length}
+                </p>
               </div>
               <FileText className="h-8 w-8 text-gray-400" />
             </div>
@@ -152,7 +191,9 @@ const TaxReturns: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ingediend</p>
-                <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">0</p>
+                <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {taxReturns.filter(tr => tr.status === 'submitted').length}
+                </p>
               </div>
               <Send className="h-8 w-8 text-blue-500" />
             </div>
@@ -166,7 +207,9 @@ const TaxReturns: React.FC = () => {
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   Geaccepteerd
                 </p>
-                <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">0</p>
+                <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">
+                  {taxReturns.filter(tr => tr.status === 'accepted').length}
+                </p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
             </div>
@@ -178,7 +221,9 @@ const TaxReturns: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Afgewezen</p>
-                <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">0</p>
+                <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
+                  {taxReturns.filter(tr => tr.status === 'rejected').length}
+                </p>
               </div>
               <XCircle className="h-8 w-8 text-red-500" />
             </div>
@@ -198,6 +243,7 @@ const TaxReturns: React.FC = () => {
           </div>
 
           <div className="space-y-4">
+            {/* Placeholder for actual deadline data */}
             <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
               <div className="flex items-center space-x-4">
                 <AlertTriangle className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
@@ -214,7 +260,7 @@ const TaxReturns: React.FC = () => {
                 <span className="px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-full">
                   15 dagen resterend
                 </span>
-                <Button variant="primary" size="sm">
+                <Button variant="primary" size="sm" onClick={() => showError('Indienen', 'Deze functionaliteit wordt nog geïmplementeerd.')}>
                   Indienen
                 </Button>
               </div>
@@ -229,21 +275,14 @@ const TaxReturns: React.FC = () => {
             Ingediende aangiftes
           </h2>
 
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner />
-            </div>
-          ) : taxReturns.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">
-                Nog geen loonaangiftes ingediend
-              </p>
-              <Button variant="primary" className="mt-4">
-                <Plus className="h-5 w-5 mr-2" />
-                Eerste aangifte maken
-              </Button>
-            </div>
+          {taxReturns.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="Nog geen loonaangiftes ingediend"
+              description="Maak uw eerste loonaangifte aan om te beginnen."
+              actionLabel="Eerste aangifte maken"
+              onAction={() => showError('Nieuwe aangifte', 'Deze functionaliteit wordt nog geïmplementeerd.')}
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -303,12 +342,14 @@ const TaxReturns: React.FC = () => {
                           <button
                             className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                             title="Bekijk"
+                            onClick={() => showError('Bekijken', 'Deze functionaliteit wordt nog geïmplementeerd.')}
                           >
                             <Eye className="h-5 w-5" />
                           </button>
                           <button
                             className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                             title="Download XML"
+                            onClick={() => showError('Download XML', 'Deze functionaliteit wordt nog geïmplementeerd.')}
                           >
                             <Download className="h-5 w-5" />
                           </button>

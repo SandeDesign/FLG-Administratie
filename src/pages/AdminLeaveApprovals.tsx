@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Calendar, Check, X, Filter, User } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Calendar, Check, X, Filter, User, Building2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -13,27 +13,26 @@ import { formatLeaveType } from '../utils/leaveCalculations';
 
 const AdminLeaveApprovals: React.FC = () => {
   const { user } = useAuth();
-  const { companies, employees } = useApp();
+  const { companies, employees, selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [pendingRequests, setPendingRequests] = useState<LeaveRequest[]>([]);
   const [filterCompany, setFilterCompany] = useState<string>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadPendingRequests();
+  const loadPendingRequests = useCallback(async () => {
+    if (!user || !selectedCompany) {
+      setLoading(false);
+      return;
     }
-  }, [user]);
-
-  const loadPendingRequests = async () => {
-    if (!user) return;
 
     try {
       setLoading(true);
       // Get ALL leave requests for this user and filter for pending
       const allLeaveRequests = await firebaseService.getLeaveRequests(user.uid);
-      const pending = allLeaveRequests.filter(request => request.status === 'pending');
+      const pending = allLeaveRequests.filter(request => 
+        request.status === 'pending' && request.companyId === selectedCompany.id
+      );
       setPendingRequests(pending);
     } catch (err) {
       console.error('Error loading pending requests:', err);
@@ -41,7 +40,11 @@ const AdminLeaveApprovals: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadPendingRequests();
+  }, [loadPendingRequests]);
 
   const getEmployeeName = (employeeId: string) => {
     const employee = employees.find(e => e.id === employeeId);
@@ -108,6 +111,16 @@ const AdminLeaveApprovals: React.FC = () => {
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (!selectedCompany) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen bedrijf geselecteerd"
+        description="Selecteer een bedrijf om verlofaanvragen te beheren."
+      />
+    );
   }
 
   return (

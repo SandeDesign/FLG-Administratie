@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Building2, Plus, CreditCard as Edit, Trash2, MapPin, Phone, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Company, Branch } from '../types';
-import { getCompanies, createCompany, updateCompany, deleteCompany, getBranches } from '../services/firebase';
+import { getCompanies, deleteCompany, getBranches } from '../services/firebase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -10,9 +10,11 @@ import { EmptyState } from '../components/ui/EmptyState';
 import CompanyModal from '../components/company/CompanyModal';
 import BranchModal from '../components/company/BranchModal';
 import { useToast } from '../hooks/useToast';
+import { useApp } from '../contexts/AppContext'; // Import useApp to refresh global state
 
 const Companies: React.FC = () => {
   const { user } = useAuth();
+  const { refreshDashboardStats } = useApp(); // Use refreshDashboardStats
   const { success, error: showError } = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -20,16 +22,13 @@ const Companies: React.FC = () => {
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [selectedBranch, setBranch] = useState<Branch | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null); // Renamed to avoid conflict
 
-  useEffect(() => {
-    if (user) {
-      loadData();
+  const loadData = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, [user]);
-
-  const loadData = async () => {
-    if (!user) return;
 
     try {
       setLoading(true);
@@ -39,13 +38,18 @@ const Companies: React.FC = () => {
       ]);
       setCompanies(companiesData);
       setBranches(branchesData);
+      await refreshDashboardStats(); // Refresh dashboard stats after loading company data
     } catch (error) {
       console.error('Error loading data:', error);
       showError('Fout bij laden', 'Kon bedrijfsgegevens niet laden');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, showError, refreshDashboardStats]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleEditCompany = (company: Company) => {
     setSelectedCompany(company);
@@ -55,11 +59,11 @@ const Companies: React.FC = () => {
   const handleDeleteCompany = async (company: Company) => {
     if (!user) return;
 
-    if (window.confirm(`Weet je zeker dat je ${company.name} wilt verwijderen?`)) {
+    if (window.confirm(`Weet je zeker dat je ${company.name} wilt verwijderen? Dit verwijdert ook alle gerelateerde vestigingen en werknemers.`)) {
       try {
         await deleteCompany(company.id, user.uid);
         success('Bedrijf verwijderd', `${company.name} is succesvol verwijderd`);
-        await loadData();
+        await loadData(); // Reload data after deletion
       } catch (error) {
         console.error('Error deleting company:', error);
         showError('Fout bij verwijderen', 'Kon bedrijf niet verwijderen');
@@ -69,14 +73,14 @@ const Companies: React.FC = () => {
 
   const handleAddBranch = (company: Company) => {
     setSelectedCompany(company);
-    setBranch(null);
+    setSelectedBranch(null); // Ensure no branch is selected for new creation
     setIsBranchModalOpen(true);
   };
 
   const handleEditBranch = (branch: Branch) => {
     const company = companies.find(c => c.id === branch.companyId);
     setSelectedCompany(company || null);
-    setBranch(branch);
+    setSelectedBranch(branch);
     setIsBranchModalOpen(true);
   };
 
@@ -244,7 +248,7 @@ const Companies: React.FC = () => {
         onClose={() => {
           setIsBranchModalOpen(false);
           setSelectedCompany(null);
-          setBranch(null);
+          setSelectedBranch(null);
         }}
         onSuccess={loadData}
         company={selectedCompany}

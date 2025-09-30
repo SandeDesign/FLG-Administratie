@@ -78,6 +78,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         case 'auth/too-many-requests':
           message = 'Te veel pogingen. Probeer het later opnieuw';
           break;
+        default:
+          message = err.message;
+          break;
       }
 
       error('Inloggen mislukt', message);
@@ -109,6 +112,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         case 'auth/weak-password':
           message = 'Wachtwoord is te zwak. Gebruik minimaal 6 karakters';
           break;
+        default:
+          message = err.message;
+          break;
       }
 
       error('Registratie mislukt', message);
@@ -120,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await firebaseSignOut(auth);
       setUserRole(null);
+      setCurrentEmployeeId(null); // Clear employee ID on sign out
       success('Tot ziens!', 'Je bent uitgelogd');
     } catch (err: any) {
       console.error('Sign out error:', err);
@@ -142,6 +149,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           break;
         case 'auth/invalid-email':
           message = 'Ongeldig e-mailadres';
+          break;
+        default:
+          message = err.message;
           break;
       }
 

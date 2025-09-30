@@ -267,13 +267,13 @@ export const calculatePayroll = async (
 };
 
 const calculateTaxes = (grossPay: number, employee: Employee): PayrollTaxes => {
-  const taxRate = employee.salaryInfo.taxTable === 'green' ? 0.36 : 0.37;
-  const incomeTax = grossPay * taxRate * (employee.salaryInfo.taxCredit ? 0.9 : 1);
+  const taxRate = employee.salaryInfo.taxTable === 'green' ? 0.36 : 0.37; // Simplified tax rate
+  const incomeTax = grossPay * taxRate * (employee.salaryInfo.taxCredit ? 0.9 : 1); // Simplified tax credit
 
-  const aowRate = 0.1795;
-  const wlzRate = 0.0945;
-  const wwRate = 0.0282;
-  const wiaRate = 0.0;
+  const aowRate = 0.1795; // Example AOW rate
+  const wlzRate = 0.0945; // Example WLZ rate
+  const wwRate = 0.0282; // Example WW rate
+  const wiaRate = 0.0; // Example WIA rate
 
   const socialSecurityEmployee = grossPay * (aowRate + wlzRate + wwRate + wiaRate);
 
@@ -284,7 +284,7 @@ const calculateTaxes = (grossPay: number, employee: Employee): PayrollTaxes => {
     incomeTax,
     socialSecurityEmployee,
     socialSecurityEmployer: socialSecurityEmployee,
-    healthInsurance: 0,
+    healthInsurance: 0, // Placeholder
     pensionEmployee,
     pensionEmployer,
     unemploymentInsurance: grossPay * wwRate,

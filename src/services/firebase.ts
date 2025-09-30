@@ -17,19 +17,6 @@ import { auth } from '../lib/firebase';
 import { Company, Branch, Employee, TimeEntry, UserRole, LeaveRequest, LeaveBalance, SickLeave, AbsenceStatistics, Expense } from '../types';
 import { generatePoortwachterMilestones, shouldActivatePoortwachter } from '../utils/poortwachterTracking';
 
-// Helper function to get the company owner's userId
-const getCompanyOwnerUserId = async (companyId: string): Promise<string> => {
-  const companyRef = doc(db, 'companies', companyId);
-  const companySnap = await getDoc(companyRef);
-  
-  if (!companySnap.exists()) {
-    throw new Error('Company not found');
-  }
-  
-  const companyData = companySnap.data();
-  return companyData.userId;
-};
-
 // Helper function to convert Firestore timestamps to Date objects
 const convertTimestamps = (data: any) => {
   const converted = { ...data };
@@ -342,9 +329,6 @@ export const getEmployee = async (id: string, userId: string): Promise<Employee 
 };
 
 export const createEmployee = async (userId: string, employee: Omit<Employee, 'id' | 'userId'>): Promise<string> => {
-  console.log('Firebase createEmployee called with userId:', userId);
-  console.log('Employee data received in createEmployee:', employee);
-  
   const employeeData = convertToTimestamps({
     ...employee,
     userId,
@@ -352,34 +336,16 @@ export const createEmployee = async (userId: string, employee: Omit<Employee, 'i
     updatedAt: new Date()
   });
   
-  console.log('Employee data after timestamp conversion:', employeeData);
-  
-  try {
-    console.log('Attempting to add document to Firestore...');
-    const docRef = await addDoc(collection(db, 'employees'), employeeData);
-    console.log('Document successfully added with ID:', docRef.id);
-    return docRef.id;
-  } catch (error) {
-    console.error('Firestore error in createEmployee:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack
-    });
-    throw error;
-  }
+  const docRef = await addDoc(collection(db, 'employees'), employeeData);
+  return docRef.id;
 };
 
 export const updateEmployee = async (id: string, userId: string, updates: Partial<Employee>): Promise<void> => {
-  console.log('Firebase updateEmployee called with:', { id, userId });
-  console.log('Update data received:', updates);
-  
   // First verify ownership
   const docRef = doc(db, 'employees', id);
   const docSnap = await getDoc(docRef);
   
   if (!docSnap.exists() || docSnap.data().userId !== userId) {
-    console.error('Unauthorized access attempt or document not found');
     throw new Error('Unauthorized');
   }
   
@@ -388,21 +354,7 @@ export const updateEmployee = async (id: string, userId: string, updates: Partia
     updatedAt: new Date()
   });
   
-  console.log('Update data after timestamp conversion:', updateData);
-  
-  try {
-    console.log('Attempting to update document in Firestore...');
-    await updateDoc(docRef, updateData);
-    console.log('Document successfully updated');
-  } catch (error) {
-    console.error('Firestore error in updateEmployee:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack
-    });
-    throw error;
-  }
+  await updateDoc(docRef, updateData);
 };
 
 export const deleteEmployee = async (id: string, userId: string): Promise<void> => {
@@ -524,7 +476,7 @@ export const getUserRole = async (uid: string): Promise<UserRole | null> => {
     return null;
   }
   
-  const doc = querySnapshot.docs[0];
+  const doc = querySnapshot.docs;
   return {
     id: doc.id,
     ...convertTimestamps(doc.data())
@@ -616,7 +568,6 @@ export const getLeaveRequests = async (adminUserId: string, employeeId?: string)
     ...convertTimestamps(doc.data())
   } as LeaveRequest));
   
-  console.log(`Found ${requests.length} leave requests for admin ${adminUserId}`);
   return requests;
 };
 
@@ -693,7 +644,7 @@ export const getLeaveBalance = async (employeeId: string, userId: string, year: 
 
   if (querySnapshot.empty) return null;
 
-  const docData = querySnapshot.docs[0];
+  const docData = querySnapshot.docs;
   return {
     id: docData.id,
     ...convertTimestamps(docData.data())
@@ -718,7 +669,7 @@ export const updateLeaveBalance = async (employeeId: string, userId: string, yea
   if (querySnapshot.empty) {
     await addDoc(collection(db, 'leaveBalances'), balanceData);
   } else {
-    const docRef = doc(db, 'leaveBalances', querySnapshot.docs[0].id);
+    const docRef = doc(db, 'leaveBalances', querySnapshot.docs.id);
     await updateDoc(docRef, balanceData);
   }
 };
@@ -748,14 +699,13 @@ export const getSickLeaveRecords = async (adminUserId: string, employeeId?: stri
     ...convertTimestamps(doc.data())
   } as SickLeave));
   
-  console.log(`Found ${records.length} sick leave records for admin ${adminUserId}`);
   return records;
 };
 
 export const createSickLeave = async (adminUserId: string, sickLeave: Omit<SickLeave, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   
   const shouldActivate = shouldActivatePoortwachter(sickLeave.startDate);
-  const milestones = shouldActivate ? generatePoortwachterMilestones(sickLeave.startDate) : null;
+  const milestones = shouldActivate ? generatePoortwachtersMilestones(sickLeave.startDate) : null;
 
   const sickLeaveData = convertToTimestamps({
     ...sickLeave,
@@ -819,7 +769,7 @@ export const getAbsenceStatistics = async (employeeId: string, userId: string, y
 
   if (querySnapshot.empty) return null;
 
-  const docData = querySnapshot.docs[0];
+  const docData = querySnapshot.docs;
   return {
     id: docData.id,
     ...convertTimestamps(docData.data())
@@ -851,7 +801,7 @@ export const calculateAbsenceStats = async (employeeId: string, companyId: strin
   const absenceFrequency = sickLeaves.length;
   const averageDuration = absenceFrequency > 0 ? totalSickDays / absenceFrequency : 0;
 
-  const workingDays = 260;
+  const workingDays = 260; // Approximate working days in a year
   const absencePercentage = (totalSickDays / workingDays) * 100;
 
   const longTermAbsence = sickLeaves.some(leave => {
@@ -870,7 +820,7 @@ export const calculateAbsenceStats = async (employeeId: string, companyId: strin
     periodStart,
     periodEnd,
     totalSickDays,
-    totalSickHours: totalSickDays * 8,
+    totalSickHours: totalSickDays * 8, // Assuming 8 hours per day
     absenceFrequency,
     averageDuration,
     absencePercentage,
@@ -892,7 +842,7 @@ export const calculateAbsenceStats = async (employeeId: string, companyId: strin
   if (existingSnapshot.empty) {
     await addDoc(collection(db, 'absenceStatistics'), statsData);
   } else {
-    const docRef = doc(db, 'absenceStatistics', existingSnapshot.docs[0].id);
+    const docRef = doc(db, 'absenceStatistics', existingSnapshot.docs.id);
     await updateDoc(docRef, statsData);
   }
 };
@@ -922,7 +872,6 @@ export const getExpenses = async (adminUserId: string, employeeId?: string): Pro
     ...convertTimestamps(doc.data())
   } as Expense));
   
-  console.log(`Found ${expenses.length} expenses for admin ${adminUserId}`);
   return expenses;
 };
 

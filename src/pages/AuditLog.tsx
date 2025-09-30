@@ -1,79 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Filter, Download, Search, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Shield, Filter, Download, Calendar, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import { AuditAction, AuditEntityType } from '../types';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
+import { AuditService } from '../services/auditService'; // Ensure AuditService is imported
+import { EmptyState } from '../components/ui/EmptyState';
+import { useApp } from '../contexts/AppContext'; // Import useApp to get selectedCompany
 
-interface AuditLog {
+interface AuditLogEntry { // Renamed to avoid conflict with AuditLog type from types/audit.ts
   id: string;
-  user_id: string;
+  userId: string;
+  companyId?: string;
   action: AuditAction;
-  entity_type: AuditEntityType;
-  entity_id: string;
+  entityType: AuditEntityType;
+  entityId: string;
   metadata?: any;
-  created_at: string;
-}
-
-interface AuditLog {
-  id: string;
-  user_id: string;
-  action: AuditAction;
-  entity_type: AuditEntityType;
-  entity_id: string;
-  metadata?: any;
-  created_at: string;
+  createdAt: Date; // Ensure this is a Date object
+  severity: 'info' | 'warning' | 'critical';
+  performedBy: {
+    uid: string;
+    email: string;
+    name?: string;
+    role: 'admin' | 'employee';
+  };
 }
 
 const AuditLogPage: React.FC = () => {
   const { user } = useAuth();
-  const { error: showError } = useToast();
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const { selectedCompany } = useApp(); // Get selected company from AppContext
+  const { success, error: showError } = useToast();
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{
     entityType?: AuditEntityType;
     action?: AuditAction;
     startDate?: Date;
     endDate?: Date;
+    companyId?: string; // Add companyId to filters
   }>({});
 
+  // Update filters when selectedCompany changes
   useEffect(() => {
-      showError('Export niet beschikbaar', 'Export functionaliteit wordt nog geïmplementeerd');
-    if (user) {
-      loadAuditLogs();
-    }
-  }, [user, filters]);
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      companyId: selectedCompany?.id,
+    }));
+  }, [selectedCompany]);
 
-  const loadAuditLogs = async () => {
-    if (!user) return;
+  const loadAuditLogs = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
       const logs = await AuditService.getAuditLogs(user.uid, {
         ...filters,
-        limit: 100,
+        limit: 100, // Limit for performance
       });
       setAuditLogs(logs);
     } catch (error) {
       console.error('Error loading audit logs:', error);
-      showError('Fout bij laden audit logs', 'error');
+      showError('Fout bij laden', 'Kon audit logs niet laden');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, filters, showError]);
+
+  useEffect(() => {
+    loadAuditLogs();
+  }, [loadAuditLogs]);
 
   const handleExport = async () => {
-    if (!user) return;
+    if (!user || !selectedCompany) {
+      showError('Fout', 'Geen gebruiker of bedrijf geselecteerd voor export.');
+      return;
+    }
 
     try {
-      const exportId = await AuditService.exportAuditLogs(user.uid, '', 'excel', filters);
-      success('Export gestart. U ontvangt binnenkort een download link.');
+      const exportId = await AuditService.exportAuditLogs(user.uid, selectedCompany.id, 'excel', filters);
+      success('Export gestart', 'U ontvangt binnenkort een download link.');
     } catch (error) {
       console.error('Error exporting audit logs:', error);
-      showError('Fout bij exporteren audit logs', 'Kon export niet starten');
+      showError('Fout bij exporteren', 'Kon export niet starten');
     }
   };
 
@@ -108,8 +121,8 @@ const AuditLogPage: React.FC = () => {
     return labels[entityType];
   };
 
-  const getSeverityColor = (severity: AuditLog['severity']): string => {
-    const colors: Record<AuditLog['severity'], string> = {
+  const getSeverityColor = (severity: AuditLogEntry['severity']): string => {
+    const colors: Record<AuditLogEntry['severity'], string> = {
       info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
       warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
       critical: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
@@ -126,7 +139,7 @@ const AuditLogPage: React.FC = () => {
             Bekijk alle acties die zijn uitgevoerd in het systeem
           </p>
         </div>
-        <Button variant="outline" onClick={handleExport}>
+        <Button variant="outline" onClick={handleExport} disabled={!selectedCompany}>
           <Download className="h-5 w-5 mr-2" />
           Exporteren
         </Button>
@@ -134,8 +147,8 @@ const AuditLogPage: React.FC = () => {
 
       <Card>
         <div className="p-6">
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="flex-1 min-w-[150px]">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <Filter className="h-4 w-4 inline mr-2" />
                 Type entiteit
@@ -157,10 +170,13 @@ const AuditLogPage: React.FC = () => {
                 <option value="tax_return">Loonaangifte</option>
                 <option value="leave_request">Verlofaanvraag</option>
                 <option value="expense">Declaratie</option>
+                <option value="time_entry">Ureninvoer</option>
+                <option value="settings">Instellingen</option>
+                <option value="user">Gebruiker</option>
               </select>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 min-w-[150px]">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Actie
               </label>
@@ -178,19 +194,22 @@ const AuditLogPage: React.FC = () => {
                 <option value="create">Aangemaakt</option>
                 <option value="update">Bijgewerkt</option>
                 <option value="delete">Verwijderd</option>
+                <option value="view">Bekeken</option>
+                <option value="export">Geëxporteerd</option>
+                <option value="submit">Ingediend</option>
                 <option value="approve">Goedgekeurd</option>
                 <option value="reject">Afgewezen</option>
               </select>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 min-w-[150px]">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <Calendar className="h-4 w-4 inline mr-2" />
                 Start datum
               </label>
               <input
                 type="date"
-                value={filters.startDate?.toISOString().split('T')[0] || ''}
+                value={filters.startDate?.toISOString().split('T') || ''}
                 onChange={(e) =>
                   setFilters({
                     ...filters,
@@ -201,13 +220,13 @@ const AuditLogPage: React.FC = () => {
               />
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 min-w-[150px]">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Eind datum
               </label>
               <input
                 type="date"
-                value={filters.endDate?.toISOString().split('T')[0] || ''}
+                value={filters.endDate?.toISOString().split('T') || ''}
                 onChange={(e) =>
                   setFilters({
                     ...filters,
@@ -224,12 +243,11 @@ const AuditLogPage: React.FC = () => {
               <LoadingSpinner />
             </div>
           ) : auditLogs.length === 0 ? (
-            <div className="text-center py-12">
-              <Shield className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">
-                Geen audit logs gevonden voor de geselecteerde filters
-              </p>
-            </div>
+            <EmptyState
+              icon={Shield}
+              title="Geen audit logs gevonden"
+              description="Geen audit logs gevonden voor de geselecteerde filters."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

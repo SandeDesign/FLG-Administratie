@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { HeartPulse, Plus } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { HeartPulse, Plus, Building2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -11,9 +11,11 @@ import { SickLeave, AbsenceStatistics } from '../types';
 import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
+import { useApp } from '../contexts/AppContext';
 
 const Absence: React.FC = () => {
   const { user, currentEmployeeId } = useAuth();
+  const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
   const { error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [sickLeaveRecords, setSickLeaveRecords] = useState<SickLeave[]>([]);
@@ -21,28 +23,28 @@ const Absence: React.FC = () => {
   const [isSickLeaveModalOpen, setIsSickLeaveModalOpen] = useState(false);
   const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (user && currentEmployeeId) {
-      loadAbsenceData();
+  const loadAbsenceData = useCallback(async () => {
+    if (!user || !currentEmployeeId || !selectedCompany) {
+      setLoading(false);
+      return;
     }
-  }, [user, currentEmployeeId]);
-
-  const loadAbsenceData = async () => {
-    if (!user || !currentEmployeeId) return;
     
     try {
       setLoading(true);
       const currentYear = new Date().getFullYear();
 
-      // Get employee data to find the admin userId
+      // Get employee data to find the admin userId (if different from current user.uid)
+      // In this setup, user.uid is the adminUserId for all data.
       const currentEmployee = await firebaseService.getEmployeeById(currentEmployeeId);
       if (!currentEmployee) {
-        throw new Error('Employee not found');
+        showError('Fout', 'Werknemergegevens niet gevonden.');
+        setLoading(false);
+        return;
       }
 
       const [records, stats] = await Promise.all([
-        firebaseService.getSickLeaveRecords(currentEmployee.userId, currentEmployeeId),
-        firebaseService.getAbsenceStatistics(currentEmployeeId, currentEmployee.userId, currentYear),
+        firebaseService.getSickLeaveRecords(user.uid, currentEmployeeId), // Use user.uid as adminUserId
+        firebaseService.getAbsenceStatistics(currentEmployeeId, user.uid, currentYear), // Use user.uid as adminUserId
       ]);
 
       setSickLeaveRecords(records);
@@ -53,7 +55,11 @@ const Absence: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, currentEmployeeId, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadAbsenceData();
+  }, [loadAbsenceData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -88,6 +94,16 @@ const Absence: React.FC = () => {
     return <LoadingSpinner />;
   }
 
+  if (!currentEmployeeId) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen werknemer geselecteerd"
+        description="Selecteer een werknemer om verzuim te beheren."
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -107,7 +123,7 @@ const Absence: React.FC = () => {
       </div>
 
       {activeSickLeave && (
-        <Card className="p-6 border-l-4 border-red-600">
+        <Card className="p-6 border-l-4 border-red-600 dark:border-red-500">
           <div className="flex items-start justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">

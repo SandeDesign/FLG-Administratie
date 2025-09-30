@@ -207,7 +207,7 @@ export const generatePayslipData = async (
     period: {
       startDate: calculation.periodStartDate,
       endDate: calculation.periodEndDate,
-      paymentDate: calculation.periodEndDate,
+      paymentDate: calculation.periodEndDate, // Assuming payment date is end of period for now
       payrollNumber: calculation.id || ''
     },
     earnings,
@@ -219,7 +219,7 @@ export const generatePayslipData = async (
       totalTaxes: taxes.reduce((sum, t) => sum + t.amount, 0),
       netPay: calculation.netPay,
       ytdGross: calculation.ytdGross,
-      ytdDeductions: 0,
+      ytdDeductions: 0, // Placeholder
       ytdTaxes: calculation.ytdTax,
       ytdNet: calculation.ytdNet
     },
@@ -231,8 +231,8 @@ export const generatePayslipData = async (
     pension: {
       employeeContribution: calculation.taxes.pensionEmployee,
       employerContribution: calculation.taxes.pensionEmployer,
-      ytdEmployeeContribution: 0,
-      ytdEmployerContribution: 0
+      ytdEmployeeContribution: 0, // Placeholder
+      ytdEmployerContribution: 0 // Placeholder
     }
   };
 };

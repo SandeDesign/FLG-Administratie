@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calculator, FileText, Download, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -13,16 +13,18 @@ import {
   getPayrollCalculations,
   createPayrollCalculation,
   calculatePayroll,
-  getHourlyRates
+  getHourlyRates,
+  updatePayrollPeriod
 } from '../services/payrollService';
 import { getWeeklyTimesheets } from '../services/timesheetService';
 import { getEmployees } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export default function PayrollProcessing() {
   const { user } = useAuth();
   const { selectedCompany } = useApp();
-  const { showToast } = useToast();
+  const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -30,12 +32,11 @@ export default function PayrollProcessing() {
   const [selectedPeriod, setSelectedPeriod] = useState<PayrollPeriod | null>(null);
   const [calculations, setCalculations] = useState<PayrollCalculation[]>([]);
 
-  useEffect(() => {
-    loadData();
-  }, [user, selectedCompany]);
-
-  const loadData = async () => {
-    if (!user || !selectedCompany) return;
+  const loadData = useCallback(async () => {
+    if (!user || !selectedCompany) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -43,25 +44,36 @@ export default function PayrollProcessing() {
       setPayrollPeriods(periods);
 
       if (periods.length > 0) {
-        setSelectedPeriod(periods[0]);
-        const calcs = await getPayrollCalculations(user.uid, periods[0].id);
+        const latestPeriod = periods; // Select the most recent period by default
+        setSelectedPeriod(latestPeriod);
+        const calcs = await getPayrollCalculations(user.uid, latestPeriod.id);
         setCalculations(calcs);
+      } else {
+        setSelectedPeriod(null);
+        setCalculations([]);
       }
     } catch (error) {
       console.error('Error loading payroll data:', error);
-      showToast('Fout bij laden van loongegevens', 'error');
+      showError('Fout bij laden', 'Kon loongegevens niet laden');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleCreatePeriod = async () => {
-    if (!user || !selectedCompany) return;
+    if (!user || !selectedCompany) {
+      showError('Fout', 'Gebruiker of bedrijf niet geselecteerd.');
+      return;
+    }
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const paymentDate = new Date(now.getFullYear(), now.getMonth() + 1, 25);
+    const paymentDate = new Date(now.getFullYear(), now.getMonth() + 1, 25); // Example: 25th of next month
 
     try {
       setProcessing(true);
@@ -77,30 +89,35 @@ export default function PayrollProcessing() {
         totalGross: 0,
         totalNet: 0,
         totalTax: 0,
-        createdAt: new Date(),
-        updatedAt: new Date()
       });
 
-      showToast('Loonperiode aangemaakt', 'success');
-      await loadData();
+      success('Loonperiode aangemaakt', 'Nieuwe loonperiode succesvol aangemaakt');
+      await loadData(); // Reload all data to show the new period
     } catch (error) {
       console.error('Error creating payroll period:', error);
-      showToast('Fout bij aanmaken periode', 'error');
+      showError('Fout bij aanmaken periode', 'Kon loonperiode niet aanmaken');
     } finally {
       setProcessing(false);
     }
   };
 
   const handleCalculatePayroll = async () => {
-    if (!user || !selectedCompany || !selectedPeriod) return;
+    if (!user || !selectedCompany || !selectedPeriod) {
+      showError('Fout', 'Geen gebruiker, bedrijf of geselecteerde periode.');
+      return;
+    }
 
+    if (selectedPeriod.status !== 'draft' && selectedPeriod.status !== 'calculated') {
+      showError('Fout', 'Loonberekening kan alleen worden uitgevoerd voor concept- of berekende periodes.');
+      return;
+    }
+
+    setProcessing(true);
     try {
-      setProcessing(true);
-
       const employees = await getEmployees(user.uid, selectedCompany.id);
       const hourlyRates = await getHourlyRates(user.uid, selectedCompany.id);
-      const defaultRate = hourlyRates[0] || {
-        baseRate: 15,
+      const defaultRate = hourlyRates.length > 0 ? hourlyRates : {
+        baseRate: 15, // Default if no rates are set
         overtimeMultiplier: 150,
         eveningMultiplier: 125,
         nightMultiplier: 150,
@@ -111,40 +128,68 @@ export default function PayrollProcessing() {
       let totalGross = 0;
       let totalNet = 0;
       let totalTax = 0;
+      let processedEmployeeCount = 0;
+
+      // Clear previous calculations for this period before recalculating
+      const existingCalculations = await getPayrollCalculations(user.uid, selectedPeriod.id);
+      // In a real app, you might want to delete these or mark them as superseded
+      // For simplicity, we'll just overwrite/recreate
 
       for (const employee of employees) {
-        const timesheets = await getWeeklyTimesheets(user.uid, employee.id);
-        const approvedTimesheets = timesheets.filter(
+        // Fetch timesheets for the specific employee within the payroll period
+        const employeeTimesheets = await getWeeklyTimesheets(user.uid, employee.id);
+        const approvedTimesheetsInPeriod = employeeTimesheets.filter(
           ts => ts.status === 'approved' &&
-          ts.entries[0]?.date >= selectedPeriod.startDate &&
-          ts.entries[0]?.date <= selectedPeriod.endDate
+          ts.entries.some(entry => entry.date >= selectedPeriod.startDate && entry.date <= selectedPeriod.endDate)
         );
 
-        if (approvedTimesheets.length === 0) continue;
+        if (approvedTimesheetsInPeriod.length === 0) {
+          console.log(`No approved timesheets for employee ${employee.id} in period ${selectedPeriod.id}`);
+          continue;
+        }
 
         const calculation = await calculatePayroll(
           employee,
-          approvedTimesheets,
+          approvedTimesheetsInPeriod,
           selectedPeriod.startDate,
           selectedPeriod.endDate,
-          defaultRate as any
+          defaultRate as any // Cast to any if types don't perfectly align
         );
 
         calculation.payrollPeriodId = selectedPeriod.id!;
         calculation.calculatedBy = user.uid;
+        calculation.status = 'calculated';
 
-        await createPayrollCalculation(user.uid, calculation);
-
+        // Check if a calculation already exists for this employee and period
+        const existingCalc = existingCalculations.find(c => c.employeeId === employee.id);
+        if (existingCalc) {
+          // Update existing calculation
+          await updatePayrollPeriod(existingCalc.id!, user.uid, calculation); // Reusing updatePayrollPeriod for calculation update
+        } else {
+          // Create new calculation
+          await createPayrollCalculation(user.uid, calculation);
+        }
+        
         totalGross += calculation.grossPay;
         totalNet += calculation.netPay;
         totalTax += calculation.taxes.incomeTax;
+        processedEmployeeCount++;
       }
 
-      showToast(`Loon berekend voor ${employees.length} werknemers`, 'success');
-      await loadData();
+      // Update the payroll period summary
+      await updatePayrollPeriod(selectedPeriod.id!, user.uid, {
+        employeeCount: processedEmployeeCount,
+        totalGross: totalGross,
+        totalNet: totalNet,
+        totalTax: totalTax,
+        status: 'calculated',
+      });
+
+      success('Loonberekening voltooid', `Loon berekend voor ${processedEmployeeCount} werknemers`);
+      await loadData(); // Reload all data to show updated calculations
     } catch (error) {
       console.error('Error calculating payroll:', error);
-      showToast('Fout bij berekenen loon', 'error');
+      showError('Fout bij berekenen loon', 'Kon loon niet berekenen');
     } finally {
       setProcessing(false);
     }
@@ -155,6 +200,16 @@ export default function PayrollProcessing() {
       <div className="flex justify-center items-center h-64">
         <LoadingSpinner />
       </div>
+    );
+  }
+
+  if (!selectedCompany) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen bedrijf geselecteerd"
+        description="Selecteer een bedrijf om loonverwerking te beheren."
+      />
     );
   }
 
@@ -176,7 +231,7 @@ export default function PayrollProcessing() {
             <FileText className="h-4 w-4 mr-2" />
             Nieuwe periode
           </Button>
-          {selectedPeriod && selectedPeriod.status === 'draft' && (
+          {selectedPeriod && (selectedPeriod.status === 'draft' || selectedPeriod.status === 'calculated') && (
             <Button
               onClick={handleCalculatePayroll}
               disabled={processing}
@@ -197,7 +252,7 @@ export default function PayrollProcessing() {
                 {selectedPeriod?.employeeCount || 0}
               </p>
             </div>
-            <TrendingUp className="h-8 w-8 text-blue-500" />
+            <Users className="h-8 w-8 text-blue-500" />
           </div>
         </Card>
         <Card>
@@ -230,7 +285,7 @@ export default function PayrollProcessing() {
                 €{(selectedPeriod?.totalNet || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
               </p>
             </div>
-            <Download className="h-8 w-8 text-purple-500" />
+            <TrendingUp className="h-8 w-8 text-purple-500" />
           </div>
         </Card>
       </div>
@@ -250,25 +305,25 @@ export default function PayrollProcessing() {
                   onClick={() => setSelectedPeriod(period)}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
                     selectedPeriod?.id === period.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                   }`}
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="font-medium text-gray-900">
+                      <h3 className="font-medium text-gray-900 dark:text-white">
                         {period.startDate.toLocaleDateString('nl-NL')} - {period.endDate.toLocaleDateString('nl-NL')}
                       </h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         Uitbetaling: {period.paymentDate.toLocaleDateString('nl-NL')}
                       </p>
                     </div>
                     <div className="text-right">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        period.status === 'paid' ? 'bg-green-100 text-green-800' :
-                        period.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                        period.status === 'calculated' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
+                        period.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' :
+                        period.status === 'approved' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' :
+                        period.status === 'calculated' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                         {period.status === 'paid' ? 'Betaald' :
                          period.status === 'approved' ? 'Goedgekeurd' :

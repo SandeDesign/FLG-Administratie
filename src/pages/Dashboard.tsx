@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Users, Calculator, Clock, TrendingUp, AlertCircle, Calendar, HeartPulse } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -25,8 +25,8 @@ interface ActivityItem {
 }
 
 const Dashboard: React.FC = () => {
-  const { dashboardStats, refreshDashboardStats, companies, employees, loading } = useApp();
-  const { user } = useAuth();
+  const { dashboardStats, refreshDashboardStats, companies, employees, loading, selectedCompany } = useApp();
+  const { user, userRole } = useAuth();
   const { success, info } = useToast();
   const navigate = useNavigate();
   const [recentActivity] = useState<ActivityItem[]>([
@@ -39,24 +39,24 @@ const Dashboard: React.FC = () => {
   ]);
 
   useEffect(() => {
-    if (user) {
+    if (user && userRole === 'admin') {
       refreshDashboardStats();
     }
-  }, [user, refreshDashboardStats]);
+  }, [user, userRole, refreshDashboardStats]);
 
   const quickActions: QuickAction[] = [
     {
       title: 'Uren Importeren',
       description: 'Haal nieuwe uren op van werkbonnen systeem',
       icon: Clock,
-      action: () => navigate('/hours'),
+      action: () => info('Deze functionaliteit wordt binnenkort toegevoegd.'), // Placeholder for actual navigation
       color: 'text-blue-600 bg-blue-100',
     },
     {
       title: 'Loonberekening',
       description: 'Start loonberekening voor huidige periode',
       icon: Calculator,
-      action: () => navigate('/payroll'),
+      action: () => navigate('/payroll-processing'),
       color: 'text-green-600 bg-green-100',
     },
     {
@@ -86,8 +86,8 @@ const Dashboard: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  // Show empty state if no companies exist
-  if (companies.length === 0) {
+  // Show empty state if no companies exist for admin user
+  if (userRole === 'admin' && companies.length === 0) {
     return (
       <div className="space-y-8">
         <div>
@@ -104,7 +104,7 @@ const Dashboard: React.FC = () => {
           title="Geen bedrijven gevonden"
           description="Maak je eerste bedrijf aan om te beginnen met je loonadministratie"
           actionLabel="Eerste Bedrijf Toevoegen"
-          onAction={() => window.location.href = '/companies'}
+          onAction={() => navigate('/companies')}
         />
       </div>
     );
@@ -198,7 +198,7 @@ const Dashboard: React.FC = () => {
                 Te Goedkeuren
               </p>
               <button 
-                onClick={() => navigate('/admin/leave-approvals')}
+                onClick={() => navigate('/admin/leave-approvals')} // Navigate to a general approvals page or specific one
                 className="text-2xl font-bold text-gray-900 dark:text-white hover:text-blue-600 transition-colors"
               >
                 {dashboardStats.pendingApprovals}
@@ -290,10 +290,10 @@ const Dashboard: React.FC = () => {
                   <Clock className="h-5 w-5 text-orange-600" />
                   <div className="ml-3">
                     <h4 className="text-sm font-medium text-orange-800 dark:text-orange-200">
-                      Uren Goedkeuring Vereist
+                      Goedkeuring Vereist
                     </h4>
                     <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
-                      {dashboardStats.pendingApprovals} urenregistraties wachten op goedkeuring.
+                      {dashboardStats.pendingApprovals} items wachten op goedkeuring.
                     </p>
                   </div>
                 </div>

@@ -23,25 +23,29 @@ import { useAuth } from '../../contexts/AuthContext';
 import { NotificationCenter } from '../notifications/NotificationCenter';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Bedrijven', href: '/companies', icon: Building2 },
-  { name: 'Werknemers', href: '/employees', icon: Users },
-  { name: 'Urenregistratie', href: '/timesheets', icon: Clock },
-  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Calendar },
-  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar },
-  { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse },
-  { name: 'Declaraties', href: '/admin/expenses', icon: Receipt },
-  { name: 'Loonverwerking', href: '/payroll-processing', icon: Calculator },
-  { name: 'Loonstroken', href: '/payslips', icon: FileText },
-  { name: 'Loonaangiftes', href: '/tax-returns', icon: BookOpen },
-  { name: 'Exports', href: '/exports', icon: Download },
-  { name: 'Audit Log', href: '/audit-log', icon: Shield },
-  { name: 'Instellingen', href: '/settings', icon: Settings },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
+  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'] },
+  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'] },
+  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee'] },
+  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Calendar, roles: ['admin'] },
+  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin'] },
+  { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin'] },
+  { name: 'Declaraties', href: '/admin/expenses', icon: Receipt, roles: ['admin'] },
+  { name: 'Loonverwerking', href: '/payroll-processing', icon: Calculator, roles: ['admin'] },
+  { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee'] },
+  { name: 'Loonaangiftes', href: '/tax-returns', icon: BookOpen, roles: ['admin'] },
+  { name: 'Exports', href: '/exports', icon: Download, roles: ['admin'] },
+  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'] },
+  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee'] },
 ];
 
 const Sidebar: React.FC = () => {
   const { darkMode, toggleDarkMode } = useApp();
-  const { user, signOut } = useAuth();
+  const { user, signOut, userRole } = useAuth();
+
+  const filteredNavigation = navigation.filter(item => 
+    item.roles.includes(userRole || '')
+  );
 
   return (
     <div className="flex h-screen w-64 flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
@@ -75,7 +79,7 @@ const Sidebar: React.FC = () => {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navigation.map((item) => (
+        {filteredNavigation.map((item) => (
           <NavLink
             key={item.name}
             to={item.href}

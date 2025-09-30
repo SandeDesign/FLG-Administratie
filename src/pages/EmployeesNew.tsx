@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, CreditCard as Edit, Trash2, User, Mail, Phone } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Users, Plus, CreditCard as Edit, Trash2, User, Mail, Phone, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { Employee } from '../types';
@@ -13,33 +13,36 @@ import { useToast } from '../hooks/useToast';
 
 const EmployeesNew: React.FC = () => {
   const { user } = useAuth();
-  const { companies, selectedCompany } = useApp();
+  const { companies, selectedCompany, refreshDashboardStats } = useApp();
   const { success, error: showError } = useToast();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadEmployees();
+  const loadEmployees = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, [user, selectedCompany]);
-
-  const loadEmployees = async () => {
-    if (!user) return;
 
     try {
       setLoading(true);
+      // Only load employees for the selected company if one is selected
       const employeesData = await getEmployees(user.uid, selectedCompany?.id);
       setEmployees(employeesData);
+      await refreshDashboardStats(); // Refresh dashboard stats after loading employees
     } catch (error) {
       console.error('Error loading employees:', error);
       showError('Fout bij laden', 'Kon werknemers niet laden');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedCompany, showError, refreshDashboardStats]);
+
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
 
   const handleEditEmployee = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -53,7 +56,7 @@ const EmployeesNew: React.FC = () => {
       try {
         await deleteEmployee(employee.id, user.uid);
         success('Werknemer verwijderd', `${employee.personalInfo.firstName} ${employee.personalInfo.lastName} is succesvol verwijderd`);
-        await loadEmployees();
+        await loadEmployees(); // Reload employees after deletion
       } catch (error) {
         console.error('Error deleting employee:', error);
         showError('Fout bij verwijderen', 'Kon werknemer niet verwijderen');
@@ -102,7 +105,7 @@ const EmployeesNew: React.FC = () => {
         <Button onClick={() => {
           setSelectedEmployee(null);
           setIsModalOpen(true);
-        }}>
+        }} disabled={companies.length === 0}>
           <Plus className="h-4 w-4 mr-2" />
           Nieuwe Werknemer
         </Button>
@@ -127,7 +130,7 @@ const EmployeesNew: React.FC = () => {
         <EmptyState
           icon={Users}
           title="Geen werknemers gevonden"
-          description="Voeg je eerste werknemer toe om te beginnen"
+          description={`Voeg je eerste werknemer toe voor ${selectedCompany?.name || 'het geselecteerde bedrijf'}`}
           actionLabel="Eerste Werknemer Toevoegen"
           onAction={() => setIsModalOpen(true)}
         />

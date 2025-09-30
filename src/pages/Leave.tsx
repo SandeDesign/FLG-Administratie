@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Calendar, Plus, Filter } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Calendar, Plus, Filter, Building2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -11,9 +11,11 @@ import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { formatLeaveType } from '../utils/leaveCalculations';
+import { useApp } from '../contexts/AppContext';
 
 const Leave: React.FC = () => {
   const { user, currentEmployeeId } = useAuth();
+  const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -21,28 +23,28 @@ const Leave: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (user && currentEmployeeId) {
-      loadLeaveData();
+  const loadLeaveData = useCallback(async () => {
+    if (!user || !currentEmployeeId || !selectedCompany) {
+      setLoading(false);
+      return;
     }
-  }, [user, currentEmployeeId]);
-
-  const loadLeaveData = async () => {
-    if (!user || !currentEmployeeId) return;
     
     try {
       setLoading(true);
       const currentYear = new Date().getFullYear();
 
-      // Get employee data to find the admin userId
+      // Get employee data to find the admin userId (if different from current user.uid)
+      // In this setup, user.uid is the adminUserId for all data.
       const currentEmployee = await firebaseService.getEmployeeById(currentEmployeeId);
       if (!currentEmployee) {
-        throw new Error('Employee not found');
+        showError('Fout', 'Werknemergegevens niet gevonden.');
+        setLoading(false);
+        return;
       }
 
       const [requests, balance] = await Promise.all([
-        firebaseService.getLeaveRequests(currentEmployee.userId, currentEmployeeId),
-        firebaseService.getLeaveBalance(currentEmployeeId, currentEmployee.userId, currentYear),
+        firebaseService.getLeaveRequests(user.uid, currentEmployeeId), // Use user.uid as adminUserId
+        firebaseService.getLeaveBalance(currentEmployeeId, user.uid, currentYear), // Use user.uid as adminUserId
       ]);
 
       setLeaveRequests(requests);
@@ -53,7 +55,11 @@ const Leave: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, currentEmployeeId, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadLeaveData();
+  }, [loadLeaveData]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -88,6 +94,16 @@ const Leave: React.FC = () => {
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (!currentEmployeeId) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen werknemer geselecteerd"
+        description="Selecteer een werknemer om verlof te beheren."
+      />
+    );
   }
 
   return (
