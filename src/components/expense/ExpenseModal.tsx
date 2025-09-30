@@ -46,16 +46,27 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   const kilometers = watch('kilometers');
 
   useEffect(() => {
+    console.log('ExpenseModal: useEffect called with employeeId:', employeeId, 'employees.length:', employees.length);
+    
+    if (!employeeId || employeeId === '') {
+      console.log('ExpenseModal: No employeeId provided');
+      setCurrentEmployee(null);
+      setEmployeeError('Je werknemersprofiel is niet gekoppeld. Neem contact op met de beheerder.');
+      return;
+    }
+    
     if (employeeId && employees.length > 0) {
       const employee = employees.find(e => e.id === employeeId);
+      console.log('ExpenseModal: Employee found:', !!employee);
       if (employee) {
         setCurrentEmployee(employee);
         setEmployeeError(null);
       } else {
         setCurrentEmployee(null);
-        setEmployeeError('Werknemersgegevens niet gevonden. Probeer de pagina te vernieuwen.');
+        setEmployeeError('Werknemersgegevens niet gevonden in de database. Probeer de pagina te vernieuwen.');
       }
     } else if (employeeId && employees.length === 0) {
+      console.log('ExpenseModal: Employees list is empty, still loading');
       setCurrentEmployee(null);
       setEmployeeError('Werknemersgegevens worden geladen...');
     } else {
@@ -83,6 +94,10 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   }, [expenseType, kilometers, travelRatePerKm, setValue]);
 
   const onSubmit = async (data: ExpenseFormData) => {
+    console.log('ExpenseModal: onSubmit called with data:', data);
+    console.log('ExpenseModal: currentEmployee:', currentEmployee);
+    console.log('ExpenseModal: employeeError:', employeeError);
+    
     if (!user || !employeeId) {
       showError('Geen gebruiker', 'Je moet ingelogd zijn om een declaratie in te dienen');
       return;
@@ -100,6 +115,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
         return;
       }
 
+      console.log('ExpenseModal: Creating expense for employee:', currentEmployee.id);
       await createExpense(user.uid, {
         employeeId,
         companyId: currentEmployee.companyId,
@@ -122,12 +138,13 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
         withinTaxFreeAllowance: data.type === 'travel',
       });
 
+      console.log('ExpenseModal: createExpense successful!');
       success('Declaratie aangemaakt', 'Je declaratie is opgeslagen als concept');
       reset();
       onSuccess();
       onClose();
     } catch (err) {
-      console.error('Error creating expense:', err);
+      console.error('ExpenseModal: Error creating expense:', err);
       showError('Fout bij aanmaken', 'Kon declaratie niet aanmaken');
     } finally {
       setSubmitting(false);
@@ -153,6 +170,22 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
                 </h4>
                 <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                   {currentEmployee.contractInfo.position}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {employeeError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 mr-3" />
+              <div>
+                <h4 className="text-sm font-medium text-red-900 dark:text-red-100">
+                  Fout
+                </h4>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                  {employeeError}
                 </p>
               </div>
             </div>
@@ -253,7 +286,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
           <Button 
             type="submit" 
             loading={submitting}
-            disabled={!currentEmployee || !!employeeError}
+            disabled={submitting || !currentEmployee || !!employeeError}
           >
             Opslaan als Concept
           </Button>

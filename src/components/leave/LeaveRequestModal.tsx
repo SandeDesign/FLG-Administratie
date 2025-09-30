@@ -40,16 +40,27 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
   const endDate = watch('endDate');
 
   useEffect(() => {
+    console.log('LeaveRequestModal: useEffect called with employeeId:', employeeId, 'employees.length:', employees.length);
+    
+    if (!employeeId || employeeId === '') {
+      console.log('LeaveRequestModal: No employeeId provided');
+      setCurrentEmployee(null);
+      setEmployeeError('Je werknemersprofiel is niet gekoppeld. Neem contact op met de beheerder.');
+      return;
+    }
+    
     if (employeeId && employees.length > 0) {
       const employee = employees.find(e => e.id === employeeId);
+      console.log('LeaveRequestModal: Employee found:', !!employee);
       if (employee) {
         setCurrentEmployee(employee);
         setEmployeeError(null);
       } else {
         setCurrentEmployee(null);
-        setEmployeeError('Werknemersgegevens niet gevonden. Probeer de pagina te vernieuwen.');
+        setEmployeeError('Werknemersgegevens niet gevonden in de database. Probeer de pagina te vernieuwen.');
       }
     } else if (employeeId && employees.length === 0) {
+      console.log('LeaveRequestModal: Employees list is empty, still loading');
       setCurrentEmployee(null);
       setEmployeeError('Werknemersgegevens worden geladen...');
     } else {
@@ -100,6 +111,10 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
   };
 
   const onSubmit = async (data: LeaveRequestFormData) => {
+    console.log('LeaveRequestModal: onSubmit called with data:', data);
+    console.log('LeaveRequestModal: currentEmployee:', currentEmployee);
+    console.log('LeaveRequestModal: employeeError:', employeeError);
+    
     if (!user || !employeeId) {
       showError('Geen gebruiker', 'Je moet ingelogd zijn om verlof aan te vragen');
       return;
@@ -125,6 +140,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
         return;
       }
 
+      console.log('LeaveRequestModal: Creating leave request for employee:', currentEmployee.id);
       await createLeaveRequest(user.uid, {
         employeeId,
         companyId: currentEmployee.companyId,
@@ -137,12 +153,13 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
         status: 'pending',
       });
 
+      console.log('LeaveRequestModal: createLeaveRequest successful!');
       success('Verlof aangevraagd', `Je aanvraag voor ${calculatedDays} dagen is ingediend`);
       reset();
       onSuccess();
       onClose();
     } catch (err) {
-      console.error('Error creating leave request:', err);
+      console.error('LeaveRequestModal: Error creating leave request:', err);
       showError('Fout bij aanvragen', 'Kon verlofaanvraag niet aanmaken');
     } finally {
       setSubmitting(false);
@@ -169,6 +186,22 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
                 </h4>
                 <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                   {currentEmployee.contractInfo.position}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {employeeError && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 mr-3" />
+              <div>
+                <h4 className="text-sm font-medium text-red-900 dark:text-red-100">
+                  Fout
+                </h4>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                  {employeeError}
                 </p>
               </div>
             </div>
@@ -274,7 +307,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
           <Button 
             type="submit" 
             loading={submitting}
-            disabled={!currentEmployee || !!employeeError}
+            disabled={submitting || !currentEmployee || !!employeeError}
           >
             Aanvragen
           </Button>
