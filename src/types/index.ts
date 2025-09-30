@@ -201,6 +201,10 @@ export interface Employee {
   
   status: 'active' | 'inactive' | 'on_leave' | 'sick';
   
+  // Account informatie
+  hasAccount: boolean; // Of werknemer een gebruikersaccount heeft
+  accountCreatedAt?: Date; // Wanneer account is aangemaakt
+  
   createdAt: Date;
   updatedAt: Date;
   

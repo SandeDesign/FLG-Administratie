@@ -12,6 +12,8 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 import { Company, Branch, Employee, TimeEntry } from '../types';
 
 // Helper function to convert Firestore timestamps to Date objects
