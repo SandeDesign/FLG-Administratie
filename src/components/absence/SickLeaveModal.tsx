@@ -89,6 +89,8 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
   const handleClose = () => {
     reset();
     onClose();
+  };
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Ziek Melden" size="md">
