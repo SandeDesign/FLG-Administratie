@@ -89,8 +89,13 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
   };
 
   const onSubmit = async (data: LeaveRequestFormData) => {
-    if (!employeeId) {
-      showError('Geen werknemer', 'Werknemer ID ontbreekt');
+    if (!employeeId || !currentEmployee) {
+      showError('Geen werknemer', 'Werknemergegevens ontbreken');
+      return;
+    }
+
+    if (!currentEmployee.companyId) {
+      showError('Geen bedrijf', 'Werknemer is niet gekoppeld aan een bedrijf');
       return;
     }
 
@@ -107,15 +112,11 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
       }
     }
 
-    const company = currentEmployee ? companies.find(c => c.id === currentEmployee.companyId) : null;
-    const companyId = company?.id || 'default-company';
-
-    // Skip employee validation - allow submission even without employee data
     setSubmitting(true);
     try {
       await createLeaveRequest({
         employeeId,
-        companyId,
+        companyId: currentEmployee.companyId,
         type: data.type,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
