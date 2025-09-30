@@ -54,13 +54,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user) return;
     
     try {
-      setLoading(true);
       const data = await getCompanies(user.uid);
       setCompanies(data);
     } catch (error) {
       console.error('Error fetching companies:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -29,7 +29,6 @@ interface CompanyFormData {
   standardWorkWeek: number;
   holidayAllowancePercentage: number;
   pensionContributionPercentage: number;
-  mainBranchId?: string;
   // Eerste vestiging (alleen bij nieuw bedrijf)
   branchName?: string;
   branchLocation?: string;
@@ -64,7 +63,6 @@ const Companies: React.FC = () => {
       setValue('standardWorkWeek', company.settings.standardWorkWeek);
       setValue('holidayAllowancePercentage', company.settings.holidayAllowancePercentage);
       setValue('pensionContributionPercentage', company.settings.pensionContributionPercentage);
-      setValue('mainBranchId', company.mainBranchId || '');
     } else {
       setEditingCompany(null);
       reset();
@@ -115,11 +113,7 @@ const Companies: React.FC = () => {
 
       if (editingCompany) {
         // Update existing company
-        const updateData = {
-          ...companyData,
-          mainBranchId: data.mainBranchId || undefined,
-        };
-        await updateCompany(editingCompany.id, user.uid, updateData);
+        await updateCompany(editingCompany.id, user.uid, companyData);
         success('Bedrijf bijgewerkt', `${data.name} is succesvol bijgewerkt`);
       } else {
         // Create new company with initial branch
@@ -456,29 +450,6 @@ const Companies: React.FC = () => {
                 error={errors.pensionContributionPercentage?.message}
               />
             </div>
-            
-            {/* Main Branch Selection - only show when editing existing company with branches */}
-            {editingCompany && companyBranches.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Hoofd Vestiging
-                </label>
-                <select
-                  {...register('mainBranchId')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                >
-                  <option value="">Geen hoofd vestiging</option>
-                  {companyBranches.map(branch => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name} - {branch.location}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Optioneel: Selecteer de hoofd vestiging voor dit bedrijf
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Actions */}
