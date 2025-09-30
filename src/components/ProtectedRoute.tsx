@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from './ui/LoadingSpinner';
 
@@ -8,6 +9,7 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, userRole, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -18,18 +20,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    window.location.replace('/login');
-    return null;
+    return <Navigate to="/login" replace />;
   }
   
   // Redirect employees to their dashboard
   if (userRole === 'employee') {
-    useEffect(() => {
-      if (window.location.pathname !== '/employee-dashboard') {
-        window.location.replace('/employee-dashboard');
-      }
-    }, []);
-    return null;
+    if (location.pathname !== '/employee-dashboard') {
+      return <Navigate to="/employee-dashboard" replace />;
+    }
   }
 
   return <>{children}</>;
