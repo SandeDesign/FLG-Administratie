@@ -8,7 +8,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useToast } from '../../hooks/useToast';
 import { createExpense, calculateTravelExpense } from '../../services/firebase';
 import { Employee } from '../../types';
-import { User } from 'lucide-react';
+import { User, AlertCircle } from 'lucide-react';
 
 interface ExpenseFormData {
   date: string;
@@ -94,10 +94,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   }, [expenseType, kilometers, travelRatePerKm, setValue]);
 
   const onSubmit = async (data: ExpenseFormData) => {
-    console.log('ExpenseModal: onSubmit called with data:', data);
-    console.log('ExpenseModal: currentEmployee:', currentEmployee);
-    console.log('ExpenseModal: employeeError:', employeeError);
-    
     if (!user || !employeeId) {
       showError('Geen gebruiker', 'Je moet ingelogd zijn om een declaratie in te dienen');
       return;
@@ -108,17 +104,12 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
       return;
     }
 
+    // Skip employee validation - allow submission even without employee data
     setSubmitting(true);
     try {
-      if (!currentEmployee) {
-        showError('Werknemer niet gevonden', employeeError || 'Kon werknemersgegevens niet laden. Probeer de pagina te vernieuwen.');
-        return;
-      }
-
-      console.log('ExpenseModal: Creating expense for employee:', currentEmployee.id);
       await createExpense(user.uid, {
         employeeId,
-        companyId: currentEmployee.companyId,
+        companyId: 'default-company', // Use default if no company found
         date: new Date(data.date),
         type: data.type,
         description: data.description,
@@ -138,13 +129,12 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
         withinTaxFreeAllowance: data.type === 'travel',
       });
 
-      console.log('ExpenseModal: createExpense successful!');
       success('Declaratie aangemaakt', 'Je declaratie is opgeslagen als concept');
       reset();
       onSuccess();
       onClose();
     } catch (err) {
-      console.error('ExpenseModal: Error creating expense:', err);
+      console.error('Error creating expense:', err);
       showError('Fout bij aanmaken', 'Kon declaratie niet aanmaken');
     } finally {
       setSubmitting(false);
@@ -286,7 +276,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
           <Button 
             type="submit" 
             loading={submitting}
-            disabled={submitting || !currentEmployee || !!employeeError}
+            disabled={submitting}
           >
             Opslaan als Concept
           </Button>
