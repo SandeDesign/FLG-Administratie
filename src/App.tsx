@@ -100,88 +100,88 @@ const EmployeeHours = () => (
   </div>
 );
 
-const AppContent: React.FC = () => {
-  const { user, userRole, loading } = useAuth();
+function App() {
+  const AppContent: React.FC = () => {
+    const { user, userRole, loading } = useAuth();
 
-  if (loading) {
+    if (loading) {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      );
+    }
+
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      
-      {/* Protected routes */}
-      <Route
-        path="/*"
-        element={
-          <ProtectedRoute>
-            <Routes>
-              {userRole === 'admin' && (
-                <Route
-                  path="/*"
-                  element={
-                    <Layout>
-                      <Routes>
-                        <Route index element={<Dashboard />} />
-                        <Route path="companies" element={<Companies />} />
-                        <Route path="employees" element={<EmployeesNew />} />
-                        <Route path="admin/leave-approvals" element={<AdminLeaveApprovals />} />
-                        <Route path="admin/absence-management" element={<AdminAbsenceManagement />} />
-                        <Route path="hours" element={<Hours />} />
-                        <Route path="payroll" element={<Payroll />} />
-                        <Route path="payslips" element={<Payslips />} />
-                        <Route path="regulations" element={<Regulations />} />
-                        <Route path="export" element={<Export />} />
-                        <Route path="settings" element={<Settings />} />
-                        <Route path="employee-dashboard/*" element={<Navigate to="/" replace />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </Layout>
-                  }
-                />
-              )}
-              
-              {userRole === 'employee' && (
-                <>
-                  <Route path="/" element={<Navigate to="/employee-dashboard" replace />} />
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        
+        {/* Protected routes */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <Routes>
+                {userRole === 'admin' && (
                   <Route
-                    path="/employee-dashboard/*"
+                    path="/*"
                     element={
-                      <EmployeeLayout>
+                      <Layout>
                         <Routes>
-                          <Route index element={<EmployeeDashboard />} />
-                          <Route path="leave" element={<Leave />} />
-                          <Route path="absence" element={<Absence />} />
-                          <Route path="expenses" element={<Expenses />} />
-                          <Route path="hours" element={<EmployeeHours />} />
+                          <Route index element={<Dashboard />} />
+                          <Route path="companies" element={<Companies />} />
+                          <Route path="employees" element={<EmployeesNew />} />
+                          <Route path="admin/leave-approvals" element={<AdminLeaveApprovals />} />
+                          <Route path="admin/absence-management" element={<AdminAbsenceManagement />} />
+                          <Route path="hours" element={<Hours />} />
+                          <Route path="payroll" element={<Payroll />} />
+                          <Route path="payslips" element={<Payslips />} />
+                          <Route path="regulations" element={<Regulations />} />
+                          <Route path="export" element={<Export />} />
+                          <Route path="settings" element={<Settings />} />
+                          <Route path="employee-dashboard/*" element={<Navigate to="/" replace />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
-                      </EmployeeLayout>
+                      </Layout>
                     }
                   />
-                </>
-              )}
-              
-              {!userRole && (
-                <Route path="*" element={<LoadingSpinner />} />
-              )}
-            </Routes>
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
-  );
-};
+                )}
+                
+                {userRole === 'employee' && (
+                  <>
+                    <Route path="/" element={<Navigate to="/employee-dashboard" replace />} />
+                    <Route
+                      path="/employee-dashboard/*"
+                      element={
+                        <EmployeeLayout>
+                          <Routes>
+                            <Route index element={<EmployeeDashboard />} />
+                            <Route path="leave" element={<Leave />} />
+                            <Route path="absence" element={<Absence />} />
+                            <Route path="expenses" element={<Expenses />} />
+                            <Route path="hours" element={<EmployeeHours />} />
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </EmployeeLayout>
+                      }
+                    />
+                  </>
+                )}
+                
+                {!userRole && (
+                  <Route path="*" element={<LoadingSpinner />} />
+                )}
+              </Routes>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    );
+  };
 
-function App() {
   return (
     <AuthProvider>
       <AppProvider>
