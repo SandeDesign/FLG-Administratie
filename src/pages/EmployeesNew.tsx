@@ -1,326 +1,210 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Filter, Download, Search, Calendar } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, User, Mail, Phone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { AuditAction, AuditEntityType } from '../types';
+import { useApp } from '../contexts/AppContext';
+import { Employee } from '../types';
+import { getEmployees, deleteEmployee } from '../services/firebase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { EmptyState } from '../components/ui/EmptyState';
+import EmployeeModal from '../components/employee/EmployeeModal';
 import { useToast } from '../hooks/useToast';
 
-interface AuditLog {
-  id: string;
-  user_id: string;
-  action: AuditAction;
-  entity_type: AuditEntityType;
-  entity_id: string;
-  metadata?: any;
-  created_at: string;
-}
-
-const AuditLogPage: React.FC = () => {
+const EmployeesNew: React.FC = () => {
   const { user } = useAuth();
-  const { error: showError } = useToast();
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const { companies, selectedCompany } = useApp();
+  const { success, error: showError } = useToast();
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<{
-    entityType?: AuditEntityType;
-    action?: AuditAction;
-    startDate?: Date;
-    endDate?: Date;
-  }>({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
-      showError('Export niet beschikbaar', 'Export functionaliteit wordt nog geïmplementeerd');
     if (user) {
-      loadAuditLogs();
+      loadEmployees();
     }
-  }, [user, filters]);
+  }, [user, selectedCompany]);
 
-  const loadAuditLogs = async () => {
+  const loadEmployees = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
-      const logs = await AuditService.getAuditLogs(user.uid, {
-        ...filters,
-        limit: 100,
-      });
-      setAuditLogs(logs);
+      const employeesData = await getEmployees(user.uid, selectedCompany?.id);
+      setEmployees(employeesData);
     } catch (error) {
-      console.error('Error loading audit logs:', error);
-      showToast('Fout bij laden audit logs', 'error');
+      console.error('Error loading employees:', error);
+      showError('Fout bij laden', 'Kon werknemers niet laden');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleExport = async () => {
+  const handleEditEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteEmployee = async (employee: Employee) => {
     if (!user) return;
 
-    try {
-      const exportId = await AuditService.exportAuditLogs(user.uid, '', 'excel', filters);
-      showToast('Export gestart. U ontvangt binnenkort een download link.', 'success');
-    } catch (error) {
-      console.error('Error exporting audit logs:', error);
-      showError('Fout bij exporteren audit logs', 'Kon export niet starten');
+    if (window.confirm(`Weet je zeker dat je ${employee.personalInfo.firstName} ${employee.personalInfo.lastName} wilt verwijderen?`)) {
+      try {
+        await deleteEmployee(employee.id, user.uid);
+        success('Werknemer verwijderd', `${employee.personalInfo.firstName} ${employee.personalInfo.lastName} is succesvol verwijderd`);
+        await loadEmployees();
+      } catch (error) {
+        console.error('Error deleting employee:', error);
+        showError('Fout bij verwijderen', 'Kon werknemer niet verwijderen');
+      }
     }
   };
 
-  const getActionLabel = (action: AuditAction): string => {
-    const labels: Record<AuditAction, string> = {
-      create: 'Aangemaakt',
-      update: 'Bijgewerkt',
-      delete: 'Verwijderd',
-      view: 'Bekeken',
-      export: 'Geëxporteerd',
-      submit: 'Ingediend',
-      approve: 'Goedgekeurd',
-      reject: 'Afgewezen',
-    };
-    return labels[action];
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+      case 'inactive':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      case 'on_leave':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+      case 'sick':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    }
   };
 
-  const getEntityTypeLabel = (entityType: AuditEntityType): string => {
-    const labels: Record<AuditEntityType, string> = {
-      employee: 'Werknemer',
-      company: 'Bedrijf',
-      branch: 'Vestiging',
-      payroll: 'Loonverwerking',
-      tax_return: 'Loonaangifte',
-      leave_request: 'Verlofaanvraag',
-      sick_leave: 'Ziekteverlof',
-      expense: 'Declaratie',
-      time_entry: 'Ureninvoer',
-      settings: 'Instellingen',
-      user: 'Gebruiker',
+  const getStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      active: 'Actief',
+      inactive: 'Inactief',
+      on_leave: 'Met verlof',
+      sick: 'Ziek',
     };
-    return labels[entityType];
+    return statusMap[status] || status;
   };
 
-  const getSeverityColor = (severity: AuditLog['severity']): string => {
-    const colors: Record<AuditLog['severity'], string> = {
-      info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-      warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
-      critical: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
-    };
-    return colors[severity];
-  };
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Audit Log</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Bekijk alle acties die zijn uitgevoerd in het systeem
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Werknemers</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Beheer je werknemers en hun gegevens
           </p>
         </div>
-        <Button variant="outline" onClick={handleExport}>
-          <Download className="h-5 w-5 mr-2" />
-          Exporteren
+        <Button onClick={() => {
+          setSelectedEmployee(null);
+          setIsModalOpen(true);
+        }}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nieuwe Werknemer
         </Button>
       </div>
 
-      <Card>
-        <div className="p-6">
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Filter className="h-4 w-4 inline mr-2" />
-                Type entiteit
-              </label>
-              <select
-                value={filters.entityType || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    entityType: e.target.value ? (e.target.value as AuditEntityType) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              >
-                <option value="">Alle types</option>
-                <option value="employee">Werknemer</option>
-                <option value="company">Bedrijf</option>
-                <option value="payroll">Loonverwerking</option>
-                <option value="tax_return">Loonaangifte</option>
-                <option value="leave_request">Verlofaanvraag</option>
-                <option value="expense">Declaratie</option>
-              </select>
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Actie
-              </label>
-              <select
-                value={filters.action || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    action: e.target.value ? (e.target.value as AuditAction) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              >
-                <option value="">Alle acties</option>
-                <option value="create">Aangemaakt</option>
-                <option value="update">Bijgewerkt</option>
-                <option value="delete">Verwijderd</option>
-                <option value="approve">Goedgekeurd</option>
-                <option value="reject">Afgewezen</option>
-              </select>
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Calendar className="h-4 w-4 inline mr-2" />
-                Start datum
-              </label>
-              <input
-                type="date"
-                value={filters.startDate?.toISOString().split('T')[0] || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    startDate: e.target.value ? new Date(e.target.value) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              />
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Eind datum
-              </label>
-              <input
-                type="date"
-                value={filters.endDate?.toISOString().split('T')[0] || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    endDate: e.target.value ? new Date(e.target.value) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              />
-            </div>
+      {companies.length === 0 ? (
+        <Card className="p-8">
+          <div className="text-center">
+            <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Geen bedrijven gevonden
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Je moet eerst een bedrijf aanmaken voordat je werknemers kunt toevoegen.
+            </p>
+            <Button onClick={() => window.location.href = '/companies'}>
+              Bedrijf Toevoegen
+            </Button>
           </div>
+        </Card>
+      ) : employees.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Geen werknemers gevonden"
+          description="Voeg je eerste werknemer toe om te beginnen"
+          actionLabel="Eerste Werknemer Toevoegen"
+          onAction={() => setIsModalOpen(true)}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {employees.map((employee) => (
+            <Card key={employee.id} className="p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                    <User className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {employee.personalInfo.firstName} {employee.personalInfo.lastName}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {employee.contractInfo.position}
+                    </p>
+                  </div>
+                </div>
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(employee.status)}`}>
+                  {getStatusText(employee.status)}
+                </span>
+              </div>
 
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner />
-            </div>
-          ) : auditLogs.length === 0 ? (
-            <div className="text-center py-12">
-              <Shield className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">
-                Geen audit logs gevonden voor de geselecteerde filters
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead>
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Datum/Tijd
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Gebruiker
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actie
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Entiteit ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Ernst
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {auditLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {log.createdAt.toLocaleString('nl-NL')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {log.performedBy.name || log.performedBy.email}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {log.performedBy.role}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {getActionLabel(log.action)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {getEntityTypeLabel(log.entityType)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
-                        {log.entityId.substring(0, 8)}...
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(
-                            log.severity
-                          )}`}
-                        >
-                          {log.severity}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </Card>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                  <Mail className="h-4 w-4" />
+                  <span>{employee.personalInfo.contactInfo.email}</span>
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                  <Phone className="h-4 w-4" />
+                  <span>{employee.personalInfo.contactInfo.phone}</span>
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">Contract:</span> {employee.contractInfo.type}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">Uren/week:</span> {employee.contractInfo.hoursPerWeek}
+                </div>
+              </div>
 
-      <Card>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Statistieken
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Totaal acties
-              </p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                {auditLogs.length}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Kritieke acties
-              </p>
-              <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
-                {auditLogs.filter((log) => log.severity === 'critical').length}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Unieke gebruikers
-              </p>
-              <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {new Set(auditLogs.map((log) => log.performedBy.uid)).size}
-              </p>
-            </div>
-          </div>
+              <div className="flex space-x-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleEditEmployee(employee)}
+                  className="flex-1"
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Bewerken
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  onClick={() => handleDeleteEmployee(employee)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))}
         </div>
-      </Card>
+      )}
+
+      <EmployeeModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedEmployee(null);
+        }}
+        onSuccess={loadEmployees}
+        employee={selectedEmployee}
+      />
     </div>
   );
 };
 
-export default AuditLogPage;
+export default EmployeesNew;

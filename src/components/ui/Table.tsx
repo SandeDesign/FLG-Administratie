@@ -32,7 +32,7 @@ const AuditLogPage: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-              {columns.map((column, colIndex) => (
+      loadAuditLogs();
     }
   }, [user, filters]);
 
@@ -305,7 +305,7 @@ const AuditLogPage: React.FC = () => {
               </p>
               <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
                 {auditLogs.filter((log) => log.severity === 'critical').length}
-                  key={`${rowKey}-${colIndex}-${String(column.key)}`}
+              </p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">

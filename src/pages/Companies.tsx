@@ -1,337 +1,257 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Filter, Download, Search, Calendar } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, MapPin, Phone, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { AuditAction, AuditEntityType } from '../types';
+import { Company, Branch } from '../types';
+import { getCompanies, createCompany, updateCompany, deleteCompany, getBranches } from '../services/firebase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { EmptyState } from '../components/ui/EmptyState';
+import CompanyModal from '../components/company/CompanyModal';
+import BranchModal from '../components/company/BranchModal';
 import { useToast } from '../hooks/useToast';
 
-interface AuditLog {
-  id: string;
-  user_id: string;
-  action: AuditAction;
-  entity_type: AuditEntityType;
-  entity_id: string;
-  metadata?: any;
-  created_at: string;
-}
-
-interface AuditLog {
-  id: string;
-  user_id: string;
-  action: AuditAction;
-  entity_type: AuditEntityType;
-  entity_id: string;
-  metadata?: any;
-  created_at: string;
-}
-
-const AuditLogPage: React.FC = () => {
+const Companies: React.FC = () => {
   const { user } = useAuth();
-  const { error: showError } = useToast();
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const { success, error: showError } = useToast();
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<{
-    entityType?: AuditEntityType;
-    action?: AuditAction;
-    startDate?: Date;
-    endDate?: Date;
-  }>({});
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedBranch, setBranch] = useState<Branch | null>(null);
 
   useEffect(() => {
-            {company.contactInfo.email}
-      showError('Export niet beschikbaar', 'Export functionaliteit wordt nog geïmplementeerd');
     if (user) {
-      loadAuditLogs();
+      loadData();
     }
-  }, [user, filters]);
+  }, [user]);
 
-  const loadAuditLogs = async () => {
+  const loadData = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
-      const logs = await AuditService.getAuditLogs(user.uid, {
-        ...filters,
-        limit: 100,
-      });
-      setAuditLogs(logs);
+      const [companiesData, branchesData] = await Promise.all([
+        getCompanies(user.uid),
+        getBranches(user.uid)
+      ]);
+      setCompanies(companiesData);
+      setBranches(branchesData);
     } catch (error) {
-      console.error('Error loading audit logs:', error);
-      showToast('Fout bij laden audit logs', 'error');
+      console.error('Error loading data:', error);
+      showError('Fout bij laden', 'Kon bedrijfsgegevens niet laden');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleExport = async () => {
+  const handleEditCompany = (company: Company) => {
+    setSelectedCompany(company);
+    setIsCompanyModalOpen(true);
+  };
+
+  const handleDeleteCompany = async (company: Company) => {
     if (!user) return;
 
-    try {
-      const exportId = await AuditService.exportAuditLogs(user.uid, '', 'excel', filters);
-      showToast('Export gestart. U ontvangt binnenkort een download link.', 'success');
-    } catch (error) {
-      console.error('Error exporting audit logs:', error);
-      showError('Fout bij exporteren audit logs', 'Kon export niet starten');
+    if (window.confirm(`Weet je zeker dat je ${company.name} wilt verwijderen?`)) {
+      try {
+        await deleteCompany(company.id, user.uid);
+        success('Bedrijf verwijderd', `${company.name} is succesvol verwijderd`);
+        await loadData();
+      } catch (error) {
+        console.error('Error deleting company:', error);
+        showError('Fout bij verwijderen', 'Kon bedrijf niet verwijderen');
+      }
     }
   };
 
-  const getActionLabel = (action: AuditAction): string => {
-    const labels: Record<AuditAction, string> = {
-      create: 'Aangemaakt',
-      update: 'Bijgewerkt',
-      delete: 'Verwijderd',
-      view: 'Bekeken',
-      export: 'Geëxporteerd',
-      submit: 'Ingediend',
-      approve: 'Goedgekeurd',
-      reject: 'Afgewezen',
-    };
-    return labels[action];
+  const handleAddBranch = (company: Company) => {
+    setSelectedCompany(company);
+    setBranch(null);
+    setIsBranchModalOpen(true);
   };
 
-  const getEntityTypeLabel = (entityType: AuditEntityType): string => {
-    const labels: Record<AuditEntityType, string> = {
-      employee: 'Werknemer',
-      company: 'Bedrijf',
-      branch: 'Vestiging',
-      payroll: 'Loonverwerking',
-      tax_return: 'Loonaangifte',
-      leave_request: 'Verlofaanvraag',
-      sick_leave: 'Ziekteverlof',
-      expense: 'Declaratie',
-      time_entry: 'Ureninvoer',
-      settings: 'Instellingen',
-      user: 'Gebruiker',
-    };
-    return labels[entityType];
+  const handleEditBranch = (branch: Branch) => {
+    const company = companies.find(c => c.id === branch.companyId);
+    setSelectedCompany(company || null);
+    setBranch(branch);
+    setIsBranchModalOpen(true);
   };
 
-  const getSeverityColor = (severity: AuditLog['severity']): string => {
-    const colors: Record<AuditLog['severity'], string> = {
-      info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-      warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
-      critical: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
-    };
-    return colors[severity];
+  const getCompanyBranches = (companyId: string) => {
+    return branches.filter(branch => branch.companyId === companyId);
   };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Audit Log</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Bekijk alle acties die zijn uitgevoerd in het systeem
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bedrijven</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Beheer je bedrijven en vestigingen
           </p>
         </div>
-        <Button variant="outline" onClick={handleExport}>
-          <Download className="h-5 w-5 mr-2" />
-          Exporteren
+        <Button onClick={() => {
+          setSelectedCompany(null);
+          setIsCompanyModalOpen(true);
+        }}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nieuw Bedrijf
         </Button>
       </div>
 
-      <Card>
-        <div className="p-6">
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Filter className="h-4 w-4 inline mr-2" />
-                Type entiteit
-              </label>
-              <select
-                value={filters.entityType || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    entityType: e.target.value ? (e.target.value as AuditEntityType) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              >
-                <option value="">Alle types</option>
-                <option value="employee">Werknemer</option>
-                <option value="company">Bedrijf</option>
-                <option value="payroll">Loonverwerking</option>
-                <option value="tax_return">Loonaangifte</option>
-                <option value="leave_request">Verlofaanvraag</option>
-                <option value="expense">Declaratie</option>
-              </select>
-            </div>
+      {companies.length === 0 ? (
+        <EmptyState
+          icon={Building2}
+          title="Geen bedrijven gevonden"
+          description="Voeg je eerste bedrijf toe om te beginnen"
+          actionLabel="Eerste Bedrijf Toevoegen"
+          onAction={() => setIsCompanyModalOpen(true)}
+        />
+      ) : (
+        <div className="space-y-6">
+          {companies.map((company) => {
+            const companyBranches = getCompanyBranches(company.id);
+            
+            return (
+              <Card key={company.id} className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                      <Building2 className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        {company.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        KvK: {company.kvk} | BTW: {company.taxNumber}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEditCompany(company)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Bewerken
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteCompany(company)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Verwijderen
+                    </Button>
+                  </div>
+                </div>
 
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Actie
-              </label>
-              <select
-                value={filters.action || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    action: e.target.value ? (e.target.value as AuditAction) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              >
-                <option value="">Alle acties</option>
-                <option value="create">Aangemaakt</option>
-                <option value="update">Bijgewerkt</option>
-                <option value="delete">Verwijderd</option>
-                <option value="approve">Goedgekeurd</option>
-                <option value="reject">Afgewezen</option>
-              </select>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    <MapPin className="h-4 w-4" />
+                    <span>
+                      {company.address.street}, {company.address.zipCode} {company.address.city}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Mail className="h-4 w-4" />
+                    <span>{company.contactInfo.email}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Phone className="h-4 w-4" />
+                    <span>{company.contactInfo.phone}</span>
+                  </div>
+                </div>
 
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Calendar className="h-4 w-4 inline mr-2" />
-                Start datum
-              </label>
-              <input
-                type="date"
-                value={filters.startDate?.toISOString().split('T')[0] || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    startDate: e.target.value ? new Date(e.target.value) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              />
-            </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Vestigingen ({companyBranches.length})
+                    </h4>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleAddBranch(company)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Vestiging Toevoegen
+                    </Button>
+                  </div>
 
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Eind datum
-              </label>
-              <input
-                type="date"
-                value={filters.endDate?.toISOString().split('T')[0] || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    endDate: e.target.value ? new Date(e.target.value) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner />
-            </div>
-          ) : auditLogs.length === 0 ? (
-            <div className="text-center py-12">
-              <Shield className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">
-                Geen audit logs gevonden voor de geselecteerde filters
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead>
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Datum/Tijd
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Gebruiker
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actie
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Entiteit ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Ernst
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {auditLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {log.createdAt.toLocaleString('nl-NL')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {log.performedBy.name || log.performedBy.email}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {log.performedBy.role}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {getActionLabel(log.action)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {getEntityTypeLabel(log.entityType)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
-                        {log.entityId.substring(0, 8)}...
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(
-                            log.severity
-                          )}`}
+                  {companyBranches.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                      Nog geen vestigingen toegevoegd
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {companyBranches.map((branch) => (
+                        <div
+                          key={branch.id}
+                          className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                         >
-                          {log.severity}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h5 className="font-medium text-gray-900 dark:text-white">
+                                {branch.name}
+                              </h5>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {branch.location}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-500">
+                                Kostenplaats: {branch.costCenter}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditBranch(branch)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
-      </Card>
+      )}
 
-      <Card>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Statistieken
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Totaal acties
-              </p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                {auditLogs.length}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Kritieke acties
-              </p>
-              <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
-                {auditLogs.filter((log) => log.severity === 'critical').length}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Unieke gebruikers
-              </p>
-              <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {new Set(auditLogs.map((log) => log.performedBy.uid)).size}
-              </p>
-            {company.contactInfo.phone}
-          </div>
-        </div>
-      </Card>
+      <CompanyModal
+        isOpen={isCompanyModalOpen}
+        onClose={() => {
+          setIsCompanyModalOpen(false);
+          setSelectedCompany(null);
+        }}
+        onSuccess={loadData}
+        company={selectedCompany}
+      />
+
+      <BranchModal
+        isOpen={isBranchModalOpen}
+        onClose={() => {
+          setIsBranchModalOpen(false);
+          setSelectedCompany(null);
+          setBranch(null);
+        }}
+        onSuccess={loadData}
+        company={selectedCompany}
+        branch={selectedBranch}
+      />
     </div>
   );
 };
 
-export default AuditLogPage;
+export default Companies;
