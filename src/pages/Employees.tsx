@@ -530,14 +530,22 @@ const Employees: React.FC = () => {
         },
         leaveInfo: {
           holidayDays: {
-            statutory: data.statutoryHolidayDays,
-            extraStatutory: data.extraStatutoryHolidayDays,
-            accumulated: data.statutoryHolidayDays + data.extraStatutoryHolidayDays,
-            taken: 0,
-          deductions: data.deductions ? (Array.isArray(data.deductions) ? data.deductions : []) : [],
-            expiryDate: data.holidayExpiryDate ? new Date(data.holidayExpiryDate) : new Date(new Date().getFullYear() + 5, 11, 31),
-          companyCarBenefit: (data.companyCarCatalogValue && data.companyCarCo2Emission) ? {
+            remaining: data.statutoryHolidayDays + data.extraStatutoryHolidayDays,
+            expiryDate: new Date(new Date().getFullYear() + 5, 11, 31) // 5 years from now
+          },
           advDays: (data.advDaysAccumulated !== undefined && data.advDaysAccumulated !== null) ? {
+            accumulated: data.advDaysAccumulated,
+            taken: data.advDaysTaken || 0,
+            remaining: (data.advDaysAccumulated || 0) - (data.advDaysTaken || 0)
+          } : undefined
+        },
+        },
+        
+        // Add deductions to salaryInfo where it belongs
+        salaryInfo: {
+          ...employeeData.salaryInfo,
+          deductions: data.deductions ? (Array.isArray(data.deductions) ? data.deductions : []) : [],
+          companyCarBenefit: (data.companyCarCatalogValue && data.companyCarCo2Emission) ? {
             accumulated: data.advDays,
             taken: 0,
             remaining: data.advDays,
