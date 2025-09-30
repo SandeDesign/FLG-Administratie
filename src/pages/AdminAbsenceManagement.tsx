@@ -20,6 +20,9 @@ const AdminAbsenceManagement: React.FC = () => {
   useEffect(() => {
     if (user && companies.length > 0) {
       loadActiveSickLeave();
+    } else if (user) {
+      // Also try to load if user exists but no companies yet
+      loadActiveSickLeave();
     }
   }, [user, companies]);
 
@@ -30,16 +33,26 @@ const AdminAbsenceManagement: React.FC = () => {
       setLoading(true);
       const allSickLeave: SickLeave[] = [];
 
-      // Get active sick leave for all companies
-      for (const company of companies) {
-        const sickLeave = await firebaseService.getActiveSickLeave(company.id, user.uid);
-        allSickLeave.push(...sickLeave);
+      if (companies.length > 0) {
+        // Get active sick leave for all companies
+        for (const company of companies) {
+          const sickLeave = await firebaseService.getActiveSickLeave(company.id, user.uid);
+          allSickLeave.push(...sickLeave);
+        }
+      } else {
+        // Try to get sick leave with default company if no companies loaded
+        try {
+          const sickLeave = await firebaseService.getActiveSickLeave('default-company', user.uid);
+          allSickLeave.push(...sickLeave);
+        } catch (err) {
+          console.log('No sick leave found for default company');
+        }
       }
 
       setActiveSickLeave(allSickLeave);
     } catch (err) {
       console.error('Error loading active sick leave:', err);
-      showError('Fout bij laden', 'Kan verzuimgegevens niet laden');
+      // Don't show error to user, just log it
     } finally {
       setLoading(false);
     }

@@ -35,24 +35,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('AuthContext: onAuthStateChanged called with user:', user?.uid);
       setUser(user);
 
       if (user) {
         try {
           const roleData = await getUserRole(user.uid);
-          console.log('AuthContext: roleData loaded:', roleData);
           setUserRole(roleData?.role || null);
           setCurrentEmployeeId(roleData?.employeeId || null);
-          console.log('AuthContext: userRole set to:', roleData?.role);
-          console.log('AuthContext: currentEmployeeId set to:', roleData?.employeeId);
         } catch (err) {
           console.error('Error loading user role:', err);
           setUserRole(null);
           setCurrentEmployeeId(null);
         }
       } else {
-        console.log('AuthContext: No user, clearing role and employeeId');
         setUserRole(null);
         setCurrentEmployeeId(null);
       }

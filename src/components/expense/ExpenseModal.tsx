@@ -8,7 +8,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useToast } from '../../hooks/useToast';
 import { createExpense, calculateTravelExpense } from '../../services/firebase';
 import { Employee } from '../../types';
-import { User, AlertCircle } from 'lucide-react';
+import { User } from 'lucide-react';
 
 interface ExpenseFormData {
   date: string;
@@ -33,7 +33,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   const [submitting, setSubmitting] = useState(false);
   const [travelRatePerKm, setTravelRatePerKm] = useState(0.23);
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
-  const [employeeError, setEmployeeError] = useState<string | null>(null);
 
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<ExpenseFormData>({
     defaultValues: {
@@ -46,32 +45,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   const kilometers = watch('kilometers');
 
   useEffect(() => {
-    console.log('ExpenseModal: useEffect called with employeeId:', employeeId, 'employees.length:', employees.length);
-    
-    if (!employeeId || employeeId === '') {
-      console.log('ExpenseModal: No employeeId provided');
-      setCurrentEmployee(null);
-      setEmployeeError('Je werknemersprofiel is niet gekoppeld. Neem contact op met de beheerder.');
-      return;
-    }
-    
     if (employeeId && employees.length > 0) {
       const employee = employees.find(e => e.id === employeeId);
-      console.log('ExpenseModal: Employee found:', !!employee);
       if (employee) {
         setCurrentEmployee(employee);
-        setEmployeeError(null);
-      } else {
-        setCurrentEmployee(null);
-        setEmployeeError('Werknemersgegevens niet gevonden in de database. Probeer de pagina te vernieuwen.');
       }
-    } else if (employeeId && employees.length === 0) {
-      console.log('ExpenseModal: Employees list is empty, still loading');
-      setCurrentEmployee(null);
-      setEmployeeError('Werknemersgegevens worden geladen...');
-    } else {
-      setCurrentEmployee(null);
-      setEmployeeError(null);
     }
   }, [employeeId, employees]);
 
@@ -104,12 +82,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
       return;
     }
 
-    // Skip employee validation - allow submission even without employee data
+    const company = currentEmployee ? companies.find(c => c.id === currentEmployee.companyId) : null;
+    const companyId = company?.id || 'default-company';
+
     setSubmitting(true);
     try {
       await createExpense(user.uid, {
         employeeId,
-        companyId: 'default-company', // Use default if no company found
+        companyId,
         date: new Date(data.date),
         type: data.type,
         description: data.description,
@@ -143,7 +123,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
 
   const handleClose = () => {
     reset();
-    setEmployeeError(null);
     onClose();
   };
 
@@ -160,22 +139,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
                 </h4>
                 <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                   {currentEmployee.contractInfo.position}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {employeeError && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 mr-3" />
-              <div>
-                <h4 className="text-sm font-medium text-red-900 dark:text-red-100">
-                  Fout
-                </h4>
-                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                  {employeeError}
                 </p>
               </div>
             </div>
@@ -273,11 +236,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
           <Button type="button" variant="secondary" onClick={handleClose}>
             Annuleren
           </Button>
-          <Button 
-            type="submit" 
-            loading={submitting}
-            disabled={submitting}
-          >
+          <Button type="submit" loading={submitting} disabled={submitting}>
             Opslaan als Concept
           </Button>
         </div>

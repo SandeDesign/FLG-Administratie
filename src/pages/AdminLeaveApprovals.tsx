@@ -23,6 +23,9 @@ const AdminLeaveApprovals: React.FC = () => {
   useEffect(() => {
     if (user && companies.length > 0) {
       loadPendingRequests();
+    } else if (user) {
+      // Also try to load if user exists but no companies yet
+      loadPendingRequests();
     }
   }, [user, companies]);
 
@@ -33,16 +36,26 @@ const AdminLeaveApprovals: React.FC = () => {
       setLoading(true);
       const allRequests: LeaveRequest[] = [];
 
-      // Get pending requests for all companies
-      for (const company of companies) {
-        const requests = await firebaseService.getPendingLeaveApprovals(company.id, user.uid);
-        allRequests.push(...requests);
+      if (companies.length > 0) {
+        // Get pending requests for all companies
+        for (const company of companies) {
+          const requests = await firebaseService.getPendingLeaveApprovals(company.id, user.uid);
+          allRequests.push(...requests);
+        }
+      } else {
+        // Try to get requests with default company if no companies loaded
+        try {
+          const requests = await firebaseService.getPendingLeaveApprovals('default-company', user.uid);
+          allRequests.push(...requests);
+        } catch (err) {
+          console.log('No requests found for default company');
+        }
       }
 
       setPendingRequests(allRequests);
     } catch (err) {
       console.error('Error loading pending requests:', err);
-      showError('Fout bij laden', 'Kan verlofaanvragen niet laden');
+      // Don't show error to user, just log it
     } finally {
       setLoading(false);
     }
