@@ -110,6 +110,27 @@ interface EmployeeFormData {
   snipperDays?: number;
 }
 
+// Define which fields belong to each tab for targeted validation
+const tabFields = {
+  0: [
+    'firstName', 'lastName', 'initials', 'bsn', 'dateOfBirth', 'placeOfBirth', 
+    'nationality', 'maritalStatus', 'street', 'houseNumber', 'zipCode', 'city',
+    'email', 'phone', 'bankAccount'
+  ],
+  1: [
+    'companyId', 'branchId', 'contractType', 'startDate', 'position', 'cao', 'hoursPerWeek'
+  ],
+  2: [
+    'salaryScale', 'paymentType', 'paymentFrequency', 'overtimeAllowance', 
+    'irregularAllowance', 'shiftAllowance', 'weekendAllowance'
+  ],
+  3: [
+    'holidayAllowancePercentage', 'travelAllowanceType', 'pensionContribution', 
+    'pensionEmployerContribution', 'taxCredit', 'taxTable'
+  ],
+  4: [] // Leave tab has no required fields
+};
+
 // Validatie schema
 const employeeSchema = yup.object({
   // Persoonlijke gegevens
@@ -174,7 +195,7 @@ const Employees: React.FC = () => {
   const [creatingAccount, setCreatingAccount] = useState(false);
   const { success, error } = useToast();
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<EmployeeFormData>({
+  const { register, handleSubmit, reset, setValue, watch, trigger, formState: { errors } } = useForm<EmployeeFormData>({
     resolver: yupResolver(employeeSchema)
   });
   
@@ -206,6 +227,26 @@ const Employees: React.FC = () => {
     } catch (err) {
       console.error('Error loading branches:', err);
     }
+  };
+
+  // Handle tab navigation with validation
+  const handleTabNavigation = async (direction: 'next' | 'prev') => {
+    if (direction === 'prev') {
+      setActiveTab(activeTab - 1);
+      return;
+    }
+
+    // For next, validate current tab fields
+    const currentTabFields = tabFields[activeTab as keyof typeof tabFields];
+    if (currentTabFields.length > 0) {
+      const isValid = await trigger(currentTabFields as any);
+      if (!isValid) {
+        error('Validatiefout', 'Vul alle verplichte velden in op dit tabblad.');
+        return;
+      }
+    }
+
+    setActiveTab(activeTab + 1);
   };
 
   const openModal = (employee?: Employee) => {
@@ -375,6 +416,24 @@ const Employees: React.FC = () => {
   const onSubmit = async (data: EmployeeFormData) => {
     if (!user) return;
     
+    // Validate all fields before submission
+    const isFormValid = await trigger();
+    if (!isFormValid) {
+      error('Formulier onvolledig', 'Niet alle verplichte velden zijn ingevuld. Controleer alle tabbladen.');
+      // Find first tab with errors and navigate to it
+      for (let i = 0; i < tabs.length; i++) {
+        const tabFieldsToCheck = tabFields[i as keyof typeof tabFields];
+        if (tabFieldsToCheck.length > 0) {
+          const tabValid = await trigger(tabFieldsToCheck as any);
+          if (!tabValid) {
+            setActiveTab(i);
+            return;
+          }
+        }
+      }
+      return;
+    }
+
     setSubmitting(true);
     try {
       const employeeData = {
@@ -489,7 +548,7 @@ const Employees: React.FC = () => {
       closeModal();
     } catch (err) {
       console.error('Error saving employee:', err);
-      error('Er is een fout opgetreden', 'Probeer het opnieuw');
+      error('Fout bij opslaan', 'Er is een fout opgetreden bij het opslaan van de werknemer. Probeer het opnieuw.');
     } finally {
       setSubmitting(false);
     }
@@ -1130,7 +1189,7 @@ const Employees: React.FC = () => {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => setActiveTab(activeTab - 1)}
+                    onClick={() => handleTabNavigation('prev')}
                   >
                     Vorige
                   </Button>
@@ -1143,7 +1202,7 @@ const Employees: React.FC = () => {
                 {activeTab < tabs.length - 1 ? (
                   <Button
                     type="button"
-                    onClick={() => setActiveTab(activeTab + 1)}
+                    onClick={() => handleTabNavigation('next')}
                   >
                     Volgende
                   </Button>
