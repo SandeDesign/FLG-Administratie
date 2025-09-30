@@ -34,9 +34,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      
+
       if (user) {
-        // Load user role
         try {
           const roleData = await getUserRole(user.uid);
           setUserRole(roleData?.role || null);
@@ -47,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUserRole(null);
       }
-      
+
       setLoading(false);
     });
 
@@ -61,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error('Sign in error:', err);
       let message = 'Er is een fout opgetreden bij het inloggen';
-      
+
       switch (err.code) {
         case 'auth/user-not-found':
           message = 'Geen account gevonden met dit e-mailadres';
@@ -76,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           message = 'Te veel pogingen. Probeer het later opnieuw';
           break;
       }
-      
+
       error('Inloggen mislukt', message);
       throw err;
     }
@@ -86,17 +85,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(user, { displayName });
-      
-      // Create admin role for new signups (company owners)
+
       const { createUserRole } = await import('../services/firebase');
       await createUserRole(user.uid, 'admin');
       setUserRole('admin');
-      
+
       success('Account aangemaakt!', 'Je kunt nu beginnen met het beheren van je loonadministratie');
     } catch (err: any) {
       console.error('Sign up error:', err);
       let message = 'Er is een fout opgetreden bij het aanmaken van je account';
-      
+
       switch (err.code) {
         case 'auth/email-already-in-use':
           message = 'Er bestaat al een account met dit e-mailadres';
@@ -108,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           message = 'Wachtwoord is te zwak. Gebruik minimaal 6 karakters';
           break;
       }
-      
+
       error('Registratie mislukt', message);
       throw err;
     }
@@ -133,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error('Password reset error:', err);
       let message = 'Er is een fout opgetreden bij het versturen van de reset e-mail';
-      
+
       switch (err.code) {
         case 'auth/user-not-found':
           message = 'Geen account gevonden met dit e-mailadres';
@@ -142,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           message = 'Ongeldig e-mailadres';
           break;
       }
-      
+
       error('Reset mislukt', message);
       throw err;
     }

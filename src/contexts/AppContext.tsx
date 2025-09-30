@@ -52,7 +52,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshCompanies = async () => {
     if (!user) return;
-    
+
     try {
       const data = await getCompanies(user.uid);
       setCompanies(data);
@@ -63,7 +63,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshBranches = async () => {
     if (!user) return;
-    
+
     try {
       const data = await getBranches(user.uid);
       setBranches(data);
@@ -74,7 +74,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshEmployees = async () => {
     if (!user) return;
-    
+
     try {
       const data = await getEmployees(user.uid);
       setEmployees(data);
@@ -85,7 +85,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const refreshDashboardStats = async () => {
     if (!user) return;
-    
+
     try {
       const [companiesData, employeesData, branchesData, timeEntriesData] = await Promise.all([
         getCompanies(user.uid),
@@ -96,15 +96,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const activeEmployees = employeesData.filter(emp => emp.status === 'active').length;
       const pendingApprovals = timeEntriesData.filter(entry => entry.status === 'draft').length;
-      
-      // Calculate total gross for this month (simplified calculation)
+
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
       const thisMonthEntries = timeEntriesData.filter(entry => {
         const entryDate = new Date(entry.date);
         return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
       });
-      
+
       let totalGrossThisMonth = 0;
       thisMonthEntries.forEach(entry => {
         const employee = employeesData.find(emp => emp.id === entry.employeeId);
@@ -125,7 +124,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Load initial data when user changes
   useEffect(() => {
     if (user) {
       refreshCompanies();
@@ -133,7 +131,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       refreshEmployees();
       refreshDashboardStats();
     } else {
-      // Clear data when user logs out
       setCompanies([]);
       setBranches([]);
       setEmployees([]);
