@@ -204,11 +204,18 @@ const Employees: React.FC = () => {
     console.log('=== USER ROLE DEBUG ===');
     console.log('Current user:', user);
     console.log('User role:', userRole);
-    console.log('User UID:', user?.uid);
-    console.log('User email:', user?.email);
     resolver: yupResolver(employeeSchema)
   });
   
+  // Debug logging for user role
+  useEffect(() => {
+    console.log('=== USER ROLE DEBUG ===');
+    console.log('Current user:', user);
+    console.log('User role:', userRole);
+    console.log('User UID:', user?.uid);
+    console.log('User email:', user?.email);
+  }, [user, userRole]);
+
   const selectedCompanyId = watch('companyId');
   const selectedCAO = watch('cao');
   const paymentType = watch('paymentType');
