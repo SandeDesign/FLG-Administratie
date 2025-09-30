@@ -43,7 +43,7 @@ const Regulations = () => (
 
 function App() {
   const AppContent: React.FC = () => {
-    const { user, userRole, loading } = useAuth();
+    const { userRole, loading } = useAuth();
 
     if (loading) {
       return (

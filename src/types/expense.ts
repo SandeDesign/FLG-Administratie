@@ -4,7 +4,7 @@ export interface Expense {
   employeeId: string;
   companyId: string;
 
-  type: 'travel' | 'meal' | 'accommodation' | 'phone' | 'office' | 'training' | 'representation' | 'other';
+  type: 'travel' | 'meal' | 'accommodation' | 'parking' | 'phone' | 'office' | 'training' | 'representation' | 'other';
 
   date: Date;
   amount: number;

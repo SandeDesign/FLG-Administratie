@@ -11,7 +11,7 @@ import { LeaveBalance, Employee } from '../../types';
 import { User } from 'lucide-react';
 
 interface LeaveRequestFormData {
-  type: 'vacation' | 'compensation' | 'unpaid' | 'special' | 'parental' | 'care';
+  type: 'holiday' | 'unpaid' | 'special' | 'parental' | 'care';
   startDate: string;
   endDate: string;
   reason: string;
@@ -109,7 +109,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
       return;
     }
 
-    if (data.type === 'vacation' && leaveBalance) {
+    if (data.type === 'holiday' && leaveBalance) {
       const availableDays = leaveBalance.holidayDays.statutory + leaveBalance.holidayDays.extraStatutory + leaveBalance.holidayDays.accumulated - leaveBalance.holidayDays.taken;
       if (calculatedDays > availableDays) {
         showError('Onvoldoende saldo', `Je hebt maar ${availableDays} verlofdagen beschikbaar`);
@@ -210,8 +210,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
             {...register('type', { required: 'Type is verplicht' })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           >
-            <option value="vacation">Vakantie</option>
-            <option value="compensation">Compensatie</option>
+            <option value="holiday">Vakantie</option>
             <option value="unpaid">Onbetaald</option>
             <option value="special">Bijzonder (huwelijk, verhuizing, etc.)</option>
             <option value="parental">Ouderschapsverlof</option>

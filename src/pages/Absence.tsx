@@ -14,7 +14,7 @@ import { useToast } from '../hooks/useToast';
 
 const Absence: React.FC = () => {
   const { user, currentEmployeeId } = useAuth();
-  const { success, error: showError } = useToast();
+  const { error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [sickLeaveRecords, setSickLeaveRecords] = useState<SickLeave[]>([]);
   const [absenceStats, setAbsenceStats] = useState<AbsenceStatistics | null>(null);

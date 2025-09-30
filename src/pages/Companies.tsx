@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Building2, CreditCard as Edit, Trash2, MapPin, Phone, Mail } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -12,7 +12,7 @@ import { Company, Branch, DUTCH_CAOS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
-import { createCompany, updateCompany, deleteCompany, getBranches, createBranch } from '../services/firebase';
+import { createCompany, updateCompany, deleteCompany, createBranch } from '../services/firebase';
 
 interface CompanyFormData {
   name: string;
@@ -127,14 +127,20 @@ const Companies: React.FC = () => {
           return;
         }
         
-        const companyId = await createCompany(user.uid, companyData);
-        
+        const companyId = await createCompany(user.uid, {
+          ...companyData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
         // Create the initial branch
         const branchData = {
           companyId: companyId,
           name: branchName,
           location: branchLocation,
           costCenter: branchCostCenter,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
         
         const branchId = await createBranch(user.uid, branchData);

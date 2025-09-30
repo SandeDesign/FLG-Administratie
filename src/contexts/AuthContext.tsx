@@ -11,7 +11,6 @@ import {
 import { auth } from '../lib/firebase';
 import { useToast } from '../hooks/useToast';
 import { getUserRole } from '../services/firebase';
-import { UserRole } from '../types';
 
 interface AuthContextType {
   user: User | null;

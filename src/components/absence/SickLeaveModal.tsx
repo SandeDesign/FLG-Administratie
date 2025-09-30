@@ -10,6 +10,7 @@ import Button from '../ui/Button';
 interface SickLeaveModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   employeeId: string;
 }
 
@@ -22,6 +23,7 @@ interface SickLeaveFormData {
 const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
   isOpen,
   onClose,
+  onSuccess,
   employeeId,
 }) => {
   const { user } = useAuth();
@@ -40,8 +42,8 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
         try {
           const employee = await getEmployeeById(employeeId);
           setCurrentEmployee(employee);
-        } catch (error) {
-          console.error('Error loading employee:', error);
+        } catch (err) {
+          console.error('Error loading employee:', err);
           error('Fout bij laden werknemersgegevens');
         }
       }
@@ -78,9 +80,9 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
 
     setSubmitting(true);
     try {
-      await createSickLeave(currentEmployee.userId, {
+      await createSickLeave(currentEmployee!.userId, {
         employeeId,
-        companyId: currentEmployee?.companyId || '',
+        companyId: currentEmployee.companyId,
         startDate: new Date(formData.startDate),
         reportedAt: new Date(),
         reportedBy: user?.displayName || user?.email || 'Werknemer',
@@ -94,9 +96,10 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
       });
 
       success('Ziekmelding succesvol ingediend');
+      if (onSuccess) onSuccess();
       handleClose();
-    } catch (error) {
-      console.error('Error creating sick leave:', error);
+    } catch (err) {
+      console.error('Error creating sick leave:', err);
       error('Fout bij indienen ziekmelding');
     } finally {
       setSubmitting(false);

@@ -134,12 +134,15 @@ const EmployeesNew: React.FC = () => {
           initials: data.initials,
           bsn: data.bsn,
           dateOfBirth: new Date(data.dateOfBirth),
+          placeOfBirth: '',
           nationality: 'Nederlandse',
           maritalStatus: 'single' as const,
           address: {
             street: data.street,
-            city: data.city,
+            houseNumber: '',
+            houseNumberAddition: '',
             postalCode: data.zipCode,
+            city: data.city,
             country: 'Nederland',
           },
           contactInfo: {
@@ -191,6 +194,9 @@ const EmployeesNew: React.FC = () => {
         },
         status: 'active',
         salaryHistory: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        hasAccount: false,
       };
 
       if (editingEmployee) {

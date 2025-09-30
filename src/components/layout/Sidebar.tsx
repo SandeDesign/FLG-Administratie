@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
-import Button from '../ui/Button';
 import { NotificationCenter } from '../notifications/NotificationCenter';
 
 const navigation = [
