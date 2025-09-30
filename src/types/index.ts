@@ -283,3 +283,273 @@ export interface DashboardStats {
   branchesCount: number;
   pendingApprovals: number;
 }
+
+export interface CAO {
+  id: string;
+  name: string;
+  code: string;
+  sector: string;
+  description: string;
+  
+  // Loonschalen
+  salaryScales: {
+    scale: string;
+    hourlyRates: { [key: string]: number };
+    monthlyRates: { [key: string]: number };
+  }[];
+  
+  // Toeslagen
+  allowances: {
+    overtime: number;
+    irregular: number;
+    shift: number;
+    weekend: number;
+    evening?: number;
+    night?: number;
+    sunday?: number;
+  };
+  
+  // Vergoedingen
+  travelAllowancePerKm: number;
+  holidayAllowancePercentage: number;
+  
+  // Vakantiedagen
+  holidayDaysFormula: string; // "4 * hoursPerWeek"
+  extraDays?: number;
+  
+  // Pensioen
+  pensionFund?: string;
+  pensionAge: number;
+  pensionContribution: {
+    employee: number;
+    employer: number;
+  };
+  
+  // Bijzondere regelingen
+  specialProvisions?: string[];
+  
+  lastUpdated: Date;
+}
+
+// Voorgedefinieerde CAO's
+export const DUTCH_CAOS: CAO[] = [
+  {
+    id: 'cao-algemeen',
+    name: 'Algemeen (geen specifieke CAO)',
+    code: 'ALG',
+    sector: 'Algemeen',
+    description: 'Standaard Nederlandse arbeidsvoorwaarden zonder specifieke CAO',
+    salaryScales: [
+      {
+        scale: 'A',
+        hourlyRates: { 'starters': 12.50, 'ervaren': 15.00 },
+        monthlyRates: { 'starters': 2166, 'ervaren': 2600 }
+      },
+      {
+        scale: 'B',
+        hourlyRates: { 'starters': 15.00, 'ervaren': 18.00 },
+        monthlyRates: { 'starters': 2600, 'ervaren': 3120 }
+      },
+      {
+        scale: 'C',
+        hourlyRates: { 'starters': 18.00, 'ervaren': 22.00 },
+        monthlyRates: { 'starters': 3120, 'ervaren': 3813 }
+      },
+    ],
+    allowances: {
+      overtime: 125,
+      irregular: 120,
+      shift: 115,
+      weekend: 125,
+    },
+    travelAllowancePerKm: 0.23,
+    holidayAllowancePercentage: 8,
+    holidayDaysFormula: '4 * hoursPerWeek',
+    pensionAge: 68,
+    pensionContribution: {
+      employee: 6,
+      employer: 14
+    },
+    lastUpdated: new Date('2025-01-01')
+  },
+  {
+    id: 'cao-bouw',
+    name: 'Bouw & Infra',
+    code: 'BOUW',
+    sector: 'Bouw',
+    description: 'CAO voor de Bouwnijverheid',
+    salaryScales: [
+      {
+        scale: 'Grondwerker',
+        hourlyRates: { 'start': 14.50, '1jaar': 15.20, '2jaar': 16.00 },
+        monthlyRates: { 'start': 2513, '1jaar': 2634, '2jaar': 2773 }
+      },
+      {
+        scale: 'Metselaar',
+        hourlyRates: { 'start': 16.00, '1jaar': 17.50, '2jaar': 19.00 },
+        monthlyRates: { 'start': 2773, '1jaar': 3033, '2jaar': 3293 }
+      },
+      {
+        scale: 'Voorman',
+        hourlyRates: { 'start': 19.00, '1jaar': 20.50, '2jaar': 22.00 },
+        monthlyRates: { 'start': 3293, '1jaar': 3553, '2jaar': 3813 }
+      },
+    ],
+    allowances: {
+      overtime: 150,
+      irregular: 140,
+      shift: 125,
+      weekend: 150,
+      sunday: 200,
+    },
+    travelAllowancePerKm: 0.23,
+    holidayAllowancePercentage: 10.42, // Bouw heeft hoger percentage
+    holidayDaysFormula: '5 * hoursPerWeek',
+    extraDays: 13, // ADV dagen
+    pensionFund: 'bpfBOUW',
+    pensionAge: 68,
+    pensionContribution: {
+      employee: 7,
+      employer: 16
+    },
+    specialProvisions: [
+      'Depositouren',
+      'Slechtweerregeling',
+      'Reisuren = werktijd',
+    ],
+    lastUpdated: new Date('2025-01-01')
+  },
+  {
+    id: 'cao-horeca',
+    name: 'Horeca & Catering',
+    code: 'HORECA',
+    sector: 'Horeca',
+    description: 'CAO voor de Horeca en Catering sector',
+    salaryScales: [
+      {
+        scale: '1A - Beginnend medewerker',
+        hourlyRates: { 'default': 12.90 },
+        monthlyRates: { 'default': 2236 }
+      },
+      {
+        scale: '3 - Zelfstandig werkend',
+        hourlyRates: { 'default': 14.80 },
+        monthlyRates: { 'default': 2565 }
+      },
+      {
+        scale: '5 - Leidinggevend',
+        hourlyRates: { 'default': 17.50 },
+        monthlyRates: { 'default': 3033 }
+      },
+    ],
+    allowances: {
+      overtime: 125,
+      irregular: 150, // Horeca heeft hoge onregelmatigheidstoeslag
+      shift: 120,
+      weekend: 150,
+      evening: 125,
+      night: 140,
+      sunday: 200,
+    },
+    travelAllowancePerKm: 0.21,
+    holidayAllowancePercentage: 8,
+    holidayDaysFormula: '4 * hoursPerWeek',
+    pensionFund: 'Horeca & Catering',
+    pensionAge: 68,
+    pensionContribution: {
+      employee: 4.7,
+      employer: 9.4
+    },
+    specialProvisions: [
+      'Fooienregeling',
+      'Werken op feestdagen 200%',
+    ],
+    lastUpdated: new Date('2025-01-01')
+  },
+  {
+    id: 'cao-zorg',
+    name: 'Zorg & Welzijn',
+    code: 'ZORG',
+    sector: 'Zorg',
+    description: 'CAO voor de Zorg en Welzijn sector',
+    salaryScales: [
+      {
+        scale: 'Schaal 3 - Verzorgende',
+        hourlyRates: { 'start': 14.20, 'ervaren': 16.50 },
+        monthlyRates: { 'start': 2461, 'ervaren': 2860 }
+      },
+      {
+        scale: 'Schaal 5 - Verpleegkundige',
+        hourlyRates: { 'start': 17.80, 'ervaren': 21.20 },
+        monthlyRates: { 'start': 3085, 'ervaren': 3675 }
+      },
+    ],
+    allowances: {
+      overtime: 125,
+      irregular: 135,
+      shift: 125,
+      weekend: 145,
+      evening: 115,
+      night: 130,
+      sunday: 170,
+    },
+    travelAllowancePerKm: 0.23,
+    holidayAllowancePercentage: 8,
+    holidayDaysFormula: '4 * hoursPerWeek',
+    pensionFund: 'PFZW',
+    pensionAge: 68,
+    pensionContribution: {
+      employee: 7.5,
+      employer: 15.5
+    },
+    specialProvisions: [
+      'Inconveniëntentoeslag',
+      'Bereikbaarheidsdienst',
+    ],
+    lastUpdated: new Date('2025-01-01')
+  },
+  {
+    id: 'cao-metaal',
+    name: 'Metaal & Techniek',
+    code: 'METAAL',
+    sector: 'Metaal',
+    description: 'CAO voor de Metaal en Techniek sector',
+    salaryScales: [
+      {
+        scale: 'Niveau 1',
+        hourlyRates: { 'start': 13.80, 'ervaren': 15.50 },
+        monthlyRates: { 'start': 2392, 'ervaren': 2687 }
+      },
+      {
+        scale: 'Niveau 3',
+        hourlyRates: { 'start': 16.20, 'ervaren': 18.90 },
+        monthlyRates: { 'start': 2809, 'ervaren': 3276 }
+      },
+      {
+        scale: 'Niveau 5',
+        hourlyRates: { 'start': 19.50, 'ervaren': 23.20 },
+        monthlyRates: { 'start': 3380, 'ervaren': 4021 }
+      },
+    ],
+    allowances: {
+      overtime: 150,
+      irregular: 125,
+      shift: 120,
+      weekend: 150,
+    },
+    travelAllowancePerKm: 0.23,
+    holidayAllowancePercentage: 8.33,
+    holidayDaysFormula: '4 * hoursPerWeek',
+    pensionFund: 'PME',
+    pensionAge: 68,
+    pensionContribution: {
+      employee: 6.75,
+      employer: 13.5
+    },
+    specialProvisions: [
+      'Ploegentoeslag',
+      'Gereedschapsvergoeding',
+    ],
+    lastUpdated: new Date('2025-01-01')
+  }
+];
