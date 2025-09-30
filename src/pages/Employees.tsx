@@ -197,17 +197,9 @@ const Employees: React.FC = () => {
   const { success, error } = useToast();
 
   const { register, handleSubmit, reset, setValue, watch, trigger, formState: { errors } } = useForm<EmployeeFormData>({
-  });
-
-  // Debug logging for user role
-  useEffect(() => {
-    console.log('=== USER ROLE DEBUG ===');
-    console.log('Current user:', user);
-    console.log('User role:', userRole);
     resolver: yupResolver(employeeSchema)
   });
-  
-  // Debug logging for user role
+
   useEffect(() => {
     console.log('=== USER ROLE DEBUG ===');
     console.log('Current user:', user);
@@ -290,12 +282,7 @@ const Employees: React.FC = () => {
       // Get available branches for this company
       const availableBranches = branches.filter(b => b.companyId === defaultCompany.id);
       if (availableBranches.length === 0) {
-        error('Geen vestigingen', `Voeg eerst een vestiging toe aan ${defaultCompany.name} voordat je werknemers kunt
-        )
-      }
-    }
-  }
-} aanmaken`);
+        error('Geen vestigingen', `Voeg eerst een vestiging toe aan ${defaultCompany.name} voordat je werknemers kunt aanmaken`);
         return;
       }
       
@@ -504,7 +491,7 @@ const Employees: React.FC = () => {
           cao: data.cao,
           caoCode: data.caoCode || undefined,
           contractStatus: data.contractStatus,
-          noticeDate: data.noticeDate ? new Date(data.noticeDate) : undefined,
+        },
         salaryInfo: {
           salaryScale: data.salaryScale,
           paymentType: data.paymentType,
@@ -542,11 +529,12 @@ const Employees: React.FC = () => {
         },
         leaveInfo: {
           holidayDays: {
-            statutory: data.statutoryHolidayDays,
-            extraStatutory: data.extraStatutoryHolidayDays,
-            accumulated: data.statutoryHolidayDays + data.extraStatutoryHolidayDays,
+            statutory: data.statutoryHolidayDays || 0,
+            extraStatutory: data.extraStatutoryHolidayDays || 0,
+            accumulated: (data.statutoryHolidayDays || 0) + (data.extraStatutoryHolidayDays || 0),
             taken: 0,
-          advDays: (data.advDaysAccumulated !== undefined && data.advDaysAccumulated !== null) ? {
+          },
+          advDays: (data.advDays !== undefined && data.advDays !== null) ? {
             accumulated: data.advDays,
             taken: 0,
             remaining: data.advDays,
@@ -555,7 +543,7 @@ const Employees: React.FC = () => {
           snipperDays: data.snipperDays || undefined,
         },
         status: 'active',
-        salaryHistory: data.salaryHistory ? (Array.isArray(data.salaryHistory) ? data.salaryHistory : []) : [],
+        salaryHistory: [],
       };
       
       console.log('Employee data being sent to Firebase:', employeeData);
@@ -571,7 +559,6 @@ const Employees: React.FC = () => {
       }
 
       await refreshEmployees();
-      console.log('Constructing employee data...');
       closeModal();
     } catch (err) {
       console.error('Error saving employee:', err);
@@ -649,9 +636,7 @@ const Employees: React.FC = () => {
   const copyPasswordToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(generatedPassword);
-      success('Gekopieerd!', 'Wachtwoord i
-  }
-}s gekopieerd naar klembord');
+      success('Gekopieerd!', 'Wachtwoord is gekopieerd naar klembord');
     } catch (err) {
       error('Kopiëren mislukt', 'Kon wachtwoord niet kopiëren');
     }
