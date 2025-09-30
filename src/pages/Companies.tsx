@@ -8,7 +8,7 @@ import Input from '../components/ui/Input';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useForm } from 'react-hook-form';
-import { Company } from '../types';
+import { Company, DUTCH_CAOS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
@@ -266,11 +266,27 @@ const Companies: React.FC = () => {
               {...register('taxNumber', { required: 'Fiscaal nummer is verplicht' })}
               error={errors.taxNumber?.message}
             />
-            <Input
-              label="Standaard CAO"
-              {...register('defaultCAO', { required: 'Standaard CAO is verplicht' })}
-              error={errors.defaultCAO?.message}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Standaard CAO *
+              </label>
+              <select
+                {...register('defaultCAO', { required: 'Standaard CAO is verplicht' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">Selecteer CAO...</option>
+                {DUTCH_CAOS.map(cao => (
+                  <option key={cao.id} value={cao.name}>
+                    {cao.name}
+                  </option>
+                ))}
+              </select>
+              {errors.defaultCAO && (
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                  {errors.defaultCAO.message}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Address */}

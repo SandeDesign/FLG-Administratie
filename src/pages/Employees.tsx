@@ -549,6 +549,27 @@ const Employees: React.FC = () => {
                 {...register('position', { required: 'Functie is verplicht' })}
                 error={errors.position?.message}
               />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  CAO *
+                </label>
+                <select
+                  {...register('cao', { required: 'CAO is verplicht' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">Selecteer CAO...</option>
+                  {DUTCH_CAOS.map(cao => (
+                    <option key={cao.id} value={cao.name}>
+                      {cao.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.cao && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                    {errors.cao.message}
+                  </p>
+                )}
+              </div>
               <Input
                 label="Startdatum *"
                 type="date"
