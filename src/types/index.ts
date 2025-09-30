@@ -25,6 +25,7 @@ export interface Company {
   logoUrl?: string;
   createdAt: Date;
   updatedAt: Date;
+  mainBranchId?: string; // ID van de hoofd vestiging
 }
 
 export interface Branch {

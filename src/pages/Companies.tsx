@@ -8,11 +8,11 @@ import Input from '../components/ui/Input';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useForm } from 'react-hook-form';
-import { Company, DUTCH_CAOS } from '../types';
+import { Company, Branch, DUTCH_CAOS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
-import { createCompany, updateCompany, deleteCompany } from '../services/firebase';
+import { createCompany, updateCompany, deleteCompany, getBranches } from '../services/firebase';
 
 interface CompanyFormData {
   name: string;
@@ -29,11 +29,13 @@ interface CompanyFormData {
   standardWorkWeek: number;
   holidayAllowancePercentage: number;
   pensionContributionPercentage: number;
+  mainBranchId: string;
 }
 
 const Companies: React.FC = () => {
   const { user } = useAuth();
   const { companies, refreshCompanies, loading } = useApp();
+  const [companyBranches, setCompanyBranches] = useState<Branch[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +70,7 @@ const Companies: React.FC = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingCompany(null);
+    setCompanyBranches([]);
     reset();
   };
 
@@ -98,6 +101,7 @@ const Companies: React.FC = () => {
           holidayAllowancePercentage: data.holidayAllowancePercentage,
           pensionContributionPercentage: data.pensionContributionPercentage,
         },
+        mainBranchId: data.mainBranchId || undefined,
       };
 
       if (editingCompany) {
@@ -386,6 +390,29 @@ const Companies: React.FC = () => {
                 error={errors.pensionContributionPercentage?.message}
               />
             </div>
+            
+            {/* Main Branch Selection - only show when editing existing company with branches */}
+            {editingCompany && companyBranches.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Hoofd Vestiging
+                </label>
+                <select
+                  {...register('mainBranchId')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">Geen hoofd vestiging</option>
+                  {companyBranches.map(branch => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name} - {branch.location}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Optioneel: Selecteer de hoofd vestiging voor dit bedrijf
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
