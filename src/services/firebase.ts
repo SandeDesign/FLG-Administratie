@@ -371,3 +371,60 @@ export const updateTimeEntry = async (id: string, userId: string, updates: Parti
   
   await updateDoc(docRef, updateData);
 };
+
+// Employee Account Management
+export const createEmployeeAuthAccount = async (
+  employeeId: string, 
+  userId: string, 
+  email: string, 
+  password: string
+): Promise<string> => {
+  try {
+    // First verify ownership of the employee record
+    const employeeRef = doc(db, 'employees', employeeId);
+    const employeeSnap = await getDoc(employeeRef);
+    
+    if (!employeeSnap.exists() || employeeSnap.data().userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+    
+    // Create Firebase Auth user
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const newUserId = userCredential.user.uid;
+    
+    // Update employee record to mark as having account
+    const updateData = convertToTimestamps({
+      hasAccount: true,
+      accountCreatedAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    await updateDoc(employeeRef, updateData);
+    
+    return newUserId;
+  } catch (error) {
+    console.error('Error creating employee account:', error);
+    throw error;
+  }
+};
+
+// Generate secure password
+export const generateSecurePassword = (): string => {
+  const length = 12;
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  let password = '';
+  
+  // Ensure at least one of each type
+  password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)]; // uppercase
+  password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]; // lowercase
+  password += '0123456789'[Math.floor(Math.random() * 10)]; // number
+  password += '!@#$%^&*'[Math.floor(Math.random() * 8)]; // special
+  
+  // Fill the rest randomly
+  for (let i = 4; i < length; i++) {
+    password += charset[Math.floor(Math.random() * charset.length)];
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+};
