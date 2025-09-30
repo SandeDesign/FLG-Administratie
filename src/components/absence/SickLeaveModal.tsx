@@ -50,7 +50,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
     if (isOpen) {
       loadEmployee();
     }
-  }, [isOpen, employeeId, showToast]);
+  }, [isOpen, employeeId, error]);
 
   const handleInputChange = (field: keyof SickLeaveFormData, value: string | number) => {
     setFormData(prev => ({
