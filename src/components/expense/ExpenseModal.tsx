@@ -74,7 +74,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
     setSubmitting(true);
     try {
       const employee = employees.find(e => e.id === employeeId);
-      if (!employee) throw new Error('Employee not found');
+      if (!employee) {
+        showError('Werknemer niet gevonden', 'Kon werknemersgegevens niet laden. Probeer de pagina te vernieuwen.');
+        setSubmitting(false);
+        return;
+      }
 
       await createExpense(user.uid, {
         employeeId,
