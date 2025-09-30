@@ -211,27 +211,67 @@ const Employees: React.FC = () => {
   const openModal = (employee?: Employee) => {
     setActiveTab(0); // Reset to first tab
     
-    // Check if we're adding a new employee
     if (!employee) {
-      // Check if there are companies
+      // Adding new employee - reset state first
+      setEditingEmployee(null);
+      reset();
+      
+      // Check if companies exist
       if (companies.length === 0) {
         error('Geen bedrijven', 'Voeg eerst een bedrijf toe voordat je werknemers kunt aanmaken');
         return;
       }
       
-      // Set default company (first company)
+      // Get default company and validate
       const defaultCompany = companies[0];
+      if (!defaultCompany || !defaultCompany.id) {
+        error('Ongeldig bedrijf', 'Het geselecteerde bedrijf is ongeldig');
+        return;
+      }
       
-      // Check if there are branches for this company
+      // Get available branches for this company
       const availableBranches = branches.filter(b => b.companyId === defaultCompany.id);
       if (availableBranches.length === 0) {
         error('Geen vestigingen', `Voeg eerst een vestiging toe aan ${defaultCompany.name} voordat je werknemers kunt aanmaken`);
         return;
       }
-    }
-    
-    if (employee) {
+      
+      // Get default branch and validate
+      const defaultBranch = availableBranches[0];
+      if (!defaultBranch || !defaultBranch.id) {
+        error('Ongeldige vestiging', 'De geselecteerde vestiging is ongeldig');
+        return;
+      }
+      
+      // Set company and branch values
+      setValue('companyId', defaultCompany.id);
+      setValue('branchId', defaultBranch.id);
+      
+      // Set default values for new employee
+      setValue('nationality', 'Nederlandse');
+      setValue('maritalStatus', 'single');
+      setValue('paymentType', 'monthly');
+      setValue('paymentFrequency', 'monthly');
+      setValue('contractStatus', 'active');
+      setValue('overtimeAllowance', 150);
+      setValue('irregularAllowance', 130);
+      setValue('shiftAllowance', 120);
+      setValue('weekendAllowance', 150);
+      setValue('eveningAllowance', 115);
+      setValue('nightAllowance', 130);
+      setValue('sundayAllowance', 170);
+      setValue('callDutyAllowance', 125);
+      setValue('holidayAllowancePercentage', 8);
+      setValue('travelAllowanceType', 'per_km');
+      setValue('travelAllowancePerKm', 0.23);
+      setValue('taxCredit', true);
+      setValue('taxTable', 'white');
+      
+      setIsModalOpen(true);
+    } else {
+      // Editing existing employee
       setEditingEmployee(employee);
+      
       // Set all form values for editing
       setValue('firstName', employee.personalInfo.firstName);
       setValue('lastName', employee.personalInfo.lastName);
@@ -320,38 +360,9 @@ const Employees: React.FC = () => {
       setValue('advDays', employee.leaveInfo?.advDays?.accumulated || 0);
       setValue('seniorDays', employee.leaveInfo?.seniorDays || 0);
       setValue('snipperDays', employee.leaveInfo?.snipperDays || 0);
-    } else {
-      setEditingEmployee(null);
-      reset();
       
-      // Set default values for new employee
-      const defaultCompany = companies[0];
-      const availableBranches = branches.filter(b => b.companyId === defaultCompany.id);
-      
-      setValue('companyId', defaultCompany.id);
-      setValue('branchId', availableBranches[0].id);
-      
-      // Set default values for new employee
-      setValue('nationality', 'Nederlandse');
-      setValue('maritalStatus', 'single');
-      setValue('paymentType', 'monthly');
-      setValue('paymentFrequency', 'monthly');
-      setValue('contractStatus', 'active');
-      setValue('overtimeAllowance', 150);
-      setValue('irregularAllowance', 130);
-      setValue('shiftAllowance', 120);
-      setValue('weekendAllowance', 150);
-      setValue('eveningAllowance', 115);
-      setValue('nightAllowance', 130);
-      setValue('sundayAllowance', 170);
-      setValue('callDutyAllowance', 125);
-      setValue('holidayAllowancePercentage', 8);
-      setValue('travelAllowanceType', 'per_km');
-      setValue('travelAllowancePerKm', 0.23);
-      setValue('taxCredit', true);
-      setValue('taxTable', 'white');
+      setIsModalOpen(true);
     }
-    setIsModalOpen(true);
   };
 
   const closeModal = () => {
