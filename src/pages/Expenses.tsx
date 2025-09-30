@@ -5,7 +5,7 @@ import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Expense } from '../types';
-import { expenseService } from '../services/supabaseService';
+import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { formatExpenseType } from '../utils/leaveCalculations';
@@ -26,7 +26,7 @@ const Expenses: React.FC = () => {
   const loadExpenses = async () => {
     try {
       setLoading(true);
-      const data = await expenseService.getExpenses(user!.uid);
+      const data = await firebaseService.getExpenses(user!.uid);
       setExpenses(data);
     } catch (err) {
       console.error('Error loading expenses:', err);

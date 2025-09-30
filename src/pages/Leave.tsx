@@ -6,7 +6,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import LeaveBalanceCard from '../components/leave/LeaveBalanceCard';
 import { LeaveRequest, LeaveBalance } from '../types';
-import { leaveService } from '../services/supabaseService';
+import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { formatLeaveType } from '../utils/leaveCalculations';
@@ -31,8 +31,8 @@ const Leave: React.FC = () => {
       const currentYear = new Date().getFullYear();
 
       const [requests, balance] = await Promise.all([
-        leaveService.getLeaveRequests(user!.uid),
-        leaveService.getLeaveBalance(user!.uid, currentYear),
+        firebaseService.getLeaveRequests(user!.uid),
+        firebaseService.getLeaveBalance(user!.uid, user!.uid, currentYear),
       ]);
 
       setLeaveRequests(requests);

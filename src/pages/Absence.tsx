@@ -6,7 +6,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import AbsenceStatsCard from '../components/absence/AbsenceStatsCard';
 import { SickLeave, AbsenceStatistics } from '../types';
-import { absenceService } from '../services/supabaseService';
+import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 
@@ -29,8 +29,8 @@ const Absence: React.FC = () => {
       const currentYear = new Date().getFullYear();
 
       const [records, stats] = await Promise.all([
-        absenceService.getSickLeaveRecords(user!.uid),
-        absenceService.getAbsenceStatistics(user!.uid, currentYear),
+        firebaseService.getSickLeaveRecords(user!.uid),
+        firebaseService.getAbsenceStatistics(user!.uid, user!.uid, currentYear),
       ]);
 
       setSickLeaveRecords(records);
