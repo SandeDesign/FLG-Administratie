@@ -641,7 +641,9 @@ const Employees: React.FC = () => {
   const copyPasswordToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(generatedPassword);
-      success('Gekopieerd!', 'Wachtwoord is gekopieerd naar klembord');
+      success('Gekopieerd!', 'Wachtwoord i
+  }
+}s gekopieerd naar klembord');
     } catch (err) {
       error('Kopiëren mislukt', 'Kon wachtwoord niet kopiëren');
     }
