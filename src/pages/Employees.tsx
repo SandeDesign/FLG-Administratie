@@ -132,7 +132,7 @@ const Employees: React.FC = () => {
         contractInfo: {
           type: data.contractType,
           startDate: new Date(data.startDate),
-          endDate: data.endDate ? new Date(data.endDate) : undefined,
+          endDate: data.endDate ? new Date(data.endDate) : null,
           hoursPerWeek: data.hoursPerWeek || undefined,
           position: data.position,
         },
