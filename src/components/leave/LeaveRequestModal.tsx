@@ -94,6 +94,16 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
   };
 
   const onSubmit = async (data: LeaveRequestFormData) => {
+    if (!employeeId || !currentEmployee) {
+      showError('Geen werknemer', 'Werknemergegevens ontbreken');
+      return;
+    }
+
+    if (!currentEmployee.companyId) {
+      showError('Geen bedrijf', 'Werknemer is niet gekoppeld aan een bedrijf');
+      return;
+    }
+
     if (calculatedDays <= 0) {
       showError('Ongeldige datums', 'Einddatum moet na startdatum liggen');
       return;
@@ -111,7 +121,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
     try {
       await createLeaveRequest({
         employeeId,
-        companyId: currentEmployee?.companyId || '',
+        companyId: currentEmployee.companyId,
         type: data.type,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),

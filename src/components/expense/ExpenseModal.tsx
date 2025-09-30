@@ -75,6 +75,21 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   }, [expenseType, kilometers, travelRatePerKm, setValue]);
 
   const onSubmit = async (data: ExpenseFormData) => {
+    if (!employeeId) {
+      showError('Geen werknemer', 'Werknemer ID ontbreekt');
+      return;
+    }
+
+    if (!currentEmployee) {
+      showError('Geen werknemer', 'Werknemergegevens ontbreken');
+      return;
+    }
+
+    if (!currentEmployee.companyId) {
+      showError('Geen bedrijf', 'Werknemer is niet gekoppeld aan een bedrijf');
+      return;
+    }
+
     if (data.amount <= 0) {
       showError('Ongeldig bedrag', 'Bedrag moet groter zijn dan 0');
       return;
@@ -84,7 +99,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
     try {
       await createExpense({
         employeeId,
-        companyId: currentEmployee?.companyId || '',
+        companyId: currentEmployee.companyId,
         date: new Date(data.date),
         type: data.type,
         description: data.description,
