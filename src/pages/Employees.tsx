@@ -416,6 +416,8 @@ const Employees: React.FC = () => {
   const onSubmit = async (data: EmployeeFormData) => {
     if (!user) return;
     
+    console.log('Form data received:', data);
+    
     // Validate all fields before submission
     const isFormValid = await trigger();
     if (!isFormValid) {
@@ -444,7 +446,7 @@ const Employees: React.FC = () => {
           lastName: data.lastName,
           initials: data.initials,
           bsn: data.bsn,
-          dateOfBirth: new Date(data.dateOfBirth),
+          dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
           placeOfBirth: data.placeOfBirth,
           nationality: data.nationality,
           address: {
@@ -458,7 +460,7 @@ const Employees: React.FC = () => {
           contactInfo: {
             email: data.email,
             phone: data.phone,
-            emergencyContact: data.emergencyContactName ? {
+            emergencyContact: (data.emergencyContactName && data.emergencyContactPhone) ? {
               name: data.emergencyContactName,
               phone: data.emergencyContactPhone,
               relation: data.emergencyContactRelation,
@@ -470,8 +472,8 @@ const Employees: React.FC = () => {
         },
         contractInfo: {
           type: data.contractType,
-          startDate: new Date(data.startDate),
-          endDate: data.endDate ? new Date(data.endDate) : null,
+          startDate: data.startDate ? new Date(data.startDate) : new Date(),
+          endDate: data.endDate ? new Date(data.endDate) : undefined,
           probationPeriod: data.probationPeriod || undefined,
           hoursPerWeek: data.hoursPerWeek,
           position: data.position,
@@ -480,7 +482,7 @@ const Employees: React.FC = () => {
           cao: data.cao,
           caoCode: data.caoCode || undefined,
           contractStatus: data.contractStatus,
-        },
+          noticeDate: data.noticeDate ? new Date(data.noticeDate) : undefined,
         salaryInfo: {
           salaryScale: data.salaryScale,
           paymentType: data.paymentType,
@@ -522,10 +524,10 @@ const Employees: React.FC = () => {
             extraStatutory: data.extraStatutoryHolidayDays,
             accumulated: data.statutoryHolidayDays + data.extraStatutoryHolidayDays,
             taken: 0,
-            remaining: data.statutoryHolidayDays + data.extraStatutoryHolidayDays,
-            expiryDate: new Date(new Date().getFullYear() + 5, 11, 31), // 5 years from now
-          },
-          advDays: data.advDays ? {
+          deductions: data.deductions ? (Array.isArray(data.deductions) ? data.deductions : []) : [],
+            expiryDate: data.holidayExpiryDate ? new Date(data.holidayExpiryDate) : new Date(new Date().getFullYear() + 5, 11, 31),
+          companyCarBenefit: (data.companyCarCatalogValue && data.companyCarCo2Emission) ? {
+          advDays: (data.advDaysAccumulated !== undefined && data.advDaysAccumulated !== null) ? {
             accumulated: data.advDays,
             taken: 0,
             remaining: data.advDays,
@@ -535,20 +537,33 @@ const Employees: React.FC = () => {
         },
         status: 'active',
       };
+        salaryHistory: data.salaryHistory ? (Array.isArray(data.salaryHistory) ? data.salaryHistory : []) : [],
+      console.log('Employee data being sent to Firebase:', employeeData);
 
       if (editingEmployee) {
+        console.log('Updating existing employee:', editingEmployee.id);
         await updateEmployee(editingEmployee.id, user.uid, employeeData);
         success('Werknemer bijgewerkt', `${data.firstName} ${data.lastName} is succesvol bijgewerkt`);
       } else {
+        console.log('Creating new employee...');
         await createEmployee(user.uid, employeeData);
         success('Werknemer aangemaakt', `${data.firstName} ${data.lastName} is succesvol toegevoegd`);
       }
 
       await refreshEmployees();
+      console.log('Constructing employee data...');
       closeModal();
     } catch (err) {
       console.error('Error saving employee:', err);
-      error('Fout bij opslaan', 'Er is een fout opgetreden bij het opslaan van de werknemer. Probeer het opnieuw.');
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        stack: err.stack,
+        fullError: err
+      });
+      
+      const errorMessage = err.message || 'Onbekende fout opgetreden';
+      error('Fout bij opslaan werknemer', errorMessage);
     } finally {
       setSubmitting(false);
     }

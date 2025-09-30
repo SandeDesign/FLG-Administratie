@@ -294,6 +294,9 @@ export const getEmployee = async (id: string, userId: string): Promise<Employee 
 };
 
 export const createEmployee = async (userId: string, employee: Omit<Employee, 'id' | 'userId'>): Promise<string> => {
+  console.log('Firebase createEmployee called with userId:', userId);
+  console.log('Employee data received in createEmployee:', employee);
+  
   const employeeData = convertToTimestamps({
     ...employee,
     userId,
@@ -301,8 +304,22 @@ export const createEmployee = async (userId: string, employee: Omit<Employee, 'i
     updatedAt: new Date()
   });
   
-  const docRef = await addDoc(collection(db, 'employees'), employeeData);
-  return docRef.id;
+  console.log('Employee data after timestamp conversion:', employeeData);
+  
+  try {
+    console.log('Attempting to add document to Firestore...');
+    const docRef = await addDoc(collection(db, 'employees'), employeeData);
+    console.log('Document successfully added with ID:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Firestore error in createEmployee:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    throw error;
+  }
 };
 
 export const updateEmployee = async (id: string, userId: string, updates: Partial<Employee>): Promise<void> => {
