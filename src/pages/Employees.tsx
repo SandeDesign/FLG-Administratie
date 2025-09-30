@@ -8,7 +8,7 @@ import Input from '../components/ui/Input';
 import { EmptyState } from '../components/ui/EmptyState';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useForm } from 'react-hook-form';
-import { Employee, Company, Branch } from '../types';
+import { Employee, Company, Branch, DUTCH_CAOS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
