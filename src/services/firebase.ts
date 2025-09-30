@@ -620,13 +620,11 @@ export const getLeaveRequests = async (userId: string, employeeId?: string): Pro
   return requests;
 };
 
-export const createLeaveRequest = async (request: Omit<LeaveRequest, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  // Get the company owner's userId
-  const userId = await getCompanyOwnerUserId(request.companyId);
+export const createLeaveRequest = async (currentUserId: string, request: Omit<LeaveRequest, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   
   const requestData = convertToTimestamps({
     ...request,
-    userId,
+    userId: currentUserId,
     createdAt: new Date(),
     updatedAt: new Date()
   });
@@ -754,16 +752,14 @@ export const getSickLeaveRecords = async (userId: string, employeeId?: string): 
   return records;
 };
 
-export const createSickLeave = async (sickLeave: Omit<SickLeave, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  // Get the company owner's userId
-  const userId = await getCompanyOwnerUserId(sickLeave.companyId);
+export const createSickLeave = async (currentUserId: string, sickLeave: Omit<SickLeave, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   
   const shouldActivate = shouldActivatePoortwachter(sickLeave.startDate);
   const milestones = shouldActivate ? generatePoortwachterMilestones(sickLeave.startDate) : null;
 
   const sickLeaveData = convertToTimestamps({
     ...sickLeave,
-    userId,
+    userId: currentUserId,
     poortwachterActive: shouldActivate,
     poortwachterMilestones: milestones,
     createdAt: new Date(),
@@ -930,9 +926,7 @@ export const getExpenses = async (userId: string, employeeId?: string): Promise<
   return expenses;
 };
 
-export const createExpense = async (expense: Omit<Expense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  // Get the company owner's userId
-  const userId = await getCompanyOwnerUserId(expense.companyId);
+export const createExpense = async (currentUserId: string, expense: Omit<Expense, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   
   // Clean up undefined values that Firestore doesn't accept
   const cleanExpense = {
@@ -946,7 +940,7 @@ export const createExpense = async (expense: Omit<Expense, 'id' | 'userId' | 'cr
 
   const expenseData = convertToTimestamps({
     ...cleanExpense,
-    userId,
+    userId: currentUserId,
     createdAt: new Date(),
     updatedAt: new Date()
   });

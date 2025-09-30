@@ -97,7 +97,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
 
     setSubmitting(true);
     try {
-      await createExpense({
+      await createExpense(user.uid, {
         employeeId,
         companyId: currentEmployee.companyId,
         date: new Date(data.date),
