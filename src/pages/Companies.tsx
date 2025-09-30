@@ -71,7 +71,7 @@ const Companies: React.FC = () => {
     reset();
   };
 
-  const onSubmit = (data: CompanyFormData) => {
+  const onSubmit = async (data: CompanyFormData) => {
     if (!user) return;
     
     setSubmitting(true);

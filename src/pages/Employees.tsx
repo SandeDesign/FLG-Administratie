@@ -104,7 +104,7 @@ const Employees: React.FC = () => {
     reset();
   };
 
-  const onSubmit = (data: EmployeeFormData) => {
+  const onSubmit = async (data: EmployeeFormData) => {
     if (!user) return;
     
     setSubmitting(true);
