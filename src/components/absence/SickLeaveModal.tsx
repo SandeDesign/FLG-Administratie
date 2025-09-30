@@ -40,14 +40,11 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
   useEffect(() => {
     if (employeeId && employees.length > 0) {
       const employee = employees.find(e => e.id === employeeId);
-      console.log('SickLeaveModal: Employee found:', !!employee);
       if (employee) {
         setCurrentEmployee(employee);
-      } else {
         setCurrentEmployee(null);
       }
     } else {
-      setCurrentEmployee(null);
     }
   }, [employeeId, employees]);
 
