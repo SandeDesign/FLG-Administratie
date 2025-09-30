@@ -422,6 +422,19 @@ export const deleteEmployee = async (id: string, userId: string): Promise<void> 
   await deleteDoc(docRef);
 };
 
+// Get employee by ID without userId check (for employee self-access)
+export const getEmployeeById = async (employeeId: string): Promise<Employee | null> => {
+  const docRef = doc(db, 'employees', employeeId);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return null;
+  
+  return {
+    id: docSnap.id,
+    ...convertTimestamps(docSnap.data())
+  } as Employee;
+};
+
 // Time Entries
 export const getTimeEntries = async (userId: string, employeeId?: string, dateRange?: { start: Date; end: Date }): Promise<TimeEntry[]> => {
   let q;

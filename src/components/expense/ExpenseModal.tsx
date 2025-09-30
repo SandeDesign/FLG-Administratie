@@ -6,7 +6,7 @@ import Button from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import { useToast } from '../../hooks/useToast';
-import { createExpense, calculateTravelExpense } from '../../services/firebase';
+import { createExpense, calculateTravelExpense, getEmployeeById } from '../../services/firebase';
 import { Employee } from '../../types';
 import { User } from 'lucide-react';
 
@@ -28,7 +28,7 @@ interface ExpenseModalProps {
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess, employeeId }) => {
   const { user } = useAuth();
-  const { employees, companies } = useApp();
+  const { companies } = useApp();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [travelRatePerKm, setTravelRatePerKm] = useState(0.23);
@@ -45,21 +45,24 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   const kilometers = watch('kilometers');
 
   useEffect(() => {
-    if (employeeId && employees.length > 0) {
-      const employee = employees.find(e => e.id === employeeId);
-      if (employee) {
-        setCurrentEmployee(employee);
-      }
+    if (employeeId) {
+      const loadEmployee = async () => {
+        try {
+          const employee = await getEmployeeById(employeeId);
+          setCurrentEmployee(employee);
+        } catch (err) {
+          console.error('Error loading employee:', err);
+        }
+      };
+      loadEmployee();
     }
-  }, [employeeId, employees]);
+  }, [employeeId]);
 
   useEffect(() => {
-    if (user && employeeId && employees.length > 0) {
-      if (currentEmployee) {
-        const company = companies.find(c => c.id === currentEmployee.companyId);
-        if (company?.settings?.travelAllowancePerKm) {
-          setTravelRatePerKm(company.settings.travelAllowancePerKm);
-        }
+    if (user && employeeId && currentEmployee) {
+      const company = companies.find(c => c.id === currentEmployee.companyId);
+      if (company?.settings?.travelAllowancePerKm) {
+        setTravelRatePerKm(company.settings.travelAllowancePerKm);
       }
     }
   }, [user, employeeId, currentEmployee, companies]);
@@ -72,21 +75,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   }, [expenseType, kilometers, travelRatePerKm, setValue]);
 
   const onSubmit = async (data: ExpenseFormData) => {
-    if (!employeeId) {
-      showError('Geen werknemer', 'Werknemer ID ontbreekt');
-      return;
-    }
-
-    if (!currentEmployee) {
-      showError('Geen werknemer', 'Werknemergegevens ontbreken');
-      return;
-    }
-
-    if (!currentEmployee.companyId) {
-      showError('Geen bedrijf', 'Werknemer is niet gekoppeld aan een bedrijf');
-      return;
-    }
-
     if (data.amount <= 0) {
       showError('Ongeldig bedrag', 'Bedrag moet groter zijn dan 0');
       return;
@@ -96,7 +84,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
     try {
       await createExpense({
         employeeId,
-        companyId: currentEmployee.companyId,
+        companyId: currentEmployee?.companyId || '',
         date: new Date(data.date),
         type: data.type,
         description: data.description,

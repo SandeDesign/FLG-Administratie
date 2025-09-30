@@ -6,7 +6,7 @@ import Button from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import { useToast } from '../../hooks/useToast';
-import { createSickLeave } from '../../services/firebase';
+import { createSickLeave, getEmployeeById } from '../../services/firebase';
 import { User } from 'lucide-react';
 import { Employee } from '../../types';
 
@@ -25,7 +25,7 @@ interface SickLeaveModalProps {
 
 const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSuccess, employeeId }) => {
   const { user } = useAuth();
-  const { employees, companies } = useApp();
+  const { companies } = useApp();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
@@ -38,29 +38,22 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
   });
 
   useEffect(() => {
-    if (employeeId && employees.length > 0) {
-      const employee = employees.find(e => e.id === employeeId);
-      if (employee) {
-        setCurrentEmployee(employee);
-        setCurrentEmployee(null);
-      }
-    } else {
+    if (employeeId) {
+      const loadEmployee = async () => {
+        try {
+          const employee = await getEmployeeById(employeeId);
+          setCurrentEmployee(employee);
+        } catch (err) {
+          console.error('Error loading employee:', err);
+        }
+      };
+      loadEmployee();
     }
-  }, [employeeId, employees]);
+  }, [employeeId]);
 
   const onSubmit = async (data: SickLeaveFormData) => {
-    if (!employeeId) {
-      showError('Geen werknemer', 'Werknemer ID ontbreekt');
-      return;
-    }
-
-    if (!currentEmployee) {
-      showError('Geen werknemer', 'Werknemergegevens ontbreken');
-      return;
-    }
-
-    if (!currentEmployee.companyId) {
-      showError('Geen bedrijf', 'Werknemer is niet gekoppeld aan een bedrijf');
+    if (data.startDate > new Date().toISOString().split('T')[0]) {
+      showError('Ongeldige datum', 'Startdatum kan niet in de toekomst liggen');
       return;
     }
 
@@ -68,14 +61,14 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
     try {
       await createSickLeave({
         employeeId,
-        companyId: currentEmployee.companyId,
+        companyId: currentEmployee?.companyId || '',
         startDate: new Date(data.startDate),
         reportedAt: new Date(),
         reportedBy: user?.displayName || user?.email || 'Werknemer',
         reportedVia: 'app',
         workCapacityPercentage: data.workCapacityPercentage,
         status: 'active',
-        notes: data.notes,
+        notes: data.notes || '',
         arboServiceContacted: false,
         poortwachterActive: false,
         doctorVisits: [],
@@ -96,7 +89,6 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
   const handleClose = () => {
     reset();
     onClose();
-  };
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Ziek Melden" size="md">
