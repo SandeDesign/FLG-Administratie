@@ -77,19 +77,26 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
       return;
     }
 
+    if (!currentEmployee) {
+      showError('Geen werknemer', 'Werknemergegevens ontbreken');
+      return;
+    }
+
+    if (!currentEmployee.companyId) {
+      showError('Geen bedrijf', 'Werknemer is niet gekoppeld aan een bedrijf');
+      return;
+    }
+
     if (data.amount <= 0) {
       showError('Ongeldig bedrag', 'Bedrag moet groter zijn dan 0');
       return;
     }
 
-    const company = currentEmployee ? companies.find(c => c.id === currentEmployee.companyId) : null;
-    const companyId = company?.id || 'default-company';
-
     setSubmitting(true);
     try {
       await createExpense({
         employeeId,
-        companyId,
+        companyId: currentEmployee.companyId,
         date: new Date(data.date),
         type: data.type,
         description: data.description,

@@ -54,15 +54,21 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
       return;
     }
 
-    const company = currentEmployee ? companies.find(c => c.id === currentEmployee.companyId) : null;
-    const companyId = company?.id || 'default-company';
+    if (!currentEmployee) {
+      showError('Geen werknemer', 'Werknemergegevens ontbreken');
+      return;
+    }
 
-    // Skip employee validation - allow submission even without employee data
+    if (!currentEmployee.companyId) {
+      showError('Geen bedrijf', 'Werknemer is niet gekoppeld aan een bedrijf');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await createSickLeave({
         employeeId,
-        companyId,
+        companyId: currentEmployee.companyId,
         startDate: new Date(data.startDate),
         reportedAt: new Date(),
         reportedBy: user?.displayName || user?.email || 'Werknemer',
