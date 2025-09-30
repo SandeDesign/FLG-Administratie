@@ -8,7 +8,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useToast } from '../../hooks/useToast';
 import { createLeaveRequest, getLeaveBalance } from '../../services/firebase';
 import { LeaveBalance, Employee } from '../../types';
-import { User } from 'lucide-react';
+import { User, AlertCircle } from 'lucide-react';
 
 interface LeaveRequestFormData {
   type: 'vacation' | 'compensation' | 'unpaid' | 'special' | 'parental' | 'care';
