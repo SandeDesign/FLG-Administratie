@@ -5,33 +5,15 @@ interface CardProps {
   className?: string;
   title?: string;
   subtitle?: string;
-  elevation?: 'none' | 'low' | 'medium' | 'high';
-  hover?: boolean;
 }
 
-const Card: React.FC<CardProps> = ({ 
-  children, 
-  className = '', 
-  title, 
-  subtitle, 
-  elevation = 'medium',
-  hover = false 
-}) => {
-  const elevationClasses = {
-    none: '',
-    low: 'shadow-elevation-1',
-    medium: 'shadow-elevation-2',
-    high: 'shadow-elevation-3',
-  };
-
-  const hoverClasses = hover ? 'hover:shadow-elevation-4 hover:-translate-y-1' : '';
-
+const Card: React.FC<CardProps> = ({ children, className = '', title, subtitle }) => {
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-300 ${elevationClasses[elevation]} ${hoverClasses} ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${className}`}>
       {(title || subtitle) && (
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           {title && (
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               {title}
             </h3>
           )}

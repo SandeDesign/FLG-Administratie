@@ -19,13 +19,13 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
   const getIcon = () => {
     switch (toast.type) {
       case 'success':
-        return <CheckCircle className="h-6 w-6 text-green-600" />;
+        return <CheckCircle className="h-5 w-5 text-green-600" />;
       case 'error':
-        return <AlertCircle className="h-6 w-6 text-red-600" />;
+        return <AlertCircle className="h-5 w-5 text-red-600" />;
       case 'warning':
-        return <AlertTriangle className="h-6 w-6 text-orange-600" />;
+        return <AlertTriangle className="h-5 w-5 text-orange-600" />;
       case 'info':
-        return <Info className="h-6 w-6 text-blue-600" />;
+        return <Info className="h-5 w-5 text-blue-600" />;
       default:
         return null;
     }
@@ -48,7 +48,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
 
   return (
     <div
-      className={`max-w-sm w-full shadow-elevation-3 rounded-xl pointer-events-auto border animate-slide-up ${getColorClasses()}`}
+      className={`max-w-sm w-full shadow-lg rounded-lg pointer-events-auto border ${getColorClasses()}`}
     >
       <div className="p-4">
         <div className="flex items-start">
@@ -57,7 +57,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
           </div>
           <div className="ml-3 w-0 flex-1 pt-0.5">
             {toast.title && (
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {toast.title}
               </p>
             )}
@@ -67,11 +67,11 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
           </div>
           <div className="ml-4 flex-shrink-0 flex">
             <button
-              className="bg-transparent rounded-full inline-flex text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 p-1 transition-colors"
+              className="bg-transparent rounded-md inline-flex text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none"
               onClick={() => onRemove(toast.id)}
             >
               <span className="sr-only">Close</span>
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>

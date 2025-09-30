@@ -34,67 +34,79 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
-      <div className="max-w-md w-full space-y-8 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center shadow-elevation-3">
-              <Calculator className="h-8 w-8 text-white" />
-            </div>
+          <div className="flex justify-center">
+            <Calculator className="h-12 w-12 text-blue-600" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
             Welkom bij AlloonApp
           </h2>
-          <p className="mt-3 text-base text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Log in om je loonadministratie te beheren
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-elevation-3 p-8 border border-gray-200 dark:border-gray-700 animate-slide-up">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <Input
-              label="E-mailadres"
-              type="email"
-              startIcon={<Mail className="h-5 w-5" />}
-              {...register('email', { 
-                required: 'E-mailadres is verplicht',
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Ongeldig e-mailadres'
-                }
-              })}
-              error={errors.email?.message}
-              placeholder="naam@bedrijf.nl"
-            />
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                {...register('email', { 
+                  required: 'E-mailadres is verplicht',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Ongeldig e-mailadres'
+                  }
+                })}
+                type="email"
+                placeholder="E-mailadres"
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                  errors.email ? 'border-red-300' : 'border-gray-300'
+                }`}
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
 
-            <Input
-              label="Wachtwoord"
-              type={showPassword ? 'text' : 'password'}
-              startIcon={<Lock className="h-5 w-5" />}
-              endIcon={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              }
-              {...register('password', { 
-                required: 'Wachtwoord is verplicht',
-                minLength: {
-                  value: 6,
-                  message: 'Wachtwoord moet minimaal 6 karakters zijn'
-                }
-              })}
-              error={errors.password?.message}
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                {...register('password', { 
+                  required: 'Wachtwoord is verplicht',
+                  minLength: {
+                    value: 6,
+                    message: 'Wachtwoord moet minimaal 6 karakters zijn'
+                  }
+                })}
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Wachtwoord"
+                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                  errors.password ? 'border-red-300' : 'border-gray-300'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
 
             <div className="flex items-center justify-between">
               <Link
                 to="/reset-password"
-                className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300 font-medium transition-colors"
+                className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
               >
                 Wachtwoord vergeten?
               </Link>
@@ -103,19 +115,18 @@ const Login: React.FC = () => {
             <Button
               type="submit"
               loading={loading}
-              className="w-full"
-              size="lg"
+              className="w-full py-3 text-base"
             >
               Inloggen
             </Button>
           </form>
 
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Nog geen account?{' '}
               <Link
                 to="/register"
-                className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
               >
                 Registreer hier
               </Link>

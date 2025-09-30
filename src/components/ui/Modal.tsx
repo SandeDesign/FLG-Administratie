@@ -27,10 +27,10 @@ const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto animate-fade-in">
-      <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity backdrop-blur-sm"
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
           onClick={onClose}
         />
 
@@ -39,26 +39,18 @@ const Modal: React.FC<ModalProps> = ({
         </span>
 
         <div
-          className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-elevation-5 transform transition-all sm:my-8 sm:align-middle w-full animate-scale-in ${sizeClasses[size]}`}
+          className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full ${sizeClasses[size]}`}
         >
-          <div className="bg-white dark:bg-gray-800 px-6 pt-6 pb-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
+          <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {title}
               </h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onClose}
-                className="rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                elevation={false}
-              >
+              <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <div className="max-h-[70vh] overflow-y-auto">
-              {children}
-            </div>
+            {children}
           </div>
         </div>
       </div>

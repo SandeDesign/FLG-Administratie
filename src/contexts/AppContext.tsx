@@ -36,12 +36,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('darkMode');
-      if (stored !== null) {
-        return stored === 'true';
-      }
-      // Default to system preference
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return localStorage.getItem('darkMode') === 'true';
     }
     return false;
   });
@@ -52,12 +47,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDarkMode(newDarkMode);
     if (typeof window !== 'undefined') {
       localStorage.setItem('darkMode', newDarkMode.toString());
-      // Apply theme immediately
-      if (newDarkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
     }
   };
 
@@ -163,7 +152,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user]);
 
   useEffect(() => {
-    // Apply theme on mount and when darkMode changes
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
