@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Building2, Users, Calculator, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -27,6 +28,7 @@ const Dashboard: React.FC = () => {
   const { dashboardStats, refreshDashboardStats, companies, employees, loading } = useApp();
   const { user } = useAuth();
   const { success, info } = useToast();
+  const navigate = useNavigate();
   const [recentActivity] = useState<ActivityItem[]>([
     {
       id: '1',
@@ -47,37 +49,29 @@ const Dashboard: React.FC = () => {
       title: 'Uren Importeren',
       description: 'Haal nieuwe uren op van werkbonnen systeem',
       icon: Clock,
-      action: () => {
-        success('Uren succesvol geïmporteerd', 'Er zijn 23 nieuwe urenregistraties toegevoegd');
-      },
+      action: () => navigate('/hours'),
       color: 'text-blue-600 bg-blue-100',
     },
     {
       title: 'Loonberekening',
       description: 'Start loonberekening voor huidige periode',
       icon: Calculator,
-      action: () => {
-        info('Loonberekening gestart', 'Berekeningen worden uitgevoerd...');
-      },
+      action: () => navigate('/payroll'),
       color: 'text-green-600 bg-green-100',
     },
     {
       title: 'Loonstroken Genereren',
       description: 'Genereer PDF loonstroken voor werknemers',
       icon: TrendingUp,
-      action: () => {
-        success('Loonstroken gegenereerd', 'PDF bestanden zijn klaar voor download');
-      },
+      action: () => navigate('/payslips'),
       color: 'text-orange-600 bg-orange-100',
     },
     {
       title: 'Regelgeving Updaten',
       description: 'Controleer op nieuwe wet- en CAO wijzigingen',
       icon: AlertCircle,
-      action: () => {
-        info('Regelgeving wordt gecontroleerd', 'Er wordt gecontroleerd op updates...');
-      },
-      color: 'text-purple-600 bg-purple-100',
+      action: () => navigate('/regulations'),
+      color: 'text-orange-600 bg-orange-100',
     },
   ];
 

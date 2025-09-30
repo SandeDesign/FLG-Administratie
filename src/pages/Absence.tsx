@@ -5,6 +5,8 @@ import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import AbsenceStatsCard from '../components/absence/AbsenceStatsCard';
+import SickLeaveModal from '../components/absence/SickLeaveModal';
+import RecoveryModal from '../components/absence/RecoveryModal';
 import { SickLeave, AbsenceStatistics } from '../types';
 import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,6 +18,8 @@ const Absence: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sickLeaveRecords, setSickLeaveRecords] = useState<SickLeave[]>([]);
   const [absenceStats, setAbsenceStats] = useState<AbsenceStatistics | null>(null);
+  const [isSickLeaveModalOpen, setIsSickLeaveModalOpen] = useState(false);
+  const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -85,7 +89,10 @@ const Absence: React.FC = () => {
             Bekijk je verzuimhistorie en statistieken
           </p>
         </div>
-        <Button variant={activeSickLeave ? 'secondary' : 'primary'}>
+        <Button
+          variant={activeSickLeave ? 'secondary' : 'primary'}
+          onClick={() => activeSickLeave ? setIsRecoveryModalOpen(true) : setIsSickLeaveModalOpen(true)}
+        >
           <Plus className="h-4 w-4 mr-2" />
           {activeSickLeave ? 'Beter Melden' : 'Ziek Melden'}
         </Button>
@@ -201,6 +208,21 @@ const Absence: React.FC = () => {
           </div>
         )}
       </Card>
+
+      <SickLeaveModal
+        isOpen={isSickLeaveModalOpen}
+        onClose={() => setIsSickLeaveModalOpen(false)}
+        onSuccess={loadAbsenceData}
+      />
+
+      {activeSickLeave && (
+        <RecoveryModal
+          isOpen={isRecoveryModalOpen}
+          onClose={() => setIsRecoveryModalOpen(false)}
+          onSuccess={loadAbsenceData}
+          sickLeave={activeSickLeave}
+        />
+      )}
     </div>
   );
 };

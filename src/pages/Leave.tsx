@@ -5,6 +5,7 @@ import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import LeaveBalanceCard from '../components/leave/LeaveBalanceCard';
+import LeaveRequestModal from '../components/leave/LeaveRequestModal';
 import { LeaveRequest, LeaveBalance } from '../types';
 import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,6 +19,7 @@ const Leave: React.FC = () => {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -89,7 +91,7 @@ const Leave: React.FC = () => {
             Beheer je verlofaanvragen en bekijk je saldo
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Verlof Aanvragen
         </Button>
@@ -127,7 +129,7 @@ const Leave: React.FC = () => {
             title="Geen verlofaanvragen"
             description="Je hebt nog geen verlof aangevraagd"
             actionLabel="Verlof Aanvragen"
-            onAction={() => {}}
+            onAction={() => setIsModalOpen(true)}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -179,6 +181,12 @@ const Leave: React.FC = () => {
           </div>
         )}
       </Card>
+
+      <LeaveRequestModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={loadLeaveData}
+      />
     </div>
   );
 };

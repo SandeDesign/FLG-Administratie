@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Clock, FileText, Settings, LogOut } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -6,6 +7,7 @@ import Button from '../components/ui/Button';
 
 const EmployeeDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -39,7 +41,7 @@ const EmployeeDashboard: React.FC = () => {
           <Card title="Mijn Uren" subtitle="Bekijk en beheer je gewerkte uren">
             <div className="flex items-center justify-between">
               <Clock className="h-12 w-12 text-blue-600" />
-              <Button size="sm">
+              <Button size="sm" onClick={() => navigate('/hours')}>
                 Uren Bekijken
               </Button>
             </div>
@@ -48,7 +50,7 @@ const EmployeeDashboard: React.FC = () => {
           <Card title="Loonstroken" subtitle="Download je loonstroken">
             <div className="flex items-center justify-between">
               <FileText className="h-12 w-12 text-green-600" />
-              <Button size="sm">
+              <Button size="sm" onClick={() => navigate('/payslips')}>
                 Loonstroken
               </Button>
             </div>
@@ -57,7 +59,7 @@ const EmployeeDashboard: React.FC = () => {
           <Card title="Profiel" subtitle="Beheer je persoonlijke gegevens">
             <div className="flex items-center justify-between">
               <Settings className="h-12 w-12 text-orange-600" />
-              <Button size="sm">
+              <Button size="sm" onClick={() => navigate('/settings')}>
                 Profiel
               </Button>
             </div>

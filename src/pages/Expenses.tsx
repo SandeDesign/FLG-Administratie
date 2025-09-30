@@ -4,6 +4,7 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
+import ExpenseModal from '../components/expense/ExpenseModal';
 import { Expense } from '../types';
 import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,6 +17,7 @@ const Expenses: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -94,7 +96,7 @@ const Expenses: React.FC = () => {
             Beheer je onkostendeclaraties
           </p>
         </div>
-        <Button>
+        <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nieuwe Declaratie
         </Button>
@@ -156,7 +158,7 @@ const Expenses: React.FC = () => {
             title="Geen declaraties"
             description="Je hebt nog geen declaraties ingediend"
             actionLabel="Nieuwe Declaratie"
-            onAction={() => {}}
+            onAction={() => setIsModalOpen(true)}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -207,6 +209,12 @@ const Expenses: React.FC = () => {
           </div>
         )}
       </Card>
+
+      <ExpenseModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={loadExpenses}
+      />
     </div>
   );
 };
