@@ -47,7 +47,7 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
 
     setSubmitting(true);
     try {
-      await updateSickLeave(sickLeave.id, user.uid, {
+      await updateSickLeave(sickLeave.id, sickLeave.userId, {
         endDate: new Date(data.endDate),
         actualReturnDate: new Date(data.endDate),
         workCapacityPercentage: data.workCapacityPercentage,
