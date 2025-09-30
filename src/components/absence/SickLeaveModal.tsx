@@ -25,7 +25,7 @@ interface SickLeaveModalProps {
 
 const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSuccess, employeeId }) => {
   const { user } = useAuth();
-  const { employees } = useApp();
+  const { employees, companies } = useApp();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
@@ -36,15 +36,22 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
       workCapacityPercentage: 0,
     }
   });
-    }
-    
+
+  useEffect(() => {
+    if (employeeId && employees.length > 0) {
       const employee = employees.find(e => e.id === employeeId);
       console.log('SickLeaveModal: Employee found:', !!employee);
+      if (employee) {
+        setCurrentEmployee(employee);
+      } else {
         setCurrentEmployee(null);
+      }
+    } else {
       setCurrentEmployee(null);
-      setEmployeeError(null);
     }
   }, [employeeId, employees]);
+
+  const onSubmit = async (data: SickLeaveFormData) => {
     if (!user || !employeeId) {
       showError('Geen gebruiker', 'Je moet ingelogd zijn om ziek te melden');
       return;
@@ -71,12 +78,13 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({ isOpen, onClose, onSucc
         doctorVisits: [],
       });
 
+      success('Ziekmelding aangemaakt', 'Je ziekmelding is succesvol aangemaakt');
       reset();
       onSuccess();
       onClose();
     } catch (err) {
       console.error('Error creating sick leave:', err);
-      console.error('Error creating sick leave:', err);
+      showError('Fout bij aanmaken ziekmelding', 'Er is een fout opgetreden bij het aanmaken van de ziekmelding');
     } finally {
       setSubmitting(false);
     }
