@@ -714,6 +714,39 @@ const Employees: React.FC = () => {
     return <LoadingSpinner />;
   }
 
+  // Show empty state if no employees exist
+  if (employees.length === 0) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Werknemers
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Beheer uw werknemers en hun contractgegevens
+            </p>
+          </div>
+          <Button onClick={() => openModal()}>
+            <Plus className="h-5 w-5 mr-2" />
+            Nieuwe Werknemer
+          </Button>
+        </div>
+
+        <Card>
+          <EmptyState
+            icon={User}
+            title="Geen werknemers"
+            description="Voeg je eerste werknemer toe om te beginnen met loonadministratie"
+            actionLabel="Werknemer Toevoegen"
+            onAction={() => openModal()}
+          />
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -731,6 +764,445 @@ const Employees: React.FC = () => {
           Nieuwe Werknemer
         </Button>
       </div>
+
+      {/* Employees Table */}
+      <Card>
+        <Table data={employees} columns={columns} />
+      </Card>
+
+      {/* Employee Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title={editingEmployee ? 'Werknemer Bewerken' : 'Nieuwe Werknemer'}
+        size="xl"
+      >
+        <div className="space-y-6">
+          {/* Tabs */}
+          <div className="border-b border-gray-200 dark:border-gray-700">
+            <nav className="-mb-px flex space-x-8">
+              {tabs.map((tab) => {
+                const IconComponent = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <IconComponent className="h-5 w-5 mr-2" />
+                    {tab.name}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Tab Content */}
+            {activeTab === 0 && (
+              <div className="space-y-6">
+                <h4 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Persoonlijke Gegevens
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Voornaam *"
+                    {...register('firstName')}
+                    error={errors.firstName?.message}
+                  />
+                  <Input
+                    label="Achternaam *"
+                    {...register('lastName')}
+                    error={errors.lastName?.message}
+                  />
+                  <Input
+                    label="Initialen *"
+                    {...register('initials')}
+                    error={errors.initials?.message}
+                  />
+                  <Input
+                    label="BSN *"
+                    {...register('bsn')}
+                    error={errors.bsn?.message}
+                  />
+                  <Input
+                    label="Geboortedatum *"
+                    type="date"
+                    {...register('dateOfBirth')}
+                    error={errors.dateOfBirth?.message}
+                  />
+                  <Input
+                    label="Geboorteplaats"
+                    {...register('placeOfBirth')}
+                    error={errors.placeOfBirth?.message}
+                  />
+                  <Input
+                    label="Nationaliteit"
+                    {...register('nationality')}
+                    error={errors.nationality?.message}
+                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Burgerlijke Staat *
+                    </label>
+                    <select
+                      {...register('maritalStatus')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="single">Ongehuwd</option>
+                      <option value="married">Gehuwd</option>
+                      <option value="registered_partnership">Geregistreerd partnerschap</option>
+                      <option value="divorced">Gescheiden</option>
+                      <option value="widowed">Weduwe/Weduwnaar</option>
+                    </select>
+                    {errors.maritalStatus && (
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                        {errors.maritalStatus.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <h5 className="text-md font-medium text-gray-900 dark:text-white">
+                  Adresgegevens
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Input
+                    label="Straat *"
+                    {...register('street')}
+                    error={errors.street?.message}
+                  />
+                  <Input
+                    label="Huisnummer"
+                    {...register('houseNumber')}
+                    error={errors.houseNumber?.message}
+                  />
+                  <Input
+                    label="Toevoeging"
+                    {...register('houseNumberAddition')}
+                    error={errors.houseNumberAddition?.message}
+                  />
+                  <Input
+                    label="Postcode *"
+                    {...register('zipCode')}
+                    error={errors.zipCode?.message}
+                  />
+                  <Input
+                    label="Plaats *"
+                    {...register('city')}
+                    error={errors.city?.message}
+                  />
+                </div>
+
+                <h5 className="text-md font-medium text-gray-900 dark:text-white">
+                  Contactgegevens
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="E-mailadres *"
+                    type="email"
+                    {...register('email')}
+                    error={errors.email?.message}
+                  />
+                  <Input
+                    label="Telefoonnummer *"
+                    {...register('phone')}
+                    error={errors.phone?.message}
+                  />
+                  <Input
+                    label="Noodcontact Naam"
+                    {...register('emergencyContactName')}
+                    error={errors.emergencyContactName?.message}
+                  />
+                  <Input
+                    label="Noodcontact Telefoon"
+                    {...register('emergencyContactPhone')}
+                    error={errors.emergencyContactPhone?.message}
+                  />
+                  <Input
+                    label="Noodcontact Relatie"
+                    {...register('emergencyContactRelation')}
+                    error={errors.emergencyContactRelation?.message}
+                  />
+                </div>
+
+                <h5 className="text-md font-medium text-gray-900 dark:text-white">
+                  Bank & Identiteit
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="IBAN *"
+                    {...register('bankAccount')}
+                    error={errors.bankAccount?.message}
+                  />
+                  <Input
+                    label="Identiteitsdocument"
+                    {...register('identityDocument')}
+                    error={errors.identityDocument?.message}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 1 && (
+              <div className="space-y-6">
+                <h4 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Contract Informatie
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Bedrijf *
+                    </label>
+                    <select
+                      {...register('companyId')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="">Selecteer bedrijf...</option>
+                      {companies.map(company => (
+                        <option key={company.id} value={company.id}>
+                          {company.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.companyId && (
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                        {errors.companyId.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Vestiging *
+                    </label>
+                    <select
+                      {...register('branchId')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="">Selecteer vestiging...</option>
+                      {getAvailableBranches().map(branch => (
+                        <option key={branch.id} value={branch.id}>
+                          {branch.name} - {branch.location}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.branchId && (
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                        {errors.branchId.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Contracttype *
+                    </label>
+                    <select
+                      {...register('contractType')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="permanent">Vast</option>
+                      <option value="temporary">Tijdelijk</option>
+                      <option value="zero_hours">0-uren</option>
+                      <option value="on_call">Oproep</option>
+                      <option value="intern">Stagiair</option>
+                      <option value="dga">DGA</option>
+                      <option value="payroll">Payroll</option>
+                      <option value="freelance">ZZP</option>
+                    </select>
+                    {errors.contractType && (
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                        {errors.contractType.message}
+                      </p>
+                    )}
+                  </div>
+                  <Input
+                    label="Startdatum *"
+                    type="date"
+                    {...register('startDate')}
+                    error={errors.startDate?.message}
+                  />
+                  {contractType === 'temporary' && (
+                    <Input
+                      label="Einddatum"
+                      type="date"
+                      {...register('endDate')}
+                      error={errors.endDate?.message}
+                    />
+                  )}
+                  <Input
+                    label="Proeftijd (maanden)"
+                    type="number"
+                    {...register('probationPeriod')}
+                    error={errors.probationPeriod?.message}
+                  />
+                  <Input
+                    label="Uren per week *"
+                    type="number"
+                    {...register('hoursPerWeek')}
+                    error={errors.hoursPerWeek?.message}
+                  />
+                  <Input
+                    label="Functie *"
+                    {...register('position')}
+                    error={errors.position?.message}
+                  />
+                  <Input
+                    label="Afdeling"
+                    {...register('department')}
+                    error={errors.department?.message}
+                  />
+                  <Input
+                    label="Kostenplaats"
+                    {...register('costCenter')}
+                    error={errors.costCenter?.message}
+                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      CAO *
+                    </label>
+                    <select
+                      {...register('cao')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="">Selecteer CAO...</option>
+                      {DUTCH_CAOS.map(cao => (
+                        <option key={cao.id} value={cao.name}>
+                          {cao.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.cao && (
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                        {errors.cao.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex space-x-3">
+                {activeTab > 0 && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setActiveTab(activeTab - 1)}
+                  >
+                    Vorige
+                  </Button>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                <Button type="button" variant="secondary" onClick={closeModal}>
+                  Annuleren
+                </Button>
+                {activeTab < tabs.length - 1 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setActiveTab(activeTab + 1)}
+                  >
+                    Volgende
+                  </Button>
+                ) : (
+                  <Button type="submit" loading={submitting}>
+                    {editingEmployee ? 'Bijwerken' : 'Aanmaken'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      {/* Password Modal */}
+      <Modal
+        isOpen={showPasswordModal}
+        onClose={closePasswordModal}
+        title="Account Aangemaakt"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/20">
+              <UserPlus className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Account succesvol aangemaakt
+              </h3>
+              <div className="mt-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Voor: {selectedEmployee?.personalInfo.firstName} {selectedEmployee?.personalInfo.lastName}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Gegenereerd wachtwoord:
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={generatedPassword}
+                    readOnly
+                    className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-mono"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={copyPasswordToClipboard}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <Mail className="h-5 w-5 text-blue-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Belangrijk
+                </h3>
+                <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                  <p>
+                    Deel dit wachtwoord veilig met de werknemer. Ze kunnen inloggen met hun e-mailadres en dit wachtwoord.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={closePasswordModal}>
+              Sluiten
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
