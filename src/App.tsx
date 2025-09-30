@@ -20,73 +20,20 @@ import NotFound from './pages/NotFound';
 import Settings from './pages/Settings';
 import TaxReturns from './pages/TaxReturns';
 import AuditLogPage from './pages/AuditLog';
+import Timesheets from './pages/Timesheets';
+import TimesheetApprovals from './pages/TimesheetApprovals';
+import PayrollProcessing from './pages/PayrollProcessing';
+import Payslips from './pages/Payslips';
+import ExportsManagement from './pages/ExportsManagement';
 import { AppProvider } from './contexts/AppContext';
 import { ToastContainer } from './components/ui/Toast';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 
-// Placeholder components for routes not yet implemented
-const Hours = () => (
-  <div className="text-center py-12">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-      Uren Management
-    </h1>
-    <p className="text-gray-600 dark:text-gray-400">
-      Deze functionaliteit wordt binnenkort toegevoegd
-    </p>
-  </div>
-);
-
-const Payroll = () => (
-  <div className="text-center py-12">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-      Loonberekening
-    </h1>
-    <p className="text-gray-600 dark:text-gray-400">
-      Deze functionaliteit wordt binnenkort toegevoegd
-    </p>
-  </div>
-);
-
-const Payslips = () => (
-  <div className="text-center py-12">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-      Loonstroken
-    </h1>
-    <p className="text-gray-600 dark:text-gray-400">
-      Deze functionaliteit wordt binnenkort toegevoegd
-    </p>
-  </div>
-);
-
 const Regulations = () => (
   <div className="text-center py-12">
     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
       Regelgeving
-    </h1>
-    <p className="text-gray-600 dark:text-gray-400">
-      Deze functionaliteit wordt binnenkort toegevoegd
-    </p>
-  </div>
-);
-
-const Export = () => (
-  <div className="text-center py-12">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-      Export
-    </h1>
-    <p className="text-gray-600 dark:text-gray-400">
-      Deze functionaliteit wordt binnenkort toegevoegd
-    </p>
-  </div>
-);
-
-
-// Employee Hours placeholder
-const EmployeeHours = () => (
-  <div className="text-center py-12">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-      Mijn Uren
     </h1>
     <p className="text-gray-600 dark:text-gray-400">
       Deze functionaliteit wordt binnenkort toegevoegd
@@ -128,14 +75,15 @@ function App() {
                           <Route index element={<Dashboard />} />
                           <Route path="companies" element={<Companies />} />
                           <Route path="employees" element={<EmployeesNew />} />
+                          <Route path="timesheets" element={<Timesheets />} />
+                          <Route path="timesheet-approvals" element={<TimesheetApprovals />} />
                           <Route path="admin/leave-approvals" element={<AdminLeaveApprovals />} />
                           <Route path="admin/absence-management" element={<AdminAbsenceManagement />} />
                           <Route path="admin/expenses" element={<AdminExpenses />} />
-                          <Route path="hours" element={<Hours />} />
-                          <Route path="payroll" element={<Payroll />} />
+                          <Route path="payroll-processing" element={<PayrollProcessing />} />
                           <Route path="payslips" element={<Payslips />} />
                           <Route path="regulations" element={<Regulations />} />
-                          <Route path="export" element={<Export />} />
+                          <Route path="exports" element={<ExportsManagement />} />
                           <Route path="settings" element={<Settings />} />
                           <Route path="tax-returns" element={<TaxReturns />} />
                           <Route path="audit-log" element={<AuditLogPage />} />
@@ -159,7 +107,8 @@ function App() {
                             <Route path="leave" element={<Leave />} />
                             <Route path="absence" element={<Absence />} />
                             <Route path="expenses" element={<Expenses />} />
-                            <Route path="hours" element={<EmployeeHours />} />
+                            <Route path="timesheets" element={<Timesheets />} />
+                            <Route path="payslips" element={<Payslips />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
                         </EmployeeLayout>
