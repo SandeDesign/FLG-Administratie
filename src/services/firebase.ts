@@ -327,7 +327,12 @@ export const deleteEmployee = async (id: string, userId: string): Promise<void> 
   const docRef = doc(db, 'employees', id);
   const docSnap = await getDoc(docRef);
   
-  if (!docSnap.exists() || docSnap.data().userId !== userId) {
+  if (!docSnap.exists()) {
+    throw new Error('Employee not found');
+  }
+  
+  const employeeData = docSnap.data();
+  if (!employeeData || !employeeData.userId || typeof employeeData.userId !== 'string' || employeeData.userId !== userId) {
     throw new Error('Unauthorized');
   }
   
