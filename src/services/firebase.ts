@@ -687,7 +687,7 @@ export const getSickLeaveRecords = async (userId: string, employeeId?: string): 
 
 export const createSickLeave = async (userId: string, sickLeave: Omit<SickLeave, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   const shouldActivate = shouldActivatePoortwachter(sickLeave.startDate);
-  const milestones = shouldActivate ? generatePoortwachterMilestones(sickLeave.startDate) : undefined;
+  const milestones = shouldActivate ? generatePoortwachterMilestones(sickLeave.startDate) : null;
 
   const sickLeaveData = convertToTimestamps({
     ...sickLeave,
