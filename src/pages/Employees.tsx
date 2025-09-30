@@ -211,6 +211,25 @@ const Employees: React.FC = () => {
   const openModal = (employee?: Employee) => {
     setActiveTab(0); // Reset to first tab
     
+    // Check if we're adding a new employee
+    if (!employee) {
+      // Check if there are companies
+      if (companies.length === 0) {
+        error('Geen bedrijven', 'Voeg eerst een bedrijf toe voordat je werknemers kunt aanmaken');
+        return;
+      }
+      
+      // Set default company (first company)
+      const defaultCompany = companies[0];
+      
+      // Check if there are branches for this company
+      const availableBranches = branches.filter(b => b.companyId === defaultCompany.id);
+      if (availableBranches.length === 0) {
+        error('Geen vestigingen', `Voeg eerst een vestiging toe aan ${defaultCompany.name} voordat je werknemers kunt aanmaken`);
+        return;
+      }
+    }
+    
     if (employee) {
       setEditingEmployee(employee);
       // Set all form values for editing
@@ -304,6 +323,14 @@ const Employees: React.FC = () => {
     } else {
       setEditingEmployee(null);
       reset();
+      
+      // Set default values for new employee
+      const defaultCompany = companies[0];
+      const availableBranches = branches.filter(b => b.companyId === defaultCompany.id);
+      
+      setValue('companyId', defaultCompany.id);
+      setValue('branchId', availableBranches[0].id);
+      
       // Set default values for new employee
       setValue('nationality', 'Nederlandse');
       setValue('maritalStatus', 'single');
