@@ -207,7 +207,7 @@ export const Sidebar: React.FC = () => {
               title="Systeem"
               items={filteredSystemNav}
               storageKey="nav-system"
-              defaultOpen={true}
+              defaultOpen={false}
             />
           )
         )}
