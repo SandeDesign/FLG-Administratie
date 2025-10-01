@@ -21,8 +21,8 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 
 export default function Timesheets() {
-  const { user, adminUserId } = useAuth();
-  const { currentEmployeeId, selectedCompany } = useApp();
+  const { user, adminUserId, userRole } = useAuth();
+  const { currentEmployeeId, selectedCompany, employees } = useApp();
   const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -32,16 +32,24 @@ export default function Timesheets() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [currentTimesheet, setCurrentTimesheet] = useState<WeeklyTimesheet | null>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
 
   const loadData = useCallback(async () => {
-    if (!user || !adminUserId || !currentEmployeeId || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
+      setLoading(false);
+      return;
+    }
+
+    const effectiveEmployeeId = userRole === 'admin' ? selectedEmployeeId : currentEmployeeId;
+
+    if (!effectiveEmployeeId) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const employee = await getEmployeeById(currentEmployeeId);
+      const employee = await getEmployeeById(effectiveEmployeeId);
       if (!employee) {
         showError('Fout', 'Werknemergegevens niet gevonden.');
         setLoading(false);
@@ -51,7 +59,7 @@ export default function Timesheets() {
 
       const sheets = await getWeeklyTimesheets(
         adminUserId,
-        currentEmployeeId,
+        effectiveEmployeeId,
         selectedYear,
         selectedWeek
       );
@@ -64,9 +72,9 @@ export default function Timesheets() {
         const weekDates = getWeekDates(selectedYear, selectedWeek);
         const emptyEntries: TimesheetEntry[] = weekDates.map(date => ({
           userId: adminUserId,
-          employeeId: currentEmployeeId,
+          employeeId: effectiveEmployeeId,
           companyId: selectedCompany.id,
-          branchId: employee.branchId, // Use employee's branchId
+          branchId: employee.branchId,
           date,
           regularHours: 0,
           overtimeHours: 0,
@@ -81,7 +89,7 @@ export default function Timesheets() {
 
         const newTimesheet: WeeklyTimesheet = {
           userId: adminUserId,
-          employeeId: currentEmployeeId,
+          employeeId: effectiveEmployeeId,
           companyId: selectedCompany.id,
           branchId: employee.branchId,
           weekNumber: selectedWeek,
@@ -106,7 +114,7 @@ export default function Timesheets() {
     } finally {
       setLoading(false);
     }
-  }, [user, adminUserId, currentEmployeeId, selectedCompany, selectedYear, selectedWeek, showError]);
+  }, [user, adminUserId, userRole, currentEmployeeId, selectedEmployeeId, selectedCompany, selectedYear, selectedWeek, showError]);
 
   useEffect(() => {
     loadData();
@@ -219,13 +227,40 @@ export default function Timesheets() {
     );
   }
 
-  if (!currentEmployeeId) {
+  if (!selectedCompany) {
     return (
-      <EmptyState
-        icon={Clock}
-        title="Geen werknemer geselecteerd"
-        description="Selecteer een werknemer om uren te registreren."
-      />
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Urenregistratie</h1>
+        <EmptyState
+          icon={Clock}
+          title="Geen bedrijf geselecteerd"
+          description="Selecteer een bedrijf uit de dropdown in de zijbalk om uren te registreren."
+        />
+      </div>
+    );
+  }
+
+  const companyEmployees = employees.filter(emp => emp.companyId === selectedCompany.id);
+  const effectiveEmployeeId = userRole === 'admin' ? selectedEmployeeId : currentEmployeeId;
+
+  if (!effectiveEmployeeId) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Urenregistratie</h1>
+        {userRole === 'admin' && companyEmployees.length === 0 ? (
+          <EmptyState
+            icon={Clock}
+            title="Geen werknemers gevonden"
+            description="Er zijn geen werknemers voor dit bedrijf. Voeg eerst werknemers toe."
+          />
+        ) : (
+          <EmptyState
+            icon={Clock}
+            title="Geen werknemer geselecteerd"
+            description={userRole === 'admin' ? 'Selecteer een werknemer uit de dropdown hierboven om uren te registreren.' : 'Selecteer een werknemer om uren te registreren.'}
+          />
+        )}
+      </div>
     );
   }
 
@@ -248,9 +283,24 @@ export default function Timesheets() {
           <h1 className="text-2xl font-bold text-gray-900">Urenregistratie</h1>
           <p className="text-gray-600 mt-1">
             Week {selectedWeek}, {selectedYear}
+            {employeeData && <span> - {employeeData.personalInfo.firstName} {employeeData.personalInfo.lastName}</span>}
           </p>
         </div>
         <div className="flex items-center gap-4">
+          {userRole === 'admin' && companyEmployees.length > 0 && (
+            <select
+              value={selectedEmployeeId}
+              onChange={(e) => setSelectedEmployeeId(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Selecteer werknemer</option>
+              {companyEmployees.map(emp => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                </option>
+              ))}
+            </select>
+          )}
           <div className="flex items-center gap-2">
             <Button
               onClick={() => changeWeek(-1)}

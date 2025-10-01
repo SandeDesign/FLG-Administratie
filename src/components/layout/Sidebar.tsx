@@ -21,6 +21,7 @@ import {
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { NotificationCenter } from '../notifications/NotificationCenter';
+import { CompanySelector } from '../ui/CompanySelector';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
@@ -76,6 +77,13 @@ const Sidebar: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Company Selector */}
+      {userRole === 'admin' && (
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <CompanySelector />
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">

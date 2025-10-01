@@ -112,11 +112,16 @@ export default function TimesheetApprovals() {
 
   if (!selectedCompany) {
     return (
-      <EmptyState
-        icon={Building2}
-        title="Geen bedrijf geselecteerd"
-        description="Selecteer een bedrijf om urenregistraties goed te keuren."
-      />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Uren goedkeuren</h1>
+        </div>
+        <EmptyState
+          icon={Building2}
+          title="Geen bedrijf geselecteerd"
+          description="Selecteer een bedrijf uit de dropdown in de zijbalk om urenregistraties goed te keuren."
+        />
+      </div>
     );
   }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calculator, FileText, Download, TrendingUp } from 'lucide-react';
+import { Calculator, FileText, Download, TrendingUp, Users, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -205,11 +205,16 @@ export default function PayrollProcessing() {
 
   if (!selectedCompany) {
     return (
-      <EmptyState
-        icon={Building2}
-        title="Geen bedrijf geselecteerd"
-        description="Selecteer een bedrijf om loonverwerking te beheren."
-      />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Loonverwerking</h1>
+        </div>
+        <EmptyState
+          icon={Building2}
+          title="Geen bedrijf geselecteerd"
+          description="Selecteer een bedrijf uit de dropdown in de zijbalk om loonverwerking te beheren."
+        />
+      </div>
     );
   }
 

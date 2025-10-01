@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FileText, Download, Calendar, Building2 } from 'lucide-react';
+import { FileText, Download, Calendar, Building2, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -12,24 +12,32 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 
 export default function Payslips() {
-  const { user } = useAuth();
-  const { currentEmployeeId, selectedCompany } = useApp();
+  const { user, userRole } = useAuth();
+  const { currentEmployeeId, selectedCompany, employees } = useApp();
   const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
 
   const loadData = useCallback(async () => {
-    if (!user || !currentEmployeeId || !selectedCompany) {
+    if (!user || !selectedCompany) {
+      setLoading(false);
+      return;
+    }
+
+    const effectiveEmployeeId = userRole === 'admin' ? selectedEmployeeId : currentEmployeeId;
+
+    if (!effectiveEmployeeId) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const employee = await getEmployeeById(currentEmployeeId);
+      const employee = await getEmployeeById(effectiveEmployeeId);
       if (!employee) {
         showError('Fout', 'Werknemergegevens niet gevonden.');
         setLoading(false);
@@ -37,7 +45,7 @@ export default function Payslips() {
       }
       setEmployeeData(employee);
 
-      const allPayslips = await getPayslips(user.uid, currentEmployeeId);
+      const allPayslips = await getPayslips(user.uid, effectiveEmployeeId);
       const filtered = allPayslips.filter(
         p => p.periodStartDate.getFullYear() === selectedYear
       );
@@ -48,7 +56,7 @@ export default function Payslips() {
     } finally {
       setLoading(false);
     }
-  }, [user, currentEmployeeId, selectedCompany, selectedYear, showError]);
+  }, [user, userRole, currentEmployeeId, selectedEmployeeId, selectedCompany, selectedYear, showError]);
 
   useEffect(() => {
     loadData();
@@ -86,13 +94,35 @@ export default function Payslips() {
     );
   }
 
-  if (!currentEmployeeId) {
+  if (!selectedCompany) {
     return (
-      <EmptyState
-        icon={FileText}
-        title="Geen werknemer geselecteerd"
-        description="Selecteer een werknemer om loonstroken te bekijken."
-      />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Loonstroken</h1>
+        </div>
+        <EmptyState
+          icon={Building2}
+          title="Geen bedrijf geselecteerd"
+          description="Selecteer een bedrijf uit de dropdown in de zijbalk om loonstroken te bekijken."
+        />
+      </div>
+    );
+  }
+
+  const companyEmployees = employees.filter(emp => emp.companyId === selectedCompany.id);
+
+  if (userRole === 'admin' && !selectedEmployeeId && companyEmployees.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Loonstroken</h1>
+        </div>
+        <EmptyState
+          icon={FileText}
+          title="Geen werknemers gevonden"
+          description="Er zijn geen werknemers voor dit bedrijf. Voeg eerst werknemers toe."
+        />
+      </div>
     );
   }
 
@@ -102,24 +132,48 @@ export default function Payslips() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Loonstroken</h1>
           <p className="text-gray-600 mt-1">
-            Bekijk en download uw loonstroken
+            {userRole === 'admin' ? 'Bekijk en beheer loonstroken' : 'Bekijk en download uw loonstroken'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-gray-400" />
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-          >
-            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3">
+          {userRole === 'admin' && companyEmployees.length > 0 && (
+            <select
+              value={selectedEmployeeId}
+              onChange={(e) => setSelectedEmployeeId(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            >
+              <option value="">Selecteer werknemer</option>
+              {companyEmployees.map(emp => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                </option>
+              ))}
+            </select>
+          )}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-gray-400" />
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            >
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      {payslips.length === 0 ? (
+      {userRole === 'admin' && !selectedEmployeeId ? (
+        <Card>
+          <EmptyState
+            icon={User}
+            title="Geen werknemer geselecteerd"
+            description="Selecteer een werknemer uit de dropdown hierboven om loonstroken te bekijken."
+          />
+        </Card>
+      ) : payslips.length === 0 ? (
         <Card>
           <EmptyState
             icon={FileText}
