@@ -35,7 +35,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navigat
       }`}>
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center justify-between px-6 border-b border-gray-100">
-            <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-10 w-auto" />
+            <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-10 w-40" />
             <button
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
