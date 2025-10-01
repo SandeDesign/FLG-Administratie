@@ -119,7 +119,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navigat
                   items={timeNav}
                   onItemClick={onClose}
                   storageKey="mobile-nav-time-attendance"
-                  defaultOpen={true}
+                  defaultOpen={false}
                 />
               )
             )}
