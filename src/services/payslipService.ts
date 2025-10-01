@@ -109,6 +109,30 @@ export const createPayslip = async (
   return docRef.id;
 };
 
+export const createPayslipFromCalculation = async (
+  userId: string,
+  calculation: any,
+  employee: any,
+  company: any
+): Promise<string> => {
+  const payslipData: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'> = {
+    userId,
+    employeeId: calculation.employeeId,
+    companyId: calculation.companyId,
+    payrollPeriodId: calculation.payrollPeriodId,
+    payrollCalculationId: calculation.id || '',
+    periodStartDate: calculation.periodStartDate,
+    periodEndDate: calculation.periodEndDate,
+    paymentDate: calculation.periodEndDate,
+    pdfUrl: '',
+    pdfStoragePath: '',
+    generatedAt: new Date(),
+    generatedBy: userId
+  };
+
+  return await createPayslip(userId, payslipData);
+};
+
 export const generatePayslipData = async (
   company: Company,
   employee: Employee,

@@ -16,6 +16,8 @@ import {
   getHourlyRates,
   updatePayrollPeriod
 } from '../services/payrollService';
+import { createPayslipFromCalculation } from '../services/payslipService';
+import { getCompany } from '../services/firebase';
 import { getWeeklyTimesheets } from '../services/timesheetService';
 import { getEmployees } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
@@ -135,6 +137,11 @@ export default function PayrollProcessing() {
       // In a real app, you might want to delete these or mark them as superseded
       // For simplicity, we'll just overwrite/recreate
 
+      const company = await getCompany(selectedCompany.id, user.uid);
+      if (!company) {
+        throw new Error('Company not found');
+      }
+
       for (const employee of employees) {
         // Fetch timesheets for the specific employee within the payroll period
         const employeeTimesheets = await getWeeklyTimesheets(user.uid, employee.id);
@@ -160,16 +167,23 @@ export default function PayrollProcessing() {
         calculation.calculatedBy = user.uid;
         calculation.status = 'calculated';
 
+        let calculationId: string;
+
         // Check if a calculation already exists for this employee and period
         const existingCalc = existingCalculations.find(c => c.employeeId === employee.id);
         if (existingCalc) {
           // Update existing calculation
           await updatePayrollPeriod(existingCalc.id!, user.uid, calculation); // Reusing updatePayrollPeriod for calculation update
+          calculationId = existingCalc.id!;
         } else {
           // Create new calculation
-          await createPayrollCalculation(user.uid, calculation);
+          calculationId = await createPayrollCalculation(user.uid, calculation);
         }
-        
+
+        // Create payslip for this calculation
+        calculation.id = calculationId;
+        await createPayslipFromCalculation(user.uid, calculation, employee, company);
+
         totalGross += calculation.grossPay;
         totalNet += calculation.netPay;
         totalTax += calculation.taxes.incomeTax;

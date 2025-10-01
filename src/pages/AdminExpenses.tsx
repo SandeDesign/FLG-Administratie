@@ -102,7 +102,7 @@ const AdminExpenses: React.FC = () => {
       try {
         await firebaseService.approveExpense(
           expense.id,
-          user.uid,
+          expense.userId,
           user.displayName || user.email || 'Admin',
           user.uid
         );
@@ -135,7 +135,7 @@ const AdminExpenses: React.FC = () => {
     try {
       await firebaseService.rejectExpense(
         selectedExpense.id,
-        user.uid,
+        selectedExpense.userId,
         user.displayName || user.email || 'Admin',
         user.uid,
         rejectComment

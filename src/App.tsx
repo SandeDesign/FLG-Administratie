@@ -59,6 +59,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/Logo.png" element={<Navigate to="/Logo.png" replace />} />
+        <Route path="/Logo-groot.png" element={<Navigate to="/Logo-groot.png" replace />} />
         
         {/* Protected routes */}
         <Route

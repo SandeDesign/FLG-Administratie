@@ -23,7 +23,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { NotificationCenter } from '../notifications/NotificationCenter';
 import { CompanySelector } from '../ui/CompanySelector';
 
-const navigation = [
+export interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles: string[];
+}
+
+export const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'] },
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'] },
@@ -49,34 +56,15 @@ const Sidebar: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
+    <div className="hidden lg:flex h-screen w-64 flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
       {/* Logo */}
       <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-2">
-          <Calculator className="h-8 w-8 text-blue-600" />
-          <span className="text-xl font-bold text-gray-900 dark:text-white">
-            AlloonApp
-          </span>
+          <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-10 w-auto" />
         </div>
         <NotificationCenter />
       </div>
 
-      {/* User Info */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-            {user?.displayName?.charAt(0)?.toUpperCase() || 'U'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-900 dark:text-white truncate">
-              {user?.displayName || 'Gebruiker'}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-              {user?.email}
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Company Selector */}
       {userRole === 'admin' && (
