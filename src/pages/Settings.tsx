@@ -78,6 +78,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
+      <div className="border-b border-gray-200 dark:border-gray-700">
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => {
@@ -98,6 +99,7 @@ const Settings: React.FC = () => {
             );
           })}
         </nav>
+      </div>
       </div>
 
       {activeTab === 'general' && (
