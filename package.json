@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@supabase/supabase-js": "^2.58.0",
     "date-fns": "^4.1.0",
     "firebase": "^12.3.0",
     "html2canvas": "^1.4.1",

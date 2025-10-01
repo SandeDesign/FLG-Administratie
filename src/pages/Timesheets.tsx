@@ -21,7 +21,7 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 
 export default function Timesheets() {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { currentEmployeeId, selectedCompany } = useApp();
   const { success, error: showError } = useToast();
 
@@ -34,7 +34,7 @@ export default function Timesheets() {
   const [employeeData, setEmployeeData] = useState<any>(null);
 
   const loadData = useCallback(async () => {
-    if (!user || !currentEmployeeId || !selectedCompany) {
+    if (!user || !adminUserId || !currentEmployeeId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -50,7 +50,7 @@ export default function Timesheets() {
       setEmployeeData(employee);
 
       const sheets = await getWeeklyTimesheets(
-        user.uid, // Admin user ID
+        adminUserId,
         currentEmployeeId,
         selectedYear,
         selectedWeek
@@ -63,7 +63,7 @@ export default function Timesheets() {
       } else {
         const weekDates = getWeekDates(selectedYear, selectedWeek);
         const emptyEntries: TimesheetEntry[] = weekDates.map(date => ({
-          userId: user.uid,
+          userId: adminUserId,
           employeeId: currentEmployeeId,
           companyId: selectedCompany.id,
           branchId: employee.branchId, // Use employee's branchId
@@ -80,7 +80,7 @@ export default function Timesheets() {
         }));
 
         const newTimesheet: WeeklyTimesheet = {
-          userId: user.uid,
+          userId: adminUserId,
           employeeId: currentEmployeeId,
           companyId: selectedCompany.id,
           branchId: employee.branchId,
@@ -106,7 +106,7 @@ export default function Timesheets() {
     } finally {
       setLoading(false);
     }
-  }, [user, currentEmployeeId, selectedCompany, selectedYear, selectedWeek, showError]);
+  }, [user, adminUserId, currentEmployeeId, selectedCompany, selectedYear, selectedWeek, showError]);
 
   useEffect(() => {
     loadData();
@@ -138,20 +138,20 @@ export default function Timesheets() {
   };
 
   const handleSave = async () => {
-    if (!currentTimesheet || !user || !employeeData) return;
+    if (!currentTimesheet || !user || !adminUserId || !employeeData) return;
 
     setSaving(true);
     try {
       if (currentTimesheet.id) {
         await updateWeeklyTimesheet(
           currentTimesheet.id,
-          user.uid,
+          adminUserId,
           currentTimesheet
         );
         success('Uren opgeslagen', 'Urenregistratie succesvol opgeslagen');
       } else {
         const id = await createWeeklyTimesheet(
-          user.uid,
+          adminUserId,
           currentTimesheet
         );
         setCurrentTimesheet({ ...currentTimesheet, id });
@@ -166,7 +166,7 @@ export default function Timesheets() {
   };
 
   const handleSubmit = async () => {
-    if (!currentTimesheet || !currentTimesheet.id || !user || !employeeData) return;
+    if (!currentTimesheet || !currentTimesheet.id || !user || !adminUserId || !employeeData) return;
 
     if (currentTimesheet.totalRegularHours === 0 && currentTimesheet.totalOvertimeHours === 0 && currentTimesheet.totalTravelKilometers === 0) {
       showError('Geen uren ingevoerd', 'Voer minimaal één uur of kilometer in om in te dienen');
@@ -177,7 +177,7 @@ export default function Timesheets() {
     try {
       await submitWeeklyTimesheet(
         currentTimesheet.id,
-        user.uid,
+        adminUserId,
         user.displayName || user.email || 'Werknemer'
       );
       success('Uren ingediend', 'Urenregistratie succesvol ingediend voor goedkeuring');

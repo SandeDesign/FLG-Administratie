@@ -23,7 +23,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, userRole, currentEmployeeId } = useAuth();
+  const { user, userRole, currentEmployeeId, adminUserId } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -107,7 +107,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const loadData = useCallback(async () => {
-    if (!user) {
+    if (!user || !adminUserId) {
       setLoading(false);
       return;
     }
@@ -115,47 +115,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       setLoading(true);
       const [companiesData, employeesData, branchesData] = await Promise.all([
-        getCompanies(user.uid),
-        getEmployees(user.uid),
-        getBranches(user.uid),
+        getCompanies(adminUserId),
+        getEmployees(adminUserId),
+        getBranches(adminUserId),
       ]);
 
       setCompanies(companiesData);
       setEmployees(employeesData);
       setBranches(branchesData);
 
-      if (companiesData.length > 0 && !selectedCompany) {
+      if (userRole === 'employee' && currentEmployeeId) {
+        const currentEmployee = employeesData.find(e => e.id === currentEmployeeId);
+        if (currentEmployee) {
+          const employeeCompany = companiesData.find(c => c.id === currentEmployee.companyId);
+          if (employeeCompany) {
+            setSelectedCompany(employeeCompany);
+          }
+        }
+      } else if (companiesData.length > 0 && !selectedCompany) {
         setSelectedCompany(companiesData[0]);
       }
 
       if (userRole === 'admin') {
-        await calculateDashboardStats(companiesData, employeesData, branchesData, user.uid);
+        await calculateDashboardStats(companiesData, employeesData, branchesData, adminUserId);
       }
     } catch (error) {
       console.error('Error loading app data:', error);
-      // Optionally show a toast notification for the error
     } finally {
       setLoading(false);
     }
-  }, [user, userRole, selectedCompany, calculateDashboardStats]);
+  }, [user, adminUserId, userRole, currentEmployeeId, selectedCompany, calculateDashboardStats]);
 
   useEffect(() => {
-    if (user && userRole === 'admin') {
+    if (user && adminUserId && (userRole === 'admin' || userRole === 'employee')) {
       loadData();
-    } else if (user && userRole === 'employee') {
-      // For employees, we might only need their specific data, not all companies/employees
-      // This part can be optimized if employee dashboard needs less global data
-      setLoading(false);
     } else {
       setLoading(false);
     }
-  }, [user, userRole, loadData]);
+  }, [user, adminUserId, userRole, loadData]);
 
   const refreshDashboardStats = useCallback(async () => {
-    if (user && userRole === 'admin') {
+    if (user && adminUserId && userRole === 'admin') {
       await loadData();
     }
-  }, [user, userRole, loadData]);
+  }, [user, adminUserId, userRole, loadData]);
 
   const toggleDarkMode = () => {
     setDarkMode(prevMode => !prevMode);

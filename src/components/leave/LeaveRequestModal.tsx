@@ -25,7 +25,7 @@ interface LeaveRequestModalProps {
 }
 
 const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, onSuccess, employeeId }) => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { companies } = useApp();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -53,16 +53,16 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
   }, [employeeId]);
 
   useEffect(() => {
-    if (user && employeeId) {
+    if (user && adminUserId && employeeId) {
       loadLeaveBalance(employeeId);
     }
-  }, [user, employeeId]);
+  }, [user, adminUserId, employeeId]);
 
   const loadLeaveBalance = async (empId: string) => {
-    if (!user) return;
+    if (!user || !adminUserId) return;
     try {
       const currentYear = new Date().getFullYear();
-      const balance = await getLeaveBalance(empId, user.uid, currentYear);
+      const balance = await getLeaveBalance(empId, adminUserId, currentYear);
       setLeaveBalance(balance);
     } catch (err) {
       console.error('Error loading leave balance:', err);
@@ -119,7 +119,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
 
     setSubmitting(true);
     try {
-      await createLeaveRequest(user!.uid, { // Use user!.uid as adminUserId
+      await createLeaveRequest(adminUserId!, { // Use user!.uid as adminUserId
         employeeId,
         companyId: currentEmployee.companyId,
         type: data.type,

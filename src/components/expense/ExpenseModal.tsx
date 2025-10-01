@@ -27,7 +27,7 @@ interface ExpenseModalProps {
 }
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess, employeeId }) => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { companies } = useApp();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -59,7 +59,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   }, [employeeId]);
 
   useEffect(() => {
-    if (user && employeeId && currentEmployee) {
+    if (user && adminUserId && employeeId && currentEmployee) {
       const company = companies.find(c => c.id === currentEmployee.companyId);
       if (company?.settings?.travelAllowancePerKm) {
         setTravelRatePerKm(company.settings.travelAllowancePerKm);
@@ -97,7 +97,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
 
     setSubmitting(true);
     try {
-      await createExpense(user!.uid, { // Use user!.uid as adminUserId
+      await createExpense(adminUserId!, { // Use user!.uid as adminUserId
         employeeId,
         companyId: currentEmployee.companyId,
         date: new Date(data.date),

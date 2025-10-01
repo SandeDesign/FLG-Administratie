@@ -25,7 +25,7 @@ interface RecoveryModalProps {
 }
 
 const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSuccess, sickLeave, employeeId }) => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
 

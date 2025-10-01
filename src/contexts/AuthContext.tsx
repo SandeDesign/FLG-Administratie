@@ -10,12 +10,13 @@ import {
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useToast } from '../hooks/useToast';
-import { getUserRole } from '../services/firebase';
+import { getUserRole, getEmployeeById } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
   userRole: string | null;
   currentEmployeeId: string | null;
+  adminUserId: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
@@ -29,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null);
+  const [adminUserId, setAdminUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { success, error } = useToast();
 
@@ -41,14 +43,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const roleData = await getUserRole(user.uid);
           setUserRole(roleData?.role || null);
           setCurrentEmployeeId(roleData?.employeeId || null);
+
+          if (roleData?.role === 'admin') {
+            setAdminUserId(user.uid);
+          } else if (roleData?.role === 'employee' && roleData?.employeeId) {
+            const employeeDoc = await getEmployeeById(roleData.employeeId);
+            if (employeeDoc) {
+              setAdminUserId(employeeDoc.userId);
+            } else {
+              setAdminUserId(null);
+            }
+          } else {
+            setAdminUserId(null);
+          }
         } catch (err) {
           console.error('Error loading user role:', err);
           setUserRole(null);
           setCurrentEmployeeId(null);
+          setAdminUserId(null);
         }
       } else {
         setUserRole(null);
         setCurrentEmployeeId(null);
+        setAdminUserId(null);
       }
 
       setLoading(false);
@@ -126,7 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await firebaseSignOut(auth);
       setUserRole(null);
-      setCurrentEmployeeId(null); // Clear employee ID on sign out
+      setCurrentEmployeeId(null);
+      setAdminUserId(null);
       success('Tot ziens!', 'Je bent uitgelogd');
     } catch (err: any) {
       console.error('Sign out error:', err);
@@ -166,6 +184,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         userRole,
         currentEmployeeId,
+        adminUserId,
         loading,
         signIn,
         signUp,

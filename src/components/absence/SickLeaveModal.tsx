@@ -26,7 +26,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
   onSuccess,
   employeeId,
 }) => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { success, error: showError } = useToast();
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
@@ -72,8 +72,8 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!user) {
+
+    if (!user || !adminUserId) {
       showError('Fout', 'Gebruiker niet ingelogd');
       return;
     }
@@ -88,7 +88,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
 
     setSubmitting(true);
     try {
-      await createSickLeave(user.uid, { // Use user.uid as adminUserId
+      await createSickLeave(adminUserId, { // Use user.uid as adminUserId
         employeeId,
         companyId: currentEmployee.companyId,
         startDate: new Date(formData.startDate),

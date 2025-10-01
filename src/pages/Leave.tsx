@@ -14,7 +14,7 @@ import { formatLeaveType } from '../utils/leaveCalculations';
 import { useApp } from '../contexts/AppContext';
 
 const Leave: React.FC = () => {
-  const { user, currentEmployeeId } = useAuth();
+  const { user, currentEmployeeId, adminUserId } = useAuth();
   const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
@@ -24,7 +24,7 @@ const Leave: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const loadLeaveData = useCallback(async () => {
-    if (!user || !currentEmployeeId || !selectedCompany) {
+    if (!user || !adminUserId || !currentEmployeeId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -43,8 +43,8 @@ const Leave: React.FC = () => {
       }
 
       const [requests, balance] = await Promise.all([
-        firebaseService.getLeaveRequests(user.uid, currentEmployeeId), // Use user.uid as adminUserId
-        firebaseService.getLeaveBalance(currentEmployeeId, user.uid, currentYear), // Use user.uid as adminUserId
+        firebaseService.getLeaveRequests(adminUserId, currentEmployeeId),
+        firebaseService.getLeaveBalance(currentEmployeeId, adminUserId, currentYear),
       ]);
 
       setLeaveRequests(requests);
@@ -55,7 +55,7 @@ const Leave: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, currentEmployeeId, selectedCompany, showError]);
+  }, [user, adminUserId, currentEmployeeId, selectedCompany, showError]);
 
   useEffect(() => {
     loadLeaveData();

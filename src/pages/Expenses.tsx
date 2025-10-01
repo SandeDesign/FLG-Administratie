@@ -13,7 +13,7 @@ import { formatExpenseType } from '../utils/leaveCalculations';
 import { useApp } from '../contexts/AppContext';
 
 const Expenses: React.FC = () => {
-  const { user, currentEmployeeId } = useAuth();
+  const { user, currentEmployeeId, adminUserId } = useAuth();
   const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,7 @@ const Expenses: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const loadExpenses = useCallback(async () => {
-    if (!user || !currentEmployeeId || !selectedCompany) {
+    if (!user || !adminUserId || !currentEmployeeId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -39,7 +39,7 @@ const Expenses: React.FC = () => {
         return;
       }
       
-      const data = await firebaseService.getExpenses(user.uid, currentEmployeeId); // Use user.uid as adminUserId
+      const data = await firebaseService.getExpenses(adminUserId, currentEmployeeId);
       setExpenses(data);
     } catch (err) {
       console.error('Error loading expenses:', err);
@@ -47,7 +47,7 @@ const Expenses: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, currentEmployeeId, selectedCompany, showError]);
+  }, [user, adminUserId, currentEmployeeId, selectedCompany, showError]);
 
   useEffect(() => {
     loadExpenses();
