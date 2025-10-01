@@ -80,7 +80,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         lastName: employee.personalInfo.lastName,
         initials: employee.personalInfo.initials,
         bsn: employee.personalInfo.bsn,
-        dateOfBirth: employee.personalInfo.dateOfBirth.toISOString().split('T')[0],
+        dateOfBirth: employee.personalInfo.dateOfBirth.toISOString().split('T'),
         placeOfBirth: employee.personalInfo.placeOfBirth,
         nationality: employee.personalInfo.nationality,
         street: employee.personalInfo.address.street,
@@ -94,8 +94,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         bankAccount: employee.personalInfo.bankAccount,
         maritalStatus: employee.personalInfo.maritalStatus,
         contractType: employee.contractInfo.type,
-        startDate: employee.contractInfo.startDate.toISOString().split('T')[0],
-        endDate: employee.contractInfo.endDate?.toISOString().split('T')[0],
+        startDate: employee.contractInfo.startDate.toISOString().split('T'),
+        endDate: employee.contractInfo.endDate?.toISOString().split('T'),
         hoursPerWeek: employee.contractInfo.hoursPerWeek,
         position: employee.contractInfo.position,
         department: employee.contractInfo.department,
@@ -115,8 +115,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         contractType: 'permanent',
         cao: 'cao-algemeen',
         paymentType: 'hourly',
-        companyId: companies[0].id,
-        branchId: branches.find(b => b.companyId === companies[0].id)?.id || '',
+        companyId: companies.id, // Corrected: companies is an array
+        branchId: branches.find(b => b.companyId === companies.id)?.id || '', // Corrected: companies is an array
       });
     }
   }, [employee, companies, branches, reset]);

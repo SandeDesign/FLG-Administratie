@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { Company, Employee, Branch, DashboardStats } from '../types';
-import { getCompanies, getEmployees, getBranches, getPendingLeaveApprovals, getPendingTimesheets } from '../services/firebase'; // Assuming getPendingTimesheets is also in firebase.ts or a similar service
+import { getCompanies, getEmployees, getBranches, getPendingLeaveApprovals } from '../services/firebase'; // Assuming getPendingTimesheets is also in firebase.ts or a similar service
 import { getPendingExpenses } from '../services/firebase'; // Assuming getPendingExpenses is also in firebase.ts or a similar service
 import { getPayrollCalculations } from '../services/payrollService'; // Assuming this service exists
+import { getPendingTimesheets } from '../services/timesheetService'; // Import getPendingTimesheets
 
 interface AppContextType {
   companies: Company[];
@@ -124,7 +125,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setBranches(branchesData);
 
       if (companiesData.length > 0 && !selectedCompany) {
-        setSelectedCompany(companiesData);
+        setSelectedCompany(companiesData); // Select the first company if none is selected
       }
 
       if (userRole === 'admin') {

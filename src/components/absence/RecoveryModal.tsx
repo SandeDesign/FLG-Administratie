@@ -31,7 +31,7 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
 
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<RecoveryFormData>({
     defaultValues: {
-      endDate: new Date().toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T'),
       workCapacityPercentage: 100,
       status: 'recovered',
     }

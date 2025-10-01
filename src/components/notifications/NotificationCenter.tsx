@@ -223,7 +223,7 @@ export const NotificationCenter: React.FC = () => {
                         <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-500">
                           <span className="flex items-center">
                             <Clock className="h-3 w-3 mr-1" />
-                            {formatDate(notification.createdAt)}
+                            {notification.createdAt ? formatDate(notification.createdAt) : 'Onbekend'}
                           </span>
                           {notification.actionUrl && (
                             <a

@@ -71,18 +71,19 @@ export function isPublicHoliday(date: Date): boolean {
   whitMonday.setDate(whitsun.getDate() + 1);
 
   const holidays = [
-    new Date(year, 0, 1),
-    goodFriday,
-    easter,
-    easterMonday,
-    new Date(year, 3, 27),
-    ascension,
-    whitsun,
-    whitMonday,
-    new Date(year, 11, 25),
-    new Date(year, 11, 26),
+    new Date(year, 0, 1), // Nieuwjaarsdag
+    goodFriday, // Goede Vrijdag
+    easter, // Eerste Paasdag
+    easterMonday, // Tweede Paasdag
+    new Date(year, 3, 27), // Koningsdag (27 april)
+    ascension, // Hemelvaartsdag
+    whitsun, // Eerste Pinksterdag
+    whitMonday, // Tweede Pinksterdag
+    new Date(year, 11, 25), // Eerste Kerstdag
+    new Date(year, 11, 26), // Tweede Kerstdag
   ];
 
+  // Bevrijdingsdag (5 mei) is elke 5 jaar een nationale feestdag
   if (year % 5 === 0) {
     holidays.push(new Date(year, 4, 5));
   }
@@ -132,6 +133,9 @@ export function calculateWorkingHours(
 
 export function getDaysUntilExpiry(expiryDate: Date): number {
   const now = new Date();
+  // Set both dates to start of day to compare only days
+  now.setHours(0, 0, 0, 0);
+  expiryDate.setHours(0, 0, 0, 0);
   const diffTime = expiryDate.getTime() - now.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
@@ -178,6 +182,7 @@ export function formatExpenseType(type: string): string {
     travel: 'Reiskosten',
     meal: 'Maaltijden',
     accommodation: 'Accommodatie',
+    parking: 'Parkeren', // Added parking
     phone: 'Telefoon',
     office: 'Kantoor',
     training: 'Opleiding',

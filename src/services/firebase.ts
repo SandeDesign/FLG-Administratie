@@ -476,7 +476,7 @@ export const getUserRole = async (uid: string): Promise<UserRole | null> => {
     return null;
   }
   
-  const doc = querySnapshot.docs;
+  const doc = querySnapshot.docs; // Get the first document
   return {
     id: doc.id,
     ...convertTimestamps(doc.data())
@@ -644,7 +644,7 @@ export const getLeaveBalance = async (employeeId: string, userId: string, year: 
 
   if (querySnapshot.empty) return null;
 
-  const docData = querySnapshot.docs;
+  const docData = querySnapshot.docs; // Get the first document
   return {
     id: docData.id,
     ...convertTimestamps(docData.data())
@@ -669,7 +669,7 @@ export const updateLeaveBalance = async (employeeId: string, userId: string, yea
   if (querySnapshot.empty) {
     await addDoc(collection(db, 'leaveBalances'), balanceData);
   } else {
-    const docRef = doc(db, 'leaveBalances', querySnapshot.docs.id);
+    const docRef = doc(db, 'leaveBalances', querySnapshot.docs.id); // Use the ID of the existing document
     await updateDoc(docRef, balanceData);
   }
 };
@@ -705,7 +705,7 @@ export const getSickLeaveRecords = async (adminUserId: string, employeeId?: stri
 export const createSickLeave = async (adminUserId: string, sickLeave: Omit<SickLeave, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
   
   const shouldActivate = shouldActivatePoortwachter(sickLeave.startDate);
-  const milestones = shouldActivate ? generatePoortwachtersMilestones(sickLeave.startDate) : null;
+  const milestones = shouldActivate ? generatePoortwachterMilestones(sickLeave.startDate) : null; // Corrected function name
 
   const sickLeaveData = convertToTimestamps({
     ...sickLeave,
@@ -769,7 +769,7 @@ export const getAbsenceStatistics = async (employeeId: string, userId: string, y
 
   if (querySnapshot.empty) return null;
 
-  const docData = querySnapshot.docs;
+  const docData = querySnapshot.docs; // Get the first document
   return {
     id: docData.id,
     ...convertTimestamps(docData.data())
@@ -842,7 +842,7 @@ export const calculateAbsenceStats = async (employeeId: string, companyId: strin
   if (existingSnapshot.empty) {
     await addDoc(collection(db, 'absenceStatistics'), statsData);
   } else {
-    const docRef = doc(db, 'absenceStatistics', existingSnapshot.docs.id);
+    const docRef = doc(db, 'absenceStatistics', existingSnapshot.docs.id); // Use the ID of the existing document
     await updateDoc(docRef, statsData);
   }
 };

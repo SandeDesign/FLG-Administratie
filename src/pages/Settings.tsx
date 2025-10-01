@@ -20,7 +20,7 @@ import { useToast } from '../hooks/useToast';
 const Settings: React.FC = () => {
   const { user } = useAuth();
   const { darkMode, toggleDarkMode } = useApp();
-  const { showToast } = useToast();
+  const { success, error: showError } = useToast(); // Corrected: use showError for error toasts
   const [activeTab, setActiveTab] = useState<'general' | 'notifications' | 'security' | 'data'>('general');
   const [loading, setLoading] = useState(false);
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
@@ -40,7 +40,7 @@ const Settings: React.FC = () => {
       setPreferences(prefs);
     } catch (error) {
       console.error('Error loading preferences:', error);
-      showToast('Fout bij laden voorkeuren', 'error');
+      showError('Fout bij laden', 'Kon voorkeuren niet laden'); // Corrected: use showError
     } finally {
       setLoading(false);
     }
@@ -52,10 +52,10 @@ const Settings: React.FC = () => {
     try {
       setLoading(true);
       await NotificationService.updatePreferences(user.uid, preferences);
-      showToast('Meldingsvoorkeuren opgeslagen', 'success');
+      success('Meldingsvoorkeuren opgeslagen', 'Je voorkeuren zijn succesvol opgeslagen'); // Corrected: use success
     } catch (error) {
       console.error('Error saving preferences:', error);
-      showToast('Fout bij opslaan voorkeuren', 'error');
+      showError('Fout bij opslaan', 'Kon voorkeuren niet opslaan'); // Corrected: use showError
     } finally {
       setLoading(false);
     }

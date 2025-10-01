@@ -16,7 +16,7 @@ const EmployeeDashboard: React.FC = () => {
           Welkom terug!
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Hallo {user?.displayName || user?.email?.split('@')[0]}, hier is je persoonlijke dashboard.
+          Hallo {user?.displayName || user?.email?.split('@')}, hier is je persoonlijke dashboard.
         </p>
       </div>
 
@@ -114,7 +114,7 @@ const EmployeeDashboard: React.FC = () => {
             </div>
           </div>
           <div className="mt-4">
-            <Link to="/employee-dashboard/hours">
+            <Link to="/employee-dashboard/timesheets"> {/* Corrected path to timesheets */}
               <Button size="sm" className="w-full">
                 Uren Bekijken
               </Button>

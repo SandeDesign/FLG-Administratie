@@ -11,7 +11,7 @@ export function validateBSN(bsn: string): boolean {
   for (let i = 0; i < 8; i++) {
     sum += parseInt(cleaned[i]) * (9 - i);
   }
-  sum -= parseInt(cleaned[8]);
+  sum -= parseInt(cleaned);
   
   return sum % 11 === 0;
 }

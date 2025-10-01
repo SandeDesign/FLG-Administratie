@@ -13,7 +13,7 @@ const POORTWACHTER_MILESTONES = [
   },
   {
     week: 8,
-    action: 'Plan van aanpak: Opstellen van een concreet plan van aanpak voor re-integratie',
+    action: 'Plan van aanpak: Opstellen van een concreet plan van aan aanpak voor re-integratie',
   },
   {
     week: 13,
@@ -142,7 +142,7 @@ export function getNextMilestone(
     .filter(m => !m.completedDate && m.dueDate >= currentDate)
     .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
 
-  return upcoming[0] || null;
+  return upcoming || null;
 }
 
 export function completeMilestone(

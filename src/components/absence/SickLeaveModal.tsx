@@ -27,11 +27,11 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
   employeeId,
 }) => {
   const { user } = useAuth();
-  const { success, error } = useToast();
+  const { success, error: showError } = useToast();
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<SickLeaveFormData>({
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: new Date().toISOString().split('T'),
     workCapacityPercentage: 0,
     notes: '',
   });
@@ -44,7 +44,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
           setCurrentEmployee(employee);
         } catch (err) {
           console.error('Error loading employee:', err);
-          error('Fout bij laden werknemersgegevens');
+          showError('Fout bij laden', 'Werknemersgegevens konden niet geladen worden');
         }
       }
     };
@@ -52,7 +52,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
     if (isOpen) {
       loadEmployee();
     }
-  }, [isOpen, employeeId, error]);
+  }, [isOpen, employeeId, showError]);
 
   const handleInputChange = (field: keyof SickLeaveFormData, value: string | number) => {
     setFormData(prev => ({
@@ -63,7 +63,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
 
   const handleClose = () => {
     setFormData({
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split('T'),
       workCapacityPercentage: 0,
       notes: '',
     });
@@ -74,13 +74,21 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
     e.preventDefault();
     
     if (!user) {
-      error('Gebruiker niet ingelogd');
+      showError('Fout', 'Gebruiker niet ingelogd');
+      return;
+    }
+    if (!currentEmployee) {
+      showError('Fout', 'Werknemergegevens ontbreken');
+      return;
+    }
+    if (!currentEmployee.companyId) {
+      showError('Fout', 'Werknemer is niet gekoppeld aan een bedrijf');
       return;
     }
 
     setSubmitting(true);
     try {
-      await createSickLeave(currentEmployee!.userId, {
+      await createSickLeave(user.uid, { // Use user.uid as adminUserId
         employeeId,
         companyId: currentEmployee.companyId,
         startDate: new Date(formData.startDate),
@@ -100,7 +108,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
       handleClose();
     } catch (err) {
       console.error('Error creating sick leave:', err);
-      error('Fout bij indienen ziekmelding');
+      showError('Fout bij indienen', 'Kon ziekmelding niet indienen');
     } finally {
       setSubmitting(false);
     }

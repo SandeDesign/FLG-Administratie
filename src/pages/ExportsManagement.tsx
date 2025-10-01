@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Download, FileText, Calendar, Database } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ExportJob, ExportType } from '../types/export';
 import { getExportJobs, createExportJob } from '../services/exportService';
 import { useToast } from '../hooks/useToast';
+import { EmptyState } from '../components/ui/EmptyState';
 
 const exportTypes: Array<{ type: ExportType; label: string; description: string; icon: any }> = [
   {
@@ -51,7 +52,7 @@ const exportTypes: Array<{ type: ExportType; label: string; description: string;
 export default function ExportsManagement() {
   const { user } = useAuth();
   const { selectedCompany } = useApp();
-  const { showToast } = useToast();
+  const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -59,19 +60,11 @@ export default function ExportsManagement() {
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  useEffect(() => {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    setStartDate(firstDay.toISOString().split('T')[0]);
-    setEndDate(lastDay.toISOString().split('T')[0]);
-
-    loadData();
-  }, [user, selectedCompany]);
-
-  const loadData = async () => {
-    if (!user || !selectedCompany) return;
+  const loadData = useCallback(async () => {
+    if (!user || !selectedCompany) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -79,22 +72,33 @@ export default function ExportsManagement() {
       setExportJobs(jobs);
     } catch (error) {
       console.error('Error loading export jobs:', error);
-      showToast('Fout bij laden van exports', 'error');
+      showError('Fout bij laden', 'Kon exports niet laden');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedCompany, showError]);
+
+  useEffect(() => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    setStartDate(firstDay.toISOString().split('T'));
+    setEndDate(lastDay.toISOString().split('T'));
+
+    loadData();
+  }, [loadData]);
 
   const handleCreateExport = async (exportType: ExportType) => {
     if (!user || !selectedCompany || !startDate || !endDate) {
-      showToast('Selecteer een periode', 'error');
+      showError('Fout', 'Selecteer een periode en zorg dat een bedrijf is geselecteerd');
       return;
     }
 
     try {
       setCreating(true);
 
-      const jobId = await createExportJob(
+      await createExportJob(
         user.uid,
         selectedCompany.id,
         exportType,
@@ -105,11 +109,11 @@ export default function ExportsManagement() {
         user.uid
       );
 
-      showToast('Export gestart', 'success');
+      success('Export gestart', 'Je export is gestart en wordt binnenkort verwerkt');
       await loadData();
     } catch (error) {
       console.error('Error creating export:', error);
-      showToast('Fout bij starten export', 'error');
+      showError('Fout bij starten export', 'Kon export niet starten');
     } finally {
       setCreating(false);
     }
@@ -123,6 +127,16 @@ export default function ExportsManagement() {
     );
   }
 
+  if (!selectedCompany) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen bedrijf geselecteerd"
+        description="Selecteer een bedrijf om exports te beheren."
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -133,29 +147,29 @@ export default function ExportsManagement() {
       </div>
 
       <Card>
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Export periode</h2>
+        <div className="p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Export periode</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Startdatum
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Einddatum
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               />
             </div>
           </div>
@@ -167,14 +181,14 @@ export default function ExportsManagement() {
           const Icon = exportType.icon;
           return (
             <Card key={exportType.type} className="hover:shadow-lg transition-shadow">
-              <div className="space-y-4">
+              <div className="p-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="p-3 bg-blue-100 rounded-lg">
+                  <div className="p-3 bg-blue-100 rounded-lg dark:bg-blue-900/20">
                     <Icon className="h-6 w-6 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{exportType.label}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{exportType.description}</p>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{exportType.label}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{exportType.description}</p>
                   </div>
                 </div>
                 <Button
@@ -194,11 +208,11 @@ export default function ExportsManagement() {
 
       {exportJobs.length > 0 && (
         <Card>
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Recente exports</h2>
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recente exports</h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Type
@@ -217,22 +231,22 @@ export default function ExportsManagement() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-200 dark:divide-gray-700">
                   {exportJobs.slice(0, 10).map((job) => (
                     <tr key={job.id}>
-                      <td className="px-4 py-3 text-sm text-gray-900">{job.fileName}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{job.fileName}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                         {job.filters.startDate?.toLocaleDateString('nl-NL')} - {job.filters.endDate?.toLocaleDateString('nl-NL')}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                         {job.requestedAt.toLocaleDateString('nl-NL')}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 text-xs rounded-full ${
-                          job.status === 'completed' ? 'bg-green-100 text-green-800' :
-                          job.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                          job.status === 'failed' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
+                          job.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' :
+                          job.status === 'processing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300' :
+                          job.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                         }`}>
                           {job.status === 'completed' ? 'Voltooid' :
                            job.status === 'processing' ? 'Bezig' :

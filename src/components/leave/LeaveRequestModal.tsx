@@ -119,7 +119,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
 
     setSubmitting(true);
     try {
-      await createLeaveRequest(currentEmployee.userId, {
+      await createLeaveRequest(user!.uid, { // Use user!.uid as adminUserId
         employeeId,
         companyId: currentEmployee.companyId,
         type: data.type,

@@ -37,7 +37,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<ExpenseFormData>({
     defaultValues: {
       type: 'travel',
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split('T'),
     }
   });
 
@@ -97,7 +97,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
 
     setSubmitting(true);
     try {
-      await createExpense(currentEmployee.userId, {
+      await createExpense(user!.uid, { // Use user!.uid as adminUserId
         employeeId,
         companyId: currentEmployee.companyId,
         date: new Date(data.date),
@@ -246,7 +246,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
           <Button type="button" variant="secondary" onClick={handleClose}>
             Annuleren
           </Button>
-          <Button type="submit" loading={submitting} disabled={submitting}>
+          <Button type="submit" loading={submitting}>
             Opslaan als Concept
           </Button>
         </div>

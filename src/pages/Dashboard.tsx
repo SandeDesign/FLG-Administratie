@@ -33,8 +33,8 @@ const Dashboard: React.FC = () => {
     {
       id: '1',
       type: 'import',
-      message: 'Welkom bij AlloonApp! Begin met het toevoegen van je eerste bedrijf.',
-      timestamp: new Date('2024-12-16T14:30:00'),
+      message: 'Welkom bij AlloonApp! Je kunt nu je loonadministratie beheren.',
+      timestamp: new Date(),
     },
   ]);
 
@@ -60,18 +60,18 @@ const Dashboard: React.FC = () => {
       color: 'text-green-600 bg-green-100',
     },
     {
-      title: 'Verlof Goedkeuren',
-      description: 'Behandel openstaande verlofaanvragen',
-      icon: Calendar,
-      action: () => navigate('/admin/leave-approvals'),
-      color: 'text-purple-600 bg-purple-100',
+    title: 'Verlof Goedkeuren',
+    description: 'Behandel openstaande verlofaanvragen',
+    icon: Calendar,
+    action: () => navigate('/admin/leave-approvals'),
+    color: 'text-purple-600 bg-purple-100',
     },
     {
-      title: 'Verzuim Beheren',
-      description: 'Overzicht van actief verzuim en re-integratie',
-      icon: HeartPulse,
-      action: () => navigate('/admin/absence-management'),
-      color: 'text-red-600 bg-red-100',
+    title: 'Verzuim Beheren',
+    description: 'Overzicht van actief verzuim en re-integratie',
+    icon: HeartPulse,
+    action: () => navigate('/admin/absence-management'),
+    color: 'text-red-600 bg-red-100',
     },
     {
       title: 'Loonstroken Genereren',
