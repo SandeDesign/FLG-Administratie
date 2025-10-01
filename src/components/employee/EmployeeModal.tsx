@@ -115,8 +115,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         contractType: 'permanent',
         cao: 'cao-algemeen',
         paymentType: 'hourly',
-        companyId: companies.id, // Corrected: companies is an array
-        branchId: branches.find(b => b.companyId === companies.id)?.id || '', // Corrected: companies is an array
+        companyId: companies[0].id,
+        branchId: branches.find(b => b.companyId === companies[0].id)?.id || '',
       });
     }
   }, [employee, companies, branches, reset]);
@@ -176,10 +176,10 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         contractInfo: {
           type: data.contractType,
           startDate: new Date(data.startDate),
-          ...(data.endDate ? { endDate: new Date(data.endDate) } : {}),
+          endDate: data.endDate && data.endDate.trim() !== '' ? new Date(data.endDate) : null,
           hoursPerWeek: data.hoursPerWeek,
           position: data.position,
-          department: data.department,
+          department: data.department || '',
           cao: data.cao,
           contractStatus: 'active' as const,
         },

@@ -69,17 +69,26 @@ export default function Payslips() {
     }
 
     try {
-      if (payslip.pdfUrl) {
-        const link = document.createElement('a');
-        link.href = payslip.pdfUrl;
-        link.download = `loonstrook-${getMonthName(payslip.periodStartDate)}.pdf`;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      if (payslip.pdfUrl && payslip.pdfUrl.trim() !== '') {
+        fetch(payslip.pdfUrl)
+          .then(response => response.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `loonstrook-${getMonthName(payslip.periodStartDate)}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          })
+          .catch(err => {
+            console.error('Download error:', err);
+            window.open(payslip.pdfUrl, '_blank');
+          });
 
         await markPayslipAsDownloaded(payslip.id!, user.uid);
-        success('Loonstrook gedownload', 'Loonstrook succesvol gedownload');
+        success('Loonstrook gedownload', 'Loonstrook wordt gedownload');
       } else {
         showError('Niet beschikbaar', 'Loonstrook PDF is nog niet beschikbaar');
       }
