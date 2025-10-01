@@ -151,7 +151,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navigat
                   items={financialNav}
                   onItemClick={onClose}
                   storageKey="mobile-nav-financial"
-                  defaultOpen={true}
+                  defaultOpen={false}
                 />
               )
             )}
