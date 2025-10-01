@@ -100,6 +100,7 @@ const Settings: React.FC = () => {
           })}
         </nav>
       </div>
+      </div>
 
       {activeTab === 'general' && (
         <div className="space-y-6">
