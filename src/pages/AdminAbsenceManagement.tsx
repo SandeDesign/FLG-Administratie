@@ -130,7 +130,7 @@ const AdminAbsenceManagement: React.FC = () => {
           <div className="flex items-center">
             <AlertTriangle className="h-8 w-8 text-orange-600 mr-3" />
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Langdurig (>6 weken)</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Langdurig (&gt;6 weken)</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {longTermCases.length}
               </p>
