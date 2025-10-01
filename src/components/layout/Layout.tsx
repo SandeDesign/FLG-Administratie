@@ -31,7 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <Menu className="h-6 w-6 text-gray-600" />
           </button>
-          <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-8 w-auto" />
+          <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-8 w-40" />
           <div className="w-10" />
         </header>
 
