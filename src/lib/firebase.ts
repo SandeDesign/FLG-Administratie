@@ -19,6 +19,7 @@ interface AuditLog {
 
 import { EmptyState } from '../components/ui/EmptyState';
 import { useApp } from '../contexts/AppContext'; // Import useApp to get selectedCompany
+import { Card } from '../components/ui/Card';
 
 interface AuditLogEntry { // Renamed to avoid conflict with AuditLog type from types/audit.ts
   id: string;
@@ -40,7 +41,7 @@ interface AuditLogEntry { // Renamed to avoid conflict with AuditLog type from t
 
 const AuditLogPage: React.FC = () => {
   const { user } = useAuth();
-  const { error: showError } = useToast();
+  const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,9 +83,9 @@ const AuditLogPage: React.FC = () => {
   }, [user, filters, showError]);
 
   useEffect(() => {
+    console.log(
     'Please add these to your .env file with the VITE_ prefix.'
   );
-}
     loadAuditLogs();
   }, [loadAuditLogs]);
 
@@ -222,7 +223,7 @@ const AuditLogPage: React.FC = () => {
               </label>
               <input
                 type="date"
-                value={filters.startDate?.toISOString().split('T') || ''}
+                value={filters.startDate?.toISOString().split('T')[0] || ''}
                 onChange={(e) =>
                   setFilters({
                     ...filters,
@@ -239,7 +240,7 @@ const AuditLogPage: React.FC = () => {
               </label>
               <input
                 type="date"
-                value={filters.endDate?.toISOString().split('T') || ''}
+                value={filters.endDate?.toISOString().split('T')[0] || ''}
                 onChange={(e) =>
                   setFilters({
                     ...filters,
