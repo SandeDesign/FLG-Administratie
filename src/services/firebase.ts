@@ -469,14 +469,14 @@ export const getUserRole = async (uid: string): Promise<UserRole | null> => {
     collection(db, 'users'),
     where('uid', '==', uid)
   );
-  
+
   const querySnapshot = await getDocs(q);
-  
+
   if (querySnapshot.empty) {
     return null;
   }
-  
-  const doc = querySnapshot.docs; // Get the first document
+
+  const doc = querySnapshot.docs[0];
   return {
     id: doc.id,
     ...convertTimestamps(doc.data())
@@ -644,7 +644,7 @@ export const getLeaveBalance = async (employeeId: string, userId: string, year: 
 
   if (querySnapshot.empty) return null;
 
-  const docData = querySnapshot.docs; // Get the first document
+  const docData = querySnapshot.docs[0];
   return {
     id: docData.id,
     ...convertTimestamps(docData.data())
@@ -669,7 +669,7 @@ export const updateLeaveBalance = async (employeeId: string, userId: string, yea
   if (querySnapshot.empty) {
     await addDoc(collection(db, 'leaveBalances'), balanceData);
   } else {
-    const docRef = doc(db, 'leaveBalances', querySnapshot.docs.id); // Use the ID of the existing document
+    const docRef = doc(db, 'leaveBalances', querySnapshot.docs[0].id);
     await updateDoc(docRef, balanceData);
   }
 };
@@ -769,7 +769,7 @@ export const getAbsenceStatistics = async (employeeId: string, userId: string, y
 
   if (querySnapshot.empty) return null;
 
-  const docData = querySnapshot.docs; // Get the first document
+  const docData = querySnapshot.docs[0];
   return {
     id: docData.id,
     ...convertTimestamps(docData.data())
@@ -842,7 +842,7 @@ export const calculateAbsenceStats = async (employeeId: string, companyId: strin
   if (existingSnapshot.empty) {
     await addDoc(collection(db, 'absenceStatistics'), statsData);
   } else {
-    const docRef = doc(db, 'absenceStatistics', existingSnapshot.docs.id); // Use the ID of the existing document
+    const docRef = doc(db, 'absenceStatistics', existingSnapshot.docs[0].id);
     await updateDoc(docRef, statsData);
   }
 };

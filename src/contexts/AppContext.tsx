@@ -125,7 +125,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setBranches(branchesData);
 
       if (companiesData.length > 0 && !selectedCompany) {
-        setSelectedCompany(companiesData); // Select the first company if none is selected
+        setSelectedCompany(companiesData[0]);
       }
 
       if (userRole === 'admin') {
