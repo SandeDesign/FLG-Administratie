@@ -37,7 +37,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
                   <Menu className="h-6 w-6 text-gray-600 dark:text-gray-300" />
                 )}
               </button>
-              <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-8 w-auto mr-3" />
+              <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-8 w-40 mr-3" />
               <div className="hidden sm:block">
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                   AlloonApp
