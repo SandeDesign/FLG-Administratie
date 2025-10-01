@@ -24,24 +24,28 @@ const AdminExpenses: React.FC = () => {
 
   const loadExpenses = useCallback(async () => {
     if (!user || !selectedCompany) {
+      console.log('AdminExpenses: Cannot load - missing user or selectedCompany:', { user: !!user, selectedCompany: !!selectedCompany });
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      
+      console.log('AdminExpenses: Loading expenses for userId:', user.uid, 'selectedCompany:', selectedCompany.id);
+
       // Get ALL expenses for this user
       const allExpenseRecords = await firebaseService.getExpenses(user.uid);
+      console.log('AdminExpenses: Loaded all expenses:', allExpenseRecords.length);
       setAllExpenses(allExpenseRecords);
-      
+
       // Filter for submitted expenses that need approval
-      const pendingExpenseRecords = allExpenseRecords.filter(expense => 
+      const pendingExpenseRecords = allExpenseRecords.filter(expense =>
         expense.status === 'submitted' && expense.companyId === selectedCompany.id
       );
+      console.log('AdminExpenses: Pending expenses for company:', pendingExpenseRecords.length);
       setPendingExpenses(pendingExpenseRecords);
     } catch (err) {
-      console.error('Error loading expenses:', err);
+      console.error('AdminExpenses: Error loading expenses:', err);
       showError('Fout bij laden', 'Kon declaraties niet laden');
     } finally {
       setLoading(false);

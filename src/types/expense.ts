@@ -40,6 +40,7 @@ export interface Expense {
   status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'paid';
 
   submittedAt?: Date;
+  submittedBy?: string;
 
   approvals: {
     level: number;

@@ -22,18 +22,28 @@ const EmployeesNew: React.FC = () => {
 
   const loadEmployees = useCallback(async () => {
     if (!user) {
+      console.log('EmployeesNew: Cannot load - no user');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      // Only load employees for the selected company if one is selected
-      const employeesData = await getEmployees(user.uid, selectedCompany?.id);
-      setEmployees(employeesData);
+      console.log('EmployeesNew: Loading employees for userId:', user.uid, 'selectedCompany:', selectedCompany?.id);
+      // Load all employees for this user, filtering by company will be done in the view
+      const employeesData = await getEmployees(user.uid);
+      console.log('EmployeesNew: Loaded employees:', employeesData.length);
+
+      // Filter by selected company if one is selected
+      const filteredEmployees = selectedCompany
+        ? employeesData.filter(emp => emp.companyId === selectedCompany.id)
+        : employeesData;
+
+      console.log('EmployeesNew: Filtered employees:', filteredEmployees.length);
+      setEmployees(filteredEmployees);
       await refreshDashboardStats(); // Refresh dashboard stats after loading employees
     } catch (error) {
-      console.error('Error loading employees:', error);
+      console.error('EmployeesNew: Error loading employees:', error);
       showError('Fout bij laden', 'Kon werknemers niet laden');
     } finally {
       setLoading(false);

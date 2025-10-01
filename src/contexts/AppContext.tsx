@@ -108,6 +108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadData = useCallback(async () => {
     if (!user || !adminUserId) {
+      console.log('Cannot load data - missing user or adminUserId:', { user: !!user, adminUserId });
       setLoading(false);
       return;
     }
@@ -121,9 +122,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getBranches(adminUserId),
       ]);
 
-      console.log('Loaded companies:', companiesData.length);
-      console.log('Loaded employees:', employeesData.length);
-      console.log('Loaded branches:', branchesData.length);
+      console.log('Loaded companies:', companiesData.length, companiesData);
+      console.log('Loaded employees:', employeesData.length, employeesData);
+      console.log('Loaded branches:', branchesData.length, branchesData);
 
       setCompanies(companiesData);
       setEmployees(employeesData);

@@ -208,6 +208,8 @@ export const rejectWeeklyTimesheet = async (
 };
 
 export const getPendingTimesheets = async (adminUserId: string, companyId: string): Promise<WeeklyTimesheet[]> => {
+  console.log('getPendingTimesheets: Querying for adminUserId:', adminUserId, 'companyId:', companyId);
+
   const q = query(
     collection(db, 'weeklyTimesheets'),
     where('userId', '==', adminUserId),
@@ -217,10 +219,25 @@ export const getPendingTimesheets = async (adminUserId: string, companyId: strin
   );
 
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...convertTimestamps(doc.data())
-  } as WeeklyTimesheet));
+  console.log('getPendingTimesheets: Found', querySnapshot.docs.length, 'pending timesheets');
+
+  const timesheets = querySnapshot.docs.map(doc => {
+    const data = doc.data();
+    console.log('getPendingTimesheets: Timesheet', doc.id, 'data:', {
+      userId: data.userId,
+      companyId: data.companyId,
+      status: data.status,
+      employeeId: data.employeeId,
+      weekNumber: data.weekNumber,
+      year: data.year
+    });
+    return {
+      id: doc.id,
+      ...convertTimestamps(data)
+    } as WeeklyTimesheet;
+  });
+
+  return timesheets;
 };
 
 export const calculateWeekTotals = (entries: TimesheetEntry[]) => {

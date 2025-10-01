@@ -29,21 +29,25 @@ export default function TimesheetApprovals() {
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
+      console.log('TimesheetApprovals: Cannot load - missing user or selectedCompany:', { user: !!user, selectedCompany: !!selectedCompany });
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+      console.log('TimesheetApprovals: Loading pending timesheets for userId:', user.uid, 'companyId:', selectedCompany.id);
+      console.log('TimesheetApprovals: Available employees:', employees.length);
       const pendingTimesheets = await getPendingTimesheets(user.uid, selectedCompany.id);
+      console.log('TimesheetApprovals: Loaded pending timesheets:', pendingTimesheets.length);
       setTimesheets(pendingTimesheets);
     } catch (error) {
-      console.error('Error loading timesheet approvals:', error);
+      console.error('TimesheetApprovals: Error loading timesheet approvals:', error);
       showError('Fout bij laden', 'Kon urenregistratie goedkeuringen niet laden');
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, showError]);
+  }, [user, selectedCompany, employees.length, showError]);
 
   useEffect(() => {
     loadData();

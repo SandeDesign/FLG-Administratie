@@ -989,3 +989,22 @@ export const getPendingExpenses = async (companyId: string, userId: string): Pro
 export const calculateTravelExpense = (kilometers: number, ratePerKm: number = 0.23): number => {
   return kilometers * ratePerKm;
 };
+
+// Submit expense for approval (change status from draft to submitted)
+export const submitExpense = async (id: string, userId: string, submittedBy: string): Promise<void> => {
+  const docRef = doc(db, 'expenses', id);
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists() || docSnap.data().userId !== userId) {
+    throw new Error('Unauthorized');
+  }
+
+  const updateData = convertToTimestamps({
+    status: 'submitted',
+    submittedBy,
+    submittedAt: new Date(),
+    updatedAt: new Date()
+  });
+
+  await updateDoc(docRef, updateData);
+};

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Receipt, Plus, Filter, Building2 } from 'lucide-react';
+import { Receipt, Plus, Filter, Building2, Send } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -20,6 +20,7 @@ const Expenses: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
 
   const loadExpenses = useCallback(async () => {
     if (!user || !adminUserId || !currentEmployeeId || !selectedCompany) {
@@ -84,6 +85,33 @@ const Expenses: React.FC = () => {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
+  };
+
+  const handleSubmitExpense = async (expense: Expense) => {
+    if (!adminUserId || !user) return;
+
+    if (!expense.id) {
+      showError('Fout', 'Declaratie ID ontbreekt');
+      return;
+    }
+
+    if (window.confirm('Weet je zeker dat je deze declaratie wilt indienen ter goedkeuring? Je kunt deze daarna niet meer bewerken.')) {
+      setSubmittingId(expense.id);
+      try {
+        await firebaseService.submitExpense(
+          expense.id,
+          adminUserId,
+          user.displayName || user.email || 'Werknemer'
+        );
+        success('Declaratie ingediend', 'Je declaratie is ingediend ter goedkeuring');
+        await loadExpenses();
+      } catch (err) {
+        console.error('Error submitting expense:', err);
+        showError('Fout bij indienen', 'Kon declaratie niet indienen');
+      } finally {
+        setSubmittingId(null);
+      }
+    }
   };
 
   const filteredExpenses = expenses.filter(expense => {
@@ -205,6 +233,9 @@ const Expenses: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Acties
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -226,6 +257,27 @@ const Expenses: React.FC = () => {
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
                         {getStatusText(expense.status)}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {expense.status === 'draft' && expense.id && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSubmitExpense(expense)}
+                          loading={submittingId === expense.id}
+                          disabled={submittingId !== null}
+                        >
+                          <Send className="h-4 w-4 mr-1" />
+                          Indienen
+                        </Button>
+                      )}
+                      {expense.status !== 'draft' && (
+                        <span className="text-gray-400 dark:text-gray-500 text-xs">
+                          {expense.status === 'submitted' ? 'In behandeling' :
+                           expense.status === 'approved' ? 'Goedgekeurd' :
+                           expense.status === 'rejected' ? 'Afgewezen' :
+                           expense.status === 'paid' ? 'Uitbetaald' : '-'}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
