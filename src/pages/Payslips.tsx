@@ -88,15 +88,23 @@ export default function Payslips() {
         throw new Error('Bedrijf niet gevonden');
       }
 
+      const month = payslip.periodStartDate.getMonth() + 1;
+      const year = payslip.periodStartDate.getFullYear();
+
+      console.log(`Searching for payroll calculation for employee ${payslip.employeeId}, month: ${month}, year: ${year}`);
+
       const calculations = await getPayrollCalculations(
         user.uid,
         payslip.employeeId,
-        payslip.periodStartDate.getMonth() + 1,
-        payslip.periodStartDate.getFullYear()
+        month,
+        year
       );
 
+      console.log(`Found ${calculations.length} calculation(s):`, calculations);
+
       if (!calculations || calculations.length === 0) {
-        throw new Error('Salarisberekening niet gevonden voor deze periode');
+        showError('Geen salarisberekening', `Er is geen salarisberekening gevonden voor ${getMonthName(payslip.periodStartDate)}. Zorg dat er eerst een salarisberekening is uitgevoerd in Payroll Processing.`);
+        return;
       }
 
       const calculation = calculations[0];

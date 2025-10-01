@@ -46,9 +46,9 @@ export default function PayrollProcessing() {
       setPayrollPeriods(periods);
 
       if (periods.length > 0) {
-        const latestPeriod = periods; // Select the most recent period by default
+        const latestPeriod = periods[0];
         setSelectedPeriod(latestPeriod);
-        const calcs = await getPayrollCalculations(user.uid, latestPeriod.id);
+        const calcs = await getPayrollCalculations(user.uid);
         setCalculations(calcs);
       } else {
         setSelectedPeriod(null);
@@ -133,7 +133,7 @@ export default function PayrollProcessing() {
       let processedEmployeeCount = 0;
 
       // Clear previous calculations for this period before recalculating
-      const existingCalculations = await getPayrollCalculations(user.uid, selectedPeriod.id);
+      const existingCalculations = await getPayrollCalculations(user.uid);
       // In a real app, you might want to delete these or mark them as superseded
       // For simplicity, we'll just overwrite/recreate
 

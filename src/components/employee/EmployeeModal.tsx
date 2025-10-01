@@ -76,6 +76,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
 
   useEffect(() => {
     if (employee) {
+      console.log('Editing employee:', employee);
       reset({
         firstName: employee.personalInfo.firstName,
         lastName: employee.personalInfo.lastName,
@@ -109,6 +110,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         branchId: employee.branchId,
       });
     } else if (companies.length > 0) {
+      const defaultCompanyId = companies[0].id;
+      const defaultBranchId = branches.find(b => b.companyId === defaultCompanyId)?.id || '';
+      console.log('Setting default values for new employee. Company:', defaultCompanyId, 'Branch:', defaultBranchId);
       reset({
         nationality: 'Nederlandse',
         country: 'Nederland',
@@ -116,14 +120,30 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         contractType: 'permanent',
         cao: 'cao-algemeen',
         paymentType: 'hourly',
-        companyId: companies[0].id,
-        branchId: branches.find(b => b.companyId === companies[0].id)?.id || '',
+        companyId: defaultCompanyId,
+        branchId: defaultBranchId,
       });
     }
-  }, [employee, companies, branches, reset]);
+  }, [employee, companies, branches, reset, isOpen]);
 
   const onSubmit = async (data: EmployeeFormData) => {
-    if (!user) return;
+    console.log('Form submitted with data:', data);
+
+    if (!user) {
+      console.error('No user found');
+      showError('Niet ingelogd', 'Je moet ingelogd zijn om een werknemer toe te voegen');
+      return;
+    }
+
+    if (!data.companyId || data.companyId === '') {
+      showError('Geen bedrijf geselecteerd', 'Selecteer een bedrijf voordat je een werknemer toevoegt');
+      return;
+    }
+
+    if (!data.branchId || data.branchId === '') {
+      showError('Geen vestiging geselecteerd', 'Selecteer een vestiging voordat je een werknemer toevoegt');
+      return;
+    }
 
     // Validation
     if (!validateBSN(data.bsn)) {
@@ -146,6 +166,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
       return;
     }
 
+    console.log('All validations passed, starting submission...');
     setSubmitting(true);
     try {
       const employeeData = {
@@ -227,18 +248,25 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
       };
 
       if (employee) {
+        console.log('Updating employee:', employee.id);
         await updateEmployee(employee.id, user.uid, employeeData);
+        console.log('Employee updated successfully');
         success('Werknemer bijgewerkt', `${data.firstName} ${data.lastName} is succesvol bijgewerkt`);
       } else {
-        await createEmployee(user.uid, employeeData);
+        console.log('Creating new employee...');
+        const newEmployeeId = await createEmployee(user.uid, employeeData);
+        console.log('Employee created successfully with ID:', newEmployeeId);
         success('Werknemer aangemaakt', `${data.firstName} ${data.lastName} is succesvol aangemaakt`);
       }
 
-      onSuccess();
+      console.log('Calling onSuccess callback...');
+      await onSuccess();
+      console.log('Closing modal...');
       onClose();
     } catch (error) {
       console.error('Error saving employee:', error);
-      showError('Fout bij opslaan', 'Kon werknemer niet opslaan');
+      const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
+      showError('Fout bij opslaan', `Kon werknemer niet opslaan: ${errorMessage}`);
     } finally {
       setSubmitting(false);
     }

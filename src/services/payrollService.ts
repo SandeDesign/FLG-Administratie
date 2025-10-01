@@ -118,8 +118,9 @@ export const updatePayrollPeriod = async (
 
 export const getPayrollCalculations = async (
   userId: string,
-  payrollPeriodId?: string,
-  employeeId?: string
+  employeeId?: string,
+  month?: number,
+  year?: number
 ): Promise<PayrollCalculation[]> => {
   let q = query(
     collection(db, 'payrollCalculations'),
@@ -133,12 +134,17 @@ export const getPayrollCalculations = async (
     ...convertTimestamps(doc.data())
   } as PayrollCalculation));
 
-  if (payrollPeriodId) {
-    calculations = calculations.filter(c => c.payrollPeriodId === payrollPeriodId);
-  }
-
   if (employeeId) {
     calculations = calculations.filter(c => c.employeeId === employeeId);
+  }
+
+  if (month !== undefined && year !== undefined) {
+    calculations = calculations.filter(c => {
+      if (!c.periodStartDate) return false;
+      const calcMonth = c.periodStartDate.getMonth() + 1;
+      const calcYear = c.periodStartDate.getFullYear();
+      return calcMonth === month && calcYear === year;
+    });
   }
 
   return calculations;
