@@ -20,7 +20,7 @@ const AdminExpenses: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [filterStatus, setFilterStatus] = useState<string>('submitted');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterEmployee, setFilterEmployee] = useState<string>('all');
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
