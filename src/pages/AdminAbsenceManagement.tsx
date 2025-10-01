@@ -1,346 +1,292 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Filter, Download, Search, Calendar } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { AuditAction, AuditEntityType } from '../types';
-import Card from '../components/ui/Card';
+import React, { useEffect, useState, useCallback } from 'react';
+import { HeartPulse, AlertTriangle, Calendar, User, Clock, Building2 } from 'lucide-react';
 import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { EmptyState } from '../components/ui/EmptyState';
+import { SickLeave, Employee } from '../types';
+import * as firebaseService from '../services/firebase';
+import { useAuth } from '../contexts/AuthContext';
+import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
 
-interface AuditLog {
-  id: string;
-  user_id: string;
-  action: AuditAction;
-  entity_type: AuditEntityType;
-  entity_id: string;
-  metadata?: any;
-  created_at: string;
-}
-
-interface AuditLog {
-  id: string;
-  user_id: string;
-  action: AuditAction;
-  entity_type: AuditEntityType;
-  entity_id: string;
-  metadata?: any;
-  created_at: string;
-}
-
-interface AuditLog {
-  id: string;
-  user_id: string;
-  action: AuditAction;
-  entity_type: AuditEntityType;
-  entity_id: string;
-  metadata?: any;
-  created_at: string;
-}
-
-const AuditLogPage: React.FC = () => {
+const AdminAbsenceManagement: React.FC = () => {
   const { user } = useAuth();
-  const { error: showError } = useToast();
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const { companies, employees, selectedCompany } = useApp();
+  const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<{
-    entityType?: AuditEntityType;
-    action?: AuditAction;
-    startDate?: Date;
-    endDate?: Date;
-  }>({});
+  const [activeSickLeave, setActiveSickLeave] = useState<SickLeave[]>([]);
 
-  useEffect(() => {
-      showError('Export niet beschikbaar', 'Export functionaliteit wordt nog geïmplementeerd');
-    if (user) {
-      loadAuditLogs();
+  const loadActiveSickLeave = useCallback(async () => {
+    if (!user || !selectedCompany) {
+      setLoading(false);
+      return;
     }
-  }, [user, filters]);
-
-  const loadAuditLogs = async () => {
-    if (!user) return;
 
     try {
       setLoading(true);
-      const logs = await AuditService.getAuditLogs(user.uid, {
-        ...filters,
-        limit: 100,
-      });
-      setAuditLogs(logs);
-    } catch (error) {
-      console.error('Error loading audit logs:', error);
-      showError('Fout bij laden audit logs', 'error');
+      // Get ALL sick leave records for this user and filter for active
+      const allSickLeaveRecords = await firebaseService.getSickLeaveRecords(user.uid);
+      const active = allSickLeaveRecords.filter(record => 
+        (record.status === 'active' || record.status === 'partially_recovered') && record.companyId === selectedCompany.id
+      );
+      setActiveSickLeave(active);
+    } catch (err) {
+      console.error('Error loading active sick leave:', err);
+      showError('Fout bij laden', 'Kon verzuimgegevens niet laden');
     } finally {
       setLoading(false);
     }
+  }, [user, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadActiveSickLeave();
+  }, [loadActiveSickLeave]);
+
+  const getEmployeeName = (employeeId: string) => {
+    const employee = employees.find(e => e.id === employeeId);
+    return employee 
+      ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
+      : 'Onbekende werknemer';
   };
 
-  const handleExport = async () => {
-    if (!user) return;
+  const getCompanyName = (companyId: string) => {
+    const company = companies.find(c => c.id === companyId);
+    return company?.name || 'Onbekend bedrijf';
+  };
 
-    try {
-      const exportId = await AuditService.exportAuditLogs(user.uid, '', 'excel', filters);
-      success('Export gestart. U ontvangt binnenkort een download link.');
-    } catch (error) {
-      console.error('Error exporting audit logs:', error);
-      showError('Fout bij exporteren audit logs', 'Kon export niet starten');
+  const getDaysSick = (startDate: Date, endDate?: Date) => {
+    const end = endDate || new Date();
+    const diffTime = end.getTime() - new Date(startDate).getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+      case 'partially_recovered':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
+      case 'long_term':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
 
-  const getActionLabel = (action: AuditAction): string => {
-    const labels: Record<AuditAction, string> = {
-      create: 'Aangemaakt',
-      update: 'Bijgewerkt',
-      delete: 'Verwijderd',
-      view: 'Bekeken',
-      export: 'Geëxporteerd',
-      submit: 'Ingediend',
-      approve: 'Goedgekeurd',
-      reject: 'Afgewezen',
+  const getStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      active: 'Actief',
+      partially_recovered: 'Gedeeltelijk hersteld',
+      long_term: 'Langdurig',
     };
-    return labels[action];
+    return statusMap[status] || status;
   };
 
-  const getEntityTypeLabel = (entityType: AuditEntityType): string => {
-    const labels: Record<AuditEntityType, string> = {
-      employee: 'Werknemer',
-      company: 'Bedrijf',
-      branch: 'Vestiging',
-      payroll: 'Loonverwerking',
-      tax_return: 'Loonaangifte',
-      leave_request: 'Verlofaanvraag',
-      sick_leave: 'Ziekteverlof',
-      expense: 'Declaratie',
-      time_entry: 'Ureninvoer',
-      settings: 'Instellingen',
-      user: 'Gebruiker',
-    };
-    return labels[entityType];
-  };
+  const longTermCases = activeSickLeave.filter(leave => getDaysSick(leave.startDate) > 42);
+  const poortwachterCases = activeSickLeave.filter(leave => leave.poortwachterActive);
 
-  const getSeverityColor = (severity: AuditLog['severity']): string => {
-    const colors: Record<AuditLog['severity'], string> = {
-      info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-      warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
-      critical: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
-    };
-    return colors[severity];
-  };
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!selectedCompany) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen bedrijf geselecteerd"
+        description="Selecteer een bedrijf om verzuim te beheren."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Audit Log</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Bekijk alle acties die zijn uitgevoerd in het systeem
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Verzuim Beheren
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Overzicht van actief verzuim en re-integratie
           </p>
         </div>
-        <Button variant="outline" onClick={handleExport}>
-          <Download className="h-5 w-5 mr-2" />
-          Exporteren
-        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center">
+            <HeartPulse className="h-8 w-8 text-red-600 mr-3" />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Actief Verzuim</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {activeSickLeave.length}
+              </p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center">
+            <AlertTriangle className="h-8 w-8 text-orange-600 mr-3" />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Langdurig (>6 weken)</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {longTermCases.length}
+              </p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center">
+            <Clock className="h-8 w-8 text-blue-600 mr-3" />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Poortwachter</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {poortwachterCases.length}
+              </p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center">
+            <User className="h-8 w-8 text-green-600 mr-3" />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Werknemers</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {employees.length}
+              </p>
+            </div>
+          </div>
+        </Card>
       </div>
 
       <Card>
-        <div className="p-6">
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Filter className="h-4 w-4 inline mr-2" />
-                Type entiteit
-              </label>
-              <select
-                value={filters.entityType || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    entityType: e.target.value ? (e.target.value as AuditEntityType) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              >
-                <option value="">Alle types</option>
-                <option value="employee">Werknemer</option>
-                <option value="company">Bedrijf</option>
-                <option value="payroll">Loonverwerking</option>
-                <option value="tax_return">Loonaangifte</option>
-                <option value="leave_request">Verlofaanvraag</option>
-                <option value="expense">Declaratie</option>
-              </select>
-            </div>
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Actief Verzuim
+          </h2>
+        </div>
 
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Actie
-              </label>
-              <select
-                value={filters.action || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    action: e.target.value ? (e.target.value as AuditAction) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              >
-                <option value="">Alle acties</option>
-                <option value="create">Aangemaakt</option>
-                <option value="update">Bijgewerkt</option>
-                <option value="delete">Verwijderd</option>
-                <option value="approve">Goedgekeurd</option>
-                <option value="reject">Afgewezen</option>
-              </select>
-            </div>
+        {activeSickLeave.length === 0 ? (
+          <EmptyState
+            icon={HeartPulse}
+            title="Geen actief verzuim"
+            description="Er zijn momenteel geen werknemers met actief verzuim"
+            actionLabel=""
+            onAction={() => {}}
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Werknemer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Bedrijf
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Start Datum
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Dagen Ziek
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Arbeidsgeschiktheid
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Poortwachter
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                {activeSickLeave.map((sickLeave) => {
+                  const daysSick = getDaysSick(sickLeave.startDate, sickLeave.endDate);
+                  const isLongTerm = daysSick > 42;
 
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Calendar className="h-4 w-4 inline mr-2" />
-                Start datum
-              </label>
-              <input
-                type="date"
-                value={filters.startDate?.toISOString().split('T')[0] || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    startDate: e.target.value ? new Date(e.target.value) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              />
-            </div>
-
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Eind datum
-              </label>
-              <input
-                type="date"
-                value={filters.endDate?.toISOString().split('T')[0] || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    endDate: e.target.value ? new Date(e.target.value) : undefined,
-                  })
-                }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner />
-            </div>
-          ) : auditLogs.length === 0 ? (
-            <div className="text-center py-12">
-              <Shield className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">
-                Geen audit logs gevonden voor de geselecteerde filters
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead>
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Datum/Tijd
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Gebruiker
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actie
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Entiteit ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Ernst
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {auditLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {log.createdAt.toLocaleString('nl-NL')}
-                      </td>
+                  return (
+                    <tr key={sickLeave.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {log.performedBy.name || log.performedBy.email}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {log.performedBy.role}
+                        <div className="flex items-center">
+                          <User className="h-5 w-5 text-gray-400 mr-2" />
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {getEmployeeName(sickLeave.employeeId)}
+                          </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {getActionLabel(log.action)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {getCompanyName(sickLeave.companyId)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {getEntityTypeLabel(log.entityType)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
-                        {log.entityId.substring(0, 8)}...
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {new Date(sickLeave.startDate).toLocaleDateString('nl-NL')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(
-                            log.severity
-                          )}`}
-                        >
-                          {log.severity}
+                        <div className="flex items-center">
+                          <span className={`text-sm font-medium ${isLongTerm ? 'text-orange-600' : 'text-gray-900 dark:text-white'}`}>
+                            {daysSick} dagen
+                          </span>
+                          {isLongTerm && (
+                            <AlertTriangle className="h-4 w-4 text-orange-600 ml-2" />
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {sickLeave.workCapacityPercentage}%
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(sickLeave.status)}`}>
+                          {getStatusText(sickLeave.status)}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {sickLeave.poortwachterActive ? (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 rounded-full">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Actief
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            Niet actief
+                          </span>
+                        )}
+                      </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
-      <Card>
-        <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Statistieken
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Totaal acties
-              </p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                {auditLogs.length}
-              </p>
+      {/* Alerts for long-term cases */}
+      {longTermCases.length > 0 && (
+        <Card>
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-orange-600 mr-2" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Aandachtspunten
+              </h2>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Kritieke acties
-              </p>
-              <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
-                {auditLogs.filter((log) => log.severity === 'critical').length}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Unieke gebruikers
-              </p>
-              <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {new Set(auditLogs.map((log) => log.performedBy.uid)).size}
+          </div>
+          <div className="p-4">
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+              <p className="text-sm text-orange-800 dark:text-orange-200">
+                <strong>{longTermCases.length} werknemers</strong> zijn langer dan 6 weken ziek. 
+                Overweeg contact op te nemen met de arbodienst en activeer de poortwachter procedure indien nog niet gedaan.
               </p>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
     </div>
   );
 };
 
-export default AuditLogPage;
+export default AdminAbsenceManagement;
