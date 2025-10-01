@@ -1,752 +1,364 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDocs, 
-  getDoc, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
-  Timestamp,
-  writeBatch
-} from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { 
-  Employee, 
-  Company, 
-  Branch, 
-  WeeklyTimesheet, 
-  PayrollCalculation, 
-  Payslip, 
-  TaxReturn, 
-  LeaveRequest, 
-  SickLeave, 
-  Expense, 
-  ExportLog 
-} from '../types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Shield, Filter, Download, Calendar, Building2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { AuditAction, AuditEntityType } from '../types';
+import Button from '../components/ui/Button';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { useToast } from '../hooks/useToast';
+import { AuditService } from '../services/auditService'; // Ensure AuditService is imported
+interface AuditLog {
+  id: string;
+  user_id: string;
+  action: AuditAction;
+  entity_type: AuditEntityType;
+  entity_id: string;
+  metadata?: any;
+  created_at: string;
+}
 
-// User Management
-export const createUserProfile = async (userId: string, userData: {
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: 'admin' | 'employee';
+import { EmptyState } from '../components/ui/EmptyState';
+import { useApp } from '../contexts/AppContext'; // Import useApp to get selectedCompany
+
+interface AuditLogEntry { // Renamed to avoid conflict with AuditLog type from types/audit.ts
+  id: string;
+  userId: string;
   companyId?: string;
-}) => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      ...userData,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return true;
-  } catch (error) {
-    console.error('Error creating user profile:', error);
-    throw error;
-  }
-};
+  action: AuditAction;
+  entityType: AuditEntityType;
+  entityId: string;
+  metadata?: any;
+  createdAt: Date; // Ensure this is a Date object
+  severity: 'info' | 'warning' | 'critical';
+  performedBy: {
+    uid: string;
+    email: string;
+    name?: string;
+    role: 'admin' | 'employee';
+  };
+}
 
-export const getUserRole = async (userId: string): Promise<'admin' | 'employee' | null> => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-    
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      return userData.role || null;
+const AuditLogPage: React.FC = () => {
+  const { user } = useAuth();
+  const { error: showError } = useToast();
+  const { success, error: showError } = useToast();
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<{
+    entityType?: AuditEntityType;
+    action?: AuditAction;
+    startDate?: Date;
+    endDate?: Date;
+    companyId?: string; // Add companyId to filters
+  }>({});
+
+  // Update filters when selectedCompany changes
+  useEffect(() => {
+    setFilters(prevFilters => ({
+      ...prevFilters,
+      companyId: selectedCompany?.id,
+    }));
+  }, [selectedCompany]);
+
+  const loadAuditLogs = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
     }
-    return null;
-  } catch (error) {
-    console.error('Error getting user role:', error);
-    throw error;
-  }
-};
 
-// Company Management
-export const createCompany = async (userId: string, companyData: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'companies'), {
-      ...companyData,
-      userId,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating company:', error);
-    throw error;
-  }
-};
-
-export const getCompanies = async (userId: string): Promise<Company[]> => {
-  try {
-    const q = query(
-      collection(db, 'companies'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date()
-    })) as Company[];
-  } catch (error) {
-    console.error('Error getting companies:', error);
-    throw error;
-  }
-};
-
-export const updateCompany = async (companyId: string, updates: Partial<Company>): Promise<void> => {
-  try {
-    const companyRef = doc(db, 'companies', companyId);
-    await updateDoc(companyRef, {
-      ...updates,
-      updatedAt: Timestamp.now()
-    });
-  } catch (error) {
-    console.error('Error updating company:', error);
-    throw error;
-  }
-};
-
-export const deleteCompany = async (companyId: string): Promise<void> => {
-  try {
-    await deleteDoc(doc(db, 'companies', companyId));
-  } catch (error) {
-    console.error('Error deleting company:', error);
-    throw error;
-  }
-};
-
-// Branch Management
-export const createBranch = async (userId: string, branchData: Omit<Branch, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'branches'), {
-      ...branchData,
-      userId,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating branch:', error);
-    throw error;
-  }
-};
-
-export const getBranches = async (userId: string, companyId?: string): Promise<Branch[]> => {
-  try {
-    let q;
-    if (companyId) {
-      q = query(
-        collection(db, 'branches'),
-        where('userId', '==', userId),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
-      );
-    } else {
-      q = query(
-        collection(db, 'branches'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
+    try {
+      setLoading(true);
+      const logs = await AuditService.getAuditLogs(user.uid, {
+        ...filters,
+        limit: 100, // Limit for performance
+      });
+      setAuditLogs(logs);
+    } catch (error) {
+      console.error('Error loading audit logs:', error);
+      showError('Fout bij laden', 'Kon audit logs niet laden');
+    } finally {
+      setLoading(false);
     }
-    
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date()
-    })) as Branch[];
-  } catch (error) {
-    console.error('Error getting branches:', error);
-    throw error;
-  }
-};
+  }, [user, filters, showError]);
 
-export const updateBranch = async (branchId: string, updates: Partial<Branch>): Promise<void> => {
-  try {
-    const branchRef = doc(db, 'branches', branchId);
-    await updateDoc(branchRef, {
-      ...updates,
-      updatedAt: Timestamp.now()
-    });
-  } catch (error) {
-    console.error('Error updating branch:', error);
-    throw error;
-  }
-};
+  useEffect(() => {
+    loadAuditLogs();
+  }, [loadAuditLogs]);
 
-export const deleteBranch = async (branchId: string): Promise<void> => {
-  try {
-    await deleteDoc(doc(db, 'branches', branchId));
-  } catch (error) {
-    console.error('Error deleting branch:', error);
-    throw error;
-  }
-};
-
-// Employee Management
-export const createEmployee = async (userId: string, employeeData: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'employees'), {
-      ...employeeData,
-      userId,
-      personalInfo: {
-        ...employeeData.personalInfo,
-        dateOfBirth: Timestamp.fromDate(employeeData.personalInfo.dateOfBirth)
-      },
-      contractInfo: {
-        ...employeeData.contractInfo,
-        startDate: Timestamp.fromDate(employeeData.contractInfo.startDate),
-        endDate: employeeData.contractInfo.endDate ? Timestamp.fromDate(employeeData.contractInfo.endDate) : null
-      },
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating employee:', error);
-    throw error;
-  }
-};
-
-export const getEmployees = async (userId: string, companyId?: string): Promise<Employee[]> => {
-  try {
-    let q;
-    if (companyId) {
-      q = query(
-        collection(db, 'employees'),
-        where('userId', '==', userId),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
-      );
-    } else {
-      q = query(
-        collection(db, 'employees'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
+  const handleExport = async () => {
+    if (!user || !selectedCompany) {
+      showError('Fout', 'Geen gebruiker of bedrijf geselecteerd voor export.');
+      return;
     }
-    
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        personalInfo: {
-          ...data.personalInfo,
-          dateOfBirth: data.personalInfo.dateOfBirth?.toDate() || new Date()
-        },
-        contractInfo: {
-          ...data.contractInfo,
-          startDate: data.contractInfo.startDate?.toDate() || new Date(),
-          endDate: data.contractInfo.endDate?.toDate() || null
-        },
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date()
-      };
-    }) as Employee[];
-  } catch (error) {
-    console.error('Error getting employees:', error);
-    throw error;
-  }
-};
 
-export const getEmployeeById = async (employeeId: string): Promise<Employee | null> => {
-  try {
-    const employeeRef = doc(db, 'employees', employeeId);
-    const employeeDoc = await getDoc(employeeRef);
-    
-    if (employeeDoc.exists()) {
-      const data = employeeDoc.data();
-      return {
-        id: employeeDoc.id,
-        ...data,
-        personalInfo: {
-          ...data.personalInfo,
-          dateOfBirth: data.personalInfo.dateOfBirth?.toDate() || new Date()
-        },
-        contractInfo: {
-          ...data.contractInfo,
-          startDate: data.contractInfo.startDate?.toDate() || new Date(),
-          endDate: data.contractInfo.endDate?.toDate() || null
-        },
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date()
-      } as Employee;
+    try {
+      const exportId = await AuditService.exportAuditLogs(user.uid, selectedCompany.id, 'excel', filters);
+      success('Export gestart', 'U ontvangt binnenkort een download link.');
+    } catch (error) {
+      console.error('Error exporting audit logs:', error);
+      showError('Fout bij exporteren', 'Kon export niet starten');
     }
-    return null;
-  } catch (error) {
-    console.error('Error getting employee by ID:', error);
-    throw error;
-  }
-};
+  };
 
-export const updateEmployee = async (employeeId: string, updates: Partial<Employee>): Promise<void> => {
-  try {
-    const employeeRef = doc(db, 'employees', employeeId);
-    const updateData: any = {
-      ...updates,
-      updatedAt: Timestamp.now()
+  const getActionLabel = (action: AuditAction): string => {
+    const labels: Record<AuditAction, string> = {
+      create: 'Aangemaakt',
+      update: 'Bijgewerkt',
+      delete: 'Verwijderd',
+      view: 'Bekeken',
+      export: 'Geëxporteerd',
+      submit: 'Ingediend',
+      approve: 'Goedgekeurd',
+      reject: 'Afgewezen',
     };
+    return labels[action];
+  };
 
-    if (updates.personalInfo?.dateOfBirth) {
-      updateData.personalInfo = {
-        ...updates.personalInfo,
-        dateOfBirth: Timestamp.fromDate(updates.personalInfo.dateOfBirth)
-      };
-    }
-
-    if (updates.contractInfo?.startDate) {
-      updateData.contractInfo = {
-        ...updates.contractInfo,
-        startDate: Timestamp.fromDate(updates.contractInfo.startDate),
-        endDate: updates.contractInfo.endDate ? Timestamp.fromDate(updates.contractInfo.endDate) : null
-      };
-    }
-
-    await updateDoc(employeeRef, updateData);
-  } catch (error) {
-    console.error('Error updating employee:', error);
-    throw error;
-  }
-};
-
-export const deleteEmployee = async (employeeId: string): Promise<void> => {
-  try {
-    await deleteDoc(doc(db, 'employees', employeeId));
-  } catch (error) {
-    console.error('Error deleting employee:', error);
-    throw error;
-  }
-};
-
-// Leave Request Management
-export const createLeaveRequest = async (userId: string, leaveData: Omit<LeaveRequest, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'leaveRequests'), {
-      ...leaveData,
-      userId,
-      startDate: Timestamp.fromDate(leaveData.startDate),
-      endDate: Timestamp.fromDate(leaveData.endDate),
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating leave request:', error);
-    throw error;
-  }
-};
-
-export const getLeaveRequests = async (userId: string, employeeId?: string): Promise<LeaveRequest[]> => {
-  try {
-    let q;
-    if (employeeId) {
-      q = query(
-        collection(db, 'leaveRequests'),
-        where('userId', '==', userId),
-        where('employeeId', '==', employeeId),
-        orderBy('createdAt', 'desc')
-      );
-    } else {
-      q = query(
-        collection(db, 'leaveRequests'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-    }
-    
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        startDate: data.startDate?.toDate() || new Date(),
-        endDate: data.endDate?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date()
-      };
-    }) as LeaveRequest[];
-  } catch (error) {
-    console.error('Error getting leave requests:', error);
-    throw error;
-  }
-};
-
-export const updateLeaveRequest = async (leaveId: string, updates: Partial<LeaveRequest>): Promise<void> => {
-  try {
-    const leaveRef = doc(db, 'leaveRequests', leaveId);
-    const updateData: any = {
-      ...updates,
-      updatedAt: Timestamp.now()
+  const getEntityTypeLabel = (entityType: AuditEntityType): string => {
+    const labels: Record<AuditEntityType, string> = {
+      employee: 'Werknemer',
+      company: 'Bedrijf',
+      branch: 'Vestiging',
+      payroll: 'Loonverwerking',
+      tax_return: 'Loonaangifte',
+      leave_request: 'Verlofaanvraag',
+      sick_leave: 'Ziekteverlof',
+      expense: 'Declaratie',
+      time_entry: 'Ureninvoer',
+      settings: 'Instellingen',
+      user: 'Gebruiker',
     };
+    return labels[entityType];
+  };
 
-    if (updates.startDate) {
-      updateData.startDate = Timestamp.fromDate(updates.startDate);
-    }
-    if (updates.endDate) {
-      updateData.endDate = Timestamp.fromDate(updates.endDate);
-    }
-
-    await updateDoc(leaveRef, updateData);
-  } catch (error) {
-    console.error('Error updating leave request:', error);
-    throw error;
-  }
-};
-
-// Sick Leave Management
-export const createSickLeave = async (userId: string, sickLeaveData: Omit<SickLeave, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'sickLeaves'), {
-      ...sickLeaveData,
-      userId,
-      startDate: Timestamp.fromDate(sickLeaveData.startDate),
-      endDate: sickLeaveData.endDate ? Timestamp.fromDate(sickLeaveData.endDate) : null,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating sick leave:', error);
-    throw error;
-  }
-};
-
-export const getSickLeaves = async (userId: string, employeeId?: string): Promise<SickLeave[]> => {
-  try {
-    let q;
-    if (employeeId) {
-      q = query(
-        collection(db, 'sickLeaves'),
-        where('userId', '==', userId),
-        where('employeeId', '==', employeeId),
-        orderBy('createdAt', 'desc')
-      );
-    } else {
-      q = query(
-        collection(db, 'sickLeaves'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-    }
-    
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        startDate: data.startDate?.toDate() || new Date(),
-        endDate: data.endDate?.toDate() || null,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date()
-      };
-    }) as SickLeave[];
-  } catch (error) {
-    console.error('Error getting sick leaves:', error);
-    throw error;
-  }
-};
-
-export const updateSickLeave = async (sickLeaveId: string, updates: Partial<SickLeave>): Promise<void> => {
-  try {
-    const sickLeaveRef = doc(db, 'sickLeaves', sickLeaveId);
-    const updateData: any = {
-      ...updates,
-      updatedAt: Timestamp.now()
+  const getSeverityColor = (severity: AuditLogEntry['severity']): string => {
+    const colors: Record<AuditLogEntry['severity'], string> = {
+      info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
+      warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
+      critical: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
     };
+    return colors[severity];
+  };
 
-    if (updates.startDate) {
-      updateData.startDate = Timestamp.fromDate(updates.startDate);
-    }
-    if (updates.endDate) {
-      updateData.endDate = Timestamp.fromDate(updates.endDate);
-    }
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Audit Log</h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            Bekijk alle acties die zijn uitgevoerd in het systeem
+          </p>
+        </div>
+        <Button variant="outline" onClick={handleExport} disabled={!selectedCompany}>
+          <Download className="h-5 w-5 mr-2" />
+          Exporteren
+        </Button>
+      </div>
 
-    await updateDoc(sickLeaveRef, updateData);
-  } catch (error) {
-    console.error('Error updating sick leave:', error);
-    throw error;
-  }
+      <Card>
+        <div className="p-6">
+          <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="flex-1 min-w-[150px]">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <Filter className="h-4 w-4 inline mr-2" />
+                Type entiteit
+              </label>
+              <select
+                value={filters.entityType || ''}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    entityType: e.target.value ? (e.target.value as AuditEntityType) : undefined,
+                  })
+                }
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
+              >
+                <option value="">Alle types</option>
+                <option value="employee">Werknemer</option>
+                <option value="company">Bedrijf</option>
+                <option value="payroll">Loonverwerking</option>
+                <option value="tax_return">Loonaangifte</option>
+                <option value="leave_request">Verlofaanvraag</option>
+                <option value="expense">Declaratie</option>
+                <option value="time_entry">Ureninvoer</option>
+                <option value="settings">Instellingen</option>
+                <option value="user">Gebruiker</option>
+              </select>
+            </div>
+
+            <div className="flex-1 min-w-[150px]">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Actie
+              </label>
+              <select
+                value={filters.action || ''}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    action: e.target.value ? (e.target.value as AuditAction) : undefined,
+                  })
+                }
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
+              >
+                <option value="">Alle acties</option>
+                <option value="create">Aangemaakt</option>
+                <option value="update">Bijgewerkt</option>
+                <option value="delete">Verwijderd</option>
+                <option value="view">Bekeken</option>
+                <option value="export">Geëxporteerd</option>
+                <option value="submit">Ingediend</option>
+                <option value="approve">Goedgekeurd</option>
+                <option value="reject">Afgewezen</option>
+              </select>
+            </div>
+
+            <div className="flex-1 min-w-[150px]">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <Calendar className="h-4 w-4 inline mr-2" />
+                Start datum
+              </label>
+              <input
+                type="date"
+                value={filters.startDate?.toISOString().split('T') || ''}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    startDate: e.target.value ? new Date(e.target.value) : undefined,
+                  })
+                }
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex-1 min-w-[150px]">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Eind datum
+              </label>
+              <input
+                type="date"
+                value={filters.endDate?.toISOString().split('T') || ''}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    endDate: e.target.value ? new Date(e.target.value) : undefined,
+                  })
+                }
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <LoadingSpinner />
+            </div>
+          ) : auditLogs.length === 0 ? (
+            <EmptyState
+              icon={Shield}
+              title="Geen audit logs gevonden"
+              description="Geen audit logs gevonden voor de geselecteerde filters."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Datum/Tijd
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Gebruiker
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Actie
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Entiteit ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Ernst
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {auditLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {log.createdAt.toLocaleString('nl-NL')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {log.performedBy.name || log.performedBy.email}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {log.performedBy.role}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {getActionLabel(log.action)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {getEntityTypeLabel(log.entityType)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
+                        {log.entityId.substring(0, 8)}...
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(
+                            log.severity
+                          )}`}
+                        >
+                          {log.severity}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Statistieken
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Totaal acties
+              </p>
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                {auditLogs.length}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Kritieke acties
+              </p>
+              <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
+                {auditLogs.filter((log) => log.severity === 'critical').length}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Unieke gebruikers
+              </p>
+              <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
+                {new Set(auditLogs.map((log) => log.performedBy.uid)).size}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
 };
 
-// Expense Management
-export const createExpense = async (userId: string, expenseData: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'expenses'), {
-      ...expenseData,
-      userId,
-      date: Timestamp.fromDate(expenseData.date),
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating expense:', error);
-    throw error;
-  }
-};
-
-export const getExpenses = async (userId: string, employeeId?: string): Promise<Expense[]> => {
-  try {
-    let q;
-    if (employeeId) {
-      q = query(
-        collection(db, 'expenses'),
-        where('userId', '==', userId),
-        where('employeeId', '==', employeeId),
-        orderBy('createdAt', 'desc')
-      );
-    } else {
-      q = query(
-        collection(db, 'expenses'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-    }
-    
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        date: data.date?.toDate() || new Date(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date()
-      };
-    }) as Expense[];
-  } catch (error) {
-    console.error('Error getting expenses:', error);
-    throw error;
-  }
-};
-
-export const updateExpense = async (expenseId: string, updates: Partial<Expense>): Promise<void> => {
-  try {
-    const expenseRef = doc(db, 'expenses', expenseId);
-    const updateData: any = {
-      ...updates,
-      updatedAt: Timestamp.now()
-    };
-
-    if (updates.date) {
-      updateData.date = Timestamp.fromDate(updates.date);
-    }
-
-    await updateDoc(expenseRef, updateData);
-  } catch (error) {
-    console.error('Error updating expense:', error);
-    throw error;
-  }
-};
-
-// Payroll Management
-export const createPayrollCalculation = async (userId: string, payrollData: Omit<PayrollCalculation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'payrollCalculations'), {
-      ...payrollData,
-      userId,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating payroll calculation:', error);
-    throw error;
-  }
-};
-
-export const getPayrollCalculations = async (userId: string, companyId?: string): Promise<PayrollCalculation[]> => {
-  try {
-    let q;
-    if (companyId) {
-      q = query(
-        collection(db, 'payrollCalculations'),
-        where('userId', '==', userId),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
-      );
-    } else {
-      q = query(
-        collection(db, 'payrollCalculations'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-    }
-    
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date()
-    })) as PayrollCalculation[];
-  } catch (error) {
-    console.error('Error getting payroll calculations:', error);
-    throw error;
-  }
-};
-
-// Payslip Management
-export const createPayslip = async (userId: string, payslipData: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'payslips'), {
-      ...payslipData,
-      userId,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating payslip:', error);
-    throw error;
-  }
-};
-
-export const getPayslips = async (userId: string, employeeId?: string): Promise<Payslip[]> => {
-  try {
-    let q;
-    if (employeeId) {
-      q = query(
-        collection(db, 'payslips'),
-        where('userId', '==', userId),
-        where('employeeId', '==', employeeId),
-        orderBy('createdAt', 'desc')
-      );
-    } else {
-      q = query(
-        collection(db, 'payslips'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-    }
-    
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date()
-    })) as Payslip[];
-  } catch (error) {
-    console.error('Error getting payslips:', error);
-    throw error;
-  }
-};
-
-// Tax Return Management
-export const createTaxReturn = async (userId: string, taxReturnData: Omit<TaxReturn, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'taxReturns'), {
-      ...taxReturnData,
-      userId,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating tax return:', error);
-    throw error;
-  }
-};
-
-export const getTaxReturns = async (userId: string, companyId?: string): Promise<TaxReturn[]> => {
-  try {
-    let q;
-    if (companyId) {
-      q = query(
-        collection(db, 'taxReturns'),
-        where('userId', '==', userId),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
-      );
-    } else {
-      q = query(
-        collection(db, 'taxReturns'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-    }
-    
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate() || new Date()
-    })) as TaxReturn[];
-  } catch (error) {
-    console.error('Error getting tax returns:', error);
-    throw error;
-  }
-};
-
-// Export Log Management
-export const createExportLog = async (userId: string, exportData: Omit<ExportLog, 'id' | 'createdAt'>): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, 'exportLogs'), {
-      ...exportData,
-      userId,
-      createdAt: Timestamp.now()
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Error creating export log:', error);
-    throw error;
-  }
-};
-
-export const getExportLogs = async (userId: string, companyId?: string): Promise<ExportLog[]> => {
-  try {
-    let q;
-    if (companyId) {
-      q = query(
-        collection(db, 'exportLogs'),
-        where('userId', '==', userId),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
-    } else {
-      q = query(
-        collection(db, 'exportLogs'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
-    }
-    
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date()
-    })) as ExportLog[];
-  } catch (error) {
-    console.error('Error getting export logs:', error);
-    throw error;
-  }
-};
+export default AuditLogPage;
