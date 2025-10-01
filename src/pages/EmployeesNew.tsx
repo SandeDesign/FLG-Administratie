@@ -22,28 +22,22 @@ const EmployeesNew: React.FC = () => {
 
   const loadEmployees = useCallback(async () => {
     if (!user) {
-      console.log('EmployeesNew: Cannot load - no user');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('EmployeesNew: Loading employees for userId:', user.uid, 'selectedCompany:', selectedCompany?.id);
-      // Load all employees for this user, filtering by company will be done in the view
       const employeesData = await getEmployees(user.uid);
-      console.log('EmployeesNew: Loaded employees:', employeesData.length);
 
-      // Filter by selected company if one is selected
       const filteredEmployees = selectedCompany
         ? employeesData.filter(emp => emp.companyId === selectedCompany.id)
         : employeesData;
 
-      console.log('EmployeesNew: Filtered employees:', filteredEmployees.length);
       setEmployees(filteredEmployees);
-      await refreshDashboardStats(); // Refresh dashboard stats after loading employees
+      await refreshDashboardStats();
     } catch (error) {
-      console.error('EmployeesNew: Error loading employees:', error);
+      console.error('Error loading employees:', error);
       showError('Fout bij laden', 'Kon werknemers niet laden');
     } finally {
       setLoading(false);
@@ -53,6 +47,11 @@ const EmployeesNew: React.FC = () => {
   useEffect(() => {
     loadEmployees();
   }, [loadEmployees]);
+
+  const handleAddEmployee = () => {
+    setSelectedEmployee(null);
+    setIsModalOpen(true);
+  };
 
   const handleEditEmployee = (employee: Employee) => {
     setSelectedEmployee(employee);
@@ -66,12 +65,22 @@ const EmployeesNew: React.FC = () => {
       try {
         await deleteEmployee(employee.id, user.uid);
         success('Werknemer verwijderd', `${employee.personalInfo.firstName} ${employee.personalInfo.lastName} is succesvol verwijderd`);
-        await loadEmployees(); // Reload employees after deletion
+        await loadEmployees();
       } catch (error) {
         console.error('Error deleting employee:', error);
         showError('Fout bij verwijderen', 'Kon werknemer niet verwijderen');
       }
     }
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedEmployee(null);
+  };
+
+  const handleModalSuccess = async () => {
+    await loadEmployees();
+    handleModalClose();
   };
 
   const getStatusColor = (status: string) => {
@@ -112,10 +121,10 @@ const EmployeesNew: React.FC = () => {
             Beheer je werknemers en hun gegevens
           </p>
         </div>
-        <Button onClick={() => {
-          setSelectedEmployee(null);
-          setIsModalOpen(true);
-        }} disabled={companies.length === 0}>
+        <Button
+          onClick={handleAddEmployee}
+          disabled={companies.length === 0}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nieuwe Werknemer
         </Button>
@@ -142,7 +151,7 @@ const EmployeesNew: React.FC = () => {
           title="Geen werknemers gevonden"
           description={`Voeg je eerste werknemer toe voor ${selectedCompany?.name || 'het geselecteerde bedrijf'}`}
           actionLabel="Eerste Werknemer Toevoegen"
-          onAction={() => setIsModalOpen(true)}
+          onAction={handleAddEmployee}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -209,11 +218,8 @@ const EmployeesNew: React.FC = () => {
 
       <EmployeeModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedEmployee(null);
-        }}
-        onSuccess={loadEmployees}
+        onClose={handleModalClose}
+        onSuccess={handleModalSuccess}
         employee={selectedEmployee}
       />
     </div>

@@ -21,6 +21,7 @@ export default function Payslips() {
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
@@ -62,44 +63,51 @@ export default function Payslips() {
     loadData();
   }, [loadData]);
 
+  const getMonthName = (date: Date): string => {
+    return date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
+  };
+
   const handleDownload = async (payslip: Payslip) => {
     if (!employeeData || !user) {
       showError('Fout', 'Werknemergegevens ontbreken voor download.');
       return;
     }
 
-    try {
-      if (payslip.pdfUrl && payslip.pdfUrl.trim() !== '') {
-        fetch(payslip.pdfUrl)
-          .then(response => response.blob())
-          .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `loonstrook-${getMonthName(payslip.periodStartDate)}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
-          })
-          .catch(err => {
-            console.error('Download error:', err);
-            window.open(payslip.pdfUrl, '_blank');
-          });
+    if (!payslip.pdfUrl || payslip.pdfUrl.trim() === '') {
+      showError('Niet beschikbaar', 'Loonstrook PDF is nog niet beschikbaar');
+      return;
+    }
 
-        await markPayslipAsDownloaded(payslip.id!, user.uid);
-        success('Loonstrook gedownload', 'Loonstrook wordt gedownload');
-      } else {
-        showError('Niet beschikbaar', 'Loonstrook PDF is nog niet beschikbaar');
+    setDownloading(payslip.id || null);
+
+    try {
+      const response = await fetch(payslip.pdfUrl);
+      if (!response.ok) {
+        throw new Error('Download failed');
       }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `loonstrook-${getMonthName(payslip.periodStartDate)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      if (payslip.id) {
+        await markPayslipAsDownloaded(payslip.id, user.uid);
+      }
+
+      success('Loonstrook gedownload', 'Loonstrook succesvol gedownload');
+      await loadData();
     } catch (error) {
       console.error('Error downloading payslip:', error);
       showError('Fout bij downloaden', 'Kon loonstrook niet downloaden');
+    } finally {
+      setDownloading(null);
     }
-  };
-
-  const getMonthName = (date: Date): string => {
-    return date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
   };
 
   if (loading) {
@@ -241,10 +249,11 @@ export default function Payslips() {
                   onClick={() => handleDownload(payslip)}
                   className="w-full"
                   size="sm"
-                  disabled={!payslip.pdfUrl}
+                  disabled={!payslip.pdfUrl || downloading === payslip.id}
+                  loading={downloading === payslip.id}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Download PDF
+                  {downloading === payslip.id ? 'Downloaden...' : 'Download PDF'}
                 </Button>
               </div>
             </Card>
