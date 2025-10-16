@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Save, Send } from 'lucide-react';
+import { Calendar, Clock, Save, Send, Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -27,6 +27,7 @@ export default function Timesheets() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [timesheets, setTimesheets] = useState<WeeklyTimesheet[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<number>(getWeekNumber(new Date()));
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -115,6 +116,127 @@ export default function Timesheets() {
       setLoading(false);
     }
   }, [user, adminUserId, userRole, currentEmployeeId, selectedEmployeeId, selectedCompany, selectedYear, selectedWeek, showError]);
+
+  // ITKnecht Import Function
+  const handleImportFromITKnecht = async () => {
+    if (!selectedCompany || !employeeData) {
+      showError('Fout', 'Selecteer eerst een bedrijf en werknemer');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      // Trigger Make.com webhook to get ITKnecht data
+      const response = await fetch('JOUW_MAKE_WEBHOOK_URL_HIER', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'get_hours_data',
+          monteur: employeeData.personalInfo.firstName + ' ' + employeeData.personalInfo.lastName,
+          week: selectedWeek,
+          year: selectedYear,
+          companyId: selectedCompany.id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Webhook call failed');
+      }
+
+      const itknechtData = await response.json();
+      
+      // Process the ITKnecht data and update timesheet
+      if (itknechtData && Array.isArray(itknechtData)) {
+        await processITKnechtData(itknechtData);
+        success('Import geslaagd', `${itknechtData.length} ITKnecht entries geïmporteerd`);
+        await loadData(); // Reload to show updated data
+      } else {
+        showError('Geen data', 'Geen ITKnecht uren gevonden voor deze week/monteur');
+      }
+
+    } catch (error) {
+      console.error('Error importing from ITKnecht:', error);
+      showError('Import fout', 'Kon ITKnecht uren niet ophalen');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Process ITKnecht data and map to timesheet entries
+  const processITKnechtData = async (itknechtEntries: any[]) => {
+    if (!currentTimesheet || !employeeData) return;
+
+    // Group entries by day
+    const entriesByDay: { [key: string]: any[] } = {};
+    
+    itknechtEntries.forEach(entry => {
+      const day = entry.dag || entry.dayOfWeek; // afhankelijk van je Make structuur
+      if (!entriesByDay[day]) {
+        entriesByDay[day] = [];
+      }
+      entriesByDay[day].push(entry);
+    });
+
+    // Update timesheet entries
+    const updatedEntries = [...currentTimesheet.entries];
+    
+    Object.keys(entriesByDay).forEach(day => {
+      const dayEntries = entriesByDay[day];
+      
+      // Calculate totals for this day
+      const dayTotalHours = dayEntries.reduce((sum, entry) => {
+        return sum + parseFloat(entry.totaal_factuureerbare_uren || entry.totalHours || 0);
+      }, 0);
+      
+      const dayTotalKm = dayEntries.reduce((sum, entry) => {
+        return sum + parseFloat(entry.gereden_kilometers || entry.kilometers || 0);
+      }, 0);
+
+      // Find the corresponding day in the timesheet (matching day name)
+      const dayIndex = updatedEntries.findIndex(entry => {
+        const dayName = getDayName(entry.date);
+        return dayName.toLowerCase() === day.toLowerCase();
+      });
+
+      if (dayIndex !== -1) {
+        updatedEntries[dayIndex] = {
+          ...updatedEntries[dayIndex],
+          regularHours: dayTotalHours,
+          travelKilometers: dayTotalKm,
+          notes: `ITKnecht import: ${dayEntries.length} entries`,
+          updatedAt: new Date()
+        };
+      }
+    });
+
+    // Calculate new totals
+    const totals = calculateWeekTotals(updatedEntries);
+
+    // Update timesheet
+    const updatedTimesheet = {
+      ...currentTimesheet,
+      entries: updatedEntries,
+      totalRegularHours: totals.regularHours,
+      totalOvertimeHours: totals.overtimeHours,
+      totalEveningHours: totals.eveningHours,
+      totalNightHours: totals.nightHours,
+      totalWeekendHours: totals.weekendHours,
+      totalTravelKilometers: totals.travelKilometers,
+      updatedAt: new Date()
+    };
+
+    setCurrentTimesheet(updatedTimesheet);
+
+    // Auto-save the imported data
+    if (updatedTimesheet.id) {
+      await updateWeeklyTimesheet(updatedTimesheet.id, adminUserId!, updatedTimesheet);
+    } else {
+      const id = await createWeeklyTimesheet(adminUserId!, updatedTimesheet);
+      setCurrentTimesheet({ ...updatedTimesheet, id });
+    }
+  };
 
   // Auto-select first employee for admin users
   useEffect(() => {
@@ -297,6 +419,27 @@ export default function Timesheets() {
           </p>
         </div>
         <div className="flex items-center gap-4">
+          {userRole === 'admin' && selectedEmployeeId && (
+            <Button
+              onClick={handleImportFromITKnecht}
+              disabled={importing || saving}
+              variant="primary"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {importing ? (
+                <>
+                  <LoadingSpinner className="h-4 w-4 mr-2" />
+                  Importeren...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  ITKnecht Uren Ophalen
+                </>
+              )}
+            </Button>
+          )}
           {userRole === 'admin' && companyEmployees.length > 0 && (
             <select
               value={selectedEmployeeId}
@@ -329,6 +472,15 @@ export default function Timesheets() {
           </div>
         </div>
       </div>
+
+      {importing && (
+        <Card>
+          <div className="flex items-center gap-3 text-blue-600 p-4">
+            <LoadingSpinner className="h-5 w-5" />
+            <span>Bezig met ophalen van ITKnecht uren data...</span>
+          </div>
+        </Card>
+      )}
 
       {currentTimesheet.status !== 'draft' && (
         <Card>
@@ -388,7 +540,7 @@ export default function Timesheets() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentTimesheet.entries.map((entry, index) => (
-                <tr key={index}>
+                <tr key={index} className={entry.notes?.includes('ITKnecht') ? 'bg-blue-50' : ''}>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {getDayName(entry.date)}
