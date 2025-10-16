@@ -169,11 +169,21 @@ export default function Timesheets() {
   const processITKnechtData = async (itknechtEntries: any[]) => {
     if (!currentTimesheet || !employeeData) return;
 
+    // Normalize Make.com data format first
+    const normalizedEntries = itknechtEntries.map(record => {
+      const data = record.data || record;
+      return {
+        dag: data.Dag || '',
+        totaal_factuureerbare_uren: parseFloat(data['Totaal factureerbare uren'] || 0),
+        gereden_kilometers: parseFloat(data['Gereden kilometers'] || 0)
+      };
+    });
+
     // Group entries by day
     const entriesByDay: { [key: string]: any[] } = {};
     
-    itknechtEntries.forEach(entry => {
-      const day = entry.dag || entry.dayOfWeek; // afhankelijk van je Make structuur
+    normalizedEntries.forEach(entry => {
+      const day = entry.dag;
       if (!entriesByDay[day]) {
         entriesByDay[day] = [];
       }
@@ -188,11 +198,11 @@ export default function Timesheets() {
       
       // Calculate totals for this day
       const dayTotalHours = dayEntries.reduce((sum, entry) => {
-        return sum + parseFloat(entry.totaal_factuureerbare_uren || entry.totalHours || 0);
+        return sum + entry.totaal_factuureerbare_uren;
       }, 0);
       
       const dayTotalKm = dayEntries.reduce((sum, entry) => {
-        return sum + parseFloat(entry.gereden_kilometers || entry.kilometers || 0);
+        return sum + entry.gereden_kilometers;
       }, 0);
 
       // Find the corresponding day in the timesheet (matching day name)
