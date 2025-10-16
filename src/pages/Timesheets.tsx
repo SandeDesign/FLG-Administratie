@@ -329,6 +329,46 @@ export default function Timesheets() {
       return;
     }
 
+    // Check if average hours per day is below 7 hours
+    const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
+    const averageHoursPerDay = workDays > 0 ? currentTimesheet.totalRegularHours / workDays : 0;
+    
+    if (workDays > 0 && averageHoursPerDay < 7) {
+      const explanation = prompt(
+        `Het gemiddelde aantal uren per werkdag is ${averageHoursPerDay.toFixed(1)} uur (minder dan 7 uur per dag).\n\n` +
+        `Geef een verklaring voor de lagere uren (bijv. ziekte, verlof, training, etc.):`
+      );
+      
+      if (explanation === null) {
+        // User cancelled
+        return;
+      }
+      
+      if (!explanation.trim()) {
+        showError('Verklaring vereist', 'Een verklaring is verplicht bij minder dan 7 uur gemiddeld per dag');
+        return;
+      }
+      
+      // Add explanation to timesheet
+      const updatedTimesheet = {
+        ...currentTimesheet,
+        lowHoursExplanation: explanation.trim(),
+        averageHoursPerDay: averageHoursPerDay,
+        updatedAt: new Date()
+      };
+      
+      setCurrentTimesheet(updatedTimesheet);
+      
+      // Save the explanation before submitting
+      try {
+        await updateWeeklyTimesheet(updatedTimesheet.id, adminUserId, updatedTimesheet);
+      } catch (error) {
+        console.error('Error saving explanation:', error);
+        showError('Fout bij opslaan', 'Kon verklaring niet opslaan');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       await submitWeeklyTimesheet(
@@ -629,6 +669,31 @@ export default function Timesheets() {
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <div className="p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Week Totaal</h3>
+            
+            {/* Low Hours Warning */}
+            {(() => {
+              const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
+              const averageHoursPerDay = workDays > 0 ? currentTimesheet.totalRegularHours / workDays : 0;
+              
+              if (workDays > 0 && averageHoursPerDay < 7) {
+                return (
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <div className="flex items-start gap-2">
+                      <div className="text-yellow-600 text-sm">
+                        ⚠️ <strong>Lage uren:</strong> Gemiddeld {averageHoursPerDay.toFixed(1)} uur per werkdag
+                      </div>
+                    </div>
+                    {currentTimesheet.lowHoursExplanation && (
+                      <div className="mt-2 text-sm text-gray-700">
+                        <strong>Verklaring:</strong> {currentTimesheet.lowHoursExplanation}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <div className="text-center">
                 <div className="text-xl sm:text-2xl font-bold text-blue-600">
@@ -649,8 +714,17 @@ export default function Timesheets() {
                 <div className="text-xs sm:text-sm text-gray-600">Werkdagen</div>
               </div>
               <div className="text-center">
-                <div className="text-xl sm:text-2xl font-bold text-orange-600">
-                  {Math.round((currentTimesheet.totalRegularHours / 5) * 10) / 10}
+                <div className={`text-xl sm:text-2xl font-bold ${
+                  (() => {
+                    const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
+                    const avg = workDays > 0 ? currentTimesheet.totalRegularHours / workDays : 0;
+                    return avg < 7 ? 'text-yellow-600' : 'text-orange-600';
+                  })()
+                }`}>
+                  {(() => {
+                    const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
+                    return workDays > 0 ? Math.round((currentTimesheet.totalRegularHours / workDays) * 10) / 10 : 0;
+                  })()}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600">Ø per dag</div>
               </div>
