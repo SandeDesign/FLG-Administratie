@@ -183,24 +183,57 @@ export default function TimesheetApprovals() {
                     </div>
                   </div>
 
+                  {/* Low Hours Warning */}
+                  {(() => {
+                    const workDays = timesheet.entries.filter(e => e.regularHours > 0).length;
+                    const averageHoursPerDay = workDays > 0 ? timesheet.totalRegularHours / workDays : 0;
+                    
+                    if (workDays > 0 && averageHoursPerDay < 7) {
+                      return (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                          <div className="flex items-start gap-2">
+                            <div className="text-yellow-800 text-sm">
+                              <strong>⚠️ Lage uren:</strong> Gemiddeld {averageHoursPerDay.toFixed(1)} uur per werkdag
+                            </div>
+                          </div>
+                          {timesheet.lowHoursExplanation && (
+                            <div className="mt-2 text-sm text-gray-700">
+                              <strong>Verklaring werknemer:</strong> {timesheet.lowHoursExplanation}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-600">Normale uren</p>
+                      <p className="text-gray-600">Totaal uren</p>
                       <p className="font-medium">{timesheet.totalRegularHours} uur</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Overuren</p>
-                      <p className="font-medium">{timesheet.totalOvertimeHours} uur</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Avond/Nacht uren</p>
-                      <p className="font-medium">
-                        {timesheet.totalEveningHours + timesheet.totalNightHours} uur
-                      </p>
                     </div>
                     <div>
                       <p className="text-gray-600">Reiskilometers</p>
                       <p className="font-medium">{timesheet.totalTravelKilometers} km</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Werkdagen</p>
+                      <p className="font-medium">{timesheet.entries.filter(e => e.regularHours > 0).length} dagen</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Gemiddeld per dag</p>
+                      <p className={`font-medium ${
+                        (() => {
+                          const workDays = timesheet.entries.filter(e => e.regularHours > 0).length;
+                          const avg = workDays > 0 ? timesheet.totalRegularHours / workDays : 0;
+                          return avg < 7 ? 'text-yellow-600' : 'text-gray-900';
+                        })()
+                      }`}>
+                        {(() => {
+                          const workDays = timesheet.entries.filter(e => e.regularHours > 0).length;
+                          return workDays > 0 ? (timesheet.totalRegularHours / workDays).toFixed(1) : '0';
+                        })()} uur
+                      </p>
                     </div>
                   </div>
 
@@ -213,24 +246,16 @@ export default function TimesheetApprovals() {
                         <thead className="bg-gray-50">
                           <tr>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Datum</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Normaal</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Overuren</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Avond</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Nacht</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Weekend</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Uren</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Reiskilometers</th>
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Notities</th>
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {timesheet.entries.map((entry, idx) => (
-                            <tr key={idx}>
+                            <tr key={idx} className={entry.notes?.includes('ITKnecht') ? 'bg-blue-50' : ''}>
                               <td className="px-3 py-2 text-sm">{entry.date.toLocaleDateString('nl-NL')}</td>
                               <td className="px-3 py-2 text-sm">{entry.regularHours}</td>
-                              <td className="px-3 py-2 text-sm">{entry.overtimeHours}</td>
-                              <td className="px-3 py-2 text-sm">{entry.eveningHours}</td>
-                              <td className="px-3 py-2 text-sm">{entry.nightHours}</td>
-                              <td className="px-3 py-2 text-sm">{entry.weekendHours}</td>
                               <td className="px-3 py-2 text-sm">{entry.travelKilometers}</td>
                               <td className="px-3 py-2 text-sm">{entry.notes}</td>
                             </tr>
@@ -264,7 +289,7 @@ export default function TimesheetApprovals() {
             onChange={(e) => setRejectionReason(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={4}
-            placeholder="Bijvoorbeeld: Ongeldige overuren op donderdag..."
+            placeholder="Bijvoorbeeld: Ongeldige uren op donderdag..."
           />
           <div className="flex justify-end gap-3">
             <Button
