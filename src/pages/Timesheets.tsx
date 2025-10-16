@@ -329,14 +329,22 @@ export default function Timesheets() {
       return;
     }
 
-    // Check if average hours per day is below 7 hours
+    // Check against employee's contract hours
+    const contractHoursPerWeek = employeeData.contractInfo?.hoursPerWeek || 40;
+    const contractHoursPerDay = contractHoursPerWeek / 5; // Assuming 5-day work week
     const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
     const averageHoursPerDay = workDays > 0 ? currentTimesheet.totalRegularHours / workDays : 0;
     
-    if (workDays > 0 && averageHoursPerDay < 7) {
+    // Only flag if significantly under contract (more than 15% below expected)
+    const expectedWeeklyHours = contractHoursPerWeek;
+    const actualWeeklyHours = currentTimesheet.totalRegularHours;
+    const underPerformanceThreshold = expectedWeeklyHours * 0.85; // 85% of contract hours
+    
+    if (workDays > 0 && actualWeeklyHours < underPerformanceThreshold) {
       const explanation = prompt(
-        `Het gemiddelde aantal uren per werkdag is ${averageHoursPerDay.toFixed(1)} uur (minder dan 7 uur per dag).\n\n` +
-        `Geef een verklaring voor de lagere uren (bijv. ziekte, verlof, training, etc.):`
+        `Volgens uw contract werkt u ${contractHoursPerWeek} uur per week (${contractHoursPerDay.toFixed(1)} uur per dag).\n` +
+        `Deze week heeft u ${actualWeeklyHours} uur geregistreerd (${averageHoursPerDay.toFixed(1)} uur gemiddeld per werkdag).\n\n` +
+        `Geef een verklaring voor de lagere uren (bijv. ziekte, verlof, training, deeltijd afspraak, etc.):`
       );
       
       if (explanation === null) {
@@ -345,7 +353,7 @@ export default function Timesheets() {
       }
       
       if (!explanation.trim()) {
-        showError('Verklaring vereist', 'Een verklaring is verplicht bij minder dan 7 uur gemiddeld per dag');
+        showError('Verklaring vereist', 'Een verklaring is verplicht bij minder uren dan uw contract');
         return;
       }
       
@@ -353,6 +361,8 @@ export default function Timesheets() {
       const updatedTimesheet = {
         ...currentTimesheet,
         lowHoursExplanation: explanation.trim(),
+        contractHoursPerWeek: contractHoursPerWeek,
+        actualHoursThisWeek: actualWeeklyHours,
         averageHoursPerDay: averageHoursPerDay,
         updatedAt: new Date()
       };
@@ -633,8 +643,34 @@ export default function Timesheets() {
                     />
                   </div>
 
+                  {/* Client/Project - Show when company has multiple clients */}
+                  {selectedCompany?.clients && selectedCompany.clients.length > 1 && (
+                    <div className="space-y-1 sm:space-y-2 col-span-2 sm:col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700">
+                        Opdrachtgever
+                      </label>
+                      <select
+                        value={entry.clientId || ''}
+                        onChange={(e) => updateEntry(index, 'clientId', e.target.value)}
+                        disabled={isReadOnly}
+                        className="w-full px-2 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+                      >
+                        <option value="">Selecteer opdrachtgever</option>
+                        {selectedCompany.clients.map(client => (
+                          <option key={client.id} value={client.id}>
+                            {client.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   {/* Notes */}
-                  <div className="space-y-1 sm:space-y-2 col-span-2 sm:col-span-1">
+                  <div className={`space-y-1 sm:space-y-2 ${
+                    selectedCompany?.clients && selectedCompany.clients.length > 1 
+                      ? 'col-span-2' 
+                      : 'col-span-2 sm:col-span-1'
+                  }`}>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700">
                       Notities
                     </label>
@@ -672,15 +708,20 @@ export default function Timesheets() {
             
             {/* Low Hours Warning */}
             {(() => {
+              const contractHoursPerWeek = employeeData?.contractInfo?.hoursPerWeek || 40;
+              const expectedWeeklyHours = contractHoursPerWeek;
+              const actualWeeklyHours = currentTimesheet.totalRegularHours;
+              const underPerformanceThreshold = expectedWeeklyHours * 0.85; // 85% of contract hours
               const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
-              const averageHoursPerDay = workDays > 0 ? currentTimesheet.totalRegularHours / workDays : 0;
+              const averageHoursPerDay = workDays > 0 ? actualWeeklyHours / workDays : 0;
               
-              if (workDays > 0 && averageHoursPerDay < 7) {
+              if (workDays > 0 && actualWeeklyHours < underPerformanceThreshold) {
                 return (
                   <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                     <div className="flex items-start gap-2">
                       <div className="text-yellow-600 text-sm">
-                        ⚠️ <strong>Lage uren:</strong> Gemiddeld {averageHoursPerDay.toFixed(1)} uur per werkdag
+                        ⚠️ <strong>Onder contract uren:</strong> {actualWeeklyHours}u van {contractHoursPerWeek}u contract 
+                        (gemiddeld {averageHoursPerDay.toFixed(1)}u per werkdag)
                       </div>
                     </div>
                     {currentTimesheet.lowHoursExplanation && (
