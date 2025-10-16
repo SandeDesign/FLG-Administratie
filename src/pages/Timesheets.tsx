@@ -426,32 +426,34 @@ export default function Timesheets() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Urenregistratie</h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 mt-1 text-sm">
             Week {selectedWeek}, {selectedYear}
-            {employeeData && <span> - {employeeData.personalInfo.firstName} {employeeData.personalInfo.lastName}</span>}
+            {employeeData && <span className="block sm:inline"> - {employeeData.personalInfo.firstName} {employeeData.personalInfo.lastName}</span>}
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          {userRole === 'admin' && selectedEmployeeId && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          {((userRole === 'admin' && selectedEmployeeId) || (userRole !== 'admin' && currentEmployeeId)) && (
             <Button
               onClick={handleImportFromITKnecht}
               disabled={importing || saving}
               variant="primary"
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
             >
               {importing ? (
                 <>
-                  <LoadingSpinner className="h-4 w-4 mr-2" />
-                  Importeren...
+                  <LoadingSpinner className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Importeren...</span>
+                  <span className="sm:hidden">Import...</span>
                 </>
               ) : (
                 <>
-                  <Download className="h-4 w-4 mr-2" />
-                  ITKnecht Uren Ophalen
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">ITKnecht Uren Ophalen</span>
+                  <span className="sm:hidden">ITKnecht</span>
                 </>
               )}
             </Button>
@@ -460,7 +462,7 @@ export default function Timesheets() {
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-2 py-1 sm:px-3 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
             >
               <option value="">Selecteer werknemer</option>
               {companyEmployees.map(emp => (
@@ -470,20 +472,24 @@ export default function Timesheets() {
               ))}
             </select>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               onClick={() => changeWeek(-1)}
               variant="secondary"
               size="sm"
+              className="text-xs sm:text-sm px-2 sm:px-3"
             >
-              ← Vorige week
+              <span className="hidden sm:inline">← Vorige week</span>
+              <span className="sm:hidden">← Vorige</span>
             </Button>
             <Button
               onClick={() => changeWeek(1)}
               variant="secondary"
               size="sm"
+              className="text-xs sm:text-sm px-2 sm:px-3"
             >
-              Volgende week →
+              <span className="hidden sm:inline">Volgende week →</span>
+              <span className="sm:hidden">Volgende →</span>
             </Button>
           </div>
         </div>
@@ -524,37 +530,37 @@ export default function Timesheets() {
       )}
 
       {/* Mobile-first Card Layout */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {currentTimesheet.entries.map((entry, index) => {
           const totalHours = entry.regularHours + entry.overtimeHours + entry.eveningHours + entry.nightHours + entry.weekendHours;
           const isImported = entry.notes?.includes('ITKnecht');
           
           return (
             <Card key={index} className={`${isImported ? 'bg-blue-50 border-blue-200' : ''} transition-all hover:shadow-md`}>
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 {/* Header */}
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-3 sm:mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
                       {getDayName(entry.date)}
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-xs sm:text-sm text-gray-500">
                       {entry.date.toLocaleDateString('nl-NL')}
                     </p>
                   </div>
                   {isImported && (
-                    <div className="flex items-center gap-2 text-blue-600 text-sm">
-                      <Download className="h-4 w-4" />
-                      ITKnecht
+                    <div className="flex items-center gap-1 sm:gap-2 text-blue-600 text-xs sm:text-sm">
+                      <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">ITKnecht</span>
                     </div>
                   )}
                 </div>
 
                 {/* Input Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                   {/* Total Hours */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
+                  <div className="space-y-1 sm:space-y-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
                       Uren
                     </label>
                     <Input
@@ -565,14 +571,14 @@ export default function Timesheets() {
                       value={entry.regularHours}
                       onChange={(e) => updateEntry(index, 'regularHours', parseFloat(e.target.value) || 0)}
                       disabled={isReadOnly}
-                      className="text-center text-lg font-semibold"
+                      className="text-center text-sm sm:text-lg font-semibold py-2 sm:py-3"
                       placeholder="0"
                     />
                   </div>
 
                   {/* Travel Kilometers */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
+                  <div className="space-y-1 sm:space-y-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
                       Kilometers
                     </label>
                     <Input
@@ -582,14 +588,14 @@ export default function Timesheets() {
                       value={entry.travelKilometers}
                       onChange={(e) => updateEntry(index, 'travelKilometers', parseFloat(e.target.value) || 0)}
                       disabled={isReadOnly}
-                      className="text-center text-lg font-semibold"
+                      className="text-center text-sm sm:text-lg font-semibold py-2 sm:py-3"
                       placeholder="0"
                     />
                   </div>
 
                   {/* Notes */}
-                  <div className="space-y-2 md:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700">
+                  <div className="space-y-1 sm:space-y-2 col-span-2 sm:col-span-1">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
                       Notities
                     </label>
                     <Input
@@ -598,14 +604,15 @@ export default function Timesheets() {
                       onChange={(e) => updateEntry(index, 'notes', e.target.value)}
                       disabled={isReadOnly}
                       placeholder="Notities..."
+                      className="text-xs sm:text-sm py-2 sm:py-3"
                     />
                   </div>
                 </div>
 
                 {/* Quick Summary */}
                 {(entry.regularHours > 0 || entry.travelKilometers > 0) && (
-                  <div className="mt-4 pt-3 border-t border-gray-200">
-                    <div className="flex justify-between text-sm text-gray-600">
+                  <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-200">
+                    <div className="flex justify-between text-xs sm:text-sm text-gray-600">
                       <span>Dag totaal:</span>
                       <span className="font-medium">
                         {entry.regularHours}u {entry.travelKilometers > 0 && `• ${entry.travelKilometers}km`}
@@ -620,32 +627,32 @@ export default function Timesheets() {
 
         {/* Week Summary Card */}
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Week Totaal</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 sm:p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Week Totaal</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">
                   {currentTimesheet.totalRegularHours}
                 </div>
-                <div className="text-sm text-gray-600">Uren</div>
+                <div className="text-xs sm:text-sm text-gray-600">Uren</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-xl sm:text-2xl font-bold text-green-600">
                   {currentTimesheet.totalTravelKilometers}
                 </div>
-                <div className="text-sm text-gray-600">Kilometers</div>
+                <div className="text-xs sm:text-sm text-gray-600">Kilometers</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
+                <div className="text-xl sm:text-2xl font-bold text-purple-600">
                   {currentTimesheet.entries.filter(e => e.regularHours > 0).length}
                 </div>
-                <div className="text-sm text-gray-600">Werkdagen</div>
+                <div className="text-xs sm:text-sm text-gray-600">Werkdagen</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">
+                <div className="text-xl sm:text-2xl font-bold text-orange-600">
                   {Math.round((currentTimesheet.totalRegularHours / 5) * 10) / 10}
                 </div>
-                <div className="text-sm text-gray-600">Ø per dag</div>
+                <div className="text-xs sm:text-sm text-gray-600">Ø per dag</div>
               </div>
             </div>
           </div>
