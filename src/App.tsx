@@ -36,7 +36,7 @@ const Regulations = () => (
       Regelgeving
     </h1>
     <p className="text-gray-600 dark:text-gray-400">
-      Deze functionaliteit wordt binnenkort toegevoegd
+      Deze functionaliteit wordt binnenkort toegevoegdt
     </p>
   </div>
 );
