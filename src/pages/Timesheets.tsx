@@ -175,9 +175,7 @@ export default function Timesheets() {
       return {
         dag: data.Dag || '',
         totaal_factuureerbare_uren: parseFloat(data['Totaal factureerbare uren'] || 0),
-        gereden_kilometers: parseFloat(data['Gereden kilometers'] || 0),
-        klant: data.Klant || '',
-        werkzaamheden: data.Werkzaamheden || data.Omschrijving || 'ITKnecht werk'
+        gereden_kilometers: parseFloat(data['Gereden kilometers'] || 0)
       };
     });
 
@@ -214,25 +212,16 @@ export default function Timesheets() {
       });
 
       if (dayIndex !== -1) {
-        // Create work activities from ITKnecht entries
-        const workActivities = dayEntries.map(entry => ({
-          hours: entry.totaal_factuureerbare_uren,
-          description: `${entry.klant ? entry.klant + ': ' : ''}${entry.werkzaamheden}`,
-          clientId: '', // Could be mapped if client data is available
-          isITKnechtImport: true
-        }));
-
         updatedEntries[dayIndex] = {
           ...updatedEntries[dayIndex],
           regularHours: dayTotalHours,
           travelKilometers: dayTotalKm,
-          workActivities: workActivities,
           // Clear other hour types to keep it simple
           overtimeHours: 0,
           eveningHours: 0,
           nightHours: 0,
           weekendHours: 0,
-          notes: `ITKnecht import: ${dayEntries.length} entries`,
+          notes: `${selectedCompany?.name || 'Systeem'} import: ${dayEntries.length} entries`,
           updatedAt: new Date()
         };
       }
@@ -569,7 +558,8 @@ export default function Timesheets() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-          {((userRole === 'admin' && selectedEmployeeId) || (userRole !== 'admin' && currentEmployeeId)) && (
+          {((userRole === 'admin' && selectedEmployeeId) || (userRole !== 'admin' && currentEmployeeId)) && 
+           selectedCompany && (selectedCompany.name.toLowerCase().includes('itknecht') || selectedCompany.name.toLowerCase().includes('buddy')) && (
             <Button
               onClick={handleImportFromITKnecht}
               disabled={importing || saving}
@@ -586,8 +576,8 @@ export default function Timesheets() {
               ) : (
                 <>
                   <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">ITKnecht Uren Ophalen</span>
-                  <span className="sm:hidden">ITKnecht</span>
+                  <span className="hidden sm:inline">{selectedCompany.name.toLowerCase().includes('itknecht') ? 'ITKnecht' : 'Buddy'} Uren Ophalen</span>
+                  <span className="sm:hidden">{selectedCompany.name.toLowerCase().includes('itknecht') ? 'ITKnecht' : 'Buddy'}</span>
                 </>
               )}
             </Button>
@@ -667,7 +657,7 @@ export default function Timesheets() {
       <div className="space-y-3 sm:space-y-4">
         {currentTimesheet.entries.map((entry, index) => {
           const totalHours = entry.regularHours + entry.overtimeHours + entry.eveningHours + entry.nightHours + entry.weekendHours;
-          const isImported = entry.notes?.includes('ITKnecht');
+          const isImported = entry.notes?.includes('import');
           
           return (
             <Card key={index} className={`${isImported ? 'bg-blue-50 border-blue-200' : ''} transition-all hover:shadow-md`}>
@@ -685,7 +675,7 @@ export default function Timesheets() {
                   {isImported && (
                     <div className="flex items-center gap-1 sm:gap-2 text-blue-600 text-xs sm:text-sm">
                       <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">ITKnecht</span>
+                      <span className="hidden sm:inline">Import</span>
                     </div>
                   )}
                 </div>
