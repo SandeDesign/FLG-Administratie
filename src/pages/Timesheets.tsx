@@ -128,7 +128,7 @@ export default function Timesheets() {
     try {
       // Trigger Make.com webhook to get ITKnecht data
       // TODO: Replace 'JOUW_MAKE_WEBHOOK_URL_HIER' with your actual webhook URL
-      const response = await fetch('JOUW_MAKE_WEBHOOK_URL_HIER', {
+      const response = await fetch('https://hook.eu2.make.com/wh18u8c7x989zoakqxqmomjoy2cpfd3b', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
