@@ -320,9 +320,340 @@ export interface CAO {
   updatedAt: Date;
 }
 
+// User Roles
+export interface UserRole {
+  id: string;
+  uid: string;
+  role: 'admin' | 'employee';
+  employeeId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Leave Management
+export interface LeaveRequest {
+  id: string;
+  userId: string;
+  employeeId: string;
+  companyId: string;
+
+  type: 'holiday' | 'sick' | 'special' | 'unpaid' | 'parental' | 'care' | 'short_leave' | 'adv';
+
+  startDate: Date;
+  endDate: Date;
+  totalDays: number;
+  totalHours: number;
+
+  partialDay?: {
+    date: Date;
+    startTime: string;
+    endTime: string;
+    hours: number;
+  };
+
+  reason?: string;
+  notes?: string;
+
+  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+  approvedBy?: string;
+  approvedAt?: Date;
+  rejectedReason?: string;
+
+  sickLeaveDetails?: {
+    reportedAt: Date;
+    reportedBy: string;
+    expectedReturn?: Date;
+    actualReturn?: Date;
+    doctorNote?: string;
+    percentage: number;
+  };
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LeaveBalance {
+  id?: string;
+  employeeId: string;
+  companyId: string;
+  year: number;
+
+  holidayDays: {
+    statutory: number;
+    extraStatutory: number;
+    carried: number;
+    accumulated: number;
+    taken: number;
+    pending: number;
+    remaining: number;
+    expires: Date;
+  };
+
+  advDays?: {
+    entitled: number;
+    accumulated: number;
+    taken: number;
+    remaining: number;
+  };
+
+  seniorDays: number;
+  snipperDays: number;
+
+  updatedAt: Date;
+}
+
+export type LeaveType = LeaveRequest['type'];
+export type LeaveStatus = LeaveRequest['status'];
+
+// Absence Management
+export interface SickLeave {
+  id: string;
+  userId: string;
+  employeeId: string;
+  companyId: string;
+
+  startDate: Date;
+  reportedAt: Date;
+  reportedBy: string;
+  reportedVia: 'phone' | 'email' | 'app' | 'in_person';
+
+  endDate?: Date;
+  actualReturnDate?: Date;
+
+  status: 'active' | 'recovered' | 'partially_recovered' | 'long_term';
+
+  workCapacityPercentage: number;
+
+  reintegration?: {
+    startDate: Date;
+    plan: string;
+    targetDate: Date;
+    progress: string;
+    meetingDates: Date[];
+  };
+
+  doctorVisits: {
+    date: Date;
+    doctor: string;
+    notes?: string;
+    certificate?: string;
+  }[];
+
+  arboServiceContacted: boolean;
+  arboServiceDate?: Date;
+  arboAdvice?: string;
+
+  poortwachterActive: boolean;
+  poortwachterMilestones?: {
+    week: number;
+    action: string;
+    completedDate?: Date;
+    status: 'pending' | 'completed' | 'overdue';
+    dueDate: Date;
+  }[];
+
+  wiaApplication?: {
+    appliedDate: Date;
+    decision?: 'approved' | 'rejected' | 'pending';
+    percentage?: number;
+  };
+
+  notes: string;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AbsenceStatistics {
+  id?: string;
+  employeeId: string;
+  companyId: string;
+  period: 'month' | 'quarter' | 'year';
+  periodStart: Date;
+  periodEnd: Date;
+
+  totalSickDays: number;
+  totalSickHours: number;
+  absenceFrequency: number;
+  averageDuration: number;
+  absencePercentage: number;
+
+  longTermAbsence: boolean;
+  chronicAbsence: boolean;
+
+  calculatedAt: Date;
+}
+
+export type SickLeaveStatus = SickLeave['status'];
+export type ReportedVia = SickLeave['reportedVia'];
+
+// Expense Management
+export interface Expense {
+  id: string;
+  userId: string;
+  employeeId: string;
+  companyId: string;
+
+  type: 'travel' | 'meal' | 'accommodation' | 'parking' | 'phone' | 'office' | 'training' | 'representation' | 'other';
+
+  date: Date;
+  amount: number;
+  currency: string;
+  vatAmount?: number;
+  vatPercentage?: number;
+
+  description: string;
+
+  travelDetails?: {
+    from: string;
+    to: string;
+    kilometers?: number;
+    vehicleType: 'car' | 'bike' | 'public_transport' | 'taxi';
+    licensePlate?: string;
+
+    trainTicket?: boolean;
+    busTicket?: boolean;
+
+    parking?: number;
+    toll?: number;
+  };
+
+  receipts: {
+    filename: string;
+    data: string;
+    uploadedAt: Date;
+  }[];
+
+  project?: string;
+  costCenter?: string;
+
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'paid';
+
+  submittedAt?: Date;
+  submittedBy?: string;
+
+  approvals: {
+    level: number;
+    approverName: string;
+    approverId: string;
+    approvedAt?: Date;
+    rejectedAt?: Date;
+    comment?: string;
+  }[];
+
+  paidInPayroll?: {
+    payrollRunId: string;
+    payrollDate: Date;
+  };
+
+  taxable: boolean;
+  withinTaxFreeAllowance: boolean;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type ExpenseType = Expense['type'];
+export type ExpenseStatus = Expense['status'];
+export type VehicleType = 'car' | 'bike' | 'public_transport' | 'taxi';
+
+// Payroll Management
+export type PayrollPeriodType = 'weekly' | 'bi-weekly' | 'monthly';
+export type PayrollStatus = 'draft' | 'calculated' | 'approved' | 'paid' | 'finalized';
+
+export interface PayrollPeriod {
+  id?: string;
+  userId: string;
+  companyId: string;
+  periodType: PayrollPeriodType;
+  startDate: Date;
+  endDate: Date;
+  paymentDate: Date;
+  status: PayrollStatus;
+  employeeCount: number;
+  totalGross: number;
+  totalNet: number;
+  totalTax: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PayrollEarning {
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+  isTaxable: boolean;
+}
+
+export interface PayrollDeduction {
+  description: string;
+  amount: number;
+  isPreTax: boolean;
+}
+
+export interface PayrollTaxes {
+  incomeTax: number;
+  socialSecurityEmployee: number;
+  socialSecurityEmployer: number;
+  healthInsurance: number;
+  pensionEmployee: number;
+  pensionEmployer: number;
+  unemploymentInsurance: number;
+  disabilityInsurance: number;
+}
+
+export interface HourlyRate {
+  id?: string;
+  userId: string;
+  companyId: string;
+  jobTitle: string;
+  baseRate: number;
+  overtimeMultiplier: number;
+  eveningMultiplier: number;
+  nightMultiplier: number;
+  weekendMultiplier: number;
+  holidayMultiplier: number;
+  effectiveDate: Date;
+  caoName?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Allowance {
+  id?: string;
+  userId: string;
+  companyId: string;
+  name: string;
+  type: 'shift' | 'irregular' | 'on-call' | 'travel' | 'other';
+  amount: number;
+  isPercentage: boolean;
+  isTaxable: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Deduction {
+  id?: string;
+  userId: string;
+  employeeId: string;
+  companyId: string;
+  name: string;
+  type: 'advance' | 'loan' | 'garnishment' | 'other';
+  amount: number;
+  isRecurring: boolean;
+  startDate: Date;
+  endDate?: Date;
+  remainingAmount?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // ✅ NIEUW: Helper interfaces voor bedrijfs logica
 export interface CompanyWithEmployees extends Company {
   employees?: Employee[];
+  projectCompanies?: Company[];
 }
 
 export interface EmployeeWithCompanies extends Employee {
