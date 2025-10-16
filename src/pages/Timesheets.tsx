@@ -430,7 +430,7 @@ export default function Timesheets() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          {userRole === 'admin' && selectedEmployeeId && (
+          {((userRole === 'admin' && selectedEmployeeId) || (userRole !== 'admin' && currentEmployeeId)) && (
             <Button
               onClick={handleImportFromITKnecht}
               disabled={importing || saving}
