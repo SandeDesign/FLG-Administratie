@@ -24,7 +24,7 @@ export interface ITKnechtImportRequest {
 }
 
 export class ITKnechtService {
-  private static WEBHOOK_URL = 'JOUW_MAKE_WEBHOOK_URL_HIER'; // Replace with actual URL
+  private static WEBHOOK_URL = 'https://hook.eu2.make.com/wh18u8c7x989zoakqxqmomjoy2cpfd3b'; // Replace with actual URL
 
   /**
    * Fetch hours data from ITKnecht via Make.com webhook
