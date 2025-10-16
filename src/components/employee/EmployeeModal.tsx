@@ -148,7 +148,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         contractInfo: {
           type: data.contractType,
           startDate: new Date(data.startDate),
-          endDate: data.endDate ? new Date(data.endDate) : undefined,
+          endDate: data.endDate ? new Date(data.endDate) : null,
           hoursPerWeek: data.hoursPerWeek,
           position: data.position,
           department: '',
@@ -158,8 +158,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         
         salaryInfo: {
           salaryScale: 'A', // Default
-          hourlyRate: data.paymentType === 'hourly' ? data.hourlyRate : undefined,
-          monthlySalary: data.paymentType === 'monthly' ? data.monthlySalary : undefined,
+          hourlyRate: data.paymentType === 'hourly' ? data.hourlyRate : null,
+          monthlySalary: data.paymentType === 'monthly' ? data.monthlySalary : null,
           paymentType: data.paymentType,
           paymentFrequency: 'monthly' as const,
           allowances: {
