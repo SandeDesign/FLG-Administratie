@@ -22,6 +22,7 @@ import TaxReturns from './pages/TaxReturns';
 import AuditLogPage from './pages/AuditLog';
 import Timesheets from './pages/Timesheets';
 import TimesheetApprovals from './pages/TimesheetApprovals';
+import Projectteam from './pages/ProjectTeam';
 import PayrollProcessing from './pages/PayrollProcessing';
 import Payslips from './pages/Payslips';
 import ExportsManagement from './pages/ExportsManagement';
