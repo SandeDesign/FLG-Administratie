@@ -1,229 +1,399 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Plus, CreditCard as Edit, Trash2, User, Mail, Phone, Building2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useApp } from '../contexts/AppContext';
-import { Employee } from '../types';
-import { getEmployees, deleteEmployee } from '../services/firebase';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { EmptyState } from '../components/ui/EmptyState';
-import EmployeeModal from '../components/employee/EmployeeModal';
-import { useToast } from '../hooks/useToast';
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import Modal from '../ui/Modal';
+import Input from '../ui/Input';
+import Button from '../ui/Button';
+import { useAuth } from '../../contexts/AuthContext';
+import { useApp } from '../../contexts/AppContext';
+import { useToast } from '../../hooks/useToast';
+import { createEmployee, updateEmployee } from '../../services/firebase';
+import { Employee } from '../../types';
 
-const EmployeesNew: React.FC = () => {
+interface SimplifiedEmployeeFormData {
+  // Basic Info
+  firstName: string;
+  lastName: string;
+  email: string;
+  
+  // Contract Info
+  contractType: 'permanent' | 'temporary' | 'zero_hours' | 'on_call' | 'intern';
+  startDate: string;
+  endDate?: string;
+  hoursPerWeek: number;
+  position: string;
+  
+  // Payment Info
+  paymentType: 'hourly' | 'monthly';
+  hourlyRate?: number;
+  monthlySalary?: number;
+  
+  // Company Assignment
+  companyId: string;
+  branchId: string;
+}
+
+interface EmployeeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  employee?: Employee | null;
+}
+
+const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSuccess, employee }) => {
   const { user } = useAuth();
-  const { companies, selectedCompany, refreshDashboardStats } = useApp();
+  const { companies, branches } = useApp();
   const { success, error: showError } = useToast();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const loadEmployees = useCallback(async () => {
+  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<SimplifiedEmployeeFormData>({
+    defaultValues: {
+      contractType: 'permanent',
+      paymentType: 'hourly',
+    }
+  });
+
+  const contractType = watch('contractType');
+  const paymentType = watch('paymentType');
+  const selectedCompanyId = watch('companyId');
+
+  const availableBranches = branches.filter(branch => branch.companyId === selectedCompanyId);
+
+  useEffect(() => {
+    if (employee) {
+      reset({
+        firstName: employee.personalInfo.firstName,
+        lastName: employee.personalInfo.lastName,
+        email: employee.personalInfo.contactInfo.email,
+        contractType: employee.contractInfo.type,
+        startDate: employee.contractInfo.startDate.toISOString().split('T')[0],
+        endDate: employee.contractInfo.endDate?.toISOString().split('T')[0],
+        hoursPerWeek: employee.contractInfo.hoursPerWeek,
+        position: employee.contractInfo.position,
+        paymentType: employee.salaryInfo.paymentType,
+        hourlyRate: employee.salaryInfo.hourlyRate,
+        monthlySalary: employee.salaryInfo.monthlySalary,
+        companyId: employee.companyId,
+        branchId: employee.branchId,
+      });
+    } else if (companies.length > 0) {
+      const defaultCompanyId = companies[0].id;
+      const defaultBranchId = branches.find(b => b.companyId === defaultCompanyId)?.id || '';
+      reset({
+        contractType: 'permanent',
+        paymentType: 'hourly',
+        companyId: defaultCompanyId,
+        branchId: defaultBranchId,
+      });
+    }
+  }, [employee, companies, branches, reset, isOpen]);
+
+  const onSubmit = async (data: SimplifiedEmployeeFormData) => {
     if (!user) {
-      setLoading(false);
+      showError('Niet ingelogd', 'Je moet ingelogd zijn om een werknemer toe te voegen');
       return;
     }
 
+    if (!data.companyId || !data.branchId) {
+      showError('Incomplete data', 'Selecteer een bedrijf en vestiging');
+      return;
+    }
+
+    // Basic validation
+    if (contractType === 'temporary' && !data.endDate) {
+      showError('Einddatum vereist', 'Einddatum is verplicht voor tijdelijk contract');
+      return;
+    }
+
+    if (paymentType === 'hourly' && !data.hourlyRate) {
+      showError('Uurtarief vereist', 'Uurtarief is verplicht voor uurloon');
+      return;
+    }
+
+    if (paymentType === 'monthly' && !data.monthlySalary) {
+      showError('Maandsalaris vereist', 'Maandsalaris is verplicht voor maandloon');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      setLoading(true);
-      const employeesData = await getEmployees(user.uid);
+      const employeeData = {
+        companyId: data.companyId,
+        branchId: data.branchId,
+        
+        // Minimal personal info - user fills their own details later
+        personalInfo: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          initials: data.firstName.charAt(0) + data.lastName.charAt(0), // Auto-generate
+          bsn: '', // To be filled by employee
+          dateOfBirth: new Date(), // Default - to be updated
+          placeOfBirth: '', // To be filled by employee
+          nationality: 'Nederlandse', // Default
+          address: {
+            street: '',
+            houseNumber: '',
+            houseNumberAddition: '',
+            postalCode: '',
+            city: '',
+            country: 'Nederland',
+          },
+          contactInfo: {
+            email: data.email,
+            phone: '', // To be filled by employee
+          },
+          bankAccount: '', // To be filled by employee
+          maritalStatus: 'single' as const, // Default
+        },
+        
+        contractInfo: {
+          type: data.contractType,
+          startDate: new Date(data.startDate),
+          endDate: data.endDate ? new Date(data.endDate) : undefined,
+          hoursPerWeek: data.hoursPerWeek,
+          position: data.position,
+          department: '',
+          cao: 'cao-algemeen', // Default
+          contractStatus: 'active' as const,
+        },
+        
+        salaryInfo: {
+          salaryScale: 'A', // Default
+          hourlyRate: data.paymentType === 'hourly' ? data.hourlyRate : undefined,
+          monthlySalary: data.paymentType === 'monthly' ? data.monthlySalary : undefined,
+          paymentType: data.paymentType,
+          paymentFrequency: 'monthly' as const,
+          allowances: {
+            overtime: 150,
+            evening: 125,
+            night: 150,
+            weekend: 150,
+            holiday: 200,
+          },
+        },
+        
+        status: 'active' as const,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-      const filteredEmployees = selectedCompany
-        ? employeesData.filter(emp => emp.companyId === selectedCompany.id)
-        : employeesData;
-
-      setEmployees(filteredEmployees);
-      await refreshDashboardStats();
-    } catch (error) {
-      console.error('Error loading employees:', error);
-      showError('Fout bij laden', 'Kon werknemers niet laden');
-    } finally {
-      setLoading(false);
-    }
-  }, [user, selectedCompany, showError, refreshDashboardStats]);
-
-  useEffect(() => {
-    loadEmployees();
-  }, [loadEmployees]);
-
-  const handleAddEmployee = () => {
-    setSelectedEmployee(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEditEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setIsModalOpen(true);
-  };
-
-  const handleDeleteEmployee = async (employee: Employee) => {
-    if (!user) return;
-
-    if (window.confirm(`Weet je zeker dat je ${employee.personalInfo.firstName} ${employee.personalInfo.lastName} wilt verwijderen?`)) {
-      try {
-        await deleteEmployee(employee.id, user.uid);
-        success('Werknemer verwijderd', `${employee.personalInfo.firstName} ${employee.personalInfo.lastName} is succesvol verwijderd`);
-        await loadEmployees();
-      } catch (error) {
-        console.error('Error deleting employee:', error);
-        showError('Fout bij verwijderen', 'Kon werknemer niet verwijderen');
+      if (employee) {
+        await updateEmployee(employee.id, user.uid, employeeData);
+        success('Werknemer bijgewerkt', `${data.firstName} ${data.lastName} is bijgewerkt`);
+      } else {
+        await createEmployee(user.uid, employeeData);
+        success('Werknemer aangemaakt', `${data.firstName} ${data.lastName} is aangemaakt`);
       }
+      
+      onSuccess();
+    } catch (error) {
+      console.error('Error saving employee:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
+      showError('Fout bij opslaan', `Kon werknemer niet opslaan: ${errorMessage}`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedEmployee(null);
+  const handleClose = () => {
+    reset();
+    onClose();
   };
-
-  const handleModalSuccess = async () => {
-    await loadEmployees();
-    handleModalClose();
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-      case 'on_leave':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
-      case 'sick':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    const statusMap: Record<string, string> = {
-      active: 'Actief',
-      inactive: 'Inactief',
-      on_leave: 'Met verlof',
-      sick: 'Ziek',
-    };
-    return statusMap[status] || status;
-  };
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Werknemers</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Beheer je werknemers en hun gegevens
+    <Modal isOpen={isOpen} onClose={handleClose} title={employee ? 'Werknemer Bewerken' : 'Nieuwe Werknemer'} size="lg">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        
+        {/* Company and Branch Selection */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Bedrijf & Vestiging</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Bedrijf *
+              </label>
+              <select
+                {...register('companyId', { required: 'Bedrijf is verplicht' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">Selecteer bedrijf</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+              {errors.companyId && (
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.companyId.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Vestiging *
+              </label>
+              <select
+                {...register('branchId', { required: 'Vestiging is verplicht' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                disabled={!selectedCompanyId}
+              >
+                <option value="">Selecteer vestiging</option>
+                {availableBranches.map(branch => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+              {errors.branchId && (
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.branchId.message}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Basis Gegevens</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Voornaam *"
+              {...register('firstName', { required: 'Voornaam is verplicht' })}
+              error={errors.firstName?.message}
+            />
+            <Input
+              label="Achternaam *"
+              {...register('lastName', { required: 'Achternaam is verplicht' })}
+              error={errors.lastName?.message}
+            />
+          </div>
+          <Input
+            label="E-mail *"
+            type="email"
+            {...register('email', { 
+              required: 'E-mail is verplicht',
+              pattern: {
+                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                message: 'Ongeldig e-mailadres'
+              }
+            })}
+            error={errors.email?.message}
+          />
+        </div>
+
+        {/* Contract Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Contract Informatie</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Contract type *
+              </label>
+              <select
+                {...register('contractType', { required: 'Contract type is verplicht' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              >
+                <option value="permanent">Vast contract</option>
+                <option value="temporary">Tijdelijk contract</option>
+                <option value="zero_hours">Nul-urencontract</option>
+                <option value="on_call">Oproepcontract</option>
+                <option value="intern">Stagiair</option>
+              </select>
+            </div>
+            <Input
+              label="Functie *"
+              {...register('position', { required: 'Functie is verplicht' })}
+              error={errors.position?.message}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input
+              label="Startdatum *"
+              type="date"
+              {...register('startDate', { required: 'Startdatum is verplicht' })}
+              error={errors.startDate?.message}
+            />
+            {contractType === 'temporary' && (
+              <Input
+                label="Einddatum *"
+                type="date"
+                {...register('endDate', { required: 'Einddatum is verplicht voor tijdelijk contract' })}
+                error={errors.endDate?.message}
+              />
+            )}
+            <Input
+              label="Uren per week *"
+              type="number"
+              {...register('hoursPerWeek', { 
+                required: 'Uren per week is verplicht',
+                valueAsNumber: true,
+                min: { value: 1, message: 'Minimaal 1 uur per week' },
+                max: { value: 60, message: 'Maximaal 60 uur per week' }
+              })}
+              error={errors.hoursPerWeek?.message}
+            />
+          </div>
+        </div>
+
+        {/* Salary Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Salaris Informatie</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Betalingstype *
+              </label>
+              <select
+                {...register('paymentType', { required: 'Betalingstype is verplicht' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              >
+                <option value="hourly">Uurloon</option>
+                <option value="monthly">Maandloon</option>
+              </select>
+            </div>
+            {paymentType === 'hourly' && (
+              <Input
+                label="Uurtarief *"
+                type="number"
+                step="0.01"
+                {...register('hourlyRate', { 
+                  required: paymentType === 'hourly' ? 'Uurtarief is verplicht' : false,
+                  valueAsNumber: true,
+                  min: { value: 0.01, message: 'Uurtarief moet positief zijn' }
+                })}
+                error={errors.hourlyRate?.message}
+              />
+            )}
+            {paymentType === 'monthly' && (
+              <Input
+                label="Maandsalaris *"
+                type="number"
+                step="0.01"
+                {...register('monthlySalary', { 
+                  required: paymentType === 'monthly' ? 'Maandsalaris is verplicht' : false,
+                  valueAsNumber: true,
+                  min: { value: 0.01, message: 'Maandsalaris moet positief zijn' }
+                })}
+                error={errors.monthlySalary?.message}
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            <strong>Opmerking:</strong> Andere persoonlijke gegevens (BSN, adres, bankrekening, etc.) kunnen later door de werknemer zelf worden ingevuld via hun profiel.
           </p>
         </div>
-        <Button
-          onClick={handleAddEmployee}
-          disabled={companies.length === 0}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nieuwe Werknemer
-        </Button>
-      </div>
 
-      {companies.length === 0 ? (
-        <Card className="p-8">
-          <div className="text-center">
-            <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              Geen bedrijven gevonden
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Je moet eerst een bedrijf aanmaken voordat je werknemers kunt toevoegen.
-            </p>
-            <Button onClick={() => window.location.href = '/companies'}>
-              Bedrijf Toevoegen
-            </Button>
-          </div>
-        </Card>
-      ) : employees.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title="Geen werknemers gevonden"
-          description={`Voeg je eerste werknemer toe voor ${selectedCompany?.name || 'het geselecteerde bedrijf'}`}
-          actionLabel="Eerste Werknemer Toevoegen"
-          onAction={handleAddEmployee}
-        />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {employees.map((employee) => (
-            <Card key={employee.id} className="p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start space-x-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                    <User className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {employee.personalInfo.firstName} {employee.personalInfo.lastName}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {employee.contractInfo.position}
-                    </p>
-                  </div>
-                </div>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(employee.status)}`}>
-                  {getStatusText(employee.status)}
-                </span>
-              </div>
-
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                  <Mail className="h-4 w-4" />
-                  <span>{employee.personalInfo.contactInfo.email}</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                  <Phone className="h-4 w-4" />
-                  <span>{employee.personalInfo.contactInfo.phone}</span>
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-medium">Contract:</span> {employee.contractInfo.type}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-medium">Uren/week:</span> {employee.contractInfo.hoursPerWeek}
-                </div>
-              </div>
-
-              <div className="flex space-x-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleEditEmployee(employee)}
-                  className="flex-1"
-                >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Bewerken
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={() => handleDeleteEmployee(employee)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
-          ))}
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <Button type="button" variant="secondary" onClick={handleClose}>
+            Annuleren
+          </Button>
+          <Button type="submit" loading={submitting}>
+            {employee ? 'Bijwerken' : 'Aanmaken'}
+          </Button>
         </div>
-      )}
-
-      <EmployeeModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onSuccess={handleModalSuccess}
-        employee={selectedEmployee}
-      />
-    </div>
+      </form>
+    </Modal>
   );
 };
 
-export default EmployeesNew;
+export default EmployeeModal;
