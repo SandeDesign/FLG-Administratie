@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, 
-  Menu,
-  X
+  User
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Sidebar from './Sidebar';
-import { MobileMenu } from './MobileMenu';
 import { MobileBottomNav } from './MobileBottomNav';
+import { MobileFullScreenMenu } from './MobileFullScreenMenu';
 import { NotificationCenter } from '../notifications/NotificationCenter';
 import { navigation } from './Sidebar';
 
@@ -32,23 +31,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
+  const handleProfileClick = () => {
+    navigate('/settings');
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Desktop Sidebar */}
       <Sidebar />
       
-      {/* Mobile Menu */}
-      <MobileMenu
+      {/* Mobile Full Screen Menu */}
+      <MobileFullScreenMenu
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
-        navigation={navigation}
-        userRole={userRole}
       />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+        {/* Mobile Header - GEEN MENU KNOP */}
+        <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center space-x-3">
             {canGoBack ? (
               <button
@@ -59,15 +60,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </button>
             ) : (
               <button
-                onClick={() => setMobileMenuOpen(true)}
+                onClick={handleProfileClick}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <Menu className="h-6 w-6 text-gray-600" />
+                <User className="h-6 w-6 text-gray-600" />
               </button>
             )}
           </div>
           
-          <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-8 w-auto" />
+          {/* GROTER LOGO */}
+          <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-12 w-auto" />
           
           <div className="w-10 flex justify-end">
             <NotificationCenter />
@@ -90,7 +92,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <MobileBottomNav />
+        <MobileBottomNav onMenuClick={() => setMobileMenuOpen(true)} />
       </div>
     </div>
   );
@@ -100,18 +102,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 const getPageTitle = (pathname: string): string => {
   const titles: { [key: string]: string } = {
     '/': 'Dashboard',
-    '/payroll-company': 'Loonmaatschappij',
-    '/work-companies': 'Werkmaatschappijen',
+    '/companies': 'Bedrijven',
     '/employees': 'Werknemers',
-    '/team': 'Team',
     '/timesheets': 'Urenregistratie',
     '/timesheet-approvals': 'Uren Goedkeuren',
-    '/leave-requests': 'Verlofaanvragen',
-    '/absence-management': 'Verzuimbeheer',
+    '/admin/leave-approvals': 'Verlof Goedkeuren',
+    '/admin/absence-management': 'Verzuimbeheer',
+    '/admin/expenses': 'Declaraties',
     '/payroll-processing': 'Loonverwerking',
     '/payslips': 'Loonstroken',
-    '/work-company-billing': 'Werkmaatschappij Facturatie',
-    '/expenses': 'Declaraties',
     '/tax-returns': 'Loonaangiftes',
     '/exports': 'Exports',
     '/audit-log': 'Audit Log',
