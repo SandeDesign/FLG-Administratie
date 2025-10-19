@@ -16,7 +16,8 @@ import {
   LogOut,
   Shield,
   DollarSign,
-  Factory
+  Factory,
+  FileCheck
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,33 +34,34 @@ export interface NavigationItem {
 
 export const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
-  { name: 'Loonmaatschappij', href: '/payroll-company', icon: DollarSign, roles: ['admin'] },
-  { name: 'Werkmaatschappijen', href: '/companies', icon: Factory, roles: ['admin'] },
-  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'] },
-  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee'] },
-  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Calendar, roles: ['admin'] },
-  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin'] },
+  { name: 'Loonmaatschappij', href: '/payroll-company', icon: DollarSign, roles: ['admin', 'management'] },
+  { name: 'Werkmaatschappijen', href: '/companies', icon: Factory, roles: ['admin', 'management'] },
+  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'management'] },
+  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'management', 'employee'] },
+  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Calendar, roles: ['admin', 'management'] },
+  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'management'] },
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin'] },
   { name: 'Declaraties', href: '/admin/expenses', icon: Receipt, roles: ['admin'] },
   { name: 'Loonverwerking', href: '/payroll-processing', icon: Calculator, roles: ['admin'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee'] },
   { name: 'Loonaangiftes', href: '/tax-returns', icon: BookOpen, roles: ['admin'] },
+  { name: 'Facturatie', href: '/invoicing', icon: FileCheck, roles: ['admin', 'management'] },
   { name: 'Exports', href: '/exports', icon: Download, roles: ['admin'] },
   { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'] },
-  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee'] },
+  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'management', 'employee'] },
 ];
 
 const mainNavigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
-  { name: 'Loonmaatschappij', href: '/payroll-company', icon: DollarSign, roles: ['admin'] },
-  { name: 'Werkmaatschappijen', href: '/companies', icon: Factory, roles: ['admin'] },
-  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'] },
+  { name: 'Loonmaatschappij', href: '/payroll-company', icon: DollarSign, roles: ['admin', 'management'] },
+  { name: 'Werkmaatschappijen', href: '/companies', icon: Factory, roles: ['admin', 'management'] },
+  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'management'] },
 ];
 
 const timeAttendanceNavigation: NavigationItem[] = [
-  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee'] },
-  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Calendar, roles: ['admin'] },
-  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin'] },
+  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'management', 'employee'] },
+  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Calendar, roles: ['admin', 'management'] },
+  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'management'] },
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin'] },
 ];
 
@@ -68,12 +70,13 @@ const financialNavigation: NavigationItem[] = [
   { name: 'Loonverwerking', href: '/payroll-processing', icon: Calculator, roles: ['admin'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee'] },
   { name: 'Loonaangiftes', href: '/tax-returns', icon: BookOpen, roles: ['admin'] },
+  { name: 'Facturatie', href: '/invoicing', icon: FileCheck, roles: ['admin', 'management'] },
 ];
 
 const systemNavigation: NavigationItem[] = [
   { name: 'Exports', href: '/exports', icon: Download, roles: ['admin'] },
   { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'] },
-  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee'] },
+  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'management', 'employee'] },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -103,7 +106,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Company Selector */}
-      {userRole === 'admin' && (
+      {(userRole === 'admin' || userRole === 'management') && (
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <CompanySelector />
         </div>
@@ -235,7 +238,7 @@ export const Sidebar: React.FC = () => {
                 {user?.email}
               </p>
               <p className="text-xs text-gray-500 capitalize">
-                {userRole === 'admin' ? 'Beheerder' : 'Werknemer'}
+                {userRole === 'admin' ? 'Beheerder' : userRole === 'management' ? 'Management' : 'Werknemer'}
               </p>
             </div>
           </div>
