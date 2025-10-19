@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -14,45 +14,54 @@ interface NavigationItem {
 interface NavigationGroupProps {
   title: string;
   items: NavigationItem[];
-  defaultExpanded?: boolean;
+  storageKey: string;
+  defaultOpen?: boolean;
 }
 
 export const NavigationGroup: React.FC<NavigationGroupProps> = ({ 
   title, 
   items, 
-  defaultExpanded = true 
+  storageKey,
+  defaultOpen = true 
 }) => {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    const stored = localStorage.getItem(storageKey);
+    return stored !== null ? stored === 'true' : defaultOpen;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, String(isExpanded));
+  }, [isExpanded, storageKey]);
 
   if (items.length === 0) return null;
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       {/* Group Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-700 transition-colors"
+        className="flex items-center justify-between w-full px-4 py-2.5 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200"
       >
         <span>{title}</span>
         {isExpanded ? (
-          <ChevronDown className="h-3 w-3" />
+          <ChevronDown className="h-4 w-4 text-gray-400" />
         ) : (
-          <ChevronRight className="h-3 w-3" />
+          <ChevronRight className="h-4 w-4 text-gray-400" />
         )}
       </button>
 
       {/* Navigation Items */}
       {isExpanded && (
-        <div className="space-y-1">
+        <div className="space-y-1 ml-4">
           {items.map((item) => (
             <NavLink
               key={item.name}
               to={item.href}
               className={({ isActive }) =>
-                `group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                `group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200 shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }
               title={item.description}
