@@ -5,9 +5,9 @@ export interface Company {
   kvk: string;
   taxNumber: string;
   
-  // ✅ ENHANCED: Buddy ecosystem support
-  companyType: 'employer' | 'project';
-  primaryEmployerId?: string; // Voor project companies
+  // ✅ AANGEPAST: Loonmaatschappij vs Werkmaatschappij structuur
+  companyType: 'payroll_company' | 'work_company';
+  payrollCompanyId?: string; // Voor work companies - verwijst naar loonmaatschappij
   
   address: {
     street: string;
@@ -53,11 +53,11 @@ export interface Branch {
 export interface Employee {
   id: string;
   userId: string;
-  companyId: string; // Primary employer (meestal Buddy)
+  payrollCompanyId: string; // ✅ AANGEPAST: Verwijst naar loonmaatschappij (Buddy)
   branchId: string;
   
-  // ✅ ENHANCED: Multi-company support
-  projectCompanies?: string[]; // Array van project company IDs
+  // ✅ AANGEPAST: Werkmaatschappijen waar employee voor werkt
+  workCompanies?: string[]; // Array van work company IDs
   
   personalInfo: {
     firstName: string;
@@ -179,8 +179,8 @@ export interface TimeEntry {
   userId: string;
   employeeId: string;
   
-  // ✅ ENHANCED: Work company tracking voor project work
-  workCompanyId?: string; // Voor welk bedrijf wordt dit uur geregistreerd
+  // ✅ AANGEPAST: Voor welke werkmaatschappij wordt gewerkt
+  workCompanyId?: string; // Voor welk werkbedrijf wordt dit uur geregistreerd
   
   date: Date;
   regularHours: number;
@@ -205,15 +205,15 @@ export interface TimeEntry {
   updatedAt: Date;
 }
 
-// ✅ ENHANCED: Ecosystem management interfaces
-export interface CompanyEcosystem {
+// ✅ AANGEPAST: Buddy Ecosystem management met loonmaatschappij/werkmaatschappij
+export interface BuddyEcosystem {
   id: string;
   userId: string;
   name: string; // "Buddy Ecosystem"
   description?: string;
   
-  primaryEmployer: Company; // Buddy BV
-  projectCompanies: Company[]; // Alle project companies
+  payrollCompany: Company; // ✅ Buddy BV (loonmaatschappij)
+  workCompanies: Company[]; // ✅ Alle werkmaatschappijen
   
   settings: {
     autoAssignToBuddy: boolean;
@@ -229,7 +229,7 @@ export interface EmployeeCompanyAssignment {
   id: string;
   employeeId: string;
   companyId: string;
-  assignmentType: 'primary' | 'project';
+  assignmentType: 'payroll' | 'work'; // ✅ AANGEPAST: payroll vs work
   assignedBy: string;
   assignedAt: Date;
   
@@ -247,8 +247,8 @@ export interface EmployeeCompanyAssignment {
 
 export interface WorkContext {
   employee: Employee;
-  primaryEmployer: Company;
-  availableWorkCompanies: Company[];
+  payrollCompany: Company; // ✅ AANGEPAST: Loonmaatschappij (Buddy)
+  availableWorkCompanies: Company[]; // ✅ AANGEPAST: Beschikbare werkmaatschappijen
   currentWorkCompany?: Company;
   
   capabilities: {
@@ -258,7 +258,7 @@ export interface WorkContext {
   };
   
   defaultBehavior: {
-    autoSelectPrimary: boolean;
+    autoSelectPayroll: boolean; // ✅ AANGEPAST
     showCompanySelector: boolean;
     enableQuickSwitch: boolean;
   };
@@ -287,59 +287,58 @@ export interface TimesheetCompanyContext {
     company: Company;
     totalHours: number;
     entries: TimeEntry[];
-    isMainEmployer: boolean;
+    isPayrollCompany: boolean; // ✅ AANGEPAST
   }[];
   
   summary: {
     totalHours: number;
-    primaryEmployerHours: number;
-    projectHours: number;
+    payrollCompanyHours: number; // ✅ AANGEPAST
+    workCompanyHours: number; // ✅ AANGEPAST
     distributionPercentage: { [companyId: string]: number };
   };
 }
 
-// ✅ ENHANCED: Company management interfaces
+// ✅ AANGEPAST: Company management met loonmaatschappij focus
 export interface CompanyHierarchy {
-  employer: Company;
-  projectCompanies: Company[];
+  payrollCompany: Company; // ✅ Buddy BV
+  workCompanies: Company[]; // ✅ Werkmaatschappijen
   employees: Employee[];
   
   statistics: {
     totalEmployees: number;
-    activeProjects: number;
+    activeWorkCompanies: number; // ✅ AANGEPAST
     monthlyHours: number;
     revenue: number;
   };
   
   relationships: {
-    employeeProjectAssignments: { [employeeId: string]: string[] };
-    projectHourDistribution: { [projectId: string]: number };
+    employeeWorkAssignments: { [employeeId: string]: string[] }; // ✅ AANGEPAST
+    workCompanyHourDistribution: { [workCompanyId: string]: number }; // ✅ AANGEPAST
   };
 }
 
-// ✅ ENHANCED: Helper interfaces
-export interface CompanyWithEmployees extends Company {
+// ✅ AANGEPAST: Helper interfaces
+export interface PayrollCompanyWithEmployees extends Company {
   employees?: Employee[];
-  projectCompanies?: Company[];
-  parentEmployer?: Company;
+  workCompanies?: Company[]; // ✅ AANGEPAST
 }
 
 export interface EmployeeWithCompanies extends Employee {
-  primaryEmployer?: Company;
-  projectCompaniesData?: Company[];
+  payrollCompanyData?: Company; // ✅ AANGEPAST
+  workCompaniesData?: Company[]; // ✅ AANGEPAST
   workContext?: WorkContext;
 }
 
 export interface TimeEntryWithCompanyInfo extends TimeEntry {
   workCompany?: Company;
-  primaryEmployer?: Company;
+  payrollCompany?: Company; // ✅ AANGEPAST
   detectedProject?: string;
 }
 
-// ✅ ENHANCED: Service interfaces voor business logic
+// ✅ AANGEPAST: Service interfaces voor business logic
 export interface BuddyEcosystemManager {
-  autoAssignEmployeeToBuddy(employee: Omit<Employee, 'id' | 'companyId'>): Promise<Employee>;
-  assignEmployeeToProjects(employeeId: string, projectCompanyIds: string[]): Promise<void>;
+  autoAssignEmployeeToBuddy(employee: Omit<Employee, 'id' | 'payrollCompanyId'>): Promise<Employee>;
+  assignEmployeeToWorkCompanies(employeeId: string, workCompanyIds: string[]): Promise<void>; // ✅ AANGEPAST
   getEmployeeWorkContext(employeeId: string): Promise<WorkContext>;
   detectOptimalWorkCompany(timeEntry: Partial<TimeEntry>): Promise<Company | null>;
   validateCrossCompanyTimeEntry(timeEntry: TimeEntry): Promise<{ isValid: boolean; issues: string[] }>;
@@ -352,103 +351,82 @@ export interface SmartCompanySelector {
   autoSelectCompany(context: WorkContext, timeEntry?: Partial<TimeEntry>): Company | null;
 }
 
-// ✅ ENHANCED: Configuration interfaces
+// ✅ AANGEPAST: Configuration interfaces
 export interface EcosystemConfig {
   buddy: {
     autoAssignment: boolean;
-    defaultWorkWeek: number;
-    companyPrefix: string; // "Buddy"
+    isDefaultPayrollCompany: boolean; // ✅ AANGEPAST
+    allowDirectHourRegistration: boolean;
   };
   
-  projects: {
-    allowDynamicCreation: boolean;
+  workCompanies: { // ✅ AANGEPAST
     requireExplicitAssignment: boolean;
-    inheritBuddySettings: boolean;
+    allowIndependentTimeTracking: boolean;
+    inheritPayrollSettings: boolean;
   };
   
   timeTracking: {
-    enableCrossCompany: boolean;
-    requireCompanySelection: boolean;
-    autoDetectCompany: boolean;
-    allowCompanySwitching: boolean;
+    defaultToPayrollCompany: boolean; // ✅ AANGEPAST
+    allowCrossCompanyHours: boolean;
+    requireWorkCompanySelection: boolean; // ✅ AANGEPAST
   };
   
-  ui: {
-    hideCompanySelectorWhenPossible: boolean;
-    showSubtleCompanyIndicators: boolean;
-    enableQuickCompanySwitch: boolean;
-  };
-}
-
-// ✅ ENHANCED: Import/Export interfaces
-export interface ITKnechtImportContext {
-  targetEmployee: Employee;
-  availableCompanies: Company[];
-  detectedCompany?: Company;
-  
-  mapping: {
-    sourceField: string;
-    targetField: string;
-    transformation?: string;
-  }[];
-  
-  validation: {
-    requiredFields: string[];
-    dataQualityChecks: string[];
+  payroll: {
+    centralizedProcessing: boolean;
+    allowWorkCompanySpecificRates: boolean; // ✅ AANGEPAST
+    autoCalculateCrossCharges: boolean;
   };
 }
 
-export interface CompanyDataExport {
-  ecosystem: CompanyEcosystem;
-  companies: Company[];
-  employees: Employee[];
-  timeEntries: TimeEntry[];
-  
-  metadata: {
-    exportDate: Date;
-    exportedBy: string;
-    dataRange: { start: Date; end: Date };
-    includePersonalData: boolean;
-  };
-}
-
-// ✅ Re-export existing interfaces (maintain compatibility)
-export interface PayrollCalculation {
+// Alle overige interfaces blijven hetzelfde...
+export interface AuditLog {
   id: string;
   userId: string;
-  employeeId: string;
-  period: {
-    month: number;
-    year: number;
+  employeeId?: string;
+  companyId?: string;
+  action: string;
+  description: string;
+  entityType: 'employee' | 'company' | 'timesheet' | 'payroll' | 'expense' | 'leave' | 'contract';
+  entityId: string;
+  changes?: {
+    before: any;
+    after: any;
   };
-  gross: {
-    baseSalary: number;
-    overtime: number;
-    irregularHours: number;
-    shift: number;
-    total: number;
+  metadata?: {
+    userAgent?: string;
+    ipAddress?: string;
+    location?: string;
   };
-  allowances: {
-    travel: number;
-    holiday: number;
-    total: number;
+  createdAt: Date;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  employeeId?: string;
+  companyId?: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  category: 'payroll' | 'timesheet' | 'leave' | 'expense' | 'contract' | 'system' | 'compliance';
+  isRead: boolean;
+  readAt?: Date;
+  actionRequired: boolean;
+  actionUrl?: string;
+  actionText?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  expiresAt?: Date;
+  metadata?: {
+    relatedEntityType?: string;
+    relatedEntityId?: string;
+    automatedAction?: boolean;
   };
-  deductions: {
-    tax: number;
-    pension: number;
-    other: number;
-    total: number;
-  };
-  net: number;
-  breakdown: any[];
-  status: 'calculated' | 'approved' | 'paid';
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface Regulation {
+export interface ComplianceUpdate {
   id: string;
-  userId: string;
   title: string;
   description: string;
   category: 'tax' | 'minimum-wage' | 'pension' | 'cao' | 'other';
