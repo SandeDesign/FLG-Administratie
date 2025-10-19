@@ -18,12 +18,10 @@ import {
   ChevronDown,
   Zap,
   TrendingUp,
-  Activity,
-  DollarSign
+  Activity
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { NotificationCenter } from '../notifications/NotificationCenter';
 
 export interface NavigationItem {
   name: string;
@@ -169,35 +167,15 @@ const Sidebar: React.FC = () => {
   const financialItems = navigation.slice(8, 12).filter(item => userRole && item.roles.includes(userRole));
   const systemItems = navigation.slice(12).filter(item => userRole && item.roles.includes(userRole));
 
-  const isEmployee = userRole === 'employee';
-
   return (
     <div className="hidden lg:flex lg:w-72 lg:flex-col lg:bg-white lg:border-r lg:border-gray-200 lg:shadow-sm">
-      {/* Header */}
-      <div className="flex h-16 items-center justify-center border-b border-gray-100 px-6 bg-gradient-to-r from-slate-50 to-gray-50">
-        <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-10 w-auto" />
+      {/* Header met groter logo */}
+      <div className="flex h-20 items-center justify-center border-b border-gray-100 px-6 bg-gradient-to-r from-slate-50 to-gray-50">
+        <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-16 w-auto" />
       </div>
 
       {/* Company Selector */}
       <ModernCompanySelector />
-
-      {/* Quick Stats */}
-      <div className="px-6 py-2">
-        <div className="grid grid-cols-3 gap-2">
-          <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg text-center">
-            <div className="text-lg font-bold text-blue-700">12</div>
-            <div className="text-xs text-blue-600">Actief</div>
-          </div>
-          <div className="p-2 bg-gradient-to-br from-green-50 to-green-100 rounded-lg text-center">
-            <div className="text-lg font-bold text-green-700">€45k</div>
-            <div className="text-xs text-green-600">Maand</div>
-          </div>
-          <div className="p-2 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg text-center">
-            <div className="text-lg font-bold text-purple-700">98%</div>
-            <div className="text-xs text-purple-600">Uptime</div>
-          </div>
-        </div>
-      </div>
 
       {/* Navigation */}
       <nav className="flex-1 space-y-6 px-4 py-6 overflow-y-auto">
