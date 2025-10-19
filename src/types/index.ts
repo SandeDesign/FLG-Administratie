@@ -5,11 +5,9 @@ export interface Company {
   kvk: string;
   taxNumber: string;
   
-  // ✅ NIEUW: Bedrijfstype voor hybride model
+  // ✅ ENHANCED: Buddy ecosystem support
   companyType: 'employer' | 'project';
-  
-  // ✅ NIEUW: Voor project companies - link naar primaire werkgever
-  primaryEmployerId?: string;
+  primaryEmployerId?: string; // Voor project companies
   
   address: {
     street: string;
@@ -32,7 +30,7 @@ export interface Company {
   logoUrl?: string;
   createdAt: Date;
   updatedAt: Date;
-  mainBranchId?: string; // ID van de hoofd vestiging
+  mainBranchId?: string;
 }
 
 export interface Branch {
@@ -55,18 +53,17 @@ export interface Branch {
 export interface Employee {
   id: string;
   userId: string;
-  companyId: string; // Dit blijft de primaire werkgever (meestal Buddy BV)
+  companyId: string; // Primary employer (meestal Buddy)
   branchId: string;
   
-  // ✅ NIEUW: Project bedrijven waar werknemer voor werkt
-  projectCompanies?: string[]; // Array van company IDs
+  // ✅ ENHANCED: Multi-company support
+  projectCompanies?: string[]; // Array van project company IDs
   
-  // PERSOONLIJKE GEGEVENS (uitgebreid)
   personalInfo: {
     firstName: string;
     lastName: string;
     initials: string;
-    bsn: string; // VERPLICHT - Burgerservicenummer (11-proef validatie)
+    bsn: string;
     dateOfBirth: Date;
     placeOfBirth: string;
     nationality: string;
@@ -75,7 +72,7 @@ export interface Employee {
       street: string;
       houseNumber: string;
       houseNumberAddition?: string;
-      postalCode: string; // Format: 1234 AB
+      postalCode: string;
       city: string;
       country: string;
     };
@@ -92,99 +89,82 @@ export interface Employee {
     
     bankAccount: string;
     maritalStatus: 'single' | 'married' | 'registered_partnership' | 'divorced' | 'widowed';
-    
-    // Kopie identiteitsbewijs (bestandsnaam/URL)
     identityDocument?: string;
   };
   
-  // CONTRACT INFORMATIE (uitgebreid)
   contractInfo: {
     type: 'permanent' | 'temporary' | 'zero_hours' | 'on_call' | 'intern' | 'dga' | 'payroll' | 'freelance';
     startDate: Date;
-    endDate?: Date; // Verplicht bij temporary
-    probationPeriod?: number; // In maanden
+    endDate?: Date;
+    probationPeriod?: number;
     hoursPerWeek: number;
     position: string;
     department?: string;
     costCenter?: string;
     
-    // CAO informatie
-    cao: string; // Bijv. "Bouw", "Horeca", "Zorg", "Metaal", "Algemeen"
+    cao: string;
     caoCode?: string;
     
-    // Contract status
     contractStatus: 'active' | 'notice_period' | 'ended' | 'suspended';
-    noticeDate?: Date; // Datum opzegging
-    endReason?: string; // Reden einde contract
+    noticeDate?: Date;
+    endReason?: string;
   };
   
-  // LOON GEGEVENS (uitgebreid)
   salaryInfo: {
-    salaryScale: string; // A-F of custom
+    salaryScale: string;
     
-    // Primair loon
     hourlyRate?: number;
     monthlySalary?: number;
     annualSalary?: number;
     
-    // Type loon
     paymentType: 'hourly' | 'monthly' | 'annual';
     paymentFrequency: 'monthly' | 'four_weekly' | 'weekly';
     
-    // Toeslagen percentages
     allowances: {
-      overtime: number; // % (bijv. 125 voor 25% toeslag)
-      irregular: number; // % voor onregelmatigheidstoeslagen
-      shift: number; // % voor ploegentoeslag
-      evening: number; // % voor avondtoeslag
-      night: number; // % voor nachttoeslag
-      weekend: number; // % voor weekendtoeslag
-      sunday: number; // % voor zondagtoeslag
+      overtime: number;
+      irregular: number;
+      shift: number;
+      evening: number;
+      night: number;
+      weekend: number;
+      sunday: number;
     };
     
-    // Vergoedingen
-    travelAllowancePerKm: number; // In euros
-    phoneAllowance?: number; // Maandelijks
-    internetAllowance?: number; // Maandelijks
+    travelAllowancePerKm: number;
+    phoneAllowance?: number;
+    internetAllowance?: number;
     
-    // Belastinggegevens
-    taxTable: 'white' | 'green'; // Witboek of groenboek
-    taxCredit: boolean; // Of arbeidskorting van toepassing is
-    socialSecurityNumber?: string; // Sofi-nummer voor belastingaangifte
+    taxTable: 'white' | 'green';
+    taxCredit: boolean;
+    socialSecurityNumber?: string;
   };
   
-  // VERLOF EN ZIEKTE
   leaveInfo: {
-    // Vakantiedagen (per kalenderjaar)
     vacation: {
-      entitlement: number; // Aantal dagen per jaar
-      accrued: number; // Opgebouwd tot nu toe
-      taken: number; // Opgenomen tot nu toe
-      remaining: number; // Resterend
+      entitlement: number;
+      accrued: number;
+      taken: number;
+      remaining: number;
     };
     
-    // Adv dagen (als van toepassing)
     adv?: {
       accumulated: number;
       taken: number;
       remaining: number;
     };
     
-    // Overige dagen
     seniorDays?: number;
     snipperDays?: number;
   };
   
   status: 'active' | 'inactive' | 'on_leave' | 'sick';
   
-  // Account informatie
-  hasAccount: boolean; // Of werknemer een gebruikersaccount heeft
-  accountCreatedAt?: Date; // Wanneer account is aangemaakt
+  hasAccount: boolean;
+  accountCreatedAt?: Date;
   
   createdAt: Date;
   updatedAt: Date;
   
-  // Historie
   salaryHistory?: {
     date: Date;
     oldValue: number;
@@ -199,8 +179,8 @@ export interface TimeEntry {
   userId: string;
   employeeId: string;
   
-  // ✅ NIEUW: Voor welk bedrijf is dit uur geregistreerd (project company)
-  workCompanyId?: string; // Als leeg, dan voor primaire werkgever
+  // ✅ ENHANCED: Work company tracking voor project work
+  workCompanyId?: string; // Voor welk bedrijf wordt dit uur geregistreerd
   
   date: Date;
   regularHours: number;
@@ -209,11 +189,230 @@ export interface TimeEntry {
   travelKilometers: number;
   project?: string;
   branchId: string;
+  notes?: string;
+  
+  // ✅ ENHANCED: Work activities voor detailed tracking
+  workActivities?: {
+    hours: number;
+    description: string;
+    clientId?: string;
+    projectCode?: string;
+    isITKnechtImport?: boolean;
+  }[];
+  
   status: 'draft' | 'approved' | 'processed';
   createdAt: Date;
   updatedAt: Date;
 }
 
+// ✅ ENHANCED: Ecosystem management interfaces
+export interface CompanyEcosystem {
+  id: string;
+  userId: string;
+  name: string; // "Buddy Ecosystem"
+  description?: string;
+  
+  primaryEmployer: Company; // Buddy BV
+  projectCompanies: Company[]; // Alle project companies
+  
+  settings: {
+    autoAssignToBuddy: boolean;
+    allowCrossCompanyTimeTracking: boolean;
+    centralizedPayroll: boolean;
+  };
+  
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface EmployeeCompanyAssignment {
+  id: string;
+  employeeId: string;
+  companyId: string;
+  assignmentType: 'primary' | 'project';
+  assignedBy: string;
+  assignedAt: Date;
+  
+  permissions: {
+    canLogHours: boolean;
+    canAccessReports: boolean;
+    canViewPayslips: boolean;
+  };
+  
+  settings: {
+    defaultHourType: 'regular' | 'project';
+    autoSelectCompany: boolean;
+  };
+}
+
+export interface WorkContext {
+  employee: Employee;
+  primaryEmployer: Company;
+  availableWorkCompanies: Company[];
+  currentWorkCompany?: Company;
+  
+  capabilities: {
+    canSwitchCompanies: boolean;
+    requiresCompanySelection: boolean;
+    hasMultipleAssignments: boolean;
+  };
+  
+  defaultBehavior: {
+    autoSelectPrimary: boolean;
+    showCompanySelector: boolean;
+    enableQuickSwitch: boolean;
+  };
+}
+
+// ✅ ENHANCED: Smart timesheet interfaces
+export interface SmartTimesheetEntry extends TimeEntry {
+  detectedCompany?: Company;
+  suggestedCompany?: Company;
+  companyDetectionSource: 'manual' | 'auto' | 'import' | 'ai';
+  
+  validation: {
+    isValid: boolean;
+    warnings: string[];
+    suggestions: string[];
+  };
+}
+
+export interface TimesheetCompanyContext {
+  employee: Employee;
+  week: number;
+  year: number;
+  
+  companySessions: {
+    companyId: string;
+    company: Company;
+    totalHours: number;
+    entries: TimeEntry[];
+    isMainEmployer: boolean;
+  }[];
+  
+  summary: {
+    totalHours: number;
+    primaryEmployerHours: number;
+    projectHours: number;
+    distributionPercentage: { [companyId: string]: number };
+  };
+}
+
+// ✅ ENHANCED: Company management interfaces
+export interface CompanyHierarchy {
+  employer: Company;
+  projectCompanies: Company[];
+  employees: Employee[];
+  
+  statistics: {
+    totalEmployees: number;
+    activeProjects: number;
+    monthlyHours: number;
+    revenue: number;
+  };
+  
+  relationships: {
+    employeeProjectAssignments: { [employeeId: string]: string[] };
+    projectHourDistribution: { [projectId: string]: number };
+  };
+}
+
+// ✅ ENHANCED: Helper interfaces
+export interface CompanyWithEmployees extends Company {
+  employees?: Employee[];
+  projectCompanies?: Company[];
+  parentEmployer?: Company;
+}
+
+export interface EmployeeWithCompanies extends Employee {
+  primaryEmployer?: Company;
+  projectCompaniesData?: Company[];
+  workContext?: WorkContext;
+}
+
+export interface TimeEntryWithCompanyInfo extends TimeEntry {
+  workCompany?: Company;
+  primaryEmployer?: Company;
+  detectedProject?: string;
+}
+
+// ✅ ENHANCED: Service interfaces voor business logic
+export interface BuddyEcosystemManager {
+  autoAssignEmployeeToBuddy(employee: Omit<Employee, 'id' | 'companyId'>): Promise<Employee>;
+  assignEmployeeToProjects(employeeId: string, projectCompanyIds: string[]): Promise<void>;
+  getEmployeeWorkContext(employeeId: string): Promise<WorkContext>;
+  detectOptimalWorkCompany(timeEntry: Partial<TimeEntry>): Promise<Company | null>;
+  validateCrossCompanyTimeEntry(timeEntry: TimeEntry): Promise<{ isValid: boolean; issues: string[] }>;
+}
+
+export interface SmartCompanySelector {
+  shouldShowSelector(context: WorkContext): boolean;
+  getDefaultCompany(context: WorkContext): Company;
+  getAvailableCompanies(context: WorkContext): Company[];
+  autoSelectCompany(context: WorkContext, timeEntry?: Partial<TimeEntry>): Company | null;
+}
+
+// ✅ ENHANCED: Configuration interfaces
+export interface EcosystemConfig {
+  buddy: {
+    autoAssignment: boolean;
+    defaultWorkWeek: number;
+    companyPrefix: string; // "Buddy"
+  };
+  
+  projects: {
+    allowDynamicCreation: boolean;
+    requireExplicitAssignment: boolean;
+    inheritBuddySettings: boolean;
+  };
+  
+  timeTracking: {
+    enableCrossCompany: boolean;
+    requireCompanySelection: boolean;
+    autoDetectCompany: boolean;
+    allowCompanySwitching: boolean;
+  };
+  
+  ui: {
+    hideCompanySelectorWhenPossible: boolean;
+    showSubtleCompanyIndicators: boolean;
+    enableQuickCompanySwitch: boolean;
+  };
+}
+
+// ✅ ENHANCED: Import/Export interfaces
+export interface ITKnechtImportContext {
+  targetEmployee: Employee;
+  availableCompanies: Company[];
+  detectedCompany?: Company;
+  
+  mapping: {
+    sourceField: string;
+    targetField: string;
+    transformation?: string;
+  }[];
+  
+  validation: {
+    requiredFields: string[];
+    dataQualityChecks: string[];
+  };
+}
+
+export interface CompanyDataExport {
+  ecosystem: CompanyEcosystem;
+  companies: Company[];
+  employees: Employee[];
+  timeEntries: TimeEntry[];
+  
+  metadata: {
+    exportDate: Date;
+    exportedBy: string;
+    dataRange: { start: Date; end: Date };
+    includePersonalData: boolean;
+  };
+}
+
+// ✅ Re-export existing interfaces (maintain compatibility)
 export interface PayrollCalculation {
   id: string;
   userId: string;
@@ -276,14 +475,12 @@ export interface CAO {
   sector: string;
   description: string;
   
-  // Loonschalen
   salaryScales: {
     scale: string;
     hourlyRates: { [key: string]: number };
     monthlyRates: { [key: string]: number };
   }[];
   
-  // Toeslagen
   allowances: {
     overtime: number;
     irregular: number;
@@ -294,15 +491,12 @@ export interface CAO {
     sunday?: number;
   };
   
-  // Vergoedingen
   travelAllowancePerKm: number;
   holidayAllowancePercentage: number;
   
-  // Vakantiedagen
-  holidayDaysFormula: string; // "4 * hoursPerWeek"
+  holidayDaysFormula: string;
   extraDays?: number;
   
-  // Pensioen
   pensionFund?: string;
   pensionAge: number;
   pensionContribution: {
@@ -310,7 +504,6 @@ export interface CAO {
     employer: number;
   };
   
-  // Bijzondere regelingen
   specialProvisions?: string[];
   
   effectiveDate: Date;
@@ -320,7 +513,6 @@ export interface CAO {
   updatedAt: Date;
 }
 
-// User Roles
 export interface UserRole {
   id: string;
   uid: string;
@@ -330,36 +522,28 @@ export interface UserRole {
   updatedAt: Date;
 }
 
-// Leave Management
 export interface LeaveRequest {
   id: string;
   userId: string;
   employeeId: string;
   companyId: string;
-
   type: 'holiday' | 'sick' | 'special' | 'unpaid' | 'parental' | 'care' | 'short_leave' | 'adv';
-
   startDate: Date;
   endDate: Date;
   totalDays: number;
   totalHours: number;
-
   partialDay?: {
     date: Date;
     startTime: string;
     endTime: string;
     hours: number;
   };
-
   reason?: string;
   notes?: string;
-
   status: 'draft' | 'pending' | 'approved' | 'rejected' | 'cancelled';
-
   approvedBy?: string;
   approvedAt?: Date;
   rejectedReason?: string;
-
   sickLeaveDetails?: {
     reportedAt: Date;
     reportedBy: string;
@@ -368,7 +552,6 @@ export interface LeaveRequest {
     doctorNote?: string;
     percentage: number;
   };
-
   createdAt: Date;
   updatedAt: Date;
 }
@@ -378,7 +561,6 @@ export interface LeaveBalance {
   employeeId: string;
   companyId: string;
   year: number;
-
   holidayDays: {
     statutory: number;
     extraStatutory: number;
@@ -389,42 +571,33 @@ export interface LeaveBalance {
     remaining: number;
     expires: Date;
   };
-
   advDays?: {
     entitled: number;
     accumulated: number;
     taken: number;
     remaining: number;
   };
-
   seniorDays: number;
   snipperDays: number;
-
   updatedAt: Date;
 }
 
 export type LeaveType = LeaveRequest['type'];
 export type LeaveStatus = LeaveRequest['status'];
 
-// Absence Management
 export interface SickLeave {
   id: string;
   userId: string;
   employeeId: string;
   companyId: string;
-
   startDate: Date;
   reportedAt: Date;
   reportedBy: string;
   reportedVia: 'phone' | 'email' | 'app' | 'in_person';
-
   endDate?: Date;
   actualReturnDate?: Date;
-
   status: 'active' | 'recovered' | 'partially_recovered' | 'long_term';
-
   workCapacityPercentage: number;
-
   reintegration?: {
     startDate: Date;
     plan: string;
@@ -432,18 +605,15 @@ export interface SickLeave {
     progress: string;
     meetingDates: Date[];
   };
-
   doctorVisits: {
     date: Date;
     doctor: string;
     notes?: string;
     certificate?: string;
   }[];
-
   arboServiceContacted: boolean;
   arboServiceDate?: Date;
   arboAdvice?: string;
-
   poortwachterActive: boolean;
   poortwachterMilestones?: {
     week: number;
@@ -452,104 +622,79 @@ export interface SickLeave {
     status: 'pending' | 'completed' | 'overdue';
     dueDate: Date;
   }[];
-
   wiaApplication?: {
     appliedDate: Date;
     decision?: 'approved' | 'rejected' | 'pending';
     percentage?: number;
   };
-
-  notes: string;
-
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface AbsenceStatistics {
-  id?: string;
-  employeeId: string;
-  companyId: string;
-  period: 'month' | 'quarter' | 'year';
-  periodStart: Date;
-  periodEnd: Date;
-
-  totalSickDays: number;
-  totalSickHours: number;
-  absenceFrequency: number;
-  averageDuration: number;
+  totalAbsenceDays: number;
+  totalAbsenceHours: number;
   absencePercentage: number;
-
-  longTermAbsence: boolean;
-  chronicAbsence: boolean;
-
-  calculatedAt: Date;
+  averageAbsenceDuration: number;
+  sickLeaveFrequency: number;
+  currentAbsences: number;
+  longestAbsence: number;
+  absencesByMonth: { [month: string]: number };
+  absencesByType: { [type: string]: number };
+  repeatAbsences: number;
 }
 
-export type SickLeaveStatus = SickLeave['status'];
-export type ReportedVia = SickLeave['reportedVia'];
-
-// Expense Management
 export interface Expense {
   id: string;
   userId: string;
   employeeId: string;
   companyId: string;
-
-  type: 'travel' | 'meal' | 'accommodation' | 'parking' | 'phone' | 'office' | 'training' | 'representation' | 'other';
-
-  date: Date;
+  type: 'travel' | 'meal' | 'accommodation' | 'equipment' | 'training' | 'phone' | 'internet' | 'fuel' | 'parking' | 'public_transport' | 'other';
+  description: string;
   amount: number;
   currency: string;
-  vatAmount?: number;
-  vatPercentage?: number;
-
-  description: string;
-
-  travelDetails?: {
-    from: string;
-    to: string;
-    kilometers?: number;
-    vehicleType: 'car' | 'bike' | 'public_transport' | 'taxi';
-    licensePlate?: string;
-
-    trainTicket?: boolean;
-    busTicket?: boolean;
-
-    parking?: number;
-    toll?: number;
-  };
-
-  receipts: {
-    filename: string;
-    data: string;
-    uploadedAt: Date;
-  }[];
-
+  date: Date;
+  category: string;
   project?: string;
-  costCenter?: string;
-
+  client?: string;
+  vehicle?: {
+    type: VehicleType;
+    licensePlate?: string;
+    startLocation: string;
+    endLocation: string;
+    distance: number;
+    hasReceipt: boolean;
+  };
+  receipt?: {
+    filename: string;
+    url: string;
+    uploadedAt: Date;
+  };
   status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'paid';
-
   submittedAt?: Date;
-  submittedBy?: string;
-
-  approvals: {
-    level: number;
-    approverName: string;
-    approverId: string;
-    approvedAt?: Date;
-    rejectedAt?: Date;
+  approvedAt?: Date;
+  approvedBy?: string;
+  rejectedAt?: Date;
+  rejectedBy?: string;
+  rejectionReason?: string;
+  reimbursementDetails?: {
+    method: 'bank_transfer' | 'cash' | 'payroll';
+    reference: string;
+    paidAt: Date;
+    paidBy: string;
+  };
+  reviewHistory: {
+    date: Date;
+    action: 'submitted' | 'approved' | 'rejected' | 'paid';
+    by: string;
     comment?: string;
   }[];
-
   paidInPayroll?: {
     payrollRunId: string;
     payrollDate: Date;
   };
-
   taxable: boolean;
   withinTaxFreeAllowance: boolean;
-
   createdAt: Date;
   updatedAt: Date;
 }
@@ -558,7 +703,6 @@ export type ExpenseType = Expense['type'];
 export type ExpenseStatus = Expense['status'];
 export type VehicleType = 'car' | 'bike' | 'public_transport' | 'taxi';
 
-// Payroll Management
 export type PayrollPeriodType = 'weekly' | 'bi-weekly' | 'monthly';
 export type PayrollStatus = 'draft' | 'calculated' | 'approved' | 'paid' | 'finalized';
 
@@ -650,19 +794,18 @@ export interface Deduction {
   updatedAt: Date;
 }
 
-// ✅ NIEUW: Helper interfaces voor bedrijfs logica
-export interface CompanyWithEmployees extends Company {
-  employees?: Employee[];
-  projectCompanies?: Company[];
-}
-
-export interface EmployeeWithCompanies extends Employee {
-  primaryEmployer?: Company;
-  projectCompaniesData?: Company[];
-}
-
-// ✅ NIEUW: Voor timesheet/urenregistratie met bedrijfskeuze
-export interface TimeEntryWithCompanyInfo extends TimeEntry {
-  workCompany?: Company;
-  primaryEmployer?: Company;
+export interface TaxReturn {
+  id: string;
+  userId: string;
+  companyId: string;
+  period: {
+    month: number;
+    year: number;
+  };
+  status: 'draft' | 'submitted' | 'approved' | 'filed';
+  data: any;
+  submittedAt?: Date;
+  filedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
