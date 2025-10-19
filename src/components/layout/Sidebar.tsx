@@ -15,6 +15,8 @@ import {
   Settings,
   LogOut,
   Shield,
+  DollarSign,
+  Factory
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -31,7 +33,8 @@ export interface NavigationItem {
 
 export const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'] },
+  { name: 'Loonmaatschappij', href: '/payroll-company', icon: DollarSign, roles: ['admin'] },
+  { name: 'Werkmaatschappijen', href: '/companies', icon: Factory, roles: ['admin'] },
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'] },
   { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee'] },
   { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Calendar, roles: ['admin'] },
@@ -48,7 +51,8 @@ export const navigation: NavigationItem[] = [
 
 const mainNavigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'] },
+  { name: 'Loonmaatschappij', href: '/payroll-company', icon: DollarSign, roles: ['admin'] },
+  { name: 'Werkmaatschappijen', href: '/companies', icon: Factory, roles: ['admin'] },
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'] },
 ];
 
@@ -83,24 +87,30 @@ export const Sidebar: React.FC = () => {
   const isEmployee = userRole === 'employee';
 
   return (
-    <div className="hidden lg:flex h-screen w-64 flex-col bg-white border-r border-gray-200 shadow-sm">
+    <div className="hidden lg:flex h-screen w-72 flex-col bg-white border-r border-gray-200 shadow-lg">
       {/* Logo */}
-      <div className="flex h-20 items-center justify-between px-6 border-b border-gray-100">
-        <div className="flex items-center space-x-2 flex-shrink-0 min-w-0">
-          <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-40 w-auto object-contain" />
+      <div className="flex h-20 items-center justify-between px-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="flex items-center space-x-3 flex-shrink-0 min-w-0">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+            <DollarSign className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">AlloonApp</h1>
+            <p className="text-xs text-gray-500">Loonadministratie</p>
+          </div>
         </div>
         <NotificationCenter />
       </div>
 
       {/* Company Selector */}
       {userRole === 'admin' && (
-        <div className="px-4 py-3 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <CompanySelector />
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-4 px-3 py-4 overflow-y-auto">
+      <nav className="flex-1 space-y-4 px-4 py-6 overflow-y-auto">
         {!isEmployee && filteredMainNav.length > 0 && (
           <div className="space-y-1">
             {filteredMainNav.map((item) => (
@@ -108,9 +118,9 @@ export const Sidebar: React.FC = () => {
                 key={item.name}
                 to={item.href}
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  `flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`
                 }
@@ -130,9 +140,9 @@ export const Sidebar: React.FC = () => {
                   key={item.name}
                   to={item.href}
                   className={({ isActive }) =>
-                    `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    `flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`
                   }
@@ -160,9 +170,9 @@ export const Sidebar: React.FC = () => {
                   key={item.name}
                   to={item.href}
                   className={({ isActive }) =>
-                    `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    `flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`
                   }
@@ -190,9 +200,9 @@ export const Sidebar: React.FC = () => {
                   key={item.name}
                   to={item.href}
                   className={({ isActive }) =>
-                    `flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    `flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`
                   }
@@ -214,14 +224,30 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* User actions */}
-      <div className="border-t border-gray-100 p-3">
-        <button
-          onClick={signOut}
-          className="flex w-full items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
-        >
-          <LogOut className="mr-3 h-5 w-5" />
-          Uitloggen
-        </button>
+      <div className="border-t border-gray-200 p-4 bg-gray-50">
+        <div className="space-y-2">
+          <div className="flex items-center px-3 py-2 text-sm text-gray-600">
+            <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3">
+              {user?.email?.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user?.email}
+              </p>
+              <p className="text-xs text-gray-500 capitalize">
+                {userRole === 'admin' ? 'Beheerder' : 'Werknemer'}
+              </p>
+            </div>
+          </div>
+          
+          <button
+            onClick={signOut}
+            className="flex w-full items-center px-3 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200"
+          >
+            <LogOut className="mr-3 h-5 w-5" />
+            Uitloggen
+          </button>
+        </div>
       </div>
     </div>
   );
