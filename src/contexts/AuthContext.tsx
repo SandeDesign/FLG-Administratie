@@ -8,9 +8,19 @@ import {
   sendPasswordResetEmail,
   updateProfile
 } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { useToast } from '../hooks/useToast';
-import { getUserRole, getEmployeeById, updateLastLogin } from '../services/firebase';
+import { getUserRole, getEmployeeById } from '../services/firebase';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  updateDoc, 
+  doc, 
+  addDoc, 
+  Timestamp 
+} from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -33,6 +43,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { success, error } = useToast();
+
+  // Enhanced createUserRole function
+  const createUserRole = async (
+    uid: string, 
+    role: 'admin' | 'manager' | 'employee', 
+    employeeId?: string,
+    email?: string,
+    displayName?: string
+  ): Promise<void> => {
+    const roleData = {
+      uid,
+      role,
+      employeeId: employeeId || null,
+      email: email || '',
+      displayName: displayName || '',
+      isActive: true,
+      createdAt: Timestamp.fromDate(new Date()),
+      updatedAt: Timestamp.fromDate(new Date())
+    };
+    
+    await addDoc(collection(db, 'users'), roleData);
+  };
+
+  // Enhanced updateLastLogin function
+  const updateLastLogin = async (uid: string): Promise<void> => {
+    const q = query(
+      collection(db, 'users'),
+      where('uid', '==', uid)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const userDoc = querySnapshot.docs[0];
+      await updateDoc(doc(db, 'users', userDoc.id), {
+        lastLoginAt: Timestamp.fromDate(new Date()),
+        updatedAt: Timestamp.fromDate(new Date())
+      });
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -115,8 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(user, { displayName });
 
-      // Import the enhanced createUserRole function
-      const { createUserRole } = await import('../services/firebase');
+      // Create user role with enhanced function
       await createUserRole(user.uid, 'admin', undefined, email, displayName);
       setUserRole('admin');
 
