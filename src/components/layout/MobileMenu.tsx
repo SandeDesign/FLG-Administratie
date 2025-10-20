@@ -8,6 +8,8 @@ import {
   Building2,
   Users,
   Clock,
+  Calendar,
+  HeartPulse,
   FileText,
   Upload,
   Download,
@@ -47,7 +49,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
   if (!isOpen) return null;
 
-  // ✅ VEREENVOUDIGDE categorieën zonder payroll
+  // ✅ GECORRIGEERDE categorieën met verlof en verzuim
   const menuCategories: MenuCategory[] = [
     {
       title: 'Hoofdmenu',
@@ -59,11 +61,13 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       ]
     },
     {
-      title: 'Tijd & Uren',
+      title: 'Tijd & Aanwezigheid',
       icon: Activity,
       items: [
         { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee'], color: 'text-orange-600' },
         { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin'], color: 'text-indigo-600' },
+        { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin'], color: 'text-teal-600' },
+        { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin'], color: 'text-red-600' },
       ]
     },
     {
@@ -86,6 +90,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       title: 'Systeem',
       icon: Settings,
       items: [
+        { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee'], color: 'text-cyan-600' },
         { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], color: 'text-slate-600' },
         { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee'], color: 'text-gray-600' },
       ]
@@ -209,7 +214,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
           {/* Footer */}
           <div className="border-t border-gray-200 p-4 bg-gray-50">
             <div className="text-center text-sm text-gray-500">
-              AlloonApp v2.0 - Vereenvoudigd Systeem
+              AlloonApp v2.0 - Met verlof & verzuim
             </div>
           </div>
         </div>
