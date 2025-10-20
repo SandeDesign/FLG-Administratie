@@ -112,7 +112,7 @@ const EmployeeDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold">
-                {getGreeting()}, {getFirstName()}! 👋
+                {getGreeting()}, {getFirstName()}!
               </h1>
               <p className="mt-1 text-blue-100 text-sm sm:text-base">
                 {selectedCompany ? `${selectedCompany.name}` : 'AlloonApp Dashboard'}
