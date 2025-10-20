@@ -1,408 +1,353 @@
-import React, { useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useApp } from '../../contexts/AppContext';
-import { outgoingInvoiceService, OutgoingInvoice } from '../../services/outgoingInvoiceService';
-import Button from '../ui/Button';
-import { useToast } from '../../hooks/useToast';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Plus,
+  Send,
+  Eye,
+  Download,
+  Search,
+  Calendar,
+  Euro,
+  Building2,
+  User,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Edit,
+  Trash2
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useApp } from '../contexts/AppContext';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { useToast } from '../hooks/useToast';
+import { EmptyState } from '../components/ui/EmptyState';
+import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
+import { CreateInvoiceModal } from '../components/invoices/CreateInvoiceModal';
 
-interface CreateInvoiceModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  editingInvoice?: OutgoingInvoice | null;
-}
-
-interface InvoiceItem {
-  description: string;
-  quantity: number;
-  rate: number;
-  amount: number;
-}
-
-export const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
-  isOpen,
-  onClose,
-  onSuccess,
-  editingInvoice
-}) => {
+const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
   const { selectedCompany } = useApp();
-  const { success, error } = useToast();
-  const [loading, setLoading] = useState(false);
+  const { success, error: showError } = useToast();
+  const [invoices, setInvoices] = useState<OutgoingInvoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<OutgoingInvoice | null>(null);
 
-  const [formData, setFormData] = useState({
-    clientName: editingInvoice?.clientName || '',
-    clientEmail: editingInvoice?.clientEmail || '',
-    clientAddress: {
-      street: editingInvoice?.clientAddress?.street || '',
-      city: editingInvoice?.clientAddress?.city || '',
-      zipCode: editingInvoice?.clientAddress?.zipCode || '',
-      country: editingInvoice?.clientAddress?.country || 'Nederland'
-    },
-    description: editingInvoice?.description || '',
-    invoiceDate: editingInvoice?.invoiceDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-    dueDate: editingInvoice?.dueDate?.toISOString().split('T')[0] || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    notes: editingInvoice?.notes || ''
-  });
-
-  const [items, setItems] = useState<InvoiceItem[]>(
-    editingInvoice?.items?.length ? editingInvoice.items : [
-      { description: '', quantity: 1, rate: 0, amount: 0 }
-    ]
-  );
-
-  if (!isOpen) return null;
-
-  const calculateItemAmount = (quantity: number, rate: number) => quantity * rate;
-
-  const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    
-    if (field === 'quantity' || field === 'rate') {
-      newItems[index].amount = calculateItemAmount(
-        newItems[index].quantity,
-        newItems[index].rate
-      );
-    }
-    
-    setItems(newItems);
-  };
-
-  const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, rate: 0, amount: 0 }]);
-  };
-
-  const removeItem = (index: number) => {
-    if (items.length > 1) {
-      setItems(items.filter((_, i) => i !== index));
-    }
-  };
-
-  const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
-  const vatAmount = subtotal * 0.21;
-  const total = subtotal + vatAmount;
-
-  const generateInvoiceNumber = () => {
-    const year = new Date().getFullYear();
-    const timestamp = Date.now().toString().slice(-6);
-    return `INV-${year}-${timestamp}`;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user || !selectedCompany) {
-      error('Fout', 'Geen gebruiker of bedrijf geselecteerd');
+  const loadInvoices = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
       return;
     }
 
-    if (!formData.clientName.trim()) {
-      error('Validatie fout', 'Klantnaam is verplicht');
-      return;
-    }
-
-    if (items.some(item => !item.description.trim())) {
-      error('Validatie fout', 'Alle items moeten een beschrijving hebben');
-      return;
-    }
-
-    setLoading(true);
     try {
-      const invoiceData: Omit<OutgoingInvoice, 'id' | 'createdAt' | 'updatedAt'> = {
-        userId: user.uid,
-        companyId: selectedCompany.id,
-        invoiceNumber: editingInvoice?.invoiceNumber || generateInvoiceNumber(),
-        clientName: formData.clientName.trim(),
-        clientEmail: formData.clientEmail.trim(),
-        clientAddress: formData.clientAddress,
-        amount: subtotal,
-        vatAmount,
-        totalAmount: total,
-        description: formData.description.trim(),
-        invoiceDate: new Date(formData.invoiceDate),
-        dueDate: new Date(formData.dueDate),
-        status: 'draft',
-        items: items.filter(item => item.description.trim()),
-        notes: formData.notes.trim() || undefined
-      };
-
-      if (editingInvoice?.id) {
-        await outgoingInvoiceService.updateInvoice(editingInvoice.id, invoiceData);
-        success('Factuur bijgewerkt', 'De factuur is succesvol bijgewerkt');
-      } else {
-        await outgoingInvoiceService.createInvoice(invoiceData);
-        success('Factuur aangemaakt', 'De factuur is succesvol aangemaakt');
-      }
-
-      onSuccess();
-      onClose();
-    } catch (err) {
-      console.error('Error saving invoice:', err);
-      error('Fout bij opslaan', 'Kon factuur niet opslaan');
+      setLoading(true);
+      const invoicesData = await outgoingInvoiceService.getInvoices(
+        user.uid, 
+        selectedCompany?.id
+      );
+      setInvoices(invoicesData);
+    } catch (error) {
+      console.error('Error loading invoices:', error);
+      showError('Fout bij laden', 'Kon facturen niet laden');
     } finally {
       setLoading(false);
     }
+  }, [user, selectedCompany, showError]);
+
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
+
+  const getStatusColor = (status: OutgoingInvoice['status']) => {
+    switch (status) {
+      case 'draft': return 'text-gray-600 bg-gray-100';
+      case 'sent': return 'text-blue-600 bg-blue-100';
+      case 'paid': return 'text-green-600 bg-green-100';
+      case 'overdue': return 'text-red-600 bg-red-100';
+      case 'cancelled': return 'text-gray-600 bg-gray-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
   };
 
+  const getStatusIcon = (status: OutgoingInvoice['status']) => {
+    switch (status) {
+      case 'draft': return Clock;
+      case 'sent': return Send;
+      case 'paid': return CheckCircle;
+      case 'overdue': return AlertCircle;
+      case 'cancelled': return AlertCircle;
+      default: return Clock;
+    }
+  };
+
+  const getStatusText = (status: OutgoingInvoice['status']) => {
+    switch (status) {
+      case 'draft': return 'Concept';
+      case 'sent': return 'Verstuurd';
+      case 'paid': return 'Betaald';
+      case 'overdue': return 'Vervallen';
+      case 'cancelled': return 'Geannuleerd';
+      default: return status;
+    }
+  };
+
+  const filteredInvoices = invoices.filter(invoice => {
+    const matchesSearch = invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleCreateInvoice = () => {
+    setEditingInvoice(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditInvoice = (invoice: OutgoingInvoice) => {
+    setEditingInvoice(invoice);
+    setIsModalOpen(true);
+  };
+
+  const handleModalSuccess = () => {
+    loadInvoices();
+  };
+
+  const handleSendInvoice = async (invoiceId: string) => {
+    try {
+      await outgoingInvoiceService.sendInvoice(invoiceId);
+      success('Factuur verstuurd', 'De factuur is succesvol verstuurd naar de klant');
+      loadInvoices();
+    } catch (error) {
+      showError('Fout bij versturen', 'Kon factuur niet versturen');
+    }
+  };
+
+  const handleMarkAsPaid = async (invoiceId: string) => {
+    try {
+      await outgoingInvoiceService.markAsPaid(invoiceId);
+      success('Factuur betaald', 'De factuur is gemarkeerd als betaald');
+      loadInvoices();
+    } catch (error) {
+      showError('Fout bij bijwerken', 'Kon factuur niet als betaald markeren');
+    }
+  };
+
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    if (!confirm('Weet je zeker dat je deze factuur wilt verwijderen?')) return;
+    
+    try {
+      await outgoingInvoiceService.deleteInvoice(invoiceId);
+      success('Factuur verwijderd', 'De factuur is succesvol verwijderd');
+      loadInvoices();
+    } catch (error) {
+      showError('Fout bij verwijderen', 'Kon factuur niet verwijderen');
+    }
+  };
+
+  const handleDownloadPDF = async (invoice: OutgoingInvoice) => {
+    try {
+      if (invoice.pdfUrl) {
+        window.open(invoice.pdfUrl, '_blank');
+      } else {
+        // Generate PDF if not exists
+        const pdfUrl = await outgoingInvoiceService.generateAndUploadPDF(invoice);
+        window.open(pdfUrl, '_blank');
+        loadInvoices(); // Refresh to get updated PDF URL
+      }
+    } catch (error) {
+      showError('Fout bij downloaden', 'Kon PDF niet genereren');
+    }
+  };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!selectedCompany) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Geen bedrijf geselecteerd"
+        description="Selecteer een bedrijf om facturen te beheren"
+      />
+    );
+  }
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">
-            {editingInvoice ? 'Factuur Bewerken' : 'Nieuwe Factuur'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Uitgaande Facturen</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Beheer facturen voor {selectedCompany.name}
+          </p>
         </div>
+        <Button
+          onClick={handleCreateInvoice}
+          className="mt-4 sm:mt-0"
+          icon={Plus}
+        >
+          Nieuwe Factuur
+        </Button>
+      </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Client Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Klantnaam *
-                </label>
+      {/* Filters */}
+      <Card>
+        <div className="p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  required
-                  value={formData.clientName}
-                  onChange={(e) => setFormData({...formData, clientName: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Bedrijfsnaam of naam"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  E-mailadres
-                </label>
-                <input
-                  type="email"
-                  value={formData.clientEmail}
-                  onChange={(e) => setFormData({...formData, clientEmail: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="klant@example.com"
+                  placeholder="Zoek op klantnaam of factuurnummer..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
-
-            {/* Address */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Adres
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientAddress.street}
-                  onChange={(e) => setFormData({
-                    ...formData, 
-                    clientAddress: {...formData.clientAddress, street: e.target.value}
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Straat en huisnummer"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Postcode
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientAddress.zipCode}
-                  onChange={(e) => setFormData({
-                    ...formData, 
-                    clientAddress: {...formData.clientAddress, zipCode: e.target.value}
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="1234 AB"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Plaats
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientAddress.city}
-                  onChange={(e) => setFormData({
-                    ...formData, 
-                    clientAddress: {...formData.clientAddress, city: e.target.value}
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Amsterdam"
-                />
-              </div>
+            <div className="sm:w-48">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">Alle statussen</option>
+                <option value="draft">Concept</option>
+                <option value="sent">Verstuurd</option>
+                <option value="paid">Betaald</option>
+                <option value="overdue">Vervallen</option>
+                <option value="cancelled">Geannuleerd</option>
+              </select>
             </div>
+          </div>
+        </div>
+      </Card>
 
-            {/* Dates */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Factuurdatum
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.invoiceDate}
-                  onChange={(e) => setFormData({...formData, invoiceDate: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Vervaldatum
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Items */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Factuurregels
-                </label>
-                <Button type="button" variant="ghost" size="sm" icon={Plus} onClick={addItem}>
-                  Regel toevoegen
-                </Button>
-              </div>
-              
-              <div className="space-y-3">
-                {items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-3 items-end">
-                    <div className="col-span-5">
-                      <input
-                        type="text"
-                        placeholder="Beschrijving"
-                        value={item.description}
-                        onChange={(e) => updateItem(index, 'description', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
-                      />
+      {/* Invoices List */}
+      {filteredInvoices.length === 0 ? (
+        <EmptyState
+          icon={Send}
+          title="Geen facturen gevonden"
+          description={searchTerm || statusFilter !== 'all' 
+            ? "Geen facturen gevonden die voldoen aan de filters" 
+            : "Maak je eerste factuur aan"}
+          action={
+            <Button onClick={handleCreateInvoice} icon={Plus}>
+              Nieuwe Factuur
+            </Button>
+          }
+        />
+      ) : (
+        <div className="grid gap-4">
+          {filteredInvoices.map((invoice) => {
+            const StatusIcon = getStatusIcon(invoice.status);
+            return (
+              <Card key={invoice.id}>
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Send className="h-6 w-6 text-blue-600" />
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {invoice.invoiceNumber}
+                          </h3>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {getStatusText(invoice.status)}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <User className="h-4 w-4 mr-1" />
+                            {invoice.clientName}
+                          </div>
+                          <div className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {invoice.invoiceDate.toLocaleDateString('nl-NL')}
+                          </div>
+                          <div className="flex items-center">
+                            <Euro className="h-4 w-4 mr-1" />
+                            €{invoice.totalAmount.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        placeholder="Aantal"
-                        min="0"
-                        step="0.01"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        placeholder="Prijs"
-                        min="0"
-                        step="0.01"
-                        value={item.rate}
-                        onChange={(e) => updateItem(index, 'rate', parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="text"
-                        value={`€${item.amount.toFixed(2)}`}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      {items.length > 1 && (
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={Download}
+                        onClick={() => handleDownloadPDF(invoice)}
+                      >
+                        PDF
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={Edit}
+                        onClick={() => handleEditInvoice(invoice)}
+                      >
+                        Bewerken
+                      </Button>
+                      {invoice.status === 'draft' && (
                         <Button
-                          type="button"
-                          variant="ghost"
+                          variant="primary"
+                          size="sm"
+                          icon={Send}
+                          onClick={() => handleSendInvoice(invoice.id!)}
+                        >
+                          Versturen
+                        </Button>
+                      )}
+                      {invoice.status === 'sent' && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          icon={CheckCircle}
+                          onClick={() => handleMarkAsPaid(invoice.id!)}
+                        >
+                          Betaald
+                        </Button>
+                      )}
+                      {invoice.status === 'draft' && (
+                        <Button
+                          variant="danger"
                           size="sm"
                           icon={Trash2}
-                          onClick={() => removeItem(index)}
-                          className="text-red-600 hover:text-red-700"
-                        />
+                          onClick={() => handleDeleteInvoice(invoice.id!)}
+                        >
+                          Verwijderen
+                        </Button>
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Totals */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Subtotaal:</span>
-                  <span>€{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>BTW (21%):</span>
-                  <span>€{vatAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg border-t pt-2">
-                  <span>Totaal:</span>
-                  <span>€{total.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Description & Notes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Beschrijving
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Extra informatie over de factuur..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notities (intern)
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Interne notities..."
-              />
-            </div>
-          </form>
+              </Card>
+            );
+          })}
         </div>
+      )}
 
-        {/* Footer */}
-        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Annuleren
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="min-w-24"
-          >
-            {loading ? 'Opslaan...' : editingInvoice ? 'Bijwerken' : 'Aanmaken'}
-          </Button>
-        </div>
-      </div>
+      {/* Create/Edit Invoice Modal */}
+      <CreateInvoiceModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleModalSuccess}
+        editingInvoice={editingInvoice}
+      />
     </div>
   );
 };
+
+export default OutgoingInvoices;
