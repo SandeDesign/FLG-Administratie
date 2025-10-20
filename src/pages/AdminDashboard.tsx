@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { runMigration } from './database-migration';
 import { 
   Users, 
   Building2, 
