@@ -20,7 +20,8 @@ import {
   Receipt,
   Send,
   FolderOpen,
-  TrendingUp
+  TrendingUp,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -43,7 +44,7 @@ interface MenuCategory {
 }
 
 export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOpen, onClose }) => {
-  const { userRole } = useAuth();
+  const { userRole, signOut } = useAuth();
   const { companies, selectedCompany, setSelectedCompany } = useApp();
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['Hoofdmenu']);
 
@@ -105,41 +106,47 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
     );
   };
 
+  // Filter categories and items based on user role
   const filteredCategories = menuCategories.map(category => ({
     ...category,
-    items: category.items.filter(item => userRole && item.roles.includes(userRole))
+    items: category.items.filter(item => item.roles.includes(userRole || ''))
   })).filter(category => category.items.length > 0);
 
   return (
-    <div className="fixed inset-0 z-50 lg:hidden">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      
-      {/* Menu Panel */}
-      <div className="absolute inset-y-0 left-0 w-full bg-white shadow-2xl">
-        <div className="flex h-full flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-slate-50 to-gray-50">
-            <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-12 w-auto" />
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <X className="h-6 w-6 text-gray-600" />
-            </button>
+    <div className="lg:hidden fixed inset-0 z-50 bg-white">
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Users className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">AlloonApp</h1>
+              <p className="text-xs text-gray-500">Loonadministratie</p>
+            </div>
           </div>
+          
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-6 w-6 text-gray-500" />
+          </button>
+        </div>
 
-          {/* Company Selector voor Admin */}
-          {userRole === 'admin' && companies && companies.length > 0 && (
-            <div className="p-4 border-b border-gray-100">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Bedrijf</label>
+        {/* Company Selector - Admin only */}
+        {userRole === 'admin' && companies && companies.length > 0 && (
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Geselecteerd bedrijf:</label>
               <select
                 value={selectedCompany?.id || ''}
                 onChange={(e) => {
                   const company = companies.find(c => c.id === e.target.value);
-                  setSelectedCompany(company || null);
+                  if (company) setSelectedCompany(company);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Selecteer bedrijf...</option>
                 {companies.map((company) => (
@@ -149,76 +156,77 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                 ))}
               </select>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Navigation Categories */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-4 space-y-4">
-              {filteredCategories.map((category) => (
-                <div key={category.title} className="bg-gray-50 rounded-xl overflow-hidden">
-                  {/* Category Header */}
-                  <button
-                    onClick={() => toggleCategory(category.title)}
-                    className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-blue-500 rounded-lg">
-                        <category.icon className="h-5 w-5 text-white" />
-                      </div>
-                      <span className="font-semibold text-gray-900">{category.title}</span>
+        {/* Navigation Categories */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4 space-y-4">
+            {filteredCategories.map((category) => (
+              <div key={category.title} className="bg-gray-50 rounded-xl overflow-hidden">
+                {/* Category Header */}
+                <button
+                  onClick={() => toggleCategory(category.title)}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-blue-500 rounded-lg">
+                      <category.icon className="h-5 w-5 text-white" />
                     </div>
-                    {expandedCategories.includes(category.title) ? (
-                      <ChevronDown className="h-5 w-5 text-gray-500" />
-                    ) : (
-                      <ChevronRight className="h-5 w-5 text-gray-500" />
-                    )}
-                  </button>
-
-                  {/* Category Items */}
-                  {expandedCategories.includes(category.title) && (
-                    <div className="px-4 pb-4 space-y-2">
-                      {category.items.map((item) => (
-                        <NavLink
-                          key={item.name}
-                          to={item.href}
-                          onClick={onClose}
-                          className={({ isActive }) =>
-                            `flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
-                              isActive
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : 'text-gray-700 hover:bg-white hover:shadow-sm'
-                            }`
-                          }
-                        >
-                          <div className={`p-2 rounded-lg ${
-                            ({ isActive }: { isActive: boolean }) => isActive 
-                              ? 'bg-blue-500' 
-                              : 'bg-gray-200'
-                          }`}>
-                            <item.icon className={`h-4 w-4 ${
-                              ({ isActive }: { isActive: boolean }) => isActive 
-                                ? 'text-white' 
-                                : item.color || 'text-gray-600'
-                            }`} />
-                          </div>
-                          <span className="font-medium">{item.name}</span>
-                        </NavLink>
-                      ))}
-                    </div>
+                    <span className="font-semibold text-gray-900">{category.title}</span>
+                  </div>
+                  {expandedCategories.includes(category.title) ? (
+                    <ChevronDown className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-gray-500" />
                   )}
-                </div>
-              ))}
-            </div>
-          </div>
+                </button>
 
-          {/* Footer */}
-          <div className="border-t border-gray-200 p-4 bg-gray-50">
-            <div className="text-center text-sm text-gray-500">
-              AlloonApp v2.0 - Met verlof & verzuim
-            </div>
+                {/* Category Items */}
+                {expandedCategories.includes(category.title) && (
+                  <div className="px-4 pb-4 space-y-2">
+                    {category.items.map((item) => (
+                      <NavLink
+                        key={item.name}
+                        to={item.href}
+                        onClick={onClose}
+                        className={({ isActive }) =>
+                          `flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
+                            isActive
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              : 'text-gray-700 hover:bg-white hover:shadow-sm'
+                          }`
+                        }
+                      >
+                        <div className={`p-2 rounded-lg bg-gray-200`}>
+                          <item.icon className={`h-4 w-4 ${item.color || 'text-gray-600'}`} />
+                        </div>
+                        <span className="font-medium">{item.name}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-200 p-4 bg-white">
+          <button
+            onClick={() => {
+              signOut();
+              onClose();
+            }}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Uitloggen</span>
+          </button>
         </div>
       </div>
     </div>
   );
 };
+
+export default MobileFullScreenMenu;
