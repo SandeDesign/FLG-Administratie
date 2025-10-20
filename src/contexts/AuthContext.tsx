@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useToast } from '../hooks/useToast';
-import { getUserRole, getEmployeeById } from '../services/firebase';
+import { getUserRole, getEmployeeById, updateLastLogin } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUserRole(roleData?.role || null);
           setCurrentEmployeeId(roleData?.employeeId || null);
 
-          // ✅ FIXED: Handle admin, manager, and employee roles properly
+          // Handle admin, manager, and employee roles properly
           if (roleData?.role === 'admin') {
             setAdminUserId(user.uid);
           } else if ((roleData?.role === 'employee' || roleData?.role === 'manager') && roleData?.employeeId) {
@@ -58,6 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             setAdminUserId(null);
           }
+
+          // Update last login time
+          await updateLastLogin(user.uid);
         } catch (err) {
           console.error('Error loading user role:', err);
           setUserRole(null);
@@ -112,8 +115,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(user, { displayName });
 
+      // Import the enhanced createUserRole function
       const { createUserRole } = await import('../services/firebase');
-      await createUserRole(user.uid, 'admin');
+      await createUserRole(user.uid, 'admin', undefined, email, displayName);
       setUserRole('admin');
 
       success('Account aangemaakt!', 'Je kunt nu beginnen met het beheren van je loonadministratie');
