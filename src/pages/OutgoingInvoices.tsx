@@ -23,7 +23,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
-import { CreateInvoiceModal } from '../components/invoices/CreateInvoiceModal';
+import CreateInvoiceModal from '../components/invoices/CreateInvoiceModal';
 
 const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
@@ -152,10 +152,9 @@ const OutgoingInvoices: React.FC = () => {
       if (invoice.pdfUrl) {
         window.open(invoice.pdfUrl, '_blank');
       } else {
-        // Generate PDF if not exists
         const pdfUrl = await outgoingInvoiceService.generateAndUploadPDF(invoice);
         window.open(pdfUrl, '_blank');
-        loadInvoices(); // Refresh to get updated PDF URL
+        loadInvoices();
       }
     } catch (error) {
       showError('Fout bij downloaden', 'Kon PDF niet genereren');
@@ -178,7 +177,6 @@ const OutgoingInvoices: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Uitgaande Facturen</h1>
@@ -195,7 +193,6 @@ const OutgoingInvoices: React.FC = () => {
         </Button>
       </div>
 
-      {/* Filters */}
       <Card>
         <div className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
@@ -229,7 +226,6 @@ const OutgoingInvoices: React.FC = () => {
         </div>
       </Card>
 
-      {/* Invoices List */}
       {filteredInvoices.length === 0 ? (
         <EmptyState
           icon={Send}
@@ -339,7 +335,6 @@ const OutgoingInvoices: React.FC = () => {
         </div>
       )}
 
-      {/* Create/Edit Invoice Modal */}
       <CreateInvoiceModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
