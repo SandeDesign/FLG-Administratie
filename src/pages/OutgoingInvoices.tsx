@@ -3,9 +3,7 @@ import {
   Plus,
   Send,
   Eye,
-  Edit,
   Download,
-  Filter,
   Search,
   Calendar,
   Euro,
@@ -13,7 +11,9 @@ import {
   User,
   CheckCircle,
   AlertCircle,
-  Clock
+  Clock,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -22,39 +22,7 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
-
-interface OutgoingInvoice {
-  id: string;
-  userId: string;
-  companyId: string;
-  invoiceNumber: string;
-  clientName: string;
-  clientEmail: string;
-  clientAddress: {
-    street: string;
-    city: string;
-    zipCode: string;
-    country: string;
-  };
-  amount: number;
-  vatAmount: number;
-  totalAmount: number;
-  description: string;
-  invoiceDate: Date;
-  dueDate: Date;
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-  paidAt?: Date;
-  sentAt?: Date;
-  items: {
-    description: string;
-    quantity: number;
-    rate: number;
-    amount: number;
-  }[];
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
 
 const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
@@ -65,55 +33,21 @@ const OutgoingInvoices: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<OutgoingInvoice | null>(null);
 
   const loadInvoices = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      // TODO: Implement firebase service call
-      // const invoicesData = await getOutgoingInvoices(user.uid, selectedCompany.id);
-      // setInvoices(invoicesData);
-      
-      // Mock data for now
-      const mockInvoices: OutgoingInvoice[] = [
-        {
-          id: '1',
-          userId: user.uid,
-          companyId: selectedCompany.id,
-          invoiceNumber: 'INV-2024-001',
-          clientName: 'Acme Corporation',
-          clientEmail: 'finance@acme.com',
-          clientAddress: {
-            street: 'Hoofdstraat 123',
-            city: 'Amsterdam',
-            zipCode: '1000 AB',
-            country: 'Nederland'
-          },
-          amount: 1000,
-          vatAmount: 210,
-          totalAmount: 1210,
-          description: 'Consultancy services Q1 2024',
-          invoiceDate: new Date('2024-01-15'),
-          dueDate: new Date('2024-02-15'),
-          status: 'sent',
-          sentAt: new Date('2024-01-15'),
-          items: [
-            {
-              description: 'Consultancy services',
-              quantity: 40,
-              rate: 25,
-              amount: 1000
-            }
-          ],
-          createdAt: new Date('2024-01-15'),
-          updatedAt: new Date('2024-01-15')
-        }
-      ];
-      setInvoices(mockInvoices);
+      const invoicesData = await outgoingInvoiceService.getInvoices(
+        user.uid, 
+        selectedCompany?.id
+      );
+      setInvoices(invoicesData);
     } catch (error) {
       console.error('Error loading invoices:', error);
       showError('Fout bij laden', 'Kon facturen niet laden');
@@ -148,6 +82,17 @@ const OutgoingInvoices: React.FC = () => {
     }
   };
 
+  const getStatusText = (status: OutgoingInvoice['status']) => {
+    switch (status) {
+      case 'draft': return 'Concept';
+      case 'sent': return 'Verstuurd';
+      case 'paid': return 'Betaald';
+      case 'overdue': return 'Vervallen';
+      case 'cancelled': return 'Geannuleerd';
+      default: return status;
+    }
+  };
+
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
@@ -156,16 +101,59 @@ const OutgoingInvoices: React.FC = () => {
   });
 
   const handleCreateInvoice = () => {
+    setEditingInvoice(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditInvoice = (invoice: OutgoingInvoice) => {
+    setEditingInvoice(invoice);
     setIsModalOpen(true);
   };
 
   const handleSendInvoice = async (invoiceId: string) => {
     try {
-      // TODO: Implement send invoice functionality
+      await outgoingInvoiceService.sendInvoice(invoiceId);
       success('Factuur verstuurd', 'De factuur is succesvol verstuurd naar de klant');
       loadInvoices();
     } catch (error) {
       showError('Fout bij versturen', 'Kon factuur niet versturen');
+    }
+  };
+
+  const handleMarkAsPaid = async (invoiceId: string) => {
+    try {
+      await outgoingInvoiceService.markAsPaid(invoiceId);
+      success('Factuur betaald', 'De factuur is gemarkeerd als betaald');
+      loadInvoices();
+    } catch (error) {
+      showError('Fout bij bijwerken', 'Kon factuur niet als betaald markeren');
+    }
+  };
+
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    if (!confirm('Weet je zeker dat je deze factuur wilt verwijderen?')) return;
+    
+    try {
+      await outgoingInvoiceService.deleteInvoice(invoiceId);
+      success('Factuur verwijderd', 'De factuur is succesvol verwijderd');
+      loadInvoices();
+    } catch (error) {
+      showError('Fout bij verwijderen', 'Kon factuur niet verwijderen');
+    }
+  };
+
+  const handleDownloadPDF = async (invoice: OutgoingInvoice) => {
+    try {
+      if (invoice.pdfUrl) {
+        window.open(invoice.pdfUrl, '_blank');
+      } else {
+        // Generate PDF if not exists
+        const pdfUrl = await outgoingInvoiceService.generateAndUploadPDF(invoice);
+        window.open(pdfUrl, '_blank');
+        loadInvoices(); // Refresh to get updated PDF URL
+      }
+    } catch (error) {
+      showError('Fout bij downloaden', 'Kon PDF niet genereren');
     }
   };
 
@@ -271,11 +259,7 @@ const OutgoingInvoices: React.FC = () => {
                           </h3>
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
                             <StatusIcon className="h-3 w-3 mr-1" />
-                            {invoice.status === 'draft' && 'Concept'}
-                            {invoice.status === 'sent' && 'Verstuurd'}
-                            {invoice.status === 'paid' && 'Betaald'}
-                            {invoice.status === 'overdue' && 'Vervallen'}
-                            {invoice.status === 'cancelled' && 'Geannuleerd'}
+                            {getStatusText(invoice.status)}
                           </span>
                         </div>
                         <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
@@ -298,27 +282,47 @@ const OutgoingInvoices: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        icon={Eye}
-                        onClick={() => {/* TODO: View invoice */}}
+                        icon={Download}
+                        onClick={() => handleDownloadPDF(invoice)}
                       >
-                        Bekijken
+                        PDF
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        icon={Download}
-                        onClick={() => {/* TODO: Download PDF */}}
+                        icon={Edit}
+                        onClick={() => handleEditInvoice(invoice)}
                       >
-                        PDF
+                        Bewerken
                       </Button>
                       {invoice.status === 'draft' && (
                         <Button
                           variant="primary"
                           size="sm"
                           icon={Send}
-                          onClick={() => handleSendInvoice(invoice.id)}
+                          onClick={() => handleSendInvoice(invoice.id!)}
                         >
                           Versturen
+                        </Button>
+                      )}
+                      {invoice.status === 'sent' && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          icon={CheckCircle}
+                          onClick={() => handleMarkAsPaid(invoice.id!)}
+                        >
+                          Betaald
+                        </Button>
+                      )}
+                      {invoice.status === 'draft' && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          icon={Trash2}
+                          onClick={() => handleDeleteInvoice(invoice.id!)}
+                        >
+                          Verwijderen
                         </Button>
                       )}
                     </div>
@@ -330,13 +334,15 @@ const OutgoingInvoices: React.FC = () => {
         </div>
       )}
 
-      {/* TODO: Add InvoiceModal component */}
+      {/* Invoice Modal - TODO: Implement InvoiceModal component */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
-            <h2 className="text-xl font-bold mb-4">Nieuwe Factuur</h2>
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">
+              {editingInvoice ? 'Factuur Bewerken' : 'Nieuwe Factuur'}
+            </h2>
             <p className="text-gray-600 mb-4">
-              Factuur modal komt hier...
+              Factuur formulier wordt hier geïmplementeerd...
             </p>
             <div className="flex justify-end space-x-2">
               <Button variant="ghost" onClick={() => setIsModalOpen(false)}>
