@@ -23,7 +23,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
-import CreateInvoiceModal from '../../components/invoices/CreateInvoiceModal';
+import { CreateInvoiceModal } from '../../components/invoices/CreateInvoiceModal';
 
 const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
