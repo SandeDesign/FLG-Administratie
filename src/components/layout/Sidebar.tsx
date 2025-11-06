@@ -39,7 +39,7 @@ export interface NavigationItem {
 
 // ✅ FIXED: Navigation items met manager role support
 export const navigation: NavigationItem[] = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], color: 'text-purple-600' },
+  { name: 'Dashboardd', href: '/', icon: LayoutDashboard, roles: ['admin'], color: 'text-purple-600' },
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], color: 'text-blue-600' },
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'], color: 'text-green-600' },
   
