@@ -22,7 +22,7 @@ export interface FactuurImportRequest {
 }
 
 export class ITKnechtFactuurService {
-  private static WEBHOOK_URL = 'https://hook.eu2.make.com/wh18u8c7x989zoakqxqmomjoy2cpfd3b'; // Vervang met jouw Make webhook URL
+  private static WEBHOOK_URL = 'https://hook.eu2.make.com/223n5535ioeop4mjrooygys09al7c2ib'; // Vervang met jouw Make webhook URL
 
   /**
    * Fetch factuurgegevens van ITKnecht via Make.com webhook
