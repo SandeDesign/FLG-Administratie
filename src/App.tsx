@@ -25,8 +25,9 @@ import AuditLogPage from './pages/AuditLog';
 import Timesheets from './pages/Timesheets';
 import TimesheetApprovals from './pages/TimesheetApprovals';
 import Payslips from './pages/Payslips';
+// ✅ INVOICE RELATIONS - NIEUW!
 import InvoiceRelations from './pages/InvoiceRelations';
-// ✅ NIEUWE IMPORTS voor vereenvoudigd systeem
+// ✅ FACTUREN IMPORTS
 import OutgoingInvoices from './pages/OutgoingInvoices';
 import IncomingInvoices from './pages/IncomingInvoices';
 import TimesheetExport from './pages/TimesheetExport';
@@ -83,19 +84,20 @@ function App() {
                           <Route path="timesheets" element={<Timesheets />} />
                           <Route path="timesheet-approvals" element={<TimesheetApprovals />} />
                           
-                          {/* ✅ VERLOF & VERZUIM - BEHOUDEN */}
+                          {/* ✅ VERLOF & VERZUIM */}
                           <Route path="admin/leave-approvals" element={<AdminLeaveApprovals />} />
                           <Route path="admin/absence-management" element={<AdminAbsenceManagement />} />
                           
-                          {/* ✅ NIEUWE ROUTES - Facturatie */}
+                          {/* ✅ FACTURATIE - MET RELATIES! */}
+                          <Route path="invoice-relations" element={<InvoiceRelations />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
                           <Route path="incoming-invoices" element={<IncomingInvoices />} />
                           
-                          {/* ✅ NIEUWE ROUTES - Data & Exports */}
+                          {/* ✅ DATA & EXPORTS */}
                           <Route path="timesheet-export" element={<TimesheetExport />} />
                           <Route path="drive-files" element={<DriveFiles />} />
                           
-                          {/* ✅ BEHOUDEN ROUTES - Systeem */}
+                          {/* ✅ SYSTEEM */}
                           <Route path="payslips" element={<Payslips />} />
                           <Route path="audit-log" element={<AuditLogPage />} />
                           <Route path="settings" element={<Settings />} />
@@ -108,7 +110,7 @@ function App() {
                   />
                 )}
 
-                {/* ✅ MANAGER ROUTES - NIEUW! */}
+                {/* ✅ MANAGER ROUTES */}
                 {userRole === 'manager' && (
                   <Route
                     path="/*"
