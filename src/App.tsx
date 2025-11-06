@@ -25,6 +25,7 @@ import AuditLogPage from './pages/AuditLog';
 import Timesheets from './pages/Timesheets';
 import TimesheetApprovals from './pages/TimesheetApprovals';
 import Payslips from './pages/Payslips';
+import InvoiceRelations from './pages/InvoiceRelations';
 // ✅ NIEUWE IMPORTS voor vereenvoudigd systeem
 import OutgoingInvoices from './pages/OutgoingInvoices';
 import IncomingInvoices from './pages/IncomingInvoices';
