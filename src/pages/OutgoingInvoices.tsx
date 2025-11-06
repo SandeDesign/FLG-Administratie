@@ -22,6 +22,7 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
+import CreateInvoiceModal from '../components/invoices/CreateInvoiceModal';
 import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
 
 
