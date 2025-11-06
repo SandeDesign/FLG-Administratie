@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { NotificationService } from '../services/notificationService';
+import { getUserSettings, saveUserSettings } from '../services/firebase';
 import { NotificationPreferences } from '../types';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -18,17 +19,26 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 
 const Settings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, userRole, adminUserId } = useAuth();
+  const { companies } = useApp();
   const { success, error: showError } = useToast();
-  const [activeTab, setActiveTab] = useState<'general' | 'notifications' | 'security' | 'data'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'company' | 'notifications' | 'security' | 'data'>('general');
   const [loading, setLoading] = useState(false);
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
+  const [selectedDefaultCompanyId, setSelectedDefaultCompanyId] = useState<string>('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (user && activeTab === 'notifications') {
       loadPreferences();
     }
   }, [user, activeTab]);
+
+  useEffect(() => {
+    if (user && userRole === 'admin' && activeTab === 'company') {
+      loadDefaultCompany();
+    }
+  }, [user, userRole, activeTab]);
 
   const loadPreferences = async () => {
     if (!user) return;
@@ -39,9 +49,20 @@ const Settings: React.FC = () => {
       setPreferences(prefs);
     } catch (error) {
       console.error('Error loading preferences:', error);
-      showError('Fout bij laden', 'Kon voorkeuren niet laden'); // Corrected: use showError
+      showError('Fout bij laden', 'Kon voorkeuren niet laden');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDefaultCompany = async () => {
+    if (!adminUserId) return;
+    
+    try {
+      const settings = await getUserSettings(adminUserId);
+      setSelectedDefaultCompanyId(settings?.defaultCompanyId || '');
+    } catch (error) {
+      console.error('Error loading default company:', error);
     }
   };
 
@@ -51,17 +72,35 @@ const Settings: React.FC = () => {
     try {
       setLoading(true);
       await NotificationService.updatePreferences(user.uid, preferences);
-      success('Meldingsvoorkeuren opgeslagen', 'Je voorkeuren zijn succesvol opgeslagen'); // Corrected: use success
+      success('Meldingsvoorkeuren opgeslagen', 'Je voorkeuren zijn succesvol opgeslagen');
     } catch (error) {
       console.error('Error saving preferences:', error);
-      showError('Fout bij opslaan', 'Kon voorkeuren niet opslaan'); // Corrected: use showError
+      showError('Fout bij opslaan', 'Kon voorkeuren niet opslaan');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSaveDefaultCompany = async () => {
+    if (!adminUserId) return;
+    
+    try {
+      setSaving(true);
+      await saveUserSettings(adminUserId, {
+        defaultCompanyId: selectedDefaultCompanyId || undefined
+      });
+      success('Bedrijf opgeslagen', 'Je standaard bedrijf is ingesteld');
+    } catch (error) {
+      console.error('Error saving default company:', error);
+      showError('Fout bij opslaan', 'Kon standaard bedrijf niet opslaan');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const tabs = [
     { id: 'general', name: 'Algemeen', icon: SettingsIcon },
+    { id: 'company', name: 'Bedrijfsinstellingen', icon: Building2 },
     { id: 'notifications', name: 'Meldingen', icon: Bell },
     { id: 'security', name: 'Beveiliging', icon: Shield },
     { id: 'data', name: 'Data & Privacy', icon: Database },
@@ -177,6 +216,58 @@ const Settings: React.FC = () => {
                   </Button>
                 </div>
               </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'company' && userRole === 'admin' && (
+        <div className="space-y-6">
+          <Card>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Standaard Bedrijf
+              </h2>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  Kies welk bedrijf standaard wordt geselecteerd wanneer je inlogt
+                </p>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Selecteer bedrijf *
+                  </label>
+                  <select
+                    value={selectedDefaultCompanyId}
+                    onChange={(e) => setSelectedDefaultCompanyId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="">Geen standaard (eerste bedrijf)</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <Button 
+                  variant="primary"
+                  onClick={handleSaveDefaultCompany}
+                  disabled={saving}
+                >
+                  {saving ? 'Opslaan...' : 'Standaard bedrijf opslaan'}
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="p-6 bg-blue-50">
+              <h3 className="font-medium text-blue-900 mb-2">💡 Info</h3>
+              <p className="text-sm text-blue-800">
+                Je kunt ook handmatig een bedrijf selecteren in de sidebar. Dit wijzigt je voorkeur echter niet.
+              </p>
             </div>
           </Card>
         </div>
