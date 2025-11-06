@@ -22,8 +22,6 @@ import {
   Receipt,
   Send,
   FolderOpen,
-  UserCog,
-  Link
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -37,36 +35,37 @@ export interface NavigationItem {
   color?: string;
 }
 
-// ✅ FIXED: Navigation items met manager role support
 export const navigation: NavigationItem[] = [
-  { name: 'Dashboardd', href: '/', icon: LayoutDashboard, roles: ['admin'], color: 'text-purple-600' },
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], color: 'text-blue-600' },
-  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'], color: 'text-green-600' },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
+  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'] },
+  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'] },
   
-  // ADMIN BEHEER - NIEUWE SECTIE
-  { name: 'Admin Dashboard', href: '/admin/dashboard', icon: UserCog, roles: ['admin'], color: 'text-red-600' },
-  { name: 'Gebruikersbeheer', href: '/admin/users', icon: UserCog, roles: ['admin'], color: 'text-red-600' },
-  { name: 'Rollen & Rechten', href: '/admin/roles', icon: Link, roles: ['admin'], color: 'text-red-600' },
-  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'manager'], color: 'text-teal-600' },
-  { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'], color: 'text-red-600' },
+  // Personeel Management
+  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'] },
+  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin', 'manager'] },
+  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'manager'] },
+  { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'] },
   
-  // TIJD & AANWEZIGHEID
-  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'], color: 'text-orange-600' },
-  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin', 'manager'], color: 'text-indigo-600' },
+  // Facturatie
+  { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'] },
+  { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'] },
   
-  // FACTURATIE
-  { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], color: 'text-emerald-600' },
-  { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], color: 'text-amber-600' },
+  // Data & Exports
+  { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin', 'manager'] },
+  { name: 'Drive Bestanden', href: '/drive-files', icon: FolderOpen, roles: ['admin'] },
   
-  // DATA & BESTANDEN
-  { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin', 'manager'], color: 'text-cyan-600' },
-  { name: 'Drive Bestanden', href: '/drive-files', icon: FolderOpen, roles: ['admin'], color: 'text-violet-600' },
-  
-  // SYSTEEM
-  { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], color: 'text-cyan-600' },
-  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], color: 'text-slate-600' },
-  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], color: 'text-gray-600' },
+  // Systeem
+  { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'] },
+  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'] },
+  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'] },
 ];
+
+interface Section {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  items: NavigationItem[];
+  defaultOpen?: boolean;
+}
 
 // Company Selector
 const CompanySelector: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
@@ -74,7 +73,6 @@ const CompanySelector: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
   const { userRole } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  // ✅ FIXED: Only admin sees company selector
   if (userRole !== 'admin' || !companies || companies.length === 0) {
     return null;
   }
@@ -170,7 +168,7 @@ const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean }> = ({ item,
             : 'bg-gray-100 group-hover:bg-gray-200'
         }`}>
           <item.icon className={`h-4 w-4 ${
-            isActive ? 'text-white' : item.color || 'text-gray-600'
+            isActive ? 'text-white' : 'text-gray-600'
           }`} />
         </div>
         {!collapsed && (
@@ -219,7 +217,7 @@ const SectionHeader: React.FC<{
 const Sidebar: React.FC = () => {
   const { signOut, userRole } = useAuth();
   const [collapsed, setCollapsed] = useState(true);
-  const [expandedSections, setExpandedSections] = useState<string[]>(['Hoofdmenu']);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['Personeel', 'Facturatie']);
 
   const toggleSection = (sectionTitle: string) => {
     setExpandedSections(prev =>
@@ -229,24 +227,39 @@ const Sidebar: React.FC = () => {
     );
   };
 
-  // Filter navigation items based on user role
   const filteredNavigation = navigation.filter(item => userRole && item.roles.includes(userRole));
 
-  // ✅ FIXED: Correcte categorisering volgens screenshots
-  const mainItems = filteredNavigation.slice(0, 3); // Dashboard, Bedrijven, Werknemers
-  const adminItems = filteredNavigation.slice(3, 8); // Admin Dashboard tot Verzuim Beheren
-  const timeItems = filteredNavigation.slice(8, 10); // Urenregistratie, Uren Goedkeuren
-  const invoiceItems = filteredNavigation.slice(10, 12); // Facturen
-  const dataItems = filteredNavigation.slice(12, 14); // Export, Drive
-  const systemItems = filteredNavigation.slice(14); // Loonstroken, Audit, Settings
-
-  const sections = [
-    { title: 'Hoofdmenu', icon: Zap, items: mainItems },
-    { title: 'Admin Beheer', icon: UserCog, items: adminItems },
-    { title: 'Tijd & Aanwezigheid', icon: Activity, items: timeItems },
-    { title: 'Facturatie', icon: Receipt, items: invoiceItems },
-    { title: 'Data & Bestanden', icon: TrendingUp, items: dataItems },
-    { title: 'Systeem', icon: Settings, items: systemItems },
+  const sections: Section[] = [
+    { 
+      title: 'Dashboard', 
+      icon: Zap, 
+      defaultOpen: true,
+      items: filteredNavigation.filter(i => ['Dashboard', 'Bedrijven', 'Werknemers'].includes(i.name)) 
+    },
+    { 
+      title: 'Personeel', 
+      icon: Activity, 
+      defaultOpen: true,
+      items: filteredNavigation.filter(i => ['Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Verzuim Beheren'].includes(i.name)) 
+    },
+    { 
+      title: 'Facturatie', 
+      icon: Receipt, 
+      defaultOpen: true,
+      items: filteredNavigation.filter(i => ['Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)) 
+    },
+    { 
+      title: 'Data & Exports', 
+      icon: TrendingUp, 
+      defaultOpen: false,
+      items: filteredNavigation.filter(i => ['Uren Export', 'Drive Bestanden'].includes(i.name)) 
+    },
+    { 
+      title: 'Systeem', 
+      icon: Settings, 
+      defaultOpen: false,
+      items: filteredNavigation.filter(i => ['Loonstroken', 'Audit Log', 'Instellingen'].includes(i.name)) 
+    },
   ].filter(section => section.items.length > 0);
 
   return (
@@ -264,7 +277,6 @@ const Sidebar: React.FC = () => {
           </div>
         )}
         
-        {/* Toggle Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
