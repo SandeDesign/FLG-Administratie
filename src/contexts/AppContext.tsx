@@ -42,51 +42,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     branchesData: Branch[],
     userId: string
   ) => {
-    const activeEmployees = employeesData.filter(emp => emp.status === 'active').length;
-    const companiesCount = companiesData.length;
-    const branchesCount = branchesData.length;
+    try {
+      const activeEmployees = employeesData.filter(emp => emp.status === 'active').length;
+      const companiesCount = companiesData.length;
+      const branchesCount = branchesData.length;
 
-    let totalPendingApprovals = 0;
-    let totalGrossThisMonth = 0;
+      let totalPendingApprovals = 0;
+      let totalGrossThisMonth = 0;
 
-    if (companiesData.length > 0) {
-      // Calculate pending leave approvals
-      const pendingLeaveRequests = await Promise.all(
-        companiesData.map(company => getPendingLeaveApprovals(company.id, userId))
-      );
-      totalPendingApprovals += pendingLeaveRequests.flat().length;
-
-      // Calculate pending timesheet approvals
-      const pendingTimesheets = await Promise.all(
-        companiesData.map(company => getPendingTimesheets(userId, company.id))
-      );
-      totalPendingApprovals += pendingTimesheets.flat().length;
-
-      // Calculate pending expense approvals
-      const pendingExpenses = await Promise.all(
-        companiesData.map(company => getPendingExpenses(company.id, userId))
-      );
-      totalPendingApprovals += pendingExpenses.flat().length;
-
-      // Calculate total gross this month (simplified for now, would need more complex payroll logic)
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const payrollCalculations = await getPayrollCalculations(userId);
-      totalGrossThisMonth = payrollCalculations.reduce((sum, calc) => {
-        if (calc.periodStartDate.getMonth() === currentMonth && calc.periodStartDate.getFullYear() === currentYear) {
-          return sum + calc.grossPay;
+      if (companiesData.length > 0) {
+        try {
+          // Calculate pending leave approvals
+          const pendingLeaveRequests = await Promise.all(
+            companiesData.map(company => getPendingLeaveApprovals(company.id, userId).catch(() => []))
+          );
+          totalPendingApprovals += pendingLeaveRequests.flat().length;
+        } catch (error) {
+          console.error('Error calculating pending leaves:', error);
         }
-        return sum;
-      }, 0);
-    }
 
-    setDashboardStats({
-      activeEmployees,
-      totalGrossThisMonth,
-      companiesCount,
-      branchesCount,
-      pendingApprovals: totalPendingApprovals,
-    });
+        try {
+          // Calculate pending timesheet approvals
+          const pendingTimesheets = await Promise.all(
+            companiesData.map(company => getPendingTimesheets(userId, company.id).catch(() => []))
+          );
+          totalPendingApprovals += pendingTimesheets.flat().length;
+        } catch (error) {
+          console.error('Error calculating pending timesheets:', error);
+        }
+
+        try {
+          // Calculate pending expense approvals
+          const pendingExpenses = await Promise.all(
+            companiesData.map(company => getPendingExpenses(company.id, userId).catch(() => []))
+          );
+          totalPendingApprovals += pendingExpenses.flat().length;
+        } catch (error) {
+          console.error('Error calculating pending expenses:', error);
+        }
+
+        try {
+          // Calculate total gross this month (simplified for now, would need more complex payroll logic)
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          const payrollCalculations = await getPayrollCalculations(userId).catch(() => []);
+          totalGrossThisMonth = payrollCalculations.reduce((sum, calc) => {
+            if (calc.periodStartDate.getMonth() === currentMonth && calc.periodStartDate.getFullYear() === currentYear) {
+              return sum + calc.grossPay;
+            }
+            return sum;
+          }, 0);
+        } catch (error) {
+          console.error('Error calculating payroll:', error);
+        }
+      }
+
+      setDashboardStats({
+        activeEmployees,
+        totalGrossThisMonth,
+        companiesCount,
+        branchesCount,
+        pendingApprovals: totalPendingApprovals,
+      });
+    } catch (error) {
+      console.error('Error in calculateDashboardStats:', error);
+    }
   }, []);
 
   const loadData = useCallback(async () => {
