@@ -6,9 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AlloonApp - Professionele Loonadministratie</title>
     <meta name="description" content="Complete loonadministratie software voor Nederlandse bedrijven. Beheer werknemers, uren, loonberekeningen en meer." />
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Alloon" />
+    <link rel="apple-touch-icon" href="/Logo.png" />
   </head>
   <body class="h-full bg-gray-50">
     <div id="root" class="h-full"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js').catch(err => console.log('SW registration failed:', err));
+      }
+    </script>
   </body>
 </html>
