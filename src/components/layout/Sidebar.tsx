@@ -22,6 +22,7 @@ import {
   Receipt,
   Send,
   FolderOpen,
+  UserCheck,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,25 +37,27 @@ export interface NavigationItem {
 }
 
 export const navigation: NavigationItem[] = [
+  // ✅ DASHBOARD - SOLO (NO SECTION)
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'] },
-  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'] },
   
-  // Personeel Management
+  // PERSONEEL SECTION
+  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'] },
   { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'] },
   { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin', 'manager'] },
   { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'manager'] },
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'] },
   
-  // Facturatie
+  // FACTURATIE SECTION
+  { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'] },
   { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'] },
   { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'] },
   
-  // Data & Exports
+  // DATA & EXPORTS SECTION
   { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin', 'manager'] },
   { name: 'Drive Bestanden', href: '/drive-files', icon: FolderOpen, roles: ['admin'] },
   
-  // Systeem
+  // SYSTEEM SECTION
+  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'] },
   { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'] },
   { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'] },
@@ -229,24 +232,21 @@ const Sidebar: React.FC = () => {
 
   const filteredNavigation = navigation.filter(item => userRole && item.roles.includes(userRole));
 
+  // ✅ DASHBOARD ITEM (NO SECTION)
+  const dashboardItem = filteredNavigation.find(i => i.name === 'Dashboard');
+
   const sections: Section[] = [
-    { 
-      title: 'Dashboard', 
-      icon: Zap, 
-      defaultOpen: true,
-      items: filteredNavigation.filter(i => ['Dashboard', 'Bedrijven', 'Werknemers'].includes(i.name)) 
-    },
     { 
       title: 'Personeel', 
       icon: Activity, 
       defaultOpen: true,
-      items: filteredNavigation.filter(i => ['Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Verzuim Beheren'].includes(i.name)) 
+      items: filteredNavigation.filter(i => ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Verzuim Beheren'].includes(i.name)) 
     },
     { 
       title: 'Facturatie', 
       icon: Receipt, 
       defaultOpen: true,
-      items: filteredNavigation.filter(i => ['Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)) 
+      items: filteredNavigation.filter(i => ['Relaties', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)) 
     },
     { 
       title: 'Data & Exports', 
@@ -258,7 +258,7 @@ const Sidebar: React.FC = () => {
       title: 'Systeem', 
       icon: Settings, 
       defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Loonstroken', 'Audit Log', 'Instellingen'].includes(i.name)) 
+      items: filteredNavigation.filter(i => ['Bedrijven', 'Loonstroken', 'Audit Log', 'Instellingen'].includes(i.name)) 
     },
   ].filter(section => section.items.length > 0);
 
@@ -290,6 +290,14 @@ const Sidebar: React.FC = () => {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-2 px-4 py-6 overflow-y-auto">
+        {/* ✅ DASHBOARD - SOLO (NO SECTION) */}
+        {dashboardItem && (
+          <div className="pb-4 border-b border-gray-200">
+            <NavItem item={dashboardItem} collapsed={collapsed} />
+          </div>
+        )}
+
+        {/* ✅ SECTIONS */}
         {sections.map((section) => (
           <div key={section.title} className="space-y-1">
             <SectionHeader
