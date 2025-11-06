@@ -378,6 +378,15 @@ export interface EcosystemConfig {
   };
 }
 
+// ✅ NIEUW: User Settings interface
+export interface UserSettings {
+  id?: string;
+  userId: string;
+  defaultCompanyId?: string;  // Default bedrijf dat wordt geladen
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Alle overige interfaces blijven hetzelfde...
 export interface AuditLog {
   id: string;
