@@ -54,7 +54,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       title: 'Hoofdmenu',
       icon: Zap,
       items: [
-        { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], color: 'text-purple-600' },
+        { name: 'Dashboarddd', href: '/', icon: LayoutDashboard, roles: ['admin'], color: 'text-purple-600' },
         { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], color: 'text-blue-600' },
         { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'], color: 'text-green-600' },
       ]
