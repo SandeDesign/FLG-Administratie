@@ -3,18 +3,9 @@ import { useForm } from 'react-hook-form';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import { Copy } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
-import { 
-  createEmployee, 
-  updateEmployee, 
-  getCompanies, 
-  getBranches,
-  createEmployeeAuthAccount,
-  generateSecurePassword,
-  saveTemporaryCredentials
-} from '../../services/firebase';
+import { createEmployee, updateEmployee, getCompanies, getBranches } from '../../services/firebase';
 import { Employee, Company, Branch } from '../../types';
 
 interface SimplifiedEmployeeFormData {
@@ -31,8 +22,9 @@ interface SimplifiedEmployeeFormData {
   monthlySalary?: number;
   companyId: string;
   branchId: string;
+  
+  // ✅ NIEUW: Project companies
   projectCompanies?: string[];
-  createEmployeeAccount?: boolean;
 }
 
 interface EmployeeModalProps {
@@ -48,26 +40,24 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
   const [submitting, setSubmitting] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  
+  // ✅ NIEUW: State voor project companies
   const [projectCompanies, setProjectCompanies] = useState<Company[]>([]);
   const [selectedProjectCompanies, setSelectedProjectCompanies] = useState<string[]>([]);
-  const [generatedPassword, setGeneratedPassword] = useState<string>('');
-  const [showCredentials, setShowCredentials] = useState(false);
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<SimplifiedEmployeeFormData>({
     defaultValues: {
       contractType: 'permanent',
       paymentType: 'hourly',
       hoursPerWeek: 40,
-      createEmployeeAccount: true,
     }
   });
 
   const contractType = watch('contractType');
   const paymentType = watch('paymentType');
   const selectedCompanyId = watch('companyId');
-  const createEmployeeAccount = watch('createEmployeeAccount');
-  const emailValue = watch('email');
 
+  // ✅ NIEUW: Load companies en filter employer vs project
   useEffect(() => {
     const loadData = async () => {
       if (user) {
@@ -105,9 +95,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         monthlySalary: employee.salaryInfo.monthlySalary,
         companyId: employee.companyId,
         branchId: employee.branchId,
-        createEmployeeAccount: false,
       });
       
+      // ✅ NIEUW: Set project companies
       setSelectedProjectCompanies(employee.projectCompanies || []);
     } else if (companies.length > 0) {
       const defaultCompanyId = companies[0].id;
@@ -118,35 +108,18 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         companyId: defaultCompanyId,
         branchId: defaultBranchId,
         hoursPerWeek: 40,
-        createEmployeeAccount: true,
       });
       setSelectedProjectCompanies([]);
     }
   }, [employee, companies, branches, reset, isOpen]);
 
-  // ✅ Generate password when account creation is enabled
-  useEffect(() => {
-    if (createEmployeeAccount && !employee) {
-      const password = generateSecurePassword();
-      setGeneratedPassword(password);
-      setShowCredentials(true);
-    } else {
-      setGeneratedPassword('');
-      setShowCredentials(false);
-    }
-  }, [createEmployeeAccount, employee]);
-
+  // ✅ NIEUW: Handle project company selection
   const handleProjectCompanyToggle = (companyId: string) => {
     setSelectedProjectCompanies(prev => 
       prev.includes(companyId) 
         ? prev.filter(id => id !== companyId)
         : [...prev, companyId]
     );
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    success('Gekopieerd', `${label} gekopieerd naar klembord`);
   };
 
   const onSubmit = async (data: SimplifiedEmployeeFormData) => {
@@ -180,6 +153,8 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
       const employeeData = {
         companyId: data.companyId,
         branchId: data.branchId,
+        
+        // ✅ NIEUW: Project companies
         projectCompanies: selectedProjectCompanies,
         
         personalInfo: {
@@ -249,50 +224,15 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         updatedAt: new Date(),
       };
 
-      let employeeId: string;
-
       if (employee) {
         await updateEmployee(employee.id, user.uid, {
           ...employeeData,
           updatedAt: new Date(),
         });
-        employeeId = employee.id;
         success('Werknemer bijgewerkt', `${data.firstName} ${data.lastName} is succesvol bijgewerkt`);
       } else {
-        employeeId = await createEmployee(user.uid, employeeData);
+        await createEmployee(user.uid, employeeData);
         success('Werknemer aangemaakt', `${data.firstName} ${data.lastName} is succesvol aangemaakt`);
-      }
-
-      // ✅ Create employee account if requested
-      if (data.createEmployeeAccount && !employee && generatedPassword) {
-        try {
-          console.log('Creating employee account for:', data.email);
-          const newAuthUserId = await createEmployeeAuthAccount(
-            employeeId,
-            user.uid,
-            data.email,
-            generatedPassword
-          );
-
-          // ✅ NIEUW: Save credentials to Firestore for 24 hours
-          await saveTemporaryCredentials(
-            employeeId,
-            user.uid,
-            data.email,
-            generatedPassword
-          );
-
-          success(
-            'Account aangemaakt',
-            `Email: ${data.email}\nWachtwoord opgeslagen voor 24 uur`
-          );
-        } catch (accountError) {
-          console.error('Error creating employee account:', accountError);
-          showError(
-            'Account creatie fout',
-            'Werknemer is aangemaakt maar account creatie is mislukt. Probeer handmatig een account aan te maken.'
-          );
-        }
       }
 
       onSuccess();
@@ -308,8 +248,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
   const handleClose = () => {
     reset();
     setSelectedProjectCompanies([]);
-    setGeneratedPassword('');
-    setShowCredentials(false);
     onClose();
   };
 
@@ -395,7 +333,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
           </div>
         </div>
 
-        {/* Projectbedrijven */}
+        {/* ✅ NIEUW: Project companies sectie */}
         {projectCompanies.length > 0 && (
           <div className="space-y-4">
             <div>
@@ -551,71 +489,6 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
             />
           )}
         </div>
-
-        {/* ✅ NIEUW: Employee Account Creation - Met Firestore opslag */}
-        {!employee && (
-          <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-600 rounded-lg">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Account creatie</h3>
-            
-            <label className="flex items-center space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                {...register('createEmployeeAccount')}
-                className="w-4 h-4 rounded border-gray-300"
-              />
-              <div>
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Automatisch account aanmaken
-                </span>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  Werknemer krijgt automatisch inloggegevens (opgeslagen voor 24 uur)
-                </p>
-              </div>
-            </label>
-
-            {createEmployeeAccount && generatedPassword && showCredentials && (
-              <div className="p-4 bg-white dark:bg-gray-800 rounded border border-blue-300 dark:border-blue-600 space-y-3">
-                <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                  📧 E-mailadres:
-                </div>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-900 rounded font-mono text-sm text-gray-900 dark:text-gray-100 break-all">
-                    {emailValue}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(emailValue, 'E-mail')}
-                    className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex-shrink-0"
-                    title="Kopieëren"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-3">
-                  🔐 Wachtwoord (gegenereerd):
-                </div>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-900 rounded font-mono text-sm text-gray-900 dark:text-gray-100 break-all">
-                    {generatedPassword}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(generatedPassword, 'Wachtwoord')}
-                    className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex-shrink-0"
-                    title="Kopieëren"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
-                  ⏰ Dit wachtwoord wordt <strong>24 uur</strong> opgeslagen in de database. Je kan het daarna nog ophalen via de werknemerslijst.
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         <div className="flex gap-4">
           <Button type="button" variant="outline" onClick={handleClose} isFullWidth>
