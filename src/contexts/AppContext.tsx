@@ -108,7 +108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
-  // Main load function - NO calculateDashboardStats in dependencies
+  // Main load function - loads all data AND sets default company
   const loadData = useCallback(async () => {
     if (!user || !adminUserId) {
       console.log('Cannot load data - missing user or adminUserId:', { user: !!user, adminUserId });
@@ -140,7 +140,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setEmployees(employeesData);
       setBranches(branchesData);
 
-      // Load default company from database
+      // Load default company from database ONLY on initial load
       let defaultCompanyId: string | null = null;
 
       if (userRole === 'admin') {
@@ -196,7 +196,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [user, adminUserId, userRole, currentEmployeeId, calculateDashboardStats]);
 
-  // Main useEffect - ONLY depends on auth values
+  // Main useEffect - ONLY depends on auth values - runs ONCE on login
   useEffect(() => {
     if (user && adminUserId && (userRole === 'admin' || userRole === 'employee')) {
       loadData();
@@ -205,13 +205,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [user?.uid, adminUserId, userRole]); // ✅ FIXED: Only stable auth values
 
-  // Refresh function for manual refreshes
+  // ✅ REFRESH ONLY recalculates dashboard stats WITHOUT reloading data or changing company
   const refreshDashboardStats = useCallback(async () => {
-    if (user && adminUserId && userRole === 'admin') {
-      // Don't include loadData in dependencies - call it directly
-      await loadData();
+    if (userRole === 'admin' && companies.length > 0 && employees.length > 0 && branches.length > 0) {
+      console.log('Refreshing dashboard stats only - NOT reloading data');
+      await calculateDashboardStats(companies, employees, branches, adminUserId);
     }
-  }, [user, adminUserId, userRole, loadData]);
+  }, [userRole, companies, employees, branches, adminUserId, calculateDashboardStats]);
 
   return (
     <AppContext.Provider
