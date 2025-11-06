@@ -1,4 +1,5 @@
 // src/services/itknechtFactuurService.ts
+// COPY VAN WERKENDE UREN IMPORT - EXACT ZELFDE PATTERN
 
 export interface FactuurRegel {
   datum: string;
@@ -24,9 +25,6 @@ export interface FactuurImportRequest {
 export class ITKnechtFactuurService {
   private static WEBHOOK_URL = 'https://hook.eu2.make.com/223n5535ioeop4mjrooygys09al7c2ib';
 
-  /**
-   * Fetch factuurgegevens van ITKnecht via Make.com webhook
-   */
   static async fetchFactuurData(
     week: number,
     year: number,
@@ -53,57 +51,39 @@ export class ITKnechtFactuurService {
       throw new Error(`ITKnecht webhook failed: ${response.status} ${response.statusText}`);
     }
 
-    const responseData = await response.json();
-    
-    console.log('✅ Raw Make response:', responseData);
+    const data = await response.json();
+    console.log('✅ Raw response data:', data);
 
-    // Make stuurt array met 1 object [{week, monteur, regels, totalUren}]
-    let data: FactuurWeekData[] = [];
-    
-    if (Array.isArray(responseData)) {
-      data = responseData;
-    } else if (responseData && typeof responseData === 'object') {
-      data = [responseData];
-    }
-
-    if (!Array.isArray(data) || data.length === 0) {
+    if (!Array.isArray(data)) {
       throw new Error('Invalid response format from ITKnecht webhook');
     }
 
-    console.log('✅ Parsed factuur data:', data);
     return data as FactuurWeekData[];
   }
 
-  /**
-   * Transform factuurregels naar invoice items
-   */
   static transformToInvoiceItems(weekDataList: FactuurWeekData[]): any[] {
     const items: any[] = [];
 
     weekDataList.forEach(weekData => {
-      weekData.regels.forEach(regel => {
-        items.push({
-          description: `${regel.datum} ${regel.uren} ${regel.opdrachtgever} "${regel.locaties}"`,
-          quantity: 1,
-          rate: 0,
-          amount: 0
+      if (weekData.regels && Array.isArray(weekData.regels)) {
+        weekData.regels.forEach(regel => {
+          items.push({
+            description: `${regel.datum} ${regel.uren} ${regel.opdrachtgever} "${regel.locaties}"`,
+            quantity: 1,
+            rate: 0,
+            amount: 0
+          });
         });
-      });
+      }
     });
 
     return items;
   }
 
-  /**
-   * Get current year
-   */
   static getCurrentYear(): number {
     return new Date().getFullYear();
   }
 
-  /**
-   * Get current week number
-   */
   static getCurrentWeek(): number {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 1);
@@ -114,9 +94,6 @@ export class ITKnechtFactuurService {
     return week;
   }
 
-  /**
-   * Get week options (current week backwards)
-   */
   static getWeekOptions(count: number = 8): Array<{ week: number; label: string }> {
     const currentWeek = this.getCurrentWeek();
     const options = [];
