@@ -3,6 +3,7 @@
   "short_name": "Alloon",
   "description": "Complete HR Management System voor Alloon",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
@@ -12,37 +13,13 @@
       "src": "/Logo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/Logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/Logo.png",
-      "sizes": "540x720",
-      "type": "image/png"
-    }
-  ],
-  "categories": ["business", "productivity"],
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Open dashboard",
-      "url": "/",
-      "icons": [{ "src": "/Logo.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Timesheet",
-      "short_name": "Timesheet",
-      "description": "Log uren",
-      "url": "/timesheet",
-      "icons": [{ "src": "/Logo.png", "sizes": "192x192" }]
+      "purpose": "any"
     }
   ]
 }
