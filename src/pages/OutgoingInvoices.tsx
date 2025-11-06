@@ -13,7 +13,8 @@ import {
   AlertCircle,
   Clock,
   Edit,
-  Trash2
+  Trash2,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -25,6 +26,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import CreateInvoiceModal from '../components/invoices/CreateInvoiceModal';
 import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
 
+const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/ttdixmxlu9n7rvbnxgfomilht2ihllc2';
 
 const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
@@ -36,19 +38,24 @@ const OutgoingInvoices: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<OutgoingInvoice | null>(null);
+  const [sendingWebhook, setSendingWebhook] = useState<string | null>(null);
 
   const loadInvoices = useCallback(async () => {
-    if (!user) {
+    if (!user || !selectedCompany) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+      console.log('Loading invoices for company:', selectedCompany.id);
+      
       const invoicesData = await outgoingInvoiceService.getInvoices(
         user.uid, 
-        selectedCompany?.id
+        selectedCompany.id
       );
+      
+      console.log('Invoices loaded:', invoicesData);
       setInvoices(invoicesData);
     } catch (error) {
       console.error('Error loading invoices:', error);
@@ -61,6 +68,111 @@ const OutgoingInvoices: React.FC = () => {
   useEffect(() => {
     loadInvoices();
   }, [loadInvoices]);
+
+  // 🔥 SEND INVOICE TO WEBHOOK + UPDATE STATUS
+  const handleSendInvoice = async (invoiceId: string) => {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (!invoice) {
+      showError('Fout', 'Factuur niet gevonden');
+      return;
+    }
+
+    setSendingWebhook(invoiceId);
+    
+    try {
+      // 🔥 BUILD WEBHOOK PAYLOAD MET ALLE FACTUUR + BEDRIJF DATA
+      const webhookPayload = {
+        event: 'invoice.sent',
+        timestamp: new Date().toISOString(),
+        
+        invoice: {
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          status: 'sent',
+          amount: invoice.amount,
+          vatAmount: invoice.vatAmount,
+          totalAmount: invoice.totalAmount,
+          description: invoice.description,
+          notes: invoice.notes,
+          invoiceDate: invoice.invoiceDate.toISOString(),
+          dueDate: invoice.dueDate.toISOString(),
+          createdAt: invoice.createdAt.toISOString(),
+          updatedAt: invoice.updatedAt.toISOString(),
+          
+          client: {
+            name: invoice.clientName,
+            email: invoice.clientEmail,
+            address: {
+              street: invoice.clientAddress.street,
+              city: invoice.clientAddress.city,
+              zipCode: invoice.clientAddress.zipCode,
+              country: invoice.clientAddress.country
+            }
+          },
+          
+          items: invoice.items.map((item, index) => ({
+            lineNumber: index + 1,
+            description: item.description,
+            quantity: item.quantity,
+            rate: item.rate,
+            amount: item.amount
+          })),
+          
+          pdfUrl: invoice.pdfUrl || null
+        },
+        
+        company: {
+          id: selectedCompany?.id,
+          name: selectedCompany?.name,
+          kvk: selectedCompany?.kvk,
+          taxNumber: selectedCompany?.taxNumber,
+          email: selectedCompany?.contactInfo?.email,
+          phone: selectedCompany?.contactInfo?.phone,
+          address: {
+            street: selectedCompany?.address?.street,
+            city: selectedCompany?.address?.city,
+            zipCode: selectedCompany?.address?.zipCode,
+            country: selectedCompany?.address?.country
+          }
+        },
+        
+        user: {
+          id: user?.uid,
+          email: user?.email
+        }
+      };
+
+      console.log('🚀 SENDING INVOICE TO WEBHOOK:', webhookPayload);
+
+      // 🔥 SEND TO WEBHOOK
+      const response = await fetch(MAKE_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload),
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Webhook error: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      console.log('✅ WEBHOOK RESPONSE:', responseData);
+
+      // UPDATE STATUS IN FIREBASE
+      await outgoingInvoiceService.sendInvoice(invoiceId);
+      
+      success('✅ Factuur verstuurd!', 'Factuur naar Make.com en klant verzonden');
+      loadInvoices();
+    } catch (error) {
+      console.error('❌ WEBHOOK ERROR:', error);
+      showError('Fout bij versturen', `Kon factuur niet versturen: ${error instanceof Error ? error.message : 'Onbekend'}`);
+    } finally {
+      setSendingWebhook(null);
+    }
+  };
 
   const getStatusColor = (status: OutgoingInvoice['status']) => {
     switch (status) {
@@ -114,16 +226,6 @@ const OutgoingInvoices: React.FC = () => {
 
   const handleModalSuccess = () => {
     loadInvoices();
-  };
-
-  const handleSendInvoice = async (invoiceId: string) => {
-    try {
-      await outgoingInvoiceService.sendInvoice(invoiceId);
-      success('Factuur verstuurd', 'De factuur is succesvol verstuurd naar de klant');
-      loadInvoices();
-    } catch (error) {
-      showError('Fout bij versturen', 'Kon factuur niet versturen');
-    }
   };
 
   const handleMarkAsPaid = async (invoiceId: string) => {
@@ -244,18 +346,20 @@ const OutgoingInvoices: React.FC = () => {
         <div className="grid gap-4">
           {filteredInvoices.map((invoice) => {
             const StatusIcon = getStatusIcon(invoice.status);
+            const isLoadingWebhook = sendingWebhook === invoice.id;
+            
             return (
               <Card key={invoice.id}>
                 <div className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex items-center space-x-4 min-w-0">
                       <div className="flex-shrink-0">
                         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                           <Send className="h-6 w-6 text-blue-600" />
                         </div>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 flex-wrap">
                           <h3 className="text-lg font-medium text-gray-900">
                             {invoice.invoiceNumber}
                           </h3>
@@ -264,23 +368,24 @@ const OutgoingInvoices: React.FC = () => {
                             {getStatusText(invoice.status)}
                           </span>
                         </div>
-                        <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                        <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-500">
                           <div className="flex items-center">
-                            <User className="h-4 w-4 mr-1" />
-                            {invoice.clientName}
+                            <User className="h-4 w-4 mr-1 flex-shrink-0" />
+                            <span className="truncate">{invoice.clientName}</span>
                           </div>
                           <div className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
+                            <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
                             {invoice.invoiceDate.toLocaleDateString('nl-NL')}
                           </div>
                           <div className="flex items-center">
-                            <Euro className="h-4 w-4 mr-1" />
+                            <Euro className="h-4 w-4 mr-1 flex-shrink-0" />
                             €{invoice.totalAmount.toFixed(2)}
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap lg:flex-nowrap">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -297,14 +402,17 @@ const OutgoingInvoices: React.FC = () => {
                       >
                         Bewerken
                       </Button>
+                      
                       {invoice.status === 'draft' && (
                         <Button
                           variant="primary"
                           size="sm"
                           icon={Send}
                           onClick={() => handleSendInvoice(invoice.id!)}
+                          disabled={isLoadingWebhook}
+                          className={isLoadingWebhook ? 'opacity-50' : ''}
                         >
-                          Versturen
+                          {isLoadingWebhook ? 'Verzenden...' : 'Versturen'}
                         </Button>
                       )}
                       {invoice.status === 'sent' && (
