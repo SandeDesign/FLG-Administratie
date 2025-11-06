@@ -1,8 +1,11 @@
+// src/components/invoices/CreateInvoiceModal.tsx (AANGEPAST MET WERKBONNEN)
+
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import { outgoingInvoiceService, OutgoingInvoice } from '../../services/outgoingInvoiceService';
+import FactuurWerkbonnenImport from './FactuurWerkbonnenImport';
 import Button from '../ui/Button';
 import { useToast } from '../../hooks/useToast';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -36,6 +39,12 @@ interface InvoiceRelation {
   kvk?: string;
   taxNumber?: string;
 }
+
+// HARDCODED CONFIG VOOR WERKBONNEN FACTUURATIE
+const WERKBONNEN_FACTUUR_CONFIG = {
+  companyId: 'FmbKRF1sL3waJ8zesz42', // IT Knecht
+  clientId: 'A6lpSEtH0LMQKUgSy6o'    // Riset BV
+};
 
 const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
   isOpen,
@@ -108,6 +117,11 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Check if this is werkbonnen factuur
+  const isWerkbonnenFactuur = 
+    selectedCompany?.id === WERKBONNEN_FACTUUR_CONFIG.companyId && 
+    formData.clientId === WERKBONNEN_FACTUUR_CONFIG.clientId;
+
   const calculateItemAmount = (quantity: number, rate: number) => quantity * rate;
 
   const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
@@ -161,6 +175,11 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
     const year = new Date().getFullYear();
     const timestamp = Date.now().toString().slice(-6);
     return `INV-${year}-${timestamp}`;
+  };
+
+  // HANDLER VOOR WERKBONNEN IMPORT
+  const handleImportWerkbonnen = (importedItems: any[]) => {
+    setItems([...items, ...importedItems]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -266,325 +285,172 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                 </button>
 
                 {isRelationsOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
-                    {relations.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500 text-sm">
-                        Geen relaties gevonden. Maak eerst relaties aan!
-                      </div>
-                    ) : (
-                      relations.map(relation => (
-                        <button
-                          key={relation.id}
-                          type="button"
-                          onClick={() => handleSelectRelation(relation)}
-                          className="w-full text-left px-4 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="font-medium text-gray-900">{relation.name}</div>
-                          <div className="text-xs text-gray-500">{relation.email}</div>
-                        </button>
-                      ))
-                    )}
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                    <div className="max-h-48 overflow-y-auto">
+                      {relations.length === 0 ? (
+                        <div className="p-3 text-sm text-gray-500">
+                          Geen relaties gevonden
+                        </div>
+                      ) : (
+                        relations.map(relation => (
+                          <button
+                            key={relation.id}
+                            type="button"
+                            onClick={() => handleSelectRelation(relation)}
+                            className="w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="font-medium text-gray-900">{relation.name}</div>
+                            <div className="text-xs text-gray-500">{relation.email}</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* KLANT GEGEVENS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Klantnaam *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.clientName}
-                  onChange={(e) => setFormData({...formData, clientName: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Bedrijfsnaam of naam"
+            {/* WERKBONNEN SECTION - ALLEEN VOOR SPECIFIEKE BEDRIJF/KLANT */}
+            {isWerkbonnenFactuur && (
+              <div className="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+                <h3 className="font-semibold text-blue-900 mb-3">
+                  Werkbonnen Factuurgegevens
+                </h3>
+                <FactuurWerkbonnenImport
+                  companyId={selectedCompany!.id}
+                  onImport={handleImportWerkbonnen}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  E-mailadres
-                </label>
-                <input
-                  type="email"
-                  value={formData.clientEmail}
-                  onChange={(e) => setFormData({...formData, clientEmail: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="klant@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Telefoon
-                </label>
-                <input
-                  type="tel"
-                  value={formData.clientPhone}
-                  onChange={(e) => setFormData({...formData, clientPhone: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="+31 6 12345678"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  KvK
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientKvk}
-                  onChange={(e) => setFormData({...formData, clientKvk: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="12345678"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Belasting Nummer
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientTaxNumber}
-                  onChange={(e) => setFormData({...formData, clientTaxNumber: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="NL123456789B01"
-                />
-              </div>
-            </div>
+            )}
 
-            {/* ADRES */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Adres
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientAddress.street}
-                  onChange={(e) => setFormData({
-                    ...formData, 
-                    clientAddress: {...formData.clientAddress, street: e.target.value}
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Straat en huisnummer"
-                />
-              </div>
+            {/* FACTUUR VELDEN */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Postcode
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientAddress.zipCode}
-                  onChange={(e) => setFormData({
-                    ...formData, 
-                    clientAddress: {...formData.clientAddress, zipCode: e.target.value}
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="1234 AB"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Plaats
-                </label>
-                <input
-                  type="text"
-                  value={formData.clientAddress.city}
-                  onChange={(e) => setFormData({
-                    ...formData, 
-                    clientAddress: {...formData.clientAddress, city: e.target.value}
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Amsterdam"
-                />
-              </div>
-            </div>
-
-            {/* FACTUUR DETAILS */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Factuurdatum
                 </label>
                 <input
                   type="date"
-                  required
                   value={formData.invoiceDate}
-                  onChange={(e) => setFormData({...formData, invoiceDate: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Vervaldatum
                 </label>
                 <input
                   type="date"
-                  required
                   value={formData.dueDate}
-                  onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  PO nummer
-                </label>
-                <input
-                  type="text"
-                  value={formData.purchaseOrder}
-                  onChange={(e) => setFormData({...formData, purchaseOrder: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="PO-123456"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Project Code
-                </label>
-                <input
-                  type="text"
-                  value={formData.projectCode}
-                  onChange={(e) => setFormData({...formData, projectCode: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="PROJECT-001"
                 />
               </div>
             </div>
 
             {/* ITEMS */}
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Factuurregels
-                </label>
-                <Button type="button" variant="ghost" size="sm" icon={Plus} onClick={addItem}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-900">Factuurregels</h3>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  icon={Plus}
+                  onClick={addItem}
+                >
                   Regel toevoegen
                 </Button>
               </div>
-              
-              <div className="space-y-3">
+
+              <div className="space-y-2">
                 {items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-3 items-end">
-                    <div className="col-span-5">
-                      <input
-                        type="text"
-                        placeholder="Beschrijving"
-                        value={item.description}
-                        onChange={(e) => updateItem(index, 'description', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
-                      />
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Beschrijving"
+                      value={item.description}
+                      onChange={(e) => updateItem(index, 'description', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Hoeveelheid"
+                      value={item.quantity}
+                      onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Tarief"
+                      value={item.rate}
+                      onChange={(e) => updateItem(index, 'rate', Number(e.target.value))}
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                    <div className="w-24 px-3 py-2 bg-gray-50 rounded-lg text-sm font-medium">
+                      €{item.amount.toFixed(2)}
                     </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        placeholder="Aantal"
-                        min="0"
-                        step="0.01"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        placeholder="Prijs"
-                        min="0"
-                        step="0.01"
-                        value={item.rate}
-                        onChange={(e) => updateItem(index, 'rate', parseFloat(e.target.value) || 0)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="text"
-                        value={`€${item.amount.toFixed(2)}`}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      {items.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          icon={Trash2}
-                          onClick={() => removeItem(index)}
-                          className="text-red-600 hover:text-red-700"
-                        />
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* TOTAAL */}
-            <div className="bg-gray-50 p-4 rounded-lg">
+            {/* TOTALEN */}
+            <div className="border-t pt-4">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Subtotaal:</span>
-                  <span>€{subtotal.toFixed(2)}</span>
+                  <span className="text-gray-600">Subtotaal:</span>
+                  <span className="font-medium">€{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>BTW (21%):</span>
-                  <span>€{vatAmount.toFixed(2)}</span>
+                  <span className="text-gray-600">BTW (21%):</span>
+                  <span className="font-medium">€{vatAmount.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                <div className="flex justify-between text-lg font-bold pt-2 border-t">
                   <span>Totaal:</span>
                   <span>€{total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            {/* BESCHRIJVING & NOTITIES */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Beschrijving
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Extra informatie over de factuur..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notities (intern)
-                </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Interne notities..."
-                />
-              </div>
+            {/* NOTITIES */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Opmerkingen
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
           </form>
         </div>
 
-        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
-          <Button type="button" variant="ghost" onClick={onClose}>
+        {/* BUTTONS */}
+        <div className="flex gap-3 p-6 border-t border-gray-200 justify-end">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+          >
             Annuleren
           </Button>
           <Button
+            variant="primary"
             onClick={handleSubmit}
             disabled={loading}
-            className="min-w-24"
+            className={loading ? 'opacity-50' : ''}
           >
-            {loading ? 'Opslaan...' : editingInvoice ? 'Bijwerken' : 'Aanmaken'}
+            {loading ? 'Opslaan...' : editingInvoice ? 'Bijwerken' : 'Factuur Aanmaken'}
           </Button>
         </div>
       </div>
