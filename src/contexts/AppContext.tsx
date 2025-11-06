@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { Company, Employee, Branch, DashboardStats } from '../types';
 import { getCompanies, getEmployees, getBranches, getPendingLeaveApprovals, getUserSettings } from '../services/firebase'; // Assuming getPendingTimesheets is also in firebase.ts or a similar service
@@ -35,6 +35,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     pendingApprovals: 0,
   });
 
+  // ✅ Use ref to track if we've already loaded to prevent duplicate calls
+  const hasLoadedRef = useRef(false);
 
   const calculateDashboardStats = useCallback(async (
     companiesData: Company[],
@@ -184,20 +186,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [user, adminUserId, userRole, currentEmployeeId, calculateDashboardStats]);
 
+  // ✅ FIXED: Only load once when user/adminUserId changes - NOT on every render
   useEffect(() => {
     if (user && adminUserId && (userRole === 'admin' || userRole === 'employee')) {
-      loadData();
+      // Only load if we haven't loaded yet OR if the adminUserId changed
+      if (!hasLoadedRef.current || hasLoadedRef.current !== adminUserId) {
+        hasLoadedRef.current = adminUserId;
+        loadData();
+      }
     } else {
       setLoading(false);
     }
-  }, [user, adminUserId, userRole, currentEmployeeId]);
+  }, [user?.uid, adminUserId, userRole]); // ✅ FIXED: Only depend on stable values
 
   const refreshDashboardStats = useCallback(async () => {
     if (user && adminUserId && userRole === 'admin') {
       await loadData();
     }
   }, [user, adminUserId, userRole, loadData]);
-
 
   return (
     <AppContext.Provider
