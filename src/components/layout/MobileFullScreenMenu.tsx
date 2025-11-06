@@ -20,7 +20,8 @@ import {
   Receipt,
   Send,
   FolderOpen,
-  TrendingUp
+  TrendingUp,
+  UserCheck,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -52,36 +53,36 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
   const menuCategories: MenuCategory[] = [
     {
       title: 'Hoofdmenu',
-      icon: Zap,
+      icon: LayoutDashboard,
       items: [
-        { name: 'Dashboarddd', href: '/', icon: LayoutDashboard, roles: ['admin'], color: 'text-purple-600' },
-        { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], color: 'text-blue-600' },
-        { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'], color: 'text-green-600' },
+        { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], color: 'text-purple-600' },
       ]
     },
     {
-      title: 'Tijd & Aanwezigheid',
+      title: 'Personeel',
       icon: Activity,
       items: [
-        { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee'], color: 'text-orange-600' },
-        { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin'], color: 'text-indigo-600' },
-        { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin'], color: 'text-teal-600' },
-        { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin'], color: 'text-red-600' },
+        { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'], color: 'text-green-600' },
+        { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'], color: 'text-orange-600' },
+        { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin', 'manager'], color: 'text-indigo-600' },
+        { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'manager'], color: 'text-teal-600' },
+        { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'], color: 'text-red-600' },
       ]
     },
     {
       title: 'Facturatie',
       icon: Receipt,
       items: [
+        { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], color: 'text-sky-600' },
         { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], color: 'text-emerald-600' },
         { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], color: 'text-amber-600' },
       ]
     },
     {
-      title: 'Data & Bestanden',
+      title: 'Data & Exports',
       icon: TrendingUp,
       items: [
-        { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin'], color: 'text-cyan-600' },
+        { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin', 'manager'], color: 'text-cyan-600' },
         { name: 'Drive Bestanden', href: '/drive-files', icon: FolderOpen, roles: ['admin'], color: 'text-violet-600' },
       ]
     },
@@ -89,9 +90,10 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       title: 'Systeem',
       icon: Settings,
       items: [
-        { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee'], color: 'text-cyan-600' },
+        { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], color: 'text-blue-600' },
+        { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], color: 'text-cyan-600' },
         { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], color: 'text-slate-600' },
-        { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee'], color: 'text-gray-600' },
+        { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], color: 'text-gray-600' },
       ]
     }
   ];
@@ -124,7 +126,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-blue-600">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
                 <span className="text-blue-600 font-bold text-lg">A</span>
               </div>
               <h2 className="text-xl font-bold text-white">Menu</h2>
