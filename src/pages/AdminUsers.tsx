@@ -25,7 +25,8 @@ import {
   deleteDoc, 
   query, 
   where,
-  Timestamp
+  Timestamp,
+  addDoc
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -49,6 +50,12 @@ const AdminUsers: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [showNewUserModal, setShowNewUserModal] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    email: '',
+    displayName: '',
+    role: 'employee' as const
+  });
 
   const loadUsers = useCallback(async () => {
     if (!user) return;
@@ -74,9 +81,9 @@ const AdminUsers: React.FC = () => {
           email: data.email || '',
           displayName: data.displayName || '',
           isActive: data.isActive !== false,
-          lastLoginAt: data.lastLoginAt?.toDate(),
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate()
+          lastLoginAt: data.lastLoginAt?.toDate ? data.lastLoginAt.toDate() : undefined,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : undefined,
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : undefined
         };
       });
 
@@ -156,6 +163,33 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const handleCreateNewUser = async () => {
+    if (!newUserData.email || !newUserData.displayName) {
+      showError('Validatie fout', 'Email en naam zijn verplicht');
+      return;
+    }
+
+    try {
+      const usersCollection = collection(db, 'users');
+      await addDoc(usersCollection, {
+        email: newUserData.email,
+        displayName: newUserData.displayName,
+        role: newUserData.role,
+        isActive: true,
+        createdAt: Timestamp.fromDate(new Date()),
+        updatedAt: Timestamp.fromDate(new Date())
+      });
+
+      success('Gebruiker aangemaakt', `${newUserData.displayName} is succesvol aangemaakt`);
+      setShowNewUserModal(false);
+      setNewUserData({ email: '', displayName: '', role: 'employee' });
+      loadUsers();
+    } catch (error) {
+      console.error('Error creating user:', error);
+      showError('Fout bij aanmaken', 'Kon gebruiker niet aanmaken');
+    }
+  };
+
   const getRoleColor = (role: UserRole['role']) => {
     switch (role) {
       case 'admin': return 'text-red-600 bg-red-100';
@@ -200,10 +234,83 @@ const AdminUsers: React.FC = () => {
             Beheer gebruikersrollen en toegang ({users.length} gebruikers gevonden)
           </p>
         </div>
-        <Button icon={Plus}>
+        <button
+          onClick={() => setShowNewUserModal(true)}
+          className="mt-4 sm:mt-0 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+        >
+          <Plus className="h-5 w-5" />
           Nieuwe Gebruiker
-        </Button>
+        </button>
       </div>
+
+      {/* Nieuwe Gebruiker Modal */}
+      {showNewUserModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <div className="p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4">Nieuwe Gebruiker Aanmaken</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newUserData.email}
+                    onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="gebruiker@voorbeeld.nl"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Naam
+                  </label>
+                  <input
+                    type="text"
+                    value={newUserData.displayName}
+                    onChange={(e) => setNewUserData({ ...newUserData, displayName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Jan Jansen"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rol
+                  </label>
+                  <select
+                    value={newUserData.role}
+                    onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value as 'admin' | 'manager' | 'employee' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="employee">Werknemer</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Administrator</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setShowNewUserModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                >
+                  Annuleren
+                </button>
+                <button
+                  onClick={handleCreateNewUser}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Aanmaken
+                </button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Debug Info */}
       {users.length === 0 && (
@@ -394,21 +501,15 @@ const AdminUsers: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          icon={Edit}
-                        >
+                        <button className="text-blue-600 hover:text-blue-900 font-medium">
                           Bewerken
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          icon={Trash2}
+                        </button>
+                        <button
                           onClick={() => handleDeleteUser(systemUser.id, systemUser.email || 'Onbekend')}
+                          className="text-red-600 hover:text-red-900 font-medium"
                         >
                           Verwijderen
-                        </Button>
+                        </button>
                       </div>
                     </td>
                   </tr>
