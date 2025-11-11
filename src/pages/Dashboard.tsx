@@ -351,6 +351,134 @@ const Dashboard: React.FC = () => {
     return colors[color] || colors.blue;
   };
 
+  // ============ DYNAMISCHE LAYOUT CHECK ============
+  const isProjectCompany = selectedCompany?.type === 'project';
+
+  // ============ PROJECT COMPANY DASHBOARD ============
+  if (isProjectCompany) {
+    return (
+      <div className="space-y-3 sm:space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Project Dashboard</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">
+            {selectedCompany ? `${selectedCompany.name}` : 'Projectbeheer'}
+          </p>
+        </div>
+
+        {/* Priority Alert */}
+        {pendingCount > 0 && (
+          <div
+            onClick={() => {
+              if (pendingItems.length > 0) {
+                pendingItems[0].action();
+              }
+            }}
+            className="p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors flex items-start gap-3"
+          >
+            <Bell className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-orange-900">
+                {pendingCount} item{pendingCount !== 1 ? 's' : ''} wachten op actie
+              </p>
+              <p className="text-xs text-orange-700 mt-0.5">Tap hier om te beginnen</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-orange-600 flex-shrink-0" />
+          </div>
+        )}
+
+        {/* PROJECT QUICK ACTIONS - Productie, Statistieken, Facturatie */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* PRODUCTIE */}
+          <button
+            onClick={() => navigate('/projects')}
+            className="p-4 rounded-lg border border-blue-200 hover:shadow-md transition-all flex flex-col items-start gap-3 bg-blue-50 group"
+          >
+            <div className="p-2 rounded-lg bg-blue-100">
+              <Briefcase className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Productie</p>
+              <p className="text-xs text-gray-600 mt-1">Projecten beheren</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-blue-600 mt-auto self-end group-hover:translate-x-1 transition-transform" />
+          </button>
+
+          {/* STATISTIEKEN */}
+          <button
+            onClick={() => navigate('/statistics')}
+            className="p-4 rounded-lg border border-purple-200 hover:shadow-md transition-all flex flex-col items-start gap-3 bg-purple-50 group"
+          >
+            <div className="p-2 rounded-lg bg-purple-100">
+              <Zap className="h-6 w-6 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Statistieken</p>
+              <p className="text-xs text-gray-600 mt-1">Projectoverzicht</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-purple-600 mt-auto self-end group-hover:translate-x-1 transition-transform" />
+          </button>
+
+          {/* FACTURATIE */}
+          <button
+            onClick={() => navigate('/outgoing-invoices')}
+            className="p-4 rounded-lg border border-green-200 hover:shadow-md transition-all flex flex-col items-start gap-3 bg-green-50 group"
+          >
+            <div className="p-2 rounded-lg bg-green-100">
+              <Send className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Facturatie</p>
+              <p className="text-xs text-gray-600 mt-1">Facturen beheren</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-green-600 mt-auto self-end group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+
+        {/* PROJECT STATS */}
+        <Card>
+          <div className="p-3 sm:p-4 border-b border-gray-100">
+            <h2 className="text-sm sm:text-base font-semibold text-gray-900">Projectoverzicht</h2>
+          </div>
+
+          <div className="p-3 sm:p-4 space-y-2">
+            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-700">Actieve Projecten</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">-</span>
+            </div>
+
+            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-700">Afgerond</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">-</span>
+            </div>
+
+            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-700">In Progress</span>
+              </div>
+              <span className="text-sm font-semibold text-orange-600">-</span>
+            </div>
+          </div>
+        </Card>
+
+        {/* Info Footer */}
+        <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+          <p className="text-xs sm:text-sm text-blue-900">
+            Dashboard geupdate op: {new Date().toLocaleDateString('nl-NL')} om {new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ============ EMPLOYER COMPANY DASHBOARD (ORIGINEEL) ============
   return (
     <div className="space-y-3 sm:space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
       {/* Header */}
@@ -548,7 +676,7 @@ const Dashboard: React.FC = () => {
       {/* Info Footer */}
       <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
         <p className="text-xs sm:text-sm text-blue-900">
-          Dashboard geupdate op: {new Date().toLocaleDateString('nl-NL')} om {new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+          Dashboard geupdate op: {new Date().toLocaleDateString('nl-NL')} om {new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-minute' })}
         </p>
       </div>
     </div>
