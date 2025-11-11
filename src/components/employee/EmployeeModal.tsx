@@ -34,6 +34,28 @@ interface EmployeeModalProps {
   employee?: Employee | null;
 }
 
+// ✅ NIEUW: Helper functie voor datum conversie
+const convertDateToISO = (date: any): string => {
+  if (!date) return '';
+  
+  // Als het al een string is
+  if (typeof date === 'string') {
+    return date.split('T')[0]; // Geeft YYYY-MM-DD
+  }
+  
+  // Als het een Firebase Timestamp is
+  if (date.toDate && typeof date.toDate === 'function') {
+    return date.toDate().toISOString().split('T')[0];
+  }
+  
+  // Als het een Date object is
+  if (date instanceof Date) {
+    return date.toISOString().split('T')[0];
+  }
+  
+  return '';
+};
+
 const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSuccess, employee }) => {
   const { user } = useAuth();
   const { success, error: showError } = useToast();
@@ -85,8 +107,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
         firstName: employee.personalInfo.firstName,
         lastName: employee.personalInfo.lastName,
         email: employee.personalInfo.contactInfo.email,
-        startDate: employee.contractInfo.startDate.toISOString().split('T')[0],
-        endDate: employee.contractInfo.endDate?.toISOString().split('T')[0],
+        // ✅ FIX: Gebruik helper functie voor datum conversie
+        startDate: convertDateToISO(employee.contractInfo.startDate),
+        endDate: employee.contractInfo.endDate ? convertDateToISO(employee.contractInfo.endDate) : '',
         contractType: employee.contractInfo.type,
         hoursPerWeek: employee.contractInfo.hoursPerWeek,
         position: employee.contractInfo.position,
@@ -490,13 +513,22 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
           )}
         </div>
 
+        {/* ✅ FIX: Verwijder isFullWidth en isLoading props, gebruik native HTML attributes */}
         <div className="flex gap-4">
-          <Button type="button" variant="outline" onClick={handleClose} isFullWidth>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+          >
             Annuleren
-          </Button>
-          <Button type="submit" isLoading={submitting} isFullWidth>
-            {employee ? 'Bijwerken' : 'Aanmaken'}
-          </Button>
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
+          >
+            {submitting ? 'Bezig met opslaan...' : (employee ? 'Bijwerken' : 'Aanmaken')}
+          </button>
         </div>
       </form>
     </Modal>
