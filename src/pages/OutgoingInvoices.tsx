@@ -48,6 +48,7 @@ const OutgoingInvoices: React.FC = () => {
   const [isRelationsOpen, setIsRelationsOpen] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [formLoading, setFormLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [formData, setFormData] = useState({
     clientId: '',
@@ -633,85 +634,64 @@ const OutgoingInvoices: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Facturen</h1>
-        <p className="text-sm text-gray-600 mt-2">
-          {filteredInvoices.length} factuur{filteredInvoices.length !== 1 ? 'en' : ''}
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-4 sm:p-6 bg-white">
-          <div className="space-y-2">
-            <p className="text-xs sm:text-sm font-medium text-gray-600">Totaal</p>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">€{totalAmount.toFixed(2)}</p>
-            <p className="text-xs text-gray-500">{filteredInvoices.length} factuur</p>
-          </div>
-        </Card>
-
-        <Card className="p-4 sm:p-6 bg-gray-50 border border-gray-200">
-          <div className="space-y-2">
-            <p className="text-xs sm:text-sm font-medium text-gray-600">Concept</p>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{draftCount}</p>
-            <p className="text-xs text-gray-500">In voorbereiding</p>
-          </div>
-        </Card>
-
-        <Card className="p-4 sm:p-6 bg-blue-50 border border-blue-200">
-          <div className="space-y-2">
-            <p className="text-xs sm:text-sm font-medium text-blue-700">Verstuurd</p>
-            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{sentCount}</p>
-            <p className="text-xs text-blue-600">Wachten op betaling</p>
-          </div>
-        </Card>
-
-        <Card className="p-4 sm:p-6 bg-green-50 border border-green-200">
-          <div className="space-y-2">
-            <p className="text-xs sm:text-sm font-medium text-green-700">Betaald</p>
-            <p className="text-2xl sm:text-3xl font-bold text-green-600">{paidCount}</p>
-            <p className="text-xs text-green-600">Compleet</p>
-          </div>
-        </Card>
-      </div>
-
-      {/* Search and Filter */}
-      <Card className="p-4 sm:p-5 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Zoeken op naam of nummer..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-10 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-32 sm:pb-6">
+      {/* Header with Filter Button */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Facturen</h1>
+          <p className="text-sm text-gray-600 mt-2">
+            {filteredInvoices.length} factuur{filteredInvoices.length !== 1 ? 'en' : ''}
+          </p>
         </div>
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          className="px-3 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors bg-white"
-        >
-          <option value="all">Alle statussen</option>
-          <option value="draft">Concept</option>
-          <option value="sent">Verstuurd</option>
-          <option value="paid">Betaald</option>
-          <option value="overdue">Vervallen</option>
-        </select>
-        <Button onClick={handleCreateNew} icon={Plus} size="sm">
-          Nieuw
-        </Button>
-      </Card>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            variant="secondary"
+            size="sm"
+            icon={showFilters ? X : Search}
+          >
+            {showFilters ? 'Sluiten' : 'Filter'}
+          </Button>
+          <Button onClick={handleCreateNew} icon={Plus} size="sm">
+            Nieuw
+          </Button>
+        </div>
+      </div>
+
+      {/* Search and Filter - Collapsible */}
+      {showFilters && (
+        <Card className="p-4 sm:p-5 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Zoeken op naam of nummer..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-10 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors bg-white"
+          >
+            <option value="all">Alle statussen</option>
+            <option value="draft">Concept</option>
+            <option value="sent">Verstuurd</option>
+            <option value="paid">Betaald</option>
+            <option value="overdue">Vervallen</option>
+          </select>
+        </Card>
+      )}
 
       {/* Invoice List */}
       {filteredInvoices.length === 0 ? (
@@ -883,6 +863,32 @@ const OutgoingInvoices: React.FC = () => {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Stats Bar at Bottom */}
+      {filteredInvoices.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 sm:px-6 py-3">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+              <div>
+                <p className="text-gray-600 font-medium">Totaal</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">€{totalAmount.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 font-medium">Concept</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">{draftCount}</p>
+              </div>
+              <div>
+                <p className="text-blue-600 font-medium">Verstuurd</p>
+                <p className="text-lg sm:text-xl font-bold text-blue-600 mt-1">{sentCount}</p>
+              </div>
+              <div>
+                <p className="text-green-600 font-medium">Betaald</p>
+                <p className="text-lg sm:text-xl font-bold text-green-600 mt-1">{paidCount}</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
