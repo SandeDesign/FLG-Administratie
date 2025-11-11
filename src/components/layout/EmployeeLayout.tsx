@@ -51,7 +51,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-50">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-40">
         <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-8 w-auto" />
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -68,7 +68,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
       <div className="flex h-screen md:h-auto md:min-h-screen">
         {/* Sidebar */}
         <div
-          className={`fixed md:relative left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-40 md:z-0 ${
+          className={`fixed md:relative left-0 top-16 md:top-0 h-[calc(100vh-64px)] md:h-screen w-80 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-30 md:z-0 ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
         >
@@ -82,7 +82,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
@@ -91,9 +91,9 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold text-base transition-all duration-200 ${
                     isActive
-                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600'
+                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 shadow-sm'
                       : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent hover:text-gray-900'
                   }`}
                 >
@@ -105,13 +105,13 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
           </nav>
 
           {/* User Info & Logout */}
-          <div className="border-t border-gray-200 p-4 space-y-4">
+          <div className="border-t border-gray-200 p-4 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
                 <User className="h-6 w-6 text-white" />
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-gray-900 truncate">
                   {getFirstName()}
                 </p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
@@ -119,7 +119,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
             </div>
             <Button
               onClick={signOut}
-              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-all"
               size="sm"
             >
               <LogOut className="h-4 w-4 mr-2" />
@@ -138,7 +138,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
 
         {/* Main Content */}
         <main className="flex-1 w-full md:w-auto mt-16 md:mt-0">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
             {children}
           </div>
         </main>
