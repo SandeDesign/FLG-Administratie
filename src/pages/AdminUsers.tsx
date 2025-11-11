@@ -9,7 +9,8 @@ import {
   Mail,
   Ban,
   UserCheck,
-  AlertCircle
+  AlertCircle,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Card from '../components/ui/Card';
@@ -205,6 +206,15 @@ const AdminUsers: React.FC = () => {
       : 'text-red-600 bg-red-100';
   };
 
+  const getRoleBadge = (role: UserRole['role']) => {
+    switch (role) {
+      case 'admin': return 'Admin';
+      case 'manager': return 'Manager';
+      case 'employee': return 'Werknemer';
+      default: return role;
+    }
+  };
+
   const formatDate = (date: Date | undefined) => {
     if (!date) return 'Onbekend';
     return new Intl.DateTimeFormat('nl-NL', {
@@ -213,6 +223,14 @@ const AdminUsers: React.FC = () => {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
+    }).format(date);
+  };
+
+  const formatDateShort = (date: Date | undefined) => {
+    if (!date) return 'Onbekend';
+    return new Intl.DateTimeFormat('nl-NL', {
+      day: 'numeric',
+      month: 'short'
     }).format(date);
   };
 
@@ -225,66 +243,66 @@ const AdminUsers: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-3 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
+      {/* Header - Mobile Optimized */}
+      <div className="space-y-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gebruikersbeheer</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Beheer gebruikersrollen en toegang ({users.length} gebruikers gevonden)
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gebruikersbeheer</h1>
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">
+            Beheer rollen en toegang • {users.length} gebruikers
           </p>
         </div>
         <button
           onClick={() => setShowNewUserModal(true)}
-          className="mt-4 sm:mt-0 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm sm:text-base transition-colors"
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
           Nieuwe Gebruiker
         </button>
       </div>
 
       {/* Nieuwe Gebruiker Modal */}
       {showNewUserModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
-            <div className="p-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Nieuwe Gebruiker Aanmaken</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Nieuwe Gebruiker</h2>
               
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
                     Email
                   </label>
                   <input
                     type="email"
                     value={newUserData.email}
                     onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="gebruiker@voorbeeld.nl"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
                     Naam
                   </label>
                   <input
                     type="text"
                     value={newUserData.displayName}
                     onChange={(e) => setNewUserData({ ...newUserData, displayName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                     placeholder="Jan Jansen"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
                     Rol
                   </label>
                   <select
                     value={newUserData.role}
                     onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value as 'admin' | 'manager' | 'employee' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
                     <option value="employee">Werknemer</option>
                     <option value="manager">Manager</option>
@@ -293,16 +311,16 @@ const AdminUsers: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-2 sm:gap-3 mt-6">
                 <button
                   onClick={() => setShowNewUserModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                  className="flex-1 px-3 sm:px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-sm sm:text-base"
                 >
                   Annuleren
                 </button>
                 <button
                   onClick={handleCreateNewUser}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  className="flex-1 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm sm:text-base"
                 >
                   Aanmaken
                 </button>
@@ -314,97 +332,90 @@ const AdminUsers: React.FC = () => {
 
       {/* Debug Info */}
       {users.length === 0 && (
-        <Card className="p-4 bg-yellow-50 border-yellow-200">
-          <div className="flex items-start space-x-3">
-            <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-            <div className="text-yellow-800">
+        <Card className="p-3 sm:p-4 bg-yellow-50 border border-yellow-200">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="text-yellow-800 text-xs sm:text-sm">
               <strong>Debug Info:</strong>
-              <ul className="mt-2 space-y-1 text-sm">
-                <li>• Geen gebruikers gevonden in de 'users' collectie</li>
-                <li>• Controleer of Firebase verbinding werkt</li>
-                <li>• Controleer of er documenten in de 'users' collectie staan</li>
-                <li>• Check de browser console voor errors</li>
+              <ul className="mt-2 space-y-1">
+                <li>• Geen gebruikers in 'users' collectie</li>
+                <li>• Check Firebase verbinding</li>
+                <li>• Console voor errors</li>
               </ul>
             </div>
           </div>
         </Card>
       )}
 
-      {/* Filters */}
+      {/* Filters - Mobile Optimized */}
       <Card>
-        <div className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Zoek op naam, email of UID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            
-            <div className="flex space-x-2">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">Alle rollen</option>
-                <option value="admin">Administrator</option>
-                <option value="manager">Manager</option>
-                <option value="employee">Werknemer</option>
-              </select>
-            </div>
+        <div className="p-3 sm:p-6 space-y-3 sm:space-y-0 sm:flex sm:gap-4 sm:items-center">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Zoek gebruiker..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
+          
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="w-full sm:w-auto px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="all">Alle rollen</option>
+            <option value="admin">Administrator</option>
+            <option value="manager">Manager</option>
+            <option value="employee">Werknemer</option>
+          </select>
         </div>
       </Card>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center">
-            <Users className="h-8 w-8 text-blue-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Totaal</p>
-              <p className="text-xl font-bold text-gray-900">{users.length}</p>
+      {/* Stats - Mobile Optimized Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Totaal</p>
+              <p className="text-lg sm:text-xl font-bold text-gray-900">{users.length}</p>
             </div>
           </div>
         </Card>
         
-        <Card className="p-4">
-          <div className="flex items-center">
-            <UserCheck className="h-8 w-8 text-green-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Actief</p>
-              <p className="text-xl font-bold text-gray-900">
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <UserCheck className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Actief</p>
+              <p className="text-lg sm:text-xl font-bold text-gray-900">
                 {users.filter(u => u.isActive !== false).length}
               </p>
             </div>
           </div>
         </Card>
         
-        <Card className="p-4">
-          <div className="flex items-center">
-            <Shield className="h-8 w-8 text-red-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Admins</p>
-              <p className="text-xl font-bold text-gray-900">
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Admins</p>
+              <p className="text-lg sm:text-xl font-bold text-gray-900">
                 {users.filter(u => u.role === 'admin').length}
               </p>
             </div>
           </div>
         </Card>
         
-        <Card className="p-4">
-          <div className="flex items-center">
-            <Ban className="h-8 w-8 text-orange-600" />
-            <div className="ml-3">
-              <p className="text-sm font-medium text-gray-600">Inactief</p>
-              <p className="text-xl font-bold text-gray-900">
+        <Card className="p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Ban className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600">Inactief</p>
+              <p className="text-lg sm:text-xl font-bold text-gray-900">
                 {users.filter(u => u.isActive === false).length}
               </p>
             </div>
@@ -412,7 +423,7 @@ const AdminUsers: React.FC = () => {
         </Card>
       </div>
 
-      {/* Users Table */}
+      {/* Users List - Mobile Card View */}
       {filteredUsers.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -423,101 +434,159 @@ const AdminUsers: React.FC = () => {
           }
         />
       ) : (
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Gebruiker
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rol
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aangemaakt
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Laatste Login
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acties
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((systemUser) => (
-                  <tr key={systemUser.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                            <Users className="h-5 w-5 text-gray-500" />
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {systemUser.displayName || 'Geen naam'}
-                          </div>
-                          <div className="text-sm text-gray-500 flex items-center">
-                            <Mail className="h-3 w-3 mr-1" />
-                            {systemUser.email || 'Geen email'}
-                          </div>
-                          {systemUser.uid && (
-                            <div className="text-xs text-gray-400">
-                              UID: {systemUser.uid.substring(0, 8)}...
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={systemUser.role}
-                        onChange={(e) => handleUpdateUserRole(systemUser.id, e.target.value as UserRole['role'])}
-                        className={`text-sm px-2 py-1 rounded-full border-none cursor-pointer ${getRoleColor(systemUser.role)}`}
-                      >
-                        <option value="admin">Administrator</option>
-                        <option value="manager">Manager</option>
-                        <option value="employee">Werknemer</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => handleToggleUserStatus(systemUser.id, systemUser.isActive !== false)}
-                        className={`text-sm px-2 py-1 rounded-full border-none cursor-pointer ${getStatusColor(systemUser.isActive !== false)}`}
-                      >
-                        {systemUser.isActive !== false ? 'Actief' : 'Inactief'}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(systemUser.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(systemUser.lastLoginAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button className="text-blue-600 hover:text-blue-900 font-medium">
-                          Bewerken
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(systemUser.id, systemUser.email || 'Onbekend')}
-                          className="text-red-600 hover:text-red-900 font-medium"
-                        >
-                          Verwijderen
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="space-y-2 sm:space-y-0">
+          {/* Mobile View */}
+          <div className="block sm:hidden space-y-2">
+            {filteredUsers.map((systemUser) => (
+              <Card key={systemUser.id} className="p-3">
+                <div className="space-y-3">
+                  {/* Name & Email */}
+                  <div className="space-y-1">
+                    <p className="font-medium text-gray-900 text-sm">
+                      {systemUser.displayName || 'Geen naam'}
+                    </p>
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Mail className="h-3 w-3" />
+                      {systemUser.email || 'Geen email'}
+                    </div>
+                  </div>
+
+                  {/* Role & Status */}
+                  <div className="flex gap-2">
+                    <select
+                      value={systemUser.role}
+                      onChange={(e) => handleUpdateUserRole(systemUser.id, e.target.value as UserRole['role'])}
+                      className={`text-xs px-2 py-1 rounded border-none cursor-pointer font-medium ${getRoleColor(systemUser.role)}`}
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="manager">Manager</option>
+                      <option value="employee">Werknemer</option>
+                    </select>
+                    
+                    <button
+                      onClick={() => handleToggleUserStatus(systemUser.id, systemUser.isActive !== false)}
+                      className={`text-xs px-2 py-1 rounded border-none cursor-pointer font-medium ${getStatusColor(systemUser.isActive !== false)}`}
+                    >
+                      {systemUser.isActive !== false ? 'Actief' : 'Inactief'}
+                    </button>
+                  </div>
+
+                  {/* Dates */}
+                  <div className="text-xs text-gray-500 space-y-0.5">
+                    <p>Aangemaakt: {formatDateShort(systemUser.createdAt)}</p>
+                    <p>Laatste login: {formatDateShort(systemUser.lastLoginAt)}</p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => handleDeleteUser(systemUser.id, systemUser.email || 'Onbekend')}
+                      className="flex-1 text-xs px-2 py-1.5 text-red-600 hover:bg-red-50 rounded font-medium"
+                    >
+                      Verwijderen
+                    </button>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
-        </Card>
+
+          {/* Desktop View */}
+          <div className="hidden sm:block">
+            <Card>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Gebruiker
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rol
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Aangemaakt
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Laatste Login
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Acties
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredUsers.map((systemUser) => (
+                      <tr key={systemUser.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                <Users className="h-5 w-5 text-gray-500" />
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {systemUser.displayName || 'Geen naam'}
+                              </div>
+                              <div className="text-sm text-gray-500 flex items-center">
+                                <Mail className="h-3 w-3 mr-1" />
+                                {systemUser.email || 'Geen email'}
+                              </div>
+                              {systemUser.uid && (
+                                <div className="text-xs text-gray-400">
+                                  UID: {systemUser.uid.substring(0, 8)}...
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <select
+                            value={systemUser.role}
+                            onChange={(e) => handleUpdateUserRole(systemUser.id, e.target.value as UserRole['role'])}
+                            className={`text-sm px-2 py-1 rounded-full border-none cursor-pointer ${getRoleColor(systemUser.role)}`}
+                          >
+                            <option value="admin">Administrator</option>
+                            <option value="manager">Manager</option>
+                            <option value="employee">Werknemer</option>
+                          </select>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => handleToggleUserStatus(systemUser.id, systemUser.isActive !== false)}
+                            className={`text-sm px-2 py-1 rounded-full border-none cursor-pointer ${getStatusColor(systemUser.isActive !== false)}`}
+                          >
+                            {systemUser.isActive !== false ? 'Actief' : 'Inactief'}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(systemUser.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(systemUser.lastLoginAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleDeleteUser(systemUser.id, systemUser.email || 'Onbekend')}
+                              className="text-red-600 hover:text-red-900 font-medium"
+                            >
+                              Verwijderen
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );
