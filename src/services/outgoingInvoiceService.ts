@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
+import jsPDF from 'jspdf';
 
 export interface OutgoingInvoice {
   id?: string;
@@ -65,6 +66,23 @@ export interface OutgoingInvoice {
   pdfUrl?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CompanyInfo {
+  id: string;
+  name: string;
+  kvk: string;
+  taxNumber: string;
+  contactInfo: {
+    email: string;
+    phone: string;
+  };
+  address: {
+    street: string;
+    city: string;
+    zipCode: string;
+    country: string;
+  };
 }
 
 const COLLECTION_NAME = 'outgoingInvoices';
@@ -193,11 +211,208 @@ export const outgoingInvoiceService = {
     }
   },
 
-  // Generate PDF and upload
-  async generateAndUploadPDF(invoice: OutgoingInvoice): Promise<string> {
+  // 🔥 Generate professional PDF as Blob
+  async generateInvoicePDF(invoice: OutgoingInvoice, company: CompanyInfo): Promise<Blob> {
     try {
-      // Generate PDF blob (you'll need to implement PDF generation)
-      const pdfBlob = await this.generateInvoicePDF(invoice);
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPosition = 15;
+
+      // Set default font
+      doc.setFont('helvetica');
+
+      // ===== HEADER =====
+      doc.setFontSize(24);
+      doc.setTextColor(0, 123, 255);
+      doc.text(company.name, 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${company.address.street}`, 20, yPosition);
+      yPosition += 5;
+      doc.text(`${company.address.zipCode} ${company.address.city}, ${company.address.country}`, 20, yPosition);
+      yPosition += 5;
+      doc.text(`KvK: ${company.kvk} | BTW: ${company.taxNumber}`, 20, yPosition);
+      yPosition += 5;
+      doc.text(`📧 ${company.contactInfo.email} | ☎ ${company.contactInfo.phone}`, 20, yPosition);
+      yPosition += 12;
+
+      // Divider line
+      doc.setDrawColor(0, 123, 255);
+      doc.line(20, yPosition, pageWidth - 20, yPosition);
+      yPosition += 8;
+
+      // ===== INVOICE TITLE & NUMBERS =====
+      doc.setFontSize(18);
+      doc.setTextColor(0, 0, 0);
+      doc.text('FACTUUR', 20, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setTextColor(50, 50, 50);
+      
+      // Left column
+      doc.text('Factuurnummer:', 20, yPosition);
+      doc.setFont('helvetica', 'bold');
+      doc.text(invoice.invoiceNumber, 60, yPosition);
+      doc.setFont('helvetica', 'normal');
+      yPosition += 6;
+
+      doc.text('Factuurdatum:', 20, yPosition);
+      doc.setFont('helvetica', 'bold');
+      doc.text(new Date(invoice.invoiceDate).toLocaleDateString('nl-NL'), 60, yPosition);
+      doc.setFont('helvetica', 'normal');
+      yPosition += 6;
+
+      doc.text('Vervaldatum:', 20, yPosition);
+      doc.setFont('helvetica', 'bold');
+      doc.text(new Date(invoice.dueDate).toLocaleDateString('nl-NL'), 60, yPosition);
+      doc.setFont('helvetica', 'normal');
+      yPosition += 10;
+
+      // ===== CUSTOMER INFO =====
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('FACTUREREN NAAR:', 20, yPosition);
+      yPosition += 8;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(50, 50, 50);
+      doc.text(invoice.clientName, 20, yPosition);
+      yPosition += 5;
+      doc.text(`${invoice.clientAddress.street}`, 20, yPosition);
+      yPosition += 5;
+      doc.text(`${invoice.clientAddress.zipCode} ${invoice.clientAddress.city}`, 20, yPosition);
+      yPosition += 5;
+      doc.text(`${invoice.clientAddress.country}`, 20, yPosition);
+      yPosition += 5;
+      doc.text(`Email: ${invoice.clientEmail}`, 20, yPosition);
+      if (invoice.clientPhone) {
+        yPosition += 5;
+        doc.text(`Tel: ${invoice.clientPhone}`, 20, yPosition);
+      }
+      yPosition += 10;
+
+      // ===== ITEMS TABLE =====
+      const tableStartY = yPosition;
+      const colWidths = [100, 20, 22, 22];
+      const tableHeaders = ['Omschrijving', 'Aantal', 'Tarief', 'Bedrag'];
+
+      // Header background
+      doc.setFillColor(0, 123, 255);
+      doc.rect(20, tableStartY, pageWidth - 40, 8, 'F');
+
+      // Header text
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      let xPos = 25;
+      for (let i = 0; i < tableHeaders.length; i++) {
+        doc.text(tableHeaders[i], xPos, tableStartY + 6);
+        xPos += colWidths[i];
+      }
+
+      yPosition = tableStartY + 10;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 50);
+
+      // Items
+      invoice.items.forEach((item) => {
+        // Check if we need a new page
+        if (yPosition > pageHeight - 40) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        xPos = 25;
+        doc.text(item.description.substring(0, 40), xPos, yPosition);
+        xPos += colWidths[0];
+        doc.text(item.quantity.toString(), xPos, yPosition, { align: 'center' });
+        xPos += colWidths[1];
+        doc.text(`€${item.rate.toFixed(2)}`, xPos, yPosition, { align: 'right' });
+        xPos += colWidths[2];
+        doc.text(`€${item.amount.toFixed(2)}`, xPos, yPosition, { align: 'right' });
+
+        yPosition += 6;
+      });
+
+      yPosition += 5;
+
+      // Divider
+      doc.setDrawColor(200, 200, 200);
+      doc.line(20, yPosition, pageWidth - 20, yPosition);
+      yPosition += 8;
+
+      // ===== TOTALS =====
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+
+      // Subtotal
+      doc.text('Subtotaal:', pageWidth - 50, yPosition);
+      doc.text(`€${invoice.amount.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+      yPosition += 6;
+
+      // VAT
+      doc.text('BTW (21%):', pageWidth - 50, yPosition);
+      doc.text(`€${invoice.vatAmount.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+      yPosition += 8;
+
+      // Total
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(0, 123, 255);
+      doc.text('TOTAAL:', pageWidth - 50, yPosition);
+      doc.text(`€${invoice.totalAmount.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+
+      yPosition += 15;
+      doc.setTextColor(50, 50, 50);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(`Factuur gegenereerd op: ${new Date().toLocaleDateString('nl-NL')} om ${new Date().toLocaleTimeString('nl-NL')}`, 20, yPosition);
+
+      // Return as Blob
+      return doc.output('blob');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw new Error('Kon PDF niet genereren');
+    }
+  },
+
+  // 🔥 Generate PDF as base64 (for webhook transmission)
+  async generateInvoicePDFBase64(invoice: OutgoingInvoice, company: CompanyInfo): Promise<string> {
+    try {
+      const blob = await this.generateInvoicePDF(invoice, company);
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error generating base64 PDF:', error);
+      throw new Error('Kon PDF niet genereren');
+    }
+  },
+
+  // Generate PDF and upload to Firebase Storage
+  async generateAndUploadPDF(invoice: OutgoingInvoice, company: CompanyInfo): Promise<string> {
+    try {
+      console.log('📄 Generating PDF for invoice:', invoice.invoiceNumber);
+      
+      // Generate PDF blob
+      const pdfBlob = await this.generateInvoicePDF(invoice, company);
       
       // Upload to Firebase Storage
       const fileName = `invoices/${invoice.companyId}/${invoice.invoiceNumber}.pdf`;
@@ -211,26 +426,11 @@ export const outgoingInvoiceService = {
         await this.updateInvoice(invoice.id, { pdfUrl: downloadURL });
       }
       
+      console.log('✅ PDF uploaded:', downloadURL);
       return downloadURL;
     } catch (error) {
       console.error('Error generating PDF:', error);
       throw new Error('Kon PDF niet genereren');
     }
-  },
-
-  // Generate PDF (placeholder - implement with jsPDF)
-  async generateInvoicePDF(invoice: OutgoingInvoice): Promise<Blob> {
-    const htmlContent = `
-      <html>
-        <body>
-          <h1>Factuur ${invoice.invoiceNumber}</h1>
-          <p>Klant: ${invoice.clientName}</p>
-          <p>Email: ${invoice.clientEmail}</p>
-          <p>Totaal: €${invoice.totalAmount.toFixed(2)}</p>
-        </body>
-      </html>
-    `;
-    
-    return new Blob([htmlContent], { type: 'application/pdf' });
   }
 };
