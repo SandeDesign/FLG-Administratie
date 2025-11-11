@@ -308,8 +308,8 @@ const Sidebar: React.FC = () => {
     <div className={`hidden lg:flex lg:flex-col lg:bg-white lg:border-r lg:border-gray-200 lg:shadow-sm transition-all duration-300 ${
       collapsed ? 'lg:w-20' : 'lg:w-72'
     }`}>
-      {/* ✅ HEADER - GROTER LOGO */}
-      <div className="flex h-40 items-center justify-center border-b border-gray-100 px-4 bg-gradient-to-r from-slate-50 to-gray-50 relative">
+      {/* ✅ HEADER - GROTER LOGO - DUNNER VAK */}
+      <div className="flex h-28 items-center justify-center border-b border-gray-100 px-4 bg-gradient-to-r from-slate-50 to-gray-50 relative">
         {!collapsed && (
           <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-32 w-auto drop-shadow-sm" />
         )}
