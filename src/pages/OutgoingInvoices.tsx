@@ -634,7 +634,7 @@ const OutgoingInvoices: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-32 sm:pb-6">
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-6">
       {/* Header with Filter Button */}
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -691,6 +691,30 @@ const OutgoingInvoices: React.FC = () => {
             <option value="overdue">Vervallen</option>
           </select>
         </Card>
+      )}
+
+      {/* Stats Bar */}
+      {filteredInvoices.length > 0 && (
+        <div className="bg-white border-2 border-gray-200 rounded-lg px-4 sm:px-6 py-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div>
+              <p className="text-gray-600 font-medium">Totaal</p>
+              <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">€{totalAmount.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-gray-600 font-medium">Concept</p>
+              <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">{draftCount}</p>
+            </div>
+            <div>
+              <p className="text-blue-600 font-medium">Verstuurd</p>
+              <p className="text-lg sm:text-xl font-bold text-blue-600 mt-1">{sentCount}</p>
+            </div>
+            <div>
+              <p className="text-green-600 font-medium">Betaald</p>
+              <p className="text-lg sm:text-xl font-bold text-green-600 mt-1">{paidCount}</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Invoice List */}
@@ -863,32 +887,6 @@ const OutgoingInvoices: React.FC = () => {
               </Card>
             );
           })}
-        </div>
-      )}
-
-      {/* Stats Bar at Bottom */}
-      {filteredInvoices.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 sm:px-6 py-3">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-              <div>
-                <p className="text-gray-600 font-medium">Totaal</p>
-                <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">€{totalAmount.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-gray-600 font-medium">Concept</p>
-                <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">{draftCount}</p>
-              </div>
-              <div>
-                <p className="text-blue-600 font-medium">Verstuurd</p>
-                <p className="text-lg sm:text-xl font-bold text-blue-600 mt-1">{sentCount}</p>
-              </div>
-              <div>
-                <p className="text-green-600 font-medium">Betaald</p>
-                <p className="text-lg sm:text-xl font-bold text-green-600 mt-1">{paidCount}</p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
