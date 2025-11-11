@@ -11,20 +11,29 @@ import {
   CheckCircle,
   AlertCircle,
   Bell,
-  ChevronRight
+  ChevronRight,
+  Zap,
+  Target,
+  Award,
+  Briefcase
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const EmployeeDashboard: React.FC = () => {
   const { user, currentEmployeeId } = useAuth();
   const { selectedCompany, companies } = useApp();
   const [loading, setLoading] = useState(false);
+  const [animateCount, setAnimateCount] = useState(false);
 
-  // Get user's first name for greeting
+  useEffect(() => {
+    setAnimateCount(true);
+  }, []);
+
   const getFirstName = () => {
     if (user?.displayName) {
       return user.displayName.split(' ')[0];
@@ -43,254 +52,331 @@ const EmployeeDashboard: React.FC = () => {
     return 'Goedenavond';
   };
 
-  // Quick actions data with real navigation
+  // Chart data
+  const hoursData = [
+    { week: 'Week 44', hours: 40, target: 40 },
+    { week: 'Week 45', hours: 38, target: 40 },
+    { week: 'Week 46', hours: 42, target: 40 },
+    { week: 'Week 47', hours: 40, target: 40 },
+    { week: 'Week 48', hours: 39, target: 40 },
+  ];
+
+  const leaveData = [
+    { name: 'Gebruikt', value: 12, fill: '#ef4444' },
+    { name: 'Beschikbaar', value: 13, fill: '#10b981' }
+  ];
+
   const quickActions = [
     {
       title: 'Verlof',
       subtitle: 'Aanvragen en saldo',
       icon: Calendar,
-      color: 'blue',
       href: '/employee-dashboard/leave',
-      bgGradient: 'from-blue-500 to-blue-600',
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600'
+      bgGradient: 'from-blue-600 to-blue-400',
+      iconBg: 'bg-blue-100/20',
+      iconColor: 'text-blue-400',
+      accent: 'blue'
     },
     {
       title: 'Verzuim',
       subtitle: 'Ziek- en betermelden',
       icon: HeartPulse,
-      color: 'red',
       href: '/employee-dashboard/absence',
-      bgGradient: 'from-red-500 to-red-600',
-      iconBg: 'bg-red-100',
-      iconColor: 'text-red-600'
+      bgGradient: 'from-red-600 to-red-400',
+      iconBg: 'bg-red-100/20',
+      iconColor: 'text-red-400',
+      accent: 'red'
     },
     {
       title: 'Declaraties',
       subtitle: 'Onkosten indienen',
       icon: Receipt,
-      color: 'emerald',
       href: '/employee-dashboard/expenses',
-      bgGradient: 'from-emerald-500 to-emerald-600',
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-600'
+      bgGradient: 'from-emerald-600 to-emerald-400',
+      iconBg: 'bg-emerald-100/20',
+      iconColor: 'text-emerald-400',
+      accent: 'emerald'
     },
     {
       title: 'Uren',
       subtitle: 'Gewerkte uren',
       icon: Clock,
-      color: 'amber',
       href: '/employee-dashboard/timesheets',
-      bgGradient: 'from-amber-500 to-amber-600',
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-600'
-    }
-  ];
-
-  const recentActivities = [
-    {
-      icon: CheckCircle,
-      title: 'Account aangemaakt',
-      description: 'Je AlloonApp account is succesvol geactiveerd',
-      time: 'Vandaag',
-      type: 'success'
-    },
-    {
-      icon: Bell,
-      title: 'Welkom bij AlloonApp',
-      description: 'Ontdek alle functies van het platform',
-      time: 'Vandaag',
-      type: 'info'
+      bgGradient: 'from-amber-600 to-amber-400',
+      iconBg: 'bg-amber-100/20',
+      iconColor: 'text-amber-400',
+      accent: 'amber'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile-first header with gradient */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-        <div className="px-4 py-6 sm:px-6">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold">
-                {getGreeting()}, {getFirstName()}!
-              </h1>
-              <p className="mt-1 text-blue-100 text-sm sm:text-base">
-                {selectedCompany ? `${selectedCompany.name}` : 'AlloonApp Dashboard'}
-              </p>
-            </div>
-            
-            {/* Profile Avatar */}
-            <div className="flex-shrink-0">
-              <div className="h-12 w-12 sm:h-14 sm:w-14 bg-white/20 rounded-full flex items-center justify-center">
-                <User className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-              </div>
-            </div>
-          </div>
-          
-          {/* Quick stats row */}
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">25</div>
-              <div className="text-xs text-blue-200">Verlof dagen</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">0</div>
-              <div className="text-xs text-blue-200">Openstaand</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">160</div>
-              <div className="text-xs text-blue-200">Uren/maand</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">2</div>
-              <div className="text-xs text-blue-200">Meldingen</div>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-32 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      <div className="px-4 py-6 sm:px-6 space-y-6">
-        {/* Quick Actions - Mobile optimized grid */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Snelle Acties</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon;
-              return (
-                <Link
-                  key={index}
-                  to={action.href}
-                  className="group block"
-                >
-                  <Card className="p-4 sm:p-6 h-full hover:shadow-lg transition-all duration-200 group-hover:scale-105 border-0 shadow-sm">
-                    <div className="text-center">
-                      <div className={`inline-flex p-3 ${action.iconBg} rounded-xl mb-3 group-hover:scale-110 transition-transform`}>
-                        <Icon className={`h-6 w-6 ${action.iconColor}`} />
-                      </div>
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                        {action.title}
-                      </h3>
-                      <p className="text-xs text-gray-600 leading-tight">
-                        {action.subtitle}
-                      </p>
-                    </div>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Current Status Cards */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Huidige Status</h2>
-          <div className="space-y-3">
-            <Card className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Aanwezigheid</p>
-                    <p className="text-sm text-gray-600">Je bent ingecheckt</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+      {/* Main content */}
+      <div className="relative z-10">
+        {/* Premium Header */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20"></div>
+          <div className="absolute inset-0 backdrop-blur-3xl"></div>
+          
+          <div className="relative px-4 py-8 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex-1">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-blue-100 to-blue-200 bg-clip-text text-transparent">
+                  {getGreeting()}, {getFirstName()}!
+                </h1>
+                <p className="mt-2 text-blue-200/80 text-sm sm:text-base flex items-center gap-2">
+                  <Briefcase className="h-4 w-4" />
+                  {selectedCompany ? `${selectedCompany.name}` : 'AlloonApp Dashboard'}
+                </p>
               </div>
-            </Card>
-
-            <Card className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Volgende verlof</p>
-                    <p className="text-sm text-gray-600">Geen geplande verlofperiodes</p>
+              
+              {/* Profile Avatar */}
+              <div className="flex-shrink-0">
+                <div className="relative h-16 w-16 sm:h-20 sm:w-20">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full blur opacity-75 animate-pulse"></div>
+                  <div className="relative h-full w-full bg-gradient-to-br from-slate-700 to-slate-800 rounded-full flex items-center justify-center border border-blue-400/30">
+                    <User className="h-8 w-8 sm:h-10 sm:w-10 text-blue-300" />
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
-            </Card>
-
-            {selectedCompany && (
-              <Card className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <Building2 className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Werkgever</p>
-                      <p className="text-sm text-gray-600">{selectedCompany.name}</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
-                </div>
-              </Card>
-            )}
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <Card>
-          <div className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Recente Activiteit</h2>
-              <Button variant="ghost" size="sm">
-                Alles bekijken
-              </Button>
             </div>
-            
-            <div className="space-y-4">
-              {recentActivities.map((activity, index) => {
-                const Icon = activity.icon;
+
+            {/* Quick Stats - Premium Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: 'Verlof dagen', value: '25', icon: Calendar, color: 'from-blue-500 to-blue-600' },
+                { label: 'Openstaand', value: '0', icon: AlertCircle, color: 'from-emerald-500 to-emerald-600' },
+                { label: 'Uren/maand', value: '160', icon: Clock, color: 'from-purple-500 to-purple-600' },
+                { label: 'Meldingen', value: '2', icon: Bell, color: 'from-orange-500 to-orange-600' }
+              ].map((stat, index) => {
+                const Icon = stat.icon;
                 return (
-                  <div key={index} className="flex items-start space-x-3">
-                    <div className={`flex-shrink-0 mt-1 p-2 rounded-lg ${
-                      activity.type === 'success' ? 'bg-green-100' : 'bg-blue-100'
-                    }`}>
-                      <Icon className={`h-4 w-4 ${
-                        activity.type === 'success' ? 'text-green-600' : 'text-blue-600'
-                      }`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {activity.title}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {activity.description}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        {activity.time}
-                      </p>
+                  <div
+                    key={index}
+                    className="group relative overflow-hidden rounded-xl p-4 backdrop-blur-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300 transform hover:scale-105"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-white/60 text-xs sm:text-sm font-medium mb-1">{stat.label}</p>
+                          <p className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</p>
+                        </div>
+                        <div className={`p-2 bg-gradient-to-br ${stat.color} rounded-lg opacity-80 group-hover:opacity-100 transition-all`}>
+                          <Icon className="h-4 w-4 text-white" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
-        </Card>
+        </div>
 
-        {/* Help Section - Compact for mobile */}
-        <Card>
-          <div className="p-4 sm:p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Hulp & Ondersteuning</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Heb je vragen over AlloonApp? We helpen je graag verder.
-            </p>
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-              <Button size="sm" variant="secondary" className="flex-1">
-                Veelgestelde Vragen
-              </Button>
-              <Button size="sm" variant="secondary" className="flex-1">
-                Contact HR
-              </Button>
+        {/* Main Content Area */}
+        <div className="px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+          {/* Quick Actions */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <Zap className="h-6 w-6 text-amber-400" />
+                Snelle Acties
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {quickActions.map((action, index) => {
+                const Icon = action.icon;
+                return (
+                  <Link
+                    key={index}
+                    to={action.href}
+                    className="group"
+                  >
+                    <div className={`relative overflow-hidden rounded-2xl p-6 h-full backdrop-blur-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-2xl hover:shadow-${action.accent}-500/20 transform hover:scale-105 active:scale-95`}>
+                      {/* Gradient background */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${action.bgGradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+                      
+                      {/* Content */}
+                      <div className="relative z-10 flex flex-col items-center text-center h-full justify-center">
+                        <div className={`inline-flex p-4 ${action.iconBg} rounded-2xl mb-3 group-hover:scale-110 transition-transform duration-300 backdrop-blur-sm`}>
+                          <Icon className={`h-6 w-6 ${action.iconColor}`} />
+                        </div>
+                        <h3 className="text-sm font-bold text-white mb-1">
+                          {action.title}
+                        </h3>
+                        <p className="text-xs text-white/60 leading-tight group-hover:text-white/80 transition-colors">
+                          {action.subtitle}
+                        </p>
+                      </div>
+
+                      {/* Hover glow */}
+                      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r ${action.bgGradient} blur-2xl -z-10`}></div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
-        </Card>
+
+          {/* Analytics Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Hours Chart */}
+            <div className="lg:col-span-2 backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-blue-400" />
+                  Uren overzicht
+                </h3>
+                <span className="text-xs text-white/60 bg-white/5 px-3 py-1 rounded-full">Deze maand</span>
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={hoursData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="week" stroke="rgba(255,255,255,0.5)" />
+                  <YAxis stroke="rgba(255,255,255,0.5)" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(15,23,42,0.8)', 
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: '0.75rem'
+                    }}
+                    labelStyle={{ color: 'white' }}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="hours" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 5 }} />
+                  <Line type="monotone" dataKey="target" stroke="#10b981" strokeWidth={2} strokeDasharray="5 5" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Leave Balance */}
+            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all duration-300">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-6">
+                <Award className="h-5 w-5 text-green-400" />
+                Verlof saldo
+              </h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={leaveData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {leaveData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(15,23,42,0.8)', 
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      borderRadius: '0.75rem'
+                    }}
+                    labelStyle={{ color: 'white' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between text-white/80">
+                  <span>Gebruikt</span>
+                  <span className="font-bold">12 dagen</span>
+                </div>
+                <div className="flex justify-between text-white/80">
+                  <span>Beschikbaar</span>
+                  <span className="font-bold text-emerald-400">13 dagen</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Cards */}
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <Target className="h-6 w-6 text-cyan-400" />
+              Huidige Status
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                {
+                  title: 'Aanwezigheid',
+                  description: 'Je bent ingecheckt',
+                  icon: CheckCircle,
+                  status: 'online',
+                  color: 'from-emerald-500 to-emerald-600'
+                },
+                {
+                  title: 'Volgende verlof',
+                  description: 'Geen geplande verlofperiodes',
+                  icon: Calendar,
+                  status: 'neutral',
+                  color: 'from-blue-500 to-blue-600'
+                },
+                {
+                  title: 'Werkgever',
+                  description: selectedCompany?.name || 'Geen bedrijf',
+                  icon: Building2,
+                  status: 'info',
+                  color: 'from-purple-500 to-purple-600'
+                },
+                {
+                  title: 'Declaraties',
+                  description: 'Geen openstaande',
+                  icon: Receipt,
+                  status: 'neutral',
+                  color: 'from-amber-500 to-amber-600'
+                }
+              ].map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div key={index} className="group relative overflow-hidden rounded-xl p-4 backdrop-blur-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-lg hover:shadow-white/10">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+                    <div className="relative z-10 flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className={`flex-shrink-0 p-2.5 rounded-lg bg-gradient-to-br ${item.color} opacity-80 group-hover:opacity-100 transition-all`}>
+                          <Icon className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-white text-sm">{item.title}</p>
+                          <p className="text-xs text-white/60 mt-1">{item.description}</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-white/40 group-hover:text-white/60 transition-colors" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Help Section */}
+          <div className="backdrop-blur-xl bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-white/10 rounded-2xl p-8 hover:border-white/20 transition-all duration-300">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-2">Hulp & Ondersteuning</h2>
+                <p className="text-white/60">Heb je vragen? Ons support team is 24/7 beschikbaar.</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <Button size="sm" variant="secondary" className="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 text-white border border-white/20">
+                  FAQ
+                </Button>
+                <Button size="sm" className="flex-1 sm:flex-none bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white">
+                  Contact Support
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
