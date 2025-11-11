@@ -10,7 +10,9 @@ import {
   Ban,
   UserCheck,
   AlertCircle,
-  ChevronDown
+  ChevronDown,
+  Copy,
+  Key
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Card from '../components/ui/Card';
@@ -57,6 +59,8 @@ const AdminUsers: React.FC = () => {
     displayName: '',
     role: 'employee' as const
   });
+  const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
+  const [generatedPasswords, setGeneratedPasswords] = useState<{[key: string]: string}>({});
 
   const loadUsers = useCallback(async () => {
     if (!user) return;
@@ -164,7 +168,44 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const handleCreateNewUser = async () => {
+  const generatePassword = (): string => {
+    const length = 12;
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  };
+
+  const handleGeneratePassword = async (userId: string) => {
+    const newPassword = generatePassword();
+    setGeneratedPasswords({ ...generatedPasswords, [userId]: newPassword });
+
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        password: newPassword,
+        updatedAt: Timestamp.fromDate(new Date())
+      });
+      
+      success('Wachtwoord gegenereerd', 'Het wachtwoord is succesvol gewijzigd');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      showError('Fout bij bijwerken', 'Kon wachtwoord niet wijzigen');
+    }
+  };
+
+  const handleCopyPassword = (userId: string) => {
+    const password = generatedPasswords[userId];
+    if (password) {
+      navigator.clipboard.writeText(password);
+      setCopiedUserId(userId);
+      setTimeout(() => setCopiedUserId(null), 2000);
+    }
+  };
+
+  const createNewUser = async () => {
     if (!newUserData.email || !newUserData.displayName) {
       showError('Validatie fout', 'Email en naam zijn verplicht');
       return;
@@ -189,6 +230,10 @@ const AdminUsers: React.FC = () => {
       console.error('Error creating user:', error);
       showError('Fout bij aanmaken', 'Kon gebruiker niet aanmaken');
     }
+  };
+
+  const handleCreateNewUser = async () => {
+    await createNewUser();
   };
 
   const getRoleColor = (role: UserRole['role']) => {
@@ -477,8 +522,31 @@ const AdminUsers: React.FC = () => {
                     <p>Laatste login: {formatDateShort(systemUser.lastLoginAt)}</p>
                   </div>
 
+                  {/* Password Section */}
+                  {generatedPasswords[systemUser.id] && (
+                    <div className="bg-blue-50 border border-blue-200 p-2 rounded text-xs space-y-1">
+                      <p className="font-medium text-blue-900">Gegenereerd wachtwoord:</p>
+                      <div className="flex items-center gap-2 bg-white p-2 rounded border border-blue-100">
+                        <code className="text-blue-600 font-mono flex-1 break-all">{generatedPasswords[systemUser.id]}</code>
+                        <button
+                          onClick={() => handleCopyPassword(systemUser.id)}
+                          className={`flex-shrink-0 p-1 rounded ${copiedUserId === systemUser.id ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100 text-gray-600'}`}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div className="flex gap-2 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => handleGeneratePassword(systemUser.id)}
+                      className="flex-1 text-xs px-2 py-1.5 text-blue-600 hover:bg-blue-50 rounded font-medium flex items-center justify-center gap-1"
+                    >
+                      <Key className="h-3 w-3" />
+                      Wachtwoord
+                    </button>
                     <button
                       onClick={() => handleDeleteUser(systemUser.id, systemUser.email || 'Onbekend')}
                       className="flex-1 text-xs px-2 py-1.5 text-red-600 hover:bg-red-50 rounded font-medium"
@@ -571,6 +639,23 @@ const AdminUsers: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleGeneratePassword(systemUser.id)}
+                              title="Nieuw wachtwoord genereren"
+                              className="text-blue-600 hover:text-blue-900 font-medium flex items-center gap-1"
+                            >
+                              <Key className="h-4 w-4" />
+                              Wachtwoord
+                            </button>
+                            {generatedPasswords[systemUser.id] && (
+                              <button
+                                onClick={() => handleCopyPassword(systemUser.id)}
+                                title={copiedUserId === systemUser.id ? 'Gekopieerd!' : 'Kopieer wachtwoord'}
+                                className={`flex items-center gap-1 ${copiedUserId === systemUser.id ? 'text-green-600' : 'text-gray-600 hover:text-gray-900'}`}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDeleteUser(systemUser.id, systemUser.email || 'Onbekend')}
                               className="text-red-600 hover:text-red-900 font-medium"
