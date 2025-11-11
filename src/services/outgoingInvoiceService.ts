@@ -41,6 +41,7 @@ export interface OutgoingInvoice {
   paidAt?: Date;
   sentAt?: Date;
   items: {
+    title: string;
     description: string;
     quantity: number;
     rate: number;
@@ -229,37 +230,69 @@ export const outgoingInvoiceService = {
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; color: #333; line-height: 1.4; }
-    .container { max-width: 900px; margin: 0 auto; padding: 40px; }
-    .header { display: flex; justify-content: space-between; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #007bff; }
-    .company-info h1 { font-size: 32px; color: #007bff; margin-bottom: 10px; }
-    .company-info p { font-size: 12px; color: #666; margin-bottom: 3px; }
-    .company-details { font-size: 12px; color: #666; }
-    .company-details p { margin-bottom: 3px; }
-    .invoice-title { display: flex; justify-content: space-between; margin-bottom: 30px; align-items: flex-start; }
-    .invoice-title h2 { font-size: 24px; color: #000; }
-    .invoice-meta { text-align: right; font-size: 12px; }
-    .invoice-meta p { margin-bottom: 5px; }
-    .invoice-meta strong { display: inline-block; width: 100px; }
-    .section { margin-bottom: 30px; }
-    .section h3 { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #000; }
-    .customer-box { border: 1px solid #ddd; padding: 15px; background-color: #f9f9f9; font-size: 12px; }
-    .customer-box p { margin-bottom: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    table thead { background-color: #007bff; color: white; }
-    table th { padding: 12px; text-align: left; font-weight: bold; font-size: 12px; }
-    table td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 12px; }
-    table tbody tr:nth-child(odd) { background-color: #f9f9f9; }
-    .amount-right { text-align: right; }
-    .totals { margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px; display: flex; justify-content: flex-end; }
-    .totals-box { width: 300px; }
-    .totals-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
-    .totals-row.total { border-top: 2px solid #007bff; padding-top: 8px; font-size: 16px; font-weight: bold; color: #007bff; }
-    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999; text-align: center; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1f2937; line-height: 1.6; background-color: #f9fafb; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px; background-color: white; }
+    
+    /* Header */
+    .header { display: flex; justify-content: space-between; margin-bottom: 50px; padding-bottom: 30px; border-bottom: 3px solid #2563eb; align-items: flex-start; }
+    .company-info h1 { font-size: 32px; color: #2563eb; margin-bottom: 15px; font-weight: 700; letter-spacing: -0.5px; }
+    .company-info p { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
+    .company-details { font-size: 13px; color: #6b7280; text-align: right; }
+    .company-details p { margin-bottom: 6px; }
+    .company-details strong { color: #374151; }
+    
+    /* Invoice Title Section */
+    .invoice-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+    .invoice-header h2 { font-size: 28px; color: #111827; font-weight: 700; }
+    .invoice-meta { background-color: #f3f4f6; border-radius: 8px; padding: 16px 20px; font-size: 13px; }
+    .invoice-meta p { margin-bottom: 8px; display: flex; justify-content: space-between; gap: 30px; }
+    .invoice-meta strong { color: #374151; }
+    .invoice-meta span { color: #111827; font-weight: 600; }
+    
+    /* Section */
+    .section { margin-bottom: 40px; }
+    .section h3 { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* Customer Box */
+    .customer-box { background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; font-size: 13px; }
+    .customer-box p { margin-bottom: 4px; color: #374151; }
+    .customer-box strong { color: #111827; }
+    
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+    table thead { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; }
+    table th { padding: 14px 12px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+    table td { padding: 14px 12px; border-bottom: 1px solid #f3f4f6; font-size: 13px; color: #374151; }
+    table tbody tr:hover { background-color: #f9fafb; }
+    table tbody tr:last-child td { border-bottom: 2px solid #e5e7eb; }
+    
+    /* Item Description Formatting */
+    .item-title { font-weight: 600; color: #111827; margin-bottom: 3px; }
+    .item-description { color: #6b7280; font-size: 12px; white-space: pre-wrap; line-height: 1.4; margin-top: 4px; }
+    .item-quantity { text-align: right; }
+    .item-rate { text-align: right; }
+    .item-amount { text-align: right; font-weight: 600; color: #111827; }
+    
+    /* Totals */
+    .totals-section { margin-top: 40px; }
+    .totals-box { display: flex; justify-content: flex-end; margin-bottom: 40px; }
+    .totals-content { width: 320px; }
+    .totals-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 13px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb; }
+    .totals-row.total { border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb; padding: 12px 0; font-size: 16px; font-weight: 700; color: #2563eb; margin-bottom: 0; }
+    .totals-label { color: #6b7280; }
+    .totals-value { font-weight: 600; color: #111827; }
+    .totals-row.total .totals-value { color: #2563eb; }
+    
+    /* Footer */
+    .footer { margin-top: 50px; padding-top: 30px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; line-height: 1.6; }
+    
+    /* Spacer */
+    .spacer { height: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Header with Company Info -->
     <div class="header">
       <div class="company-info">
         <h1>${company.name}</h1>
@@ -268,74 +301,86 @@ export const outgoingInvoiceService = {
         <p>${company.address.country}</p>
       </div>
       <div class="company-details">
-        <p><strong>KvK:</strong> ${company.kvk}</p>
-        <p><strong>BTW:</strong> ${company.taxNumber}</p>
-        <p><strong>Email:</strong> ${company.contactInfo.email}</p>
-        <p><strong>Tel:</strong> ${company.contactInfo.phone}</p>
+        <p><strong>KvK nr.:</strong> <span>${company.kvk}</span></p>
+        <p><strong>BTW nr.:</strong> <span>${company.taxNumber}</span></p>
+        <p><strong>E-mail:</strong> <span>${company.contactInfo.email}</span></p>
+        <p><strong>Tel:</strong> <span>${company.contactInfo.phone}</span></p>
       </div>
     </div>
 
-    <div class="invoice-title">
+    <!-- Invoice Title & Meta -->
+    <div class="invoice-header">
       <h2>FACTUUR</h2>
       <div class="invoice-meta">
-        <p><strong>Factuurnummer:</strong> ${invoice.invoiceNumber}</p>
-        <p><strong>Factuurdatum:</strong> ${new Date(invoice.invoiceDate).toLocaleDateString('nl-NL')}</p>
-        <p><strong>Vervaldatum:</strong> ${new Date(invoice.dueDate).toLocaleDateString('nl-NL')}</p>
+        <p><strong>Factuurnummer:</strong> <span>${invoice.invoiceNumber}</span></p>
+        <p><strong>Factuurdatum:</strong> <span>${new Date(invoice.invoiceDate).toLocaleDateString('nl-NL')}</span></p>
+        <p><strong>Vervaldatum:</strong> <span>${new Date(invoice.dueDate).toLocaleDateString('nl-NL')}</span></p>
       </div>
     </div>
 
+    <!-- Customer Section -->
     <div class="section">
-      <h3>FACTUREREN NAAR:</h3>
+      <h3>Factureren naar:</h3>
       <div class="customer-box">
         <p><strong>${invoice.clientName}</strong></p>
         <p>${invoice.clientAddress.street}</p>
         <p>${invoice.clientAddress.zipCode} ${invoice.clientAddress.city}</p>
         <p>${invoice.clientAddress.country}</p>
-        <p>Email: ${invoice.clientEmail}</p>
+        <p>E-mail: ${invoice.clientEmail}</p>
         ${invoice.clientPhone ? `<p>Tel: ${invoice.clientPhone}</p>` : ''}
       </div>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Omschrijving</th>
-          <th style="width: 80px;" class="amount-right">Aantal</th>
-          <th style="width: 100px;" class="amount-right">Tarief</th>
-          <th style="width: 100px;" class="amount-right">Bedrag</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${invoice.items.map(item => `
+    <!-- Invoice Items Table -->
+    <div class="section">
+      <table>
+        <thead>
           <tr>
-            <td>${item.description}</td>
-            <td class="amount-right">${item.quantity}</td>
-            <td class="amount-right">€${item.rate.toFixed(2)}</td>
-            <td class="amount-right">€${item.amount.toFixed(2)}</td>
+            <th style="flex: 1;">Omschrijving</th>
+            <th style="width: 90px;">Aantal</th>
+            <th style="width: 110px;">Tarief</th>
+            <th style="width: 110px;">Bedrag</th>
           </tr>
-        `).join('')}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          ${invoice.items.map(item => `
+            <tr>
+              <td>
+                <div class="item-title">${item.title || item.description}</div>
+                ${item.description && item.title ? `<div class="item-description">${item.description}</div>` : ''}
+              </td>
+              <td class="item-quantity">${item.quantity}</td>
+              <td class="item-rate">€${item.rate.toFixed(2)}</td>
+              <td class="item-amount">€${item.amount.toFixed(2)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
 
-    <div class="totals">
+    <!-- Totals -->
+    <div class="totals-section">
       <div class="totals-box">
-        <div class="totals-row">
-          <label>Subtotaal:</label>
-          <span>€${invoice.amount.toFixed(2)}</span>
-        </div>
-        <div class="totals-row">
-          <label>BTW (21%):</label>
-          <span>€${invoice.vatAmount.toFixed(2)}</span>
-        </div>
-        <div class="totals-row total">
-          <label>TOTAAL:</label>
-          <span>€${invoice.totalAmount.toFixed(2)}</span>
+        <div class="totals-content">
+          <div class="totals-row">
+            <span class="totals-label">Subtotaal:</span>
+            <span class="totals-value">€${invoice.amount.toFixed(2)}</span>
+          </div>
+          <div class="totals-row">
+            <span class="totals-label">BTW (21%):</span>
+            <span class="totals-value">€${invoice.vatAmount.toFixed(2)}</span>
+          </div>
+          <div class="totals-row total">
+            <span class="totals-label">TOTAAL:</span>
+            <span class="totals-value">€${invoice.totalAmount.toFixed(2)}</span>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- Footer -->
     <div class="footer">
-      <p>Factuur gegenereerd op: ${new Date().toLocaleDateString('nl-NL')} om ${new Date().toLocaleTimeString('nl-NL')}</p>
+      <p>Factuur gegenereerd op ${new Date().toLocaleDateString('nl-NL')} om ${new Date().toLocaleTimeString('nl-NL')}</p>
     </div>
   </div>
 </body>
