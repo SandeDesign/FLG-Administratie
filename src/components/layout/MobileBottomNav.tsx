@@ -33,8 +33,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
     if (companyType === 'project') {
       return [
         { href: '/', icon: Home, label: 'Dashboard' },
-        { href: '/projects', icon: Briefcase, label: 'Productie' },
-        { href: '/statistics', icon: BarChart3, label: 'Stats' },
+        { href: '/project-production', icon: Briefcase, label: 'Productie' },
+        { href: '/project-statistics', icon: BarChart3, label: 'Stats' },
         { href: '/outgoing-invoices', icon: Send, label: 'Facturen' },
       ];
     }
