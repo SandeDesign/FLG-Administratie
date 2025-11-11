@@ -111,10 +111,24 @@ const EmployeeDashboard: React.FC = () => {
     }));
 
   const getFirstName = () => {
+    if (employeeData?.personalInfo?.firstName) {
+      return employeeData.personalInfo.firstName;
+    }
     if (user?.displayName) {
       return user.displayName.split(' ')[0];
     }
     return 'Gebruiker';
+  };
+
+  const getFullName = () => {
+    if (employeeData?.personalInfo?.firstName && employeeData?.personalInfo?.lastName) {
+      return `${employeeData.personalInfo.firstName} ${employeeData.personalInfo.lastName}`;
+    }
+    return user?.displayName || 'Gebruiker';
+  };
+
+  const getUserEmail = () => {
+    return user?.email || 'geen-email@alloonapp.com';
   };
 
   const getGreeting = () => {
@@ -184,6 +198,11 @@ const EmployeeDashboard: React.FC = () => {
               <Briefcase className="h-4 w-4" />
               {selectedCompany?.name || 'AlloonApp'}
             </p>
+            {employeeData?.personalInfo?.firstName && (
+              <p className="text-blue-200 text-sm mt-2">
+                {getFullName()}
+              </p>
+            )}
           </div>
           <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center">
             <User className="h-8 w-8 text-white" />
