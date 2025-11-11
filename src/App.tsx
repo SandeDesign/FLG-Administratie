@@ -77,6 +77,8 @@ function App() {
                           <Route index element={<Dashboard />} />
                           <Route path="companies" element={<Companies />} />
                           <Route path="employees" element={<EmployeesNew />} />
+                          <Route path="project-production" element={<ProjectProduction />} />
+                          <Route path="project-statistics" element={<ProjectStatistics />} />
                           
                           {/* ✅ NEW ADMIN ROUTES */}
                           <Route path="admin/dashboard" element={<AdminDashboard />} />
