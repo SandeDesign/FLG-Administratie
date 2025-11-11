@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { User, LogOut, Calendar, HeartPulse, Receipt, Clock, Menu, X, Zap } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { User, LogOut, Calendar, HeartPulse, Receipt, Clock, Menu, X, Home } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useApp } from '../../contexts/AppContext';
 import Button from '../ui/Button';
 
 interface EmployeeLayoutProps {
@@ -9,7 +10,7 @@ interface EmployeeLayoutProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/employee-dashboard', icon: User },
+  { name: 'Dashboard', href: '/employee-dashboard', icon: Home },
   { name: 'Verlof', href: '/employee-dashboard/leave', icon: Calendar },
   { name: 'Verzuim', href: '/employee-dashboard/absence', icon: HeartPulse },
   { name: 'Declaraties', href: '/employee-dashboard/expenses', icon: Receipt },
@@ -18,115 +19,106 @@ const navigation = [
 
 const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
+  const { selectedCompany } = useApp();
+  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Animated background elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-32 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-50">
+        <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-8 w-auto" />
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          {mobileMenuOpen ? (
+            <X className="h-6 w-6 text-gray-600" />
+          ) : (
+            <Menu className="h-6 w-6 text-gray-600" />
+          )}
+        </button>
       </div>
 
-      {/* Header */}
-      <div className="relative z-20 backdrop-blur-xl bg-white/5 border-b border-white/10 sticky top-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-3 sm:py-4">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
-              >
-                {mobileMenuOpen ? (
-                  <X className="h-6 w-6 text-blue-300" />
-                ) : (
-                  <Menu className="h-6 w-6 text-blue-300" />
-                )}
-              </button>
-              <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-10 w-auto" />
-              <div className="hidden sm:block">
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-                  AlloonApp
-                </h1>
-                <p className="text-xs sm:text-sm text-blue-200/70">
-                  {user?.displayName || user?.email}
-                </p>
-              </div>
+      <div className="flex h-screen md:h-auto md:min-h-screen">
+        {/* Sidebar */}
+        <div
+          className={`fixed md:relative left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-40 md:z-0 ${
+            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          }`}
+        >
+          {/* Logo */}
+          <div className="hidden md:flex items-center gap-3 px-6 py-6 border-b border-gray-200">
+            <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-10 w-auto" />
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">AlloonApp</h1>
+              <p className="text-xs text-gray-500">{selectedCompany?.name || 'Dashboard'}</p>
             </div>
-            <Button 
-              onClick={signOut} 
-              variant="ghost" 
-              size="sm"
-              className="text-blue-300 hover:text-white hover:bg-white/10"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline text-sm">Uitloggen</span>
-            </Button>
           </div>
-        </div>
-      </div>
 
-      {/* Desktop Navigation */}
-      <div className="hidden lg:block relative z-10 backdrop-blur-xl bg-white/5 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-1">
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
+              const isActive = location.pathname === item.href;
               return (
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-4 py-4 text-sm font-medium border-b-2 transition-all duration-300 ${
-                      isActive
-                        ? 'border-blue-400 text-blue-300 bg-blue-500/10'
-                        : 'border-transparent text-white/60 hover:text-white/80 hover:bg-white/5'
-                    }`
-                  }
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600'
+                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent hover:text-gray-900'
+                  }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  {item.name}
+                  <Icon className="h-5 w-5 flex-shrink-0" />
+                  <span>{item.name}</span>
                 </NavLink>
               );
             })}
           </nav>
-        </div>
-      </div>
 
-      {/* Mobile Navigation */}
-      {mobileMenuOpen && (
-        <div className="relative z-10 lg:hidden backdrop-blur-xl bg-white/5 border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="py-2 space-y-1">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-300 ${
-                        isActive
-                          ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30'
-                          : 'text-white/60 hover:text-white/80 hover:bg-white/5'
-                      }`
-                    }
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.name}
-                  </NavLink>
-                );
-              })}
-            </nav>
+          {/* User Info & Logout */}
+          <div className="border-t border-gray-200 p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                <User className="h-6 w-6 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {user?.displayName?.split(' ')[0] || 'Gebruiker'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              </div>
+            </div>
+            <Button
+              onClick={signOut}
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
+              size="sm"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Uitloggen
+            </Button>
           </div>
         </div>
-      )}
 
-      {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {children}
-      </main>
+        {/* Mobile Overlay */}
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 md:hidden z-30"
+            onClick={() => setMobileMenuOpen(false)}
+          ></div>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 w-full md:w-auto mt-16 md:mt-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
