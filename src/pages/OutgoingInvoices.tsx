@@ -24,7 +24,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import CreateInvoiceModal from '../components/invoices/CreateInvoiceModal';
-import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
+import { outgoingInvoiceService, OutgoingInvoice, CompanyInfo } from '../services/outgoingInvoiceService';
 
 const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/ttdixmxlu9n7rvbnxgfomilht2ihllc2';
 
@@ -48,14 +48,10 @@ const OutgoingInvoices: React.FC = () => {
 
     try {
       setLoading(true);
-      console.log('Loading invoices for company:', selectedCompany.id);
-      
       const invoicesData = await outgoingInvoiceService.getInvoices(
         user.uid, 
         selectedCompany.id
       );
-      
-      console.log('Invoices loaded:', invoicesData);
       setInvoices(invoicesData);
     } catch (error) {
       console.error('Error loading invoices:', error);
@@ -69,7 +65,6 @@ const OutgoingInvoices: React.FC = () => {
     loadInvoices();
   }, [loadInvoices]);
 
-  // 🔥 SEND INVOICE TO WEBHOOK + UPDATE STATUS
   const handleSendInvoice = async (invoiceId: string) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     if (!invoice) {
@@ -80,11 +75,28 @@ const OutgoingInvoices: React.FC = () => {
     setSendingWebhook(invoiceId);
     
     try {
-      // 🔥 BUILD WEBHOOK PAYLOAD MET ALLE FACTUUR + BEDRIJF DATA
+      const companyInfo: CompanyInfo = {
+        id: selectedCompany?.id || '',
+        name: selectedCompany?.name || '',
+        kvk: selectedCompany?.kvk || '',
+        taxNumber: selectedCompany?.taxNumber || '',
+        contactInfo: {
+          email: selectedCompany?.contactInfo?.email || '',
+          phone: selectedCompany?.contactInfo?.phone || ''
+        },
+        address: {
+          street: selectedCompany?.address?.street || '',
+          city: selectedCompany?.address?.city || '',
+          zipCode: selectedCompany?.address?.zipCode || '',
+          country: selectedCompany?.address?.country || ''
+        }
+      };
+
+      const html = await outgoingInvoiceService.generateInvoiceHTML(invoice, companyInfo);
+
       const webhookPayload = {
         event: 'invoice.sent',
         timestamp: new Date().toISOString(),
-        
         invoice: {
           id: invoice.id,
           invoiceNumber: invoice.invoiceNumber,
@@ -98,10 +110,10 @@ const OutgoingInvoices: React.FC = () => {
           dueDate: invoice.dueDate.toISOString(),
           createdAt: invoice.createdAt.toISOString(),
           updatedAt: invoice.updatedAt.toISOString(),
-          
           client: {
             name: invoice.clientName,
             email: invoice.clientEmail,
+            phone: invoice.clientPhone || null,
             address: {
               street: invoice.clientAddress.street,
               city: invoice.clientAddress.city,
@@ -109,18 +121,14 @@ const OutgoingInvoices: React.FC = () => {
               country: invoice.clientAddress.country
             }
           },
-          
           items: invoice.items.map((item, index) => ({
             lineNumber: index + 1,
             description: item.description,
             quantity: item.quantity,
             rate: item.rate,
             amount: item.amount
-          })),
-          
-          pdfUrl: invoice.pdfUrl || null
+          }))
         },
-        
         company: {
           id: selectedCompany?.id,
           name: selectedCompany?.name,
@@ -135,40 +143,27 @@ const OutgoingInvoices: React.FC = () => {
             country: selectedCompany?.address?.country
           }
         },
-        
         user: {
           id: user?.uid,
           email: user?.email
-        }
+        },
+        htmlContent: html
       };
 
-      console.log('🚀 SENDING INVOICE TO WEBHOOK:', webhookPayload);
-
-      // 🔥 SEND TO WEBHOOK
       const response = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(webhookPayload),
         signal: AbortSignal.timeout(10000)
       });
 
-      if (!response.ok) {
-        throw new Error(`Webhook error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Webhook error: ${response.status}`);
 
-      const responseData = await response.json();
-      console.log('✅ WEBHOOK RESPONSE:', responseData);
-
-      // UPDATE STATUS IN FIREBASE
       await outgoingInvoiceService.sendInvoice(invoiceId);
-      
-      success('✅ Factuur verstuurd!', 'Factuur naar Make.com en klant verzonden');
+      success('✅ Factuur verstuurd!', 'HTML naar Make.com verzonden');
       loadInvoices();
     } catch (error) {
-      console.error('❌ WEBHOOK ERROR:', error);
-      showError('Fout bij versturen', `Kon factuur niet versturen: ${error instanceof Error ? error.message : 'Onbekend'}`);
+      showError('Fout', error instanceof Error ? error.message : 'Onbekend');
     } finally {
       setSendingWebhook(null);
     }
@@ -247,20 +242,6 @@ const OutgoingInvoices: React.FC = () => {
       loadInvoices();
     } catch (error) {
       showError('Fout bij verwijderen', 'Kon factuur niet verwijderen');
-    }
-  };
-
-  const handleDownloadPDF = async (invoice: OutgoingInvoice) => {
-    try {
-      if (invoice.pdfUrl) {
-        window.open(invoice.pdfUrl, '_blank');
-      } else {
-        const pdfUrl = await outgoingInvoiceService.generateAndUploadPDF(invoice);
-        window.open(pdfUrl, '_blank');
-        loadInvoices();
-      }
-    } catch (error) {
-      showError('Fout bij downloaden', 'Kon PDF niet genereren');
     }
   };
 
@@ -386,14 +367,6 @@ const OutgoingInvoices: React.FC = () => {
                     </div>
                     
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap lg:flex-nowrap">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={Download}
-                        onClick={() => handleDownloadPDF(invoice)}
-                      >
-                        PDF
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
