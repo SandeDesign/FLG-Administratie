@@ -51,7 +51,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-40">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-50">
         <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-8 w-auto" />
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -68,12 +68,12 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
       <div className="flex h-screen md:h-auto md:min-h-screen">
         {/* Sidebar */}
         <div
-          className={`fixed md:relative left-0 top-16 md:top-0 h-[calc(100vh-64px)] md:h-screen w-80 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-30 md:z-0 ${
+          className={`fixed md:fixed left-0 top-16 md:top-0 h-[calc(100vh-64px)] md:h-screen w-80 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-50 md:z-0 overflow-hidden shadow-lg md:shadow-none ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
         >
           {/* Logo */}
-          <div className="hidden md:flex items-center gap-3 px-6 py-6 border-b border-gray-200">
+          <div className="hidden md:flex items-center gap-3 px-6 py-6 border-b border-gray-200 flex-shrink-0">
             <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-10 w-auto" />
             <div>
               <h1 className="text-lg font-bold text-gray-900">AlloonApp</h1>
@@ -81,8 +81,8 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
+          {/* Navigation - SCROLLABLE */}
+          <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto overflow-x-hidden">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
@@ -104,8 +104,8 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
             })}
           </nav>
 
-          {/* User Info & Logout */}
-          <div className="border-t border-gray-200 p-4 space-y-3">
+          {/* User Info & Logout - STICKY BOTTOM */}
+          <div className="border-t border-gray-200 p-4 space-y-3 flex-shrink-0 bg-white">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
                 <User className="h-6 w-6 text-white" />
@@ -131,7 +131,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
         {/* Mobile Overlay */}
         {mobileMenuOpen && (
           <div
-            className="fixed inset-0 bg-black/50 md:hidden z-30"
+            className="fixed inset-0 bg-black/50 md:hidden z-40 top-16"
             onClick={() => setMobileMenuOpen(false)}
           ></div>
         )}
