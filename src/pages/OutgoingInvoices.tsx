@@ -15,6 +15,7 @@ import { db } from '../lib/firebase';
 const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/ttdixmxlu9n7rvbnxgfomilht2ihllc2';
 
 interface InvoiceItem {
+  title: string;
   description: string;
   quantity: number;
   rate: number;
@@ -66,7 +67,7 @@ const OutgoingInvoices: React.FC = () => {
     projectCode: ''
   });
 
-  const [items, setItems] = useState<InvoiceItem[]>([{ description: '', quantity: 1, rate: 0, amount: 0 }]);
+  const [items, setItems] = useState<InvoiceItem[]>([{ title: '', description: '', quantity: 1, rate: 0, amount: 0 }]);
 
   const loadInvoices = useCallback(async () => {
     if (!user || !selectedCompany) {
@@ -126,7 +127,7 @@ const OutgoingInvoices: React.FC = () => {
       purchaseOrder: '',
       projectCode: ''
     });
-    setItems([{ description: '', quantity: 1, rate: 0, amount: 0 }]);
+    setItems([{ title: '', description: '', quantity: 1, rate: 0, amount: 0 }]);
     loadRelations();
     generateNextInvoiceNumber();
     setView('create');
@@ -177,7 +178,7 @@ const OutgoingInvoices: React.FC = () => {
   };
 
   const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, rate: 0, amount: 0 }]);
+    setItems([...items, { title: '', description: '', quantity: 1, rate: 0, amount: 0 }]);
   };
 
   const removeItem = (idx: number) => {
@@ -540,40 +541,70 @@ const OutgoingInvoices: React.FC = () => {
 
             <div className="space-y-3">
               {items.map((item, i) => (
-                <div key={i} className="flex gap-2 items-end bg-gray-50 p-3 rounded-lg">
-                  <input
-                    placeholder="Beschrijving"
-                    value={item.description}
-                    onChange={e => updateItem(i, 'description', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Qty"
-                    value={item.quantity}
-                    onChange={e => updateItem(i, 'quantity', Number(e.target.value))}
-                    min="0.1"
-                    step="0.1"
-                    className="w-16 px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Tarief"
-                    value={item.rate}
-                    onChange={e => updateItem(i, 'rate', Number(e.target.value))}
-                    min="0"
-                    step="0.01"
-                    className="w-24 px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <div className="w-24 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-right text-gray-900">
-                    €{item.amount.toFixed(2)}
+                <div key={i} className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+                  {/* Title */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Titel</label>
+                    <input
+                      placeholder="Bijv: Webdesign diensten"
+                      value={item.title}
+                      onChange={e => updateItem(i, 'title', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
                   </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Beschrijving</label>
+                    <textarea
+                      placeholder="Optioneel: Detailbeschrijving van het product/dienst..."
+                      value={item.description}
+                      onChange={e => updateItem(i, 'description', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                    />
+                  </div>
+
+                  {/* Quantity, Rate, Amount - Grid for better mobile */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Hoeveelheid</label>
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={e => updateItem(i, 'quantity', Number(e.target.value))}
+                        min="0.1"
+                        step="0.1"
+                        className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Tarief</label>
+                      <input
+                        type="number"
+                        value={item.rate}
+                        onChange={e => updateItem(i, 'rate', Number(e.target.value))}
+                        min="0"
+                        step="0.01"
+                        className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Bedrag</label>
+                      <div className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-right text-gray-900">
+                        €{item.amount.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delete Button */}
                   <button
                     type="button"
                     onClick={() => removeItem(i)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="w-full p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium flex items-center justify-center gap-2"
                   >
                     <Trash2 className="h-4 w-4" />
+                    Verwijderen
                   </button>
                 </div>
               ))}
@@ -693,30 +724,6 @@ const OutgoingInvoices: React.FC = () => {
         </Card>
       )}
 
-      {/* Stats Bar */}
-      {filteredInvoices.length > 0 && (
-        <div className="bg-white border-2 border-gray-200 rounded-lg px-4 sm:px-6 py-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-            <div>
-              <p className="text-gray-600 font-medium">Totaal</p>
-              <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">€{totalAmount.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-gray-600 font-medium">Concept</p>
-              <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">{draftCount}</p>
-            </div>
-            <div>
-              <p className="text-blue-600 font-medium">Verstuurd</p>
-              <p className="text-lg sm:text-xl font-bold text-blue-600 mt-1">{sentCount}</p>
-            </div>
-            <div>
-              <p className="text-green-600 font-medium">Betaald</p>
-              <p className="text-lg sm:text-xl font-bold text-green-600 mt-1">{paidCount}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Invoice List */}
       {filteredInvoices.length === 0 ? (
         <Card>
@@ -728,7 +735,8 @@ const OutgoingInvoices: React.FC = () => {
           />
         </Card>
       ) : (
-        <div className="space-y-3">
+        <>
+          <div className="space-y-3">
           {filteredInvoices.map(invoice => {
             const StatusIcon = getStatusIcon(invoice.status);
             const isExpanded = expandedInvoice === invoice.id;
@@ -808,14 +816,20 @@ const OutgoingInvoices: React.FC = () => {
                       <div className="bg-white rounded-lg p-4 space-y-2">
                         <h4 className="font-semibold text-sm text-gray-900 mb-3">Factuurregels</h4>
                         {invoice.items.map((item, i) => (
-                          <div key={i} className="flex justify-between items-start text-xs">
-                            <div className="flex-1">
-                              <p className="text-gray-900 font-medium">{item.description}</p>
-                              <p className="text-gray-500 text-xs mt-0.5">
-                                {item.quantity}x @ €{item.rate.toFixed(2)}
-                              </p>
+                          <div key={i} className="pb-3 last:pb-0">
+                            {item.title && (
+                              <p className="text-gray-900 font-semibold text-sm">{item.title}</p>
+                            )}
+                            {item.description && (
+                              <p className="text-gray-600 text-xs mt-1 whitespace-pre-wrap">{item.description}</p>
+                            )}
+                            <div className="flex justify-between items-baseline mt-2 text-xs text-gray-700">
+                              <span>{item.quantity}x @ €{item.rate.toFixed(2)}</span>
+                              <span className="font-semibold text-gray-900">€{item.amount.toFixed(2)}</span>
                             </div>
-                            <span className="font-semibold text-gray-900">€{item.amount.toFixed(2)}</span>
+                            {i < invoice.items.length - 1 && (
+                              <div className="border-t border-gray-200 mt-3" />
+                            )}
                           </div>
                         ))}
                         <div className="border-t border-gray-200 pt-2 mt-3 flex justify-between font-semibold">
@@ -887,7 +901,30 @@ const OutgoingInvoices: React.FC = () => {
               </Card>
             );
           })}
-        </div>
+          </div>
+
+          {/* Stats Bar */}
+          <div className="bg-white border-2 border-gray-200 rounded-lg px-4 sm:px-6 py-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+              <div>
+                <p className="text-gray-600 font-medium">Totaal</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">€{totalAmount.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 font-medium">Concept</p>
+                <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">{draftCount}</p>
+              </div>
+              <div>
+                <p className="text-blue-600 font-medium">Verstuurd</p>
+                <p className="text-lg sm:text-xl font-bold text-blue-600 mt-1">{sentCount}</p>
+              </div>
+              <div>
+                <p className="text-green-600 font-medium">Betaald</p>
+                <p className="text-lg sm:text-xl font-bold text-green-600 mt-1">{paidCount}</p>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
