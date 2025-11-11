@@ -1,10 +1,23 @@
 // src/components/layout/MobileBottomNav.tsx
+// MINIMAL CHANGES: Only add company type filtering to existing code
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Menu } from 'lucide-react';
+import { 
+  Home, 
+  Clock, 
+  FileText, 
+  Settings,
+  Users,
+  Building2,
+  Menu,
+  Send,
+  Calendar,
+  Factory,
+  BarChart3,
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
-import { getMobileBottomNavItems, isMenuItemDisabled } from '../../utils/menuConfig';
 
 interface MobileBottomNavProps {
   onMenuClick: () => void;
@@ -12,12 +25,49 @@ interface MobileBottomNavProps {
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
   const { userRole } = useAuth();
-  const { selectedCompany } = useApp();
-
+  const { selectedCompany } = useApp(); // ✅ NEW
+  
   if (!userRole) return null;
 
-  const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined;
-  const coreNavItems = getMobileBottomNavItems(userRole, companyType);
+  const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined; // ✅ NEW
+
+  const getCoreNavItems = () => {
+    // ✅ NEW: Different nav items per company type for admin
+    if (companyType === 'project') {
+      return [
+        { href: '/', icon: Home, label: 'Dashboard' },
+        { href: '/project-dashboard', icon: Factory, label: 'Project' },
+        { href: '/outgoing-invoices', icon: Send, label: 'Facturen' },
+        { href: '/settings', icon: Settings, label: 'Instellingen' },
+      ];
+    }
+
+    // Default employer nav items
+    const navItems: Record<string, Array<{ href: string; icon: any; label: string }>> = {
+      employee: [
+        { href: '/', icon: Home, label: 'Dashboard' },
+        { href: '/timesheets', icon: Clock, label: 'Uren' },
+        { href: '/payslips', icon: FileText, label: 'Loonstrook' },
+        { href: '/settings', icon: Settings, label: 'Profiel' },
+      ],
+      manager: [
+        { href: '/', icon: Home, label: 'Dashboard' },
+        { href: '/employees', icon: Users, label: 'Team' },
+        { href: '/timesheets', icon: Clock, label: 'Uren' },
+        { href: '/timesheet-approvals', icon: Calendar, label: 'Goedkeuren' },
+      ],
+      admin: [
+        { href: '/', icon: Home, label: 'Dashboard' },
+        { href: '/timesheet-approvals', icon: Clock, label: 'Uren Verwerken' },
+        { href: '/outgoing-invoices', icon: Send, label: 'Facturen' },
+        { href: '/employees', icon: Users, label: 'Werknemers' },
+      ],
+    };
+    
+    return navItems[userRole] || navItems.employee;
+  };
+
+  const coreNavItems = getCoreNavItems();
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 shadow-lg" style={{ position: 'fixed', bottom: 0, width: '100%' }}>
