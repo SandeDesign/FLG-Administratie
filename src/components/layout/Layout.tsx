@@ -66,20 +66,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="relative">
               <button
                 onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
-                className="flex items-center space-x-2 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <Building2 className="h-5 w-5 text-blue-600" />
                 <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Dropdown Menu */}
+              {/* Dropdown Menu - Opens LEFT on mobile */}
               {companyDropdownOpen && (
                 <>
                   <div 
                     className="fixed inset-0 z-10" 
                     onClick={() => setCompanyDropdownOpen(false)} 
                   />
-                  <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto">
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto lg:right-0">
                     <div className="p-2 space-y-1">
                       {companies && companies.map((company) => (
                         <button
@@ -107,6 +107,61 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </>
               )}
             </div>
+          </div>
+        </header>
+        </header>
+
+        {/* Desktop Header */}
+        <header className="hidden lg:flex lg:items-center lg:justify-between lg:px-6 lg:py-4 lg:bg-white lg:border-b lg:border-gray-200">
+          <h1 className="text-2xl font-semibold text-gray-900">
+            AlloonApp
+          </h1>
+          
+          {/* RIGHT: Company Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <Building2 className="h-5 w-5 text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">{selectedCompany?.name || 'Selecteer bedrijf'}</span>
+              <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Dropdown Menu */}
+            {companyDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setCompanyDropdownOpen(false)} 
+                />
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto">
+                  <div className="p-2 space-y-1">
+                    {companies && companies.map((company) => (
+                      <button
+                        key={company.id}
+                        onClick={() => {
+                          setSelectedCompany(company);
+                          setCompanyDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left ${
+                          selectedCompany?.id === company.id
+                            ? 'bg-blue-50 border border-blue-200 text-blue-900'
+                            : 'hover:bg-gray-50 text-gray-700'
+                        }`}
+                      >
+                        <div className={`p-1.5 rounded-lg ${
+                          selectedCompany?.id === company.id ? 'bg-blue-500' : 'bg-gray-400'
+                        }`}>
+                          <Building2 className="h-3 w-3 text-white" />
+                        </div>
+                        <span className="font-medium text-sm">{company.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </header>
 
