@@ -323,9 +323,27 @@ export default function Timesheets() {
       updatedAt: new Date()
     };
 
+    // Recalculate totals INCLUDING workActivities
+    let totalRegularHours = 0;
+    let totalTravelKilometers = 0;
+
+    updatedEntries.forEach(e => {
+      totalRegularHours += e.regularHours || 0;
+      
+      if (e.workActivities && e.workActivities.length > 0) {
+        e.workActivities.forEach(activity => {
+          totalRegularHours += activity.hours || 0;
+        });
+      }
+
+      totalTravelKilometers += e.travelKilometers || 0;
+    });
+
     setCurrentTimesheet({
       ...currentTimesheet,
       entries: updatedEntries,
+      totalRegularHours: totalRegularHours,
+      totalTravelKilometers: totalTravelKilometers,
       updatedAt: new Date()
     });
   };
