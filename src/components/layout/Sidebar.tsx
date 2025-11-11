@@ -1,76 +1,17 @@
+// src/components/layout/Sidebar.tsx
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  Clock,
-  Calendar,
-  HeartPulse,
-  FileText,
-  Upload,
-  Download,
-  Settings,
-  LogOut,
-  Shield,
   ChevronDown,
   ChevronRight,
   ChevronLeft,
-  Zap,
-  TrendingUp,
-  Activity,
-  Receipt,
-  Send,
-  FolderOpen,
-  UserCheck,
+  LogOut,
+  Building2,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { getNavigationSections, isMenuItemDisabled, getMenuItemDisabledReason } from '../../utils/menuConfig';
 
-export interface NavigationItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  roles: string[];
-  badge?: string;
-  color?: string;
-}
-
-export const navigation: NavigationItem[] = [
-  // ✅ DASHBOARD - SOLO (NO SECTION)
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'] },
-  
-  // PERSONEEL SECTION
-  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'] },
-  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'] },
-  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin', 'manager'] },
-  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'manager'] },
-  { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'] },
-  
-  // FACTURATIE SECTION
-  { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'] },
-  { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'] },
-  { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'] },
-  
-  // DATA & EXPORTS SECTION
-  { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin', 'manager'] },
-  { name: 'Drive Bestanden', href: '/drive-files', icon: FolderOpen, roles: ['admin'] },
-  
-  // SYSTEEM SECTION
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'] },
-  { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'] },
-  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'] },
-  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'] },
-];
-
-interface Section {
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  items: NavigationItem[];
-  defaultOpen?: boolean;
-}
-
-// Company Selector
 const CompanySelector: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
   const { companies, selectedCompany, setSelectedCompany } = useApp();
   const { userRole } = useAuth();
@@ -138,6 +79,9 @@ const CompanySelector: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
                     </div>
                     <div className="text-left flex-1">
                       <div className="text-sm font-medium">{company.name}</div>
+                      <div className="text-xs text-gray-500">
+                        {company.companyType === 'project' ? 'Project' : 'Werkgever'}
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -151,27 +95,43 @@ const CompanySelector: React.FC<{ collapsed: boolean }> = ({ collapsed }) => {
 };
 
 // Navigation Item
-const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean }> = ({ item, collapsed }) => (
+const NavItem: React.FC<{ 
+  item: any; 
+  collapsed: boolean;
+  isDisabled: boolean;
+  disabledReason: string;
+}> = ({ item, collapsed, isDisabled, disabledReason }) => (
   <NavLink
-    to={item.href}
+    to={isDisabled ? '#' : item.href}
+    onClick={(e) => {
+      if (isDisabled) {
+        e.preventDefault();
+      }
+    }}
     className={({ isActive }) =>
       `group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-        isActive
-          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border border-blue-200'
-          : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50 hover:text-gray-900'
+        isDisabled
+          ? 'opacity-50 cursor-not-allowed text-gray-400'
+          : isActive
+            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border border-blue-200'
+            : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50 hover:text-gray-900'
       } ${collapsed ? 'justify-center' : ''}`
     }
-    title={collapsed ? item.name : undefined}
+    title={collapsed ? item.name : disabledReason || undefined}
   >
     {({ isActive }) => (
       <>
         <div className={`p-2 rounded-lg ${collapsed ? '' : 'mr-3'} transition-all duration-200 ${
-          isActive 
-            ? 'bg-blue-500 shadow-sm' 
-            : 'bg-gray-100 group-hover:bg-gray-200'
+          isDisabled
+            ? 'bg-gray-200'
+            : isActive 
+              ? 'bg-blue-500 shadow-sm' 
+              : 'bg-gray-100 group-hover:bg-gray-200'
         }`}>
           <item.icon className={`h-4 w-4 ${
-            isActive ? 'text-white' : 'text-gray-600'
+            isDisabled
+              ? 'text-gray-400'
+              : isActive ? 'text-white' : 'text-gray-600'
           }`} />
         </div>
         {!collapsed && (
@@ -219,6 +179,7 @@ const SectionHeader: React.FC<{
 
 const Sidebar: React.FC = () => {
   const { signOut, userRole } = useAuth();
+  const { selectedCompany } = useApp();
   const [collapsed, setCollapsed] = useState(true);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
@@ -252,76 +213,58 @@ const Sidebar: React.FC = () => {
     localStorage.setItem('sidebarExpandedSections', JSON.stringify(newExpandedSections));
   };
 
-  const filteredNavigation = navigation.filter(item => userRole && item.roles.includes(userRole));
+  // ✅ GET NAVIGATION SECTIONS BASED ON COMPANY TYPE
+  const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined;
+  const sections = getNavigationSections(userRole, companyType);
 
-  // ✅ DASHBOARD ITEM (NO SECTION)
-  const dashboardItem = filteredNavigation.find(i => i.name === 'Dashboard');
-
-  const sections: Section[] = [
-    { 
-      title: 'Personeel', 
-      icon: Activity, 
-      defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Verzuim Beheren'].includes(i.name)) 
-    },
-    { 
-      title: 'Facturatie', 
-      icon: Receipt, 
-      defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Relaties', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)) 
-    },
-    { 
-      title: 'Data & Exports', 
-      icon: TrendingUp, 
-      defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Uren Export', 'Drive Bestanden'].includes(i.name)) 
-    },
-    { 
-      title: 'Systeem', 
-      icon: Settings, 
-      defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Bedrijven', 'Loonstroken', 'Audit Log', 'Instellingen'].includes(i.name)) 
-    },
-  ].filter(section => section.items.length > 0);
+  // Dashboard item
+  const dashboardItem = sections
+    .flatMap(s => s.items)
+    .find(i => i.name === 'Dashboard') || 
+    { name: 'Dashboard', href: '/', icon: require('lucide-react').LayoutDashboard, roles: ['admin'], companyTypes: ['employer', 'project'] };
 
   return (
     <div className={`hidden lg:flex lg:flex-col lg:bg-white lg:border-r lg:border-gray-200 lg:shadow-sm transition-all duration-300 ${
-      collapsed ? 'lg:w-20' : 'lg:w-72'
+      collapsed ? 'w-20' : 'w-64'
     }`}>
-      {/* ✅ HEADER - GROTER LOGO */}
-      <div className="flex h-40 items-center justify-center border-b border-gray-100 px-4 bg-gradient-to-r from-slate-50 to-gray-50 relative">
+      {/* Logo & Collapse Button */}
+      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 flex-shrink-0">
         {!collapsed && (
-          <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-32 w-auto drop-shadow-sm" />
-        )}
-        {collapsed && (
-          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-2xl">A</span>
+          <div className="flex items-center gap-2">
+            <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-8 w-auto" />
+            <span className="font-bold text-lg text-gray-900">Alloon</span>
           </div>
         )}
-        
         <button
           onClick={handleToggleCollapsed}
-          className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+          title={collapsed ? 'Uitvouwen' : 'Inklappen'}
         >
-          <ChevronLeft className={`h-3 w-3 text-gray-600 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} />
+          {collapsed ? (
+            <ChevronRight className="h-5 w-5 text-gray-600" />
+          ) : (
+            <ChevronLeft className="h-5 w-5 text-gray-600" />
+          )}
         </button>
       </div>
 
       {/* Company Selector */}
       <CompanySelector collapsed={collapsed} />
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-2 px-4 py-6 overflow-y-auto">
-        {/* ✅ DASHBOARD - SOLO (NO SECTION) */}
-        {dashboardItem && (
-          <div className="pb-4 border-b border-gray-200">
-            <NavItem item={dashboardItem} collapsed={collapsed} />
-          </div>
-        )}
+      {/* Dashboard Item */}
+      <div className={`${collapsed ? 'px-2' : 'px-4'} py-4 flex-shrink-0`}>
+        <NavItem 
+          item={dashboardItem} 
+          collapsed={collapsed}
+          isDisabled={false}
+          disabledReason=""
+        />
+      </div>
 
-        {/* ✅ SECTIONS */}
+      {/* Navigation Sections - SCROLLABLE */}
+      <nav className="flex-1 px-3 py-6 space-y-6 overflow-y-auto overflow-x-hidden">
         {sections.map((section) => (
-          <div key={section.title} className="space-y-1">
+          <div key={section.title}>
             <SectionHeader
               title={section.title}
               icon={section.icon}
@@ -329,12 +272,23 @@ const Sidebar: React.FC = () => {
               isExpanded={expandedSections.includes(section.title)}
               onToggle={() => toggleSection(section.title)}
             />
-            
-            {(collapsed || expandedSections.includes(section.title)) && (
-              <div className="space-y-1">
-                {section.items.map((item) => (
-                  <NavItem key={item.name} item={item} collapsed={collapsed} />
-                ))}
+
+            {(expandedSections.includes(section.title) || collapsed === false) && (
+              <div className={`space-y-1 ${collapsed ? '' : 'ml-0'}`}>
+                {section.items.map((item) => {
+                  const isDisabled = isMenuItemDisabled(item, selectedCompany?.id);
+                  const disabledReason = getMenuItemDisabledReason(item);
+
+                  return (
+                    <NavItem
+                      key={item.name}
+                      item={item}
+                      collapsed={collapsed}
+                      isDisabled={isDisabled}
+                      disabledReason={disabledReason}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -342,17 +296,13 @@ const Sidebar: React.FC = () => {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-gray-100 p-4 bg-gradient-to-r from-slate-50 to-gray-50">
+      <div className="border-t border-gray-200 p-4 flex-shrink-0">
         <button
-          onClick={signOut}
-          className={`flex w-full items-center px-4 py-3 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 group ${
-            collapsed ? 'justify-center' : ''
-          }`}
+          onClick={() => signOut()}
+          className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
           title={collapsed ? 'Uitloggen' : undefined}
         >
-          <div className="p-2 rounded-lg mr-3 bg-gray-100 group-hover:bg-red-100 transition-colors">
-            <LogOut className="h-4 w-4 text-gray-600 group-hover:text-red-600" />
-          </div>
+          <LogOut className="h-4 w-4" />
           {!collapsed && <span>Uitloggen</span>}
         </button>
       </div>
