@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Send, Search, Calendar, Euro, Building2, User, CheckCircle, AlertCircle, Clock, Edit, Trash2, ChevronDown, X, ArrowLeft } from 'lucide-react';
+import { Plus, Send, Search, Calendar, Euro, Building2, User, CheckCircle, AlertCircle, Clock, Edit, Trash2, ChevronDown, X, ArrowLeft, TrendingUp, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
+import Card from '../components/ui/Card';
+import Modal from '../components/ui/Modal';
 import { outgoingInvoiceService, OutgoingInvoice, CompanyInfo } from '../services/outgoingInvoiceService';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -33,7 +35,7 @@ const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
-  
+
   const [invoices, setInvoices] = useState<OutgoingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,16 +68,24 @@ const OutgoingInvoices: React.FC = () => {
   const [items, setItems] = useState<InvoiceItem[]>([{ description: '', quantity: 1, rate: 0, amount: 0 }]);
 
   const loadInvoices = useCallback(async () => {
-    if (!user || !selectedCompany) { setLoading(false); return; }
+    if (!user || !selectedCompany) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const data = await outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id);
       setInvoices(data);
-    } catch (e) { showError('Fout', 'Kon facturen niet laden'); }
-    finally { setLoading(false); }
+    } catch (e) {
+      showError('Fout', 'Kon facturen niet laden');
+    } finally {
+      setLoading(false);
+    }
   }, [user, selectedCompany, showError]);
 
-  useEffect(() => { loadInvoices(); }, [loadInvoices]);
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
 
   const loadRelations = useCallback(async () => {
     if (!user || !selectedCompany) return;
@@ -83,7 +93,9 @@ const OutgoingInvoices: React.FC = () => {
       const q = query(collection(db, 'invoiceRelations'), where('userId', '==', user.uid), where('companyId', '==', selectedCompany.id));
       const snap = await getDocs(q);
       setRelations(snap.docs.map(d => ({ id: d.id, ...d.data() } as InvoiceRelation)));
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   }, [user, selectedCompany]);
 
   const generateNextInvoiceNumber = useCallback(async () => {
@@ -91,12 +103,28 @@ const OutgoingInvoices: React.FC = () => {
     try {
       const num = await outgoingInvoiceService.getNextInvoiceNumber(user.uid, selectedCompany.id);
       setInvoiceNumber(num);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   }, [user, selectedCompany]);
 
   const handleCreateNew = () => {
     setEditingInvoice(null);
-    setFormData({ clientId: '', clientName: '', clientEmail: '', clientAddress: { street: '', city: '', zipCode: '', country: 'Nederland' }, clientPhone: '', clientKvk: '', clientTaxNumber: '', description: '', invoiceDate: new Date().toISOString().split('T')[0], dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], notes: '', purchaseOrder: '', projectCode: '' });
+    setFormData({
+      clientId: '',
+      clientName: '',
+      clientEmail: '',
+      clientAddress: { street: '', city: '', zipCode: '', country: 'Nederland' },
+      clientPhone: '',
+      clientKvk: '',
+      clientTaxNumber: '',
+      description: '',
+      invoiceDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      notes: '',
+      purchaseOrder: '',
+      projectCode: ''
+    });
     setItems([{ description: '', quantity: 1, rate: 0, amount: 0 }]);
     loadRelations();
     generateNextInvoiceNumber();
@@ -105,7 +133,21 @@ const OutgoingInvoices: React.FC = () => {
 
   const handleEdit = (inv: OutgoingInvoice) => {
     setEditingInvoice(inv);
-    setFormData({ clientId: inv.clientId || '', clientName: inv.clientName, clientEmail: inv.clientEmail, clientAddress: inv.clientAddress, clientPhone: inv.clientPhone || '', clientKvk: inv.clientKvk || '', clientTaxNumber: inv.clientTaxNumber || '', description: inv.description, invoiceDate: inv.invoiceDate.toISOString().split('T')[0], dueDate: inv.dueDate.toISOString().split('T')[0], notes: inv.notes || '', purchaseOrder: inv.purchaseOrder || '', projectCode: inv.projectCode || '' });
+    setFormData({
+      clientId: inv.clientId || '',
+      clientName: inv.clientName,
+      clientEmail: inv.clientEmail,
+      clientAddress: inv.clientAddress,
+      clientPhone: inv.clientPhone || '',
+      clientKvk: inv.clientKvk || '',
+      clientTaxNumber: inv.clientTaxNumber || '',
+      description: inv.description,
+      invoiceDate: inv.invoiceDate.toISOString().split('T')[0],
+      dueDate: inv.dueDate.toISOString().split('T')[0],
+      notes: inv.notes || '',
+      purchaseOrder: inv.purchaseOrder || '',
+      projectCode: inv.projectCode || ''
+    });
     setItems(inv.items);
     setInvoiceNumber(inv.invoiceNumber);
     loadRelations();
@@ -113,7 +155,16 @@ const OutgoingInvoices: React.FC = () => {
   };
 
   const handleSelectRelation = (rel: InvoiceRelation) => {
-    setFormData({ ...formData, clientId: rel.id, clientName: rel.name, clientEmail: rel.email, clientPhone: rel.phone || '', clientKvk: rel.kvk || '', clientTaxNumber: rel.taxNumber || '', clientAddress: rel.address || { street: '', city: '', zipCode: '', country: 'Nederland' } });
+    setFormData({
+      ...formData,
+      clientId: rel.id,
+      clientName: rel.name,
+      clientEmail: rel.email,
+      clientPhone: rel.phone || '',
+      clientKvk: rel.kvk || '',
+      clientTaxNumber: rel.taxNumber || '',
+      clientAddress: rel.address || { street: '', city: '', zipCode: '', country: 'Nederland' }
+    });
     setIsRelationsOpen(false);
   };
 
@@ -124,8 +175,13 @@ const OutgoingInvoices: React.FC = () => {
     setItems(newItems);
   };
 
-  const addItem = () => { setItems([...items, { description: '', quantity: 1, rate: 0, amount: 0 }]); };
-  const removeItem = (idx: number) => { if (items.length > 1) setItems(items.filter((_, i) => i !== idx)); };
+  const addItem = () => {
+    setItems([...items, { description: '', quantity: 1, rate: 0, amount: 0 }]);
+  };
+
+  const removeItem = (idx: number) => {
+    if (items.length > 1) setItems(items.filter((_, i) => i !== idx));
+  };
 
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
   const vatAmount = subtotal * 0.21;
@@ -133,10 +189,19 @@ const OutgoingInvoices: React.FC = () => {
 
   const handleSubmitInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !selectedCompany) { showError('Fout', 'Geen gebruiker/bedrijf'); return; }
-    if (!formData.clientName.trim()) { showError('Fout', 'Klantnaam verplicht'); return; }
+    if (!user || !selectedCompany) {
+      showError('Fout', 'Geen gebruiker/bedrijf');
+      return;
+    }
+    if (!formData.clientName.trim()) {
+      showError('Fout', 'Klantnaam verplicht');
+      return;
+    }
     const validItems = items.filter(i => i.description.trim());
-    if (validItems.length === 0) { showError('Fout', 'Min 1 regel'); return; }
+    if (validItems.length === 0) {
+      showError('Fout', 'Minimaal 1 regel nodig');
+      return;
+    }
 
     setFormLoading(true);
     try {
@@ -166,10 +231,10 @@ const OutgoingInvoices: React.FC = () => {
 
       if (editingInvoice?.id) {
         await outgoingInvoiceService.updateInvoice(editingInvoice.id, data);
-        success('Bijgewerkt', 'OK');
+        success('Bijgewerkt', 'Factuur succesvol bijgewerkt');
       } else {
         await outgoingInvoiceService.createInvoice(data);
-        success('Aangemaakt', 'OK');
+        success('Aangemaakt', 'Factuur succesvol aangemaakt');
       }
       loadInvoices();
       setView('list');
@@ -182,7 +247,10 @@ const OutgoingInvoices: React.FC = () => {
 
   const handleSendInvoice = async (invoiceId: string) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
-    if (!invoice) { showError('Fout', 'Niet gevonden'); return; }
+    if (!invoice) {
+      showError('Fout', 'Factuur niet gevonden');
+      return;
+    }
     setSendingWebhook(invoiceId);
     try {
       const info: CompanyInfo = {
@@ -194,11 +262,24 @@ const OutgoingInvoices: React.FC = () => {
         address: { street: selectedCompany?.address?.street || '', city: selectedCompany?.address?.city || '', zipCode: selectedCompany?.address?.zipCode || '', country: selectedCompany?.address?.country || '' }
       };
       const html = await outgoingInvoiceService.generateInvoiceHTML(invoice, info);
-      const payload = { event: 'invoice.sent', timestamp: new Date().toISOString(), client: { name: invoice.clientName, email: invoice.clientEmail, phone: invoice.clientPhone || null }, invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, status: 'sent', totalAmount: invoice.totalAmount, items: invoice.items }, company: { id: selectedCompany?.id, name: selectedCompany?.name }, user: { id: user?.uid, email: user?.email }, htmlContent: html };
-      const res = await fetch(MAKE_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: AbortSignal.timeout(10000) });
+      const payload = {
+        event: 'invoice.sent',
+        timestamp: new Date().toISOString(),
+        client: { name: invoice.clientName, email: invoice.clientEmail, phone: invoice.clientPhone || null },
+        invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, status: 'sent', totalAmount: invoice.totalAmount, items: invoice.items },
+        company: { id: selectedCompany?.id, name: selectedCompany?.name },
+        user: { id: user?.uid, email: user?.email },
+        htmlContent: html
+      };
+      const res = await fetch(MAKE_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000)
+      });
       if (!res.ok) throw new Error('Webhook error');
       await outgoingInvoiceService.sendInvoice(invoiceId);
-      success('Verstuurd', 'OK');
+      success('Verstuurd', 'Factuur succesvol verzonden');
       loadInvoices();
     } catch (e) {
       showError('Fout', 'Kon niet versturen');
@@ -210,7 +291,7 @@ const OutgoingInvoices: React.FC = () => {
   const handleMarkAsPaid = async (invoiceId: string) => {
     try {
       await outgoingInvoiceService.markAsPaid(invoiceId);
-      success('Betaald', 'OK');
+      success('Betaald', 'Factuur als betaald gemarkeerd');
       loadInvoices();
     } catch (e) {
       showError('Fout', 'Kon niet bijwerken');
@@ -218,173 +299,590 @@ const OutgoingInvoices: React.FC = () => {
   };
 
   const handleDeleteInvoice = async (invoiceId: string) => {
-    if (!confirm('Verwijderen?')) return;
+    if (!confirm('Weet u zeker dat u deze factuur wilt verwijderen?')) return;
     try {
       await outgoingInvoiceService.deleteInvoice(invoiceId);
-      success('Verwijderd', 'OK');
+      success('Verwijderd', 'Factuur verwijderd');
       loadInvoices();
     } catch (e) {
       showError('Fout', 'Kon niet verwijderen');
     }
   };
 
-  const getStatusColor = (status: OutgoingInvoice['status']) => ({ draft: 'bg-gray-100 text-gray-800', sent: 'bg-blue-100 text-blue-800', paid: 'bg-green-100 text-green-800', overdue: 'bg-red-100 text-red-800', cancelled: 'bg-gray-100 text-gray-800' }[status] || 'bg-gray-100 text-gray-800');
-  const getStatusIcon = (status: OutgoingInvoice['status']) => ({ draft: Clock, sent: Send, paid: CheckCircle, overdue: AlertCircle, cancelled: AlertCircle }[status] || Clock);
-  const getStatusText = (status: OutgoingInvoice['status']) => ({ draft: 'Concept', sent: 'Verstuurd', paid: 'Betaald', overdue: 'Vervallen', cancelled: 'Geannuleerd' }[status] || status);
+  const getStatusColor = (status: OutgoingInvoice['status']) => {
+    const colors = {
+      draft: 'bg-gray-100 text-gray-800 border-gray-200',
+      sent: 'bg-blue-50 text-blue-700 border-blue-200',
+      paid: 'bg-green-50 text-green-700 border-green-200',
+      overdue: 'bg-red-50 text-red-700 border-red-200',
+      cancelled: 'bg-gray-100 text-gray-800 border-gray-200'
+    };
+    return colors[status] || colors.draft;
+  };
 
-  const filteredInvoices = invoices.filter(inv => (inv.clientName.toLowerCase().includes(searchTerm.toLowerCase()) || inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) && (statusFilter === 'all' || inv.status === statusFilter));
+  const getStatusIcon = (status: OutgoingInvoice['status']) => {
+    const icons = {
+      draft: Clock,
+      sent: Send,
+      paid: CheckCircle,
+      overdue: AlertCircle,
+      cancelled: AlertCircle
+    };
+    return icons[status] || Clock;
+  };
+
+  const getStatusText = (status: OutgoingInvoice['status']) => {
+    const texts = {
+      draft: 'Concept',
+      sent: 'Verstuurd',
+      paid: 'Betaald',
+      overdue: 'Vervallen',
+      cancelled: 'Geannuleerd'
+    };
+    return texts[status] || status;
+  };
+
+  const filteredInvoices = invoices.filter(
+    inv =>
+      (inv.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      (statusFilter === 'all' || inv.status === statusFilter)
+  );
 
   const totalAmount = filteredInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
   const draftCount = filteredInvoices.filter(inv => inv.status === 'draft').length;
   const sentCount = filteredInvoices.filter(inv => inv.status === 'sent').length;
   const paidCount = filteredInvoices.filter(inv => inv.status === 'paid').length;
+  const overdueCount = filteredInvoices.filter(inv => inv.status === 'overdue').length;
 
-  if (loading && view === 'list') return <LoadingSpinner />;
-  if (!selectedCompany) return <EmptyState icon={Building2} title="Geen bedrijf" description="Selecteer bedrijf" />;
+  if (loading && view === 'list') {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!selectedCompany) {
+    return (
+      <div className="space-y-6 px-4 sm:px-0">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Facturen</h1>
+        </div>
+        <EmptyState
+          icon={Building2}
+          title="Geen bedrijf geselecteerd"
+          description="Selecteer een bedrijf uit de dropdown in de zijbalk om facturen te beheren."
+        />
+      </div>
+    );
+  }
 
   if (view === 'create') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-          <div className="px-4 py-4 flex items-center gap-3">
-            <button onClick={() => setView('list')} className="p-2 hover:bg-gray-100 rounded-lg"><ArrowLeft className="h-5 w-5 text-gray-600" /></button>
-            <div><h1 className="text-xl font-bold text-gray-900">{editingInvoice ? 'Bewerken' : 'Nieuw'}</h1><p className="text-xs text-gray-600">{invoiceNumber}</p></div>
+      <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <button
+            onClick={() => setView('list')}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Terug"
+          >
+            <ArrowLeft className="h-5 w-5 text-gray-600" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {editingInvoice ? 'Factuur bewerken' : 'Nieuwe factuur'}
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">{invoiceNumber}</p>
           </div>
         </div>
-        <div className="px-4 py-4 pb-24">
-          <form onSubmit={handleSubmitInvoice} className="space-y-4">
+
+        <form onSubmit={handleSubmitInvoice} className="space-y-6">
+          {/* Client Selection */}
+          <Card className="p-5 sm:p-6 space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <User className="h-4 w-4 text-blue-600" />
+              </div>
+              <h2 className="text-sm font-semibold text-gray-900">Klantgegevens</h2>
+            </div>
+
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">Klant</label>
+              <label className="block text-xs font-medium text-gray-700 mb-2">Klant selecteren</label>
               <div className="relative">
-                <button type="button" onClick={() => setIsRelationsOpen(!isRelationsOpen)} className="w-full flex items-center justify-between p-3 border border-gray-300 rounded-lg bg-white text-sm">
-                  <span className={formData.clientName ? 'text-gray-900' : 'text-gray-500'}>{formData.clientName || 'Selecteer...'}</span>
+                <button
+                  type="button"
+                  onClick={() => setIsRelationsOpen(!isRelationsOpen)}
+                  className="w-full flex items-center justify-between p-3 border-2 border-gray-200 rounded-lg bg-white text-sm hover:border-gray-300 transition-colors"
+                >
+                  <span className={formData.clientName ? 'text-gray-900 font-medium' : 'text-gray-500'}>
+                    {formData.clientName || 'Kies een klant...'}
+                  </span>
                   <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isRelationsOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isRelationsOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-                    {relations.length === 0 ? <div className="p-3 text-xs text-gray-500">Geen relaties</div> : relations.map(rel => (
-                      <button key={rel.id} type="button" onClick={() => handleSelectRelation(rel)} className="w-full text-left px-3 py-2 hover:bg-gray-100 text-xs">
-                        <div className="font-medium text-gray-900">{rel.name}</div>
-                        <div className="text-gray-500">{rel.email}</div>
-                      </button>
-                    ))}
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                    {relations.length === 0 ? (
+                      <div className="p-4 text-xs text-gray-500 text-center">Geen relaties beschikbaar</div>
+                    ) : (
+                      relations.map(rel => (
+                        <button
+                          key={rel.id}
+                          type="button"
+                          onClick={() => handleSelectRelation(rel)}
+                          className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="font-medium text-gray-900 text-sm">{rel.name}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{rel.email}</div>
+                        </button>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-xs font-medium text-gray-700 mb-1">Factuurdatum</label><input type="date" value={formData.invoiceDate} onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" /></div>
-              <div><label className="block text-xs font-medium text-gray-700 mb-1">Vervaldatum</label><input type="date" value={formData.dueDate} onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" /></div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2"><label className="text-xs font-medium text-gray-700">Regels</label><button type="button" onClick={addItem} className="text-xs text-blue-600 font-medium flex items-center gap-1"><Plus className="h-3 w-3" />Regel</button></div>
-              <div className="space-y-2">
-                {items.map((item, i) => (
-                  <div key={i} className="flex gap-2 items-end">
-                    <input placeholder="Beschrijving" value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} className="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs" />
-                    <input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))} className="w-16 px-2 py-2 border border-gray-300 rounded-lg text-xs" />
-                    <input type="number" placeholder="Rate" value={item.rate} onChange={(e) => updateItem(i, 'rate', Number(e.target.value))} className="w-20 px-2 py-2 border border-gray-300 rounded-lg text-xs" />
-                    <div className="w-20 px-2 py-2 bg-gray-50 rounded-lg text-xs font-medium text-right">€{item.amount.toFixed(2)}</div>
-                    <button type="button" onClick={() => removeItem(i)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="h-4 w-4" /></button>
-                  </div>
-                ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">Naam</label>
+                <input
+                  type="text"
+                  value={formData.clientName}
+                  onChange={e => setFormData({ ...formData, clientName: e.target.value })}
+                  placeholder="Bedrijfsnaam"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">E-mail</label>
+                <input
+                  type="email"
+                  value={formData.clientEmail}
+                  onChange={e => setFormData({ ...formData, clientEmail: e.target.value })}
+                  placeholder="klant@bedrijf.nl"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">Telefoonnummer</label>
+                <input
+                  type="tel"
+                  value={formData.clientPhone}
+                  onChange={e => setFormData({ ...formData, clientPhone: e.target.value })}
+                  placeholder="+31 6 12345678"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">KvK-nummer</label>
+                <input
+                  type="text"
+                  value={formData.clientKvk}
+                  onChange={e => setFormData({ ...formData, clientKvk: e.target.value })}
+                  placeholder="12345678"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                />
               </div>
             </div>
+          </Card>
 
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-gray-600">Subtotaal:</span><span className="font-medium">€{subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-600">BTW:</span><span className="font-medium">€{vatAmount.toFixed(2)}</span></div>
-              <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200"><span>Totaal:</span><span>€{total.toFixed(2)}</span></div>
+          {/* Dates */}
+          <Card className="p-5 sm:p-6 space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Calendar className="h-4 w-4 text-orange-600" />
+              </div>
+              <h2 className="text-sm font-semibold text-gray-900">Datums</h2>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Opmerkingen</label>
-              <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">Factuurdatum</label>
+                <input
+                  type="date"
+                  value={formData.invoiceDate}
+                  onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })}
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">Vervaldatum</label>
+                <input
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Invoice Items */}
+          <Card className="p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                </div>
+                <h2 className="text-sm font-semibold text-gray-900">Factuurregels</h2>
+              </div>
+              <button
+                type="button"
+                onClick={addItem}
+                className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Regel toevoegen
+              </button>
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 flex gap-2">
-              <Button variant="ghost" onClick={() => setView('list')} className="flex-1">Annuleren</Button>
-              <Button variant="primary" type="submit" disabled={formLoading} className="flex-1">{formLoading ? '...' : 'Opslaan'}</Button>
+            <div className="space-y-3">
+              {items.map((item, i) => (
+                <div key={i} className="flex gap-2 items-end bg-gray-50 p-3 rounded-lg">
+                  <input
+                    placeholder="Beschrijving"
+                    value={item.description}
+                    onChange={e => updateItem(i, 'description', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Qty"
+                    value={item.quantity}
+                    onChange={e => updateItem(i, 'quantity', Number(e.target.value))}
+                    min="0.1"
+                    step="0.1"
+                    className="w-16 px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Tarief"
+                    value={item.rate}
+                    onChange={e => updateItem(i, 'rate', Number(e.target.value))}
+                    min="0"
+                    step="0.01"
+                    className="w-24 px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <div className="w-24 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-right text-gray-900">
+                    €{item.amount.toFixed(2)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(i)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
             </div>
-          </form>
-        </div>
+          </Card>
+
+          {/* Totals */}
+          <Card className="p-5 sm:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Subtotaal:</span>
+                <span className="text-lg font-semibold text-gray-900">€{subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">BTW (21%):</span>
+                <span className="text-lg font-semibold text-gray-900">€{vatAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-3 border-t border-blue-200">
+                <span className="text-sm font-semibold text-gray-900">Totaal:</span>
+                <span className="text-2xl font-bold text-blue-600">€{total.toFixed(2)}</span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Notes */}
+          <Card className="p-5 sm:p-6 space-y-4">
+            <label className="block text-xs font-medium text-gray-700">Opmerkingen</label>
+            <textarea
+              value={formData.notes}
+              onChange={e => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              placeholder="Eventuele opmerkingen op deze factuur..."
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none"
+            />
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pb-8">
+            <Button
+              type="button"
+              onClick={() => setView('list')}
+              variant="secondary"
+              className="flex-1"
+            >
+              Annuleren
+            </Button>
+            <Button
+              type="submit"
+              disabled={formLoading}
+              className="flex-1"
+            >
+              {formLoading ? 'Bezig...' : editingInvoice ? 'Bijwerken' : 'Opslaan'}
+            </Button>
+          </div>
+        </form>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div><h1 className="text-xl font-bold text-gray-900">Facturen</h1><p className="text-xs text-gray-600">{selectedCompany.name}</p></div>
-            <Button onClick={handleCreateNew} icon={Plus} size="sm">Nieuw</Button>
-          </div>
-          <div className="flex gap-2">
-            <div className="relative flex-1"><Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" /><input type="text" placeholder="Zoeken..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-8 pr-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500" />{searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400"><X className="h-3 w-3" /></button>}</div>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-2 py-2 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500"><option value="all">Alle</option><option value="draft">Concept</option><option value="sent">Verstuurd</option><option value="paid">Betaald</option></select>
-          </div>
-        </div>
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Facturen</h1>
+        <p className="text-sm text-gray-600 mt-2">
+          {filteredInvoices.length} factuur{filteredInvoices.length !== 1 ? 'en' : ''}
+        </p>
       </div>
 
-      <div className="px-4 py-4 pb-20">
-        {filteredInvoices.length === 0 ? <EmptyState icon={Send} title="Geen facturen" description="Maak nieuw" action={<Button onClick={handleCreateNew} icon={Plus}>Nieuw</Button>} /> : (
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="p-4 sm:p-6 bg-white">
           <div className="space-y-2">
-            {filteredInvoices.map((invoice) => {
-              const StatusIcon = getStatusIcon(invoice.status);
-              const isExpanded = expandedInvoice === invoice.id;
-              const isLoading = sendingWebhook === invoice.id;
-              return (
-                <div key={invoice.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-sm transition-shadow">
-                  <button onClick={() => setExpandedInvoice(isExpanded ? null : invoice.id)} className="w-full px-3 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
-                    <ChevronDown className={`h-5 w-5 text-gray-400 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-gray-900 text-sm truncate">{invoice.invoiceNumber}</span>
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}><StatusIcon className="h-3 w-3" />{getStatusText(invoice.status)}</span>
-                      </div>
-                      <div className="text-xs text-gray-600">{invoice.clientName}</div>
-                    </div>
-                    <div className="text-right flex-shrink-0"><div className="font-semibold text-gray-900 text-sm">€{invoice.totalAmount.toFixed(2)}</div><div className="text-xs text-gray-500">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div></div>
-                  </button>
-                  {isExpanded && (
-                    <div className="border-t border-gray-200 bg-gray-50 px-3 py-3 space-y-2 text-xs">
-                      {invoice.items.length > 0 && (
-                        <div className="bg-white rounded p-2">
-                          <div className="font-semibold text-gray-900 mb-1">Regels</div>
-                          {invoice.items.map((item, i) => (
-                            <div key={i} className="flex justify-between text-gray-600 mb-1 last:mb-0">
-                              <span className="truncate flex-1">{item.description}</span>
-                              <span className="ml-2 flex-shrink-0">€{item.amount.toFixed(2)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex gap-2 flex-wrap">
-                        <Button variant="ghost" size="sm" icon={Edit} onClick={() => handleEdit(invoice)} className="text-xs flex-1">Bewerk</Button>
-                        {invoice.status === 'draft' && <Button variant="primary" size="sm" icon={Send} onClick={() => handleSendInvoice(invoice.id!)} disabled={isLoading} className="text-xs flex-1">{isLoading ? '...' : 'Verstuur'}</Button>}
-                        {invoice.status === 'sent' && <Button variant="primary" size="sm" icon={CheckCircle} onClick={() => handleMarkAsPaid(invoice.id!)} className="text-xs flex-1">Betaald</Button>}
-                        {invoice.status === 'draft' && <Button variant="danger" size="sm" icon={Trash2} onClick={() => handleDeleteInvoice(invoice.id!)} className="text-xs flex-1">Del</Button>}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Totaal</p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">€{totalAmount.toFixed(2)}</p>
+            <p className="text-xs text-gray-500">{filteredInvoices.length} factuur</p>
           </div>
-        )}
+        </Card>
+
+        <Card className="p-4 sm:p-6 bg-gray-50 border border-gray-200">
+          <div className="space-y-2">
+            <p className="text-xs sm:text-sm font-medium text-gray-600">Concept</p>
+            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{draftCount}</p>
+            <p className="text-xs text-gray-500">In voorbereiding</p>
+          </div>
+        </Card>
+
+        <Card className="p-4 sm:p-6 bg-blue-50 border border-blue-200">
+          <div className="space-y-2">
+            <p className="text-xs sm:text-sm font-medium text-blue-700">Verstuurd</p>
+            <p className="text-2xl sm:text-3xl font-bold text-blue-600">{sentCount}</p>
+            <p className="text-xs text-blue-600">Wachten op betaling</p>
+          </div>
+        </Card>
+
+        <Card className="p-4 sm:p-6 bg-green-50 border border-green-200">
+          <div className="space-y-2">
+            <p className="text-xs sm:text-sm font-medium text-green-700">Betaald</p>
+            <p className="text-2xl sm:text-3xl font-bold text-green-600">{paidCount}</p>
+            <p className="text-xs text-green-600">Compleet</p>
+          </div>
+        </Card>
       </div>
 
-      {filteredInvoices.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3">
-          <div className="grid grid-cols-4 gap-3 text-xs">
-            <div><div className="text-gray-600">Totaal</div><div className="text-lg font-bold text-gray-900">€{totalAmount.toFixed(2)}</div></div>
-            <div><div className="text-gray-600">Concept</div><div className="text-lg font-bold text-gray-600">{draftCount}</div></div>
-            <div><div className="text-gray-600">Verstuurd</div><div className="text-lg font-bold text-blue-600">{sentCount}</div></div>
-            <div><div className="text-gray-600">Betaald</div><div className="text-lg font-bold text-green-600">{paidCount}</div></div>
-          </div>
+      {/* Search and Filter */}
+      <Card className="p-4 sm:p-5 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Zoeken op naam of nummer..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-10 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="px-3 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors bg-white"
+        >
+          <option value="all">Alle statussen</option>
+          <option value="draft">Concept</option>
+          <option value="sent">Verstuurd</option>
+          <option value="paid">Betaald</option>
+          <option value="overdue">Vervallen</option>
+        </select>
+        <Button onClick={handleCreateNew} icon={Plus} size="sm">
+          Nieuw
+        </Button>
+      </Card>
+
+      {/* Invoice List */}
+      {filteredInvoices.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={Send}
+            title="Geen facturen"
+            description={searchTerm ? 'Geen resultaten gevonden.' : 'Maak uw eerste factuur aan.'}
+            action={!searchTerm && <Button onClick={handleCreateNew} icon={Plus}>Nieuwe factuur</Button>}
+          />
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filteredInvoices.map(invoice => {
+            const StatusIcon = getStatusIcon(invoice.status);
+            const isExpanded = expandedInvoice === invoice.id;
+            const isLoading = sendingWebhook === invoice.id;
+            const daysUntilDue = Math.ceil((invoice.dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
+            return (
+              <Card
+                key={invoice.id}
+                className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer border-2 border-gray-200"
+              >
+                <button
+                  onClick={() => setExpandedInvoice(isExpanded ? null : invoice.id)}
+                  className="w-full"
+                >
+                  <div className="p-4 sm:p-5 flex items-center gap-3 sm:gap-4 hover:bg-gray-50 transition-colors">
+                    {/* Icon */}
+                    <div className={`p-3 rounded-lg flex-shrink-0 ${
+                      invoice.status === 'paid'
+                        ? 'bg-green-100'
+                        : invoice.status === 'sent'
+                        ? 'bg-blue-100'
+                        : invoice.status === 'overdue'
+                        ? 'bg-red-100'
+                        : 'bg-gray-100'
+                    }`}>
+                      <StatusIcon className={`h-5 w-5 ${
+                        invoice.status === 'paid'
+                          ? 'text-green-600'
+                          : invoice.status === 'sent'
+                          ? 'text-blue-600'
+                          : invoice.status === 'overdue'
+                          ? 'text-red-600'
+                          : 'text-gray-600'
+                      }`} />
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-semibold text-gray-900 text-sm truncate">
+                          {invoice.invoiceNumber}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(invoice.status)}`}>
+                          <StatusIcon className="h-3 w-3" />
+                          {getStatusText(invoice.status)}
+                        </span>
+                        {daysUntilDue > 0 && daysUntilDue <= 7 && invoice.status === 'sent' && (
+                          <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                            {daysUntilDue} dag{daysUntilDue !== 1 ? 'en' : ''} restant
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-600">{invoice.clientName}</div>
+                    </div>
+
+                    {/* Amount & Date */}
+                    <div className="text-right flex-shrink-0">
+                      <div className="font-semibold text-gray-900 text-sm">€{invoice.totalAmount.toFixed(2)}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {invoice.invoiceDate.toLocaleDateString('nl-NL')}
+                      </div>
+                    </div>
+
+                    {/* Chevron */}
+                    <ChevronDown
+                      className={`h-5 w-5 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+                    />
+                  </div>
+                </button>
+
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <div className="border-t-2 border-gray-200 bg-gray-50 px-4 sm:px-5 py-4 space-y-4">
+                    {/* Invoice Items */}
+                    {invoice.items.length > 0 && (
+                      <div className="bg-white rounded-lg p-4 space-y-2">
+                        <h4 className="font-semibold text-sm text-gray-900 mb-3">Factuurregels</h4>
+                        {invoice.items.map((item, i) => (
+                          <div key={i} className="flex justify-between items-start text-xs">
+                            <div className="flex-1">
+                              <p className="text-gray-900 font-medium">{item.description}</p>
+                              <p className="text-gray-500 text-xs mt-0.5">
+                                {item.quantity}x @ €{item.rate.toFixed(2)}
+                              </p>
+                            </div>
+                            <span className="font-semibold text-gray-900">€{item.amount.toFixed(2)}</span>
+                          </div>
+                        ))}
+                        <div className="border-t border-gray-200 pt-2 mt-3 flex justify-between font-semibold">
+                          <span className="text-gray-600">Totaal:</span>
+                          <span className="text-blue-600">€{invoice.totalAmount.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        onClick={() => handleEdit(invoice)}
+                        variant="secondary"
+                        size="sm"
+                        icon={Edit}
+                        className="flex-1 text-xs"
+                      >
+                        Bewerk
+                      </Button>
+
+                      {invoice.status === 'draft' && (
+                        <Button
+                          onClick={() => handleSendInvoice(invoice.id!)}
+                          disabled={isLoading}
+                          size="sm"
+                          icon={Send}
+                          className="flex-1 text-xs"
+                        >
+                          {isLoading ? '...' : 'Verstuur'}
+                        </Button>
+                      )}
+
+                      {invoice.status === 'sent' && (
+                        <Button
+                          onClick={() => handleMarkAsPaid(invoice.id!)}
+                          variant="primary"
+                          size="sm"
+                          icon={CheckCircle}
+                          className="flex-1 text-xs"
+                        >
+                          Betaald
+                        </Button>
+                      )}
+
+                      {invoice.status === 'draft' && (
+                        <Button
+                          onClick={() => handleDeleteInvoice(invoice.id!)}
+                          variant="danger"
+                          size="sm"
+                          icon={Trash2}
+                          className="flex-1 text-xs"
+                        >
+                          Verwijder
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={Eye}
+                        className="flex-1 text-xs"
+                      >
+                        Voorbeeld
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
