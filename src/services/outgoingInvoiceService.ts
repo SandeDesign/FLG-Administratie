@@ -10,18 +10,14 @@ import {
   orderBy, 
   Timestamp 
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../lib/firebase';
-import jsPDF from 'jspdf';
+import { db } from '../lib/firebase';
 
 export interface OutgoingInvoice {
   id?: string;
   userId: string;
   companyId: string;
   invoiceNumber: string;
-  
-  // Client info - UITGEBREID
-  clientId?: string; // Referentie naar relatie
+  clientId?: string;
   clientName: string;
   clientEmail: string;
   clientPhone?: string;
@@ -33,35 +29,23 @@ export interface OutgoingInvoice {
     zipCode: string;
     country: string;
   };
-  
-  // Bedrag gegevens
   amount: number;
   vatAmount: number;
   totalAmount: number;
-  
-  // Factuur details
   description: string;
   invoiceDate: Date;
   dueDate: Date;
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-  
-  // Extra velden - NIEUW
   purchaseOrder?: string;
   projectCode?: string;
-  
-  // Payment tracking
   paidAt?: Date;
   sentAt?: Date;
-  
-  // Lineaire items
   items: {
     description: string;
     quantity: number;
     rate: number;
     amount: number;
   }[];
-  
-  // Admin
   notes?: string;
   pdfUrl?: string;
   createdAt: Date;
@@ -88,7 +72,6 @@ export interface CompanyInfo {
 const COLLECTION_NAME = 'outgoingInvoices';
 
 export const outgoingInvoiceService = {
-  // Create new invoice
   async createInvoice(invoice: Omit<OutgoingInvoice, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       const now = new Date();
@@ -109,11 +92,8 @@ export const outgoingInvoiceService = {
     }
   },
 
-  // Get invoices for company
   async getInvoices(userId: string, companyId?: string): Promise<OutgoingInvoice[]> {
     try {
-      console.log('🔍 Loading invoices - userId:', userId, 'companyId:', companyId);
-
       let q;
       if (companyId) {
         q = query(
@@ -145,7 +125,6 @@ export const outgoingInvoiceService = {
         } as OutgoingInvoice;
       });
 
-      console.log('✅ Invoices loaded:', invoices.length);
       return invoices;
     } catch (error) {
       console.error('Error getting invoices:', error);
@@ -153,7 +132,6 @@ export const outgoingInvoiceService = {
     }
   },
 
-  // Update invoice
   async updateInvoice(invoiceId: string, updates: Partial<OutgoingInvoice>): Promise<void> {
     try {
       const docRef = doc(db, COLLECTION_NAME, invoiceId);
@@ -162,7 +140,6 @@ export const outgoingInvoiceService = {
         updatedAt: Timestamp.fromDate(new Date())
       };
 
-      // Convert dates to Timestamps
       if (updates.invoiceDate) updateData.invoiceDate = Timestamp.fromDate(updates.invoiceDate);
       if (updates.dueDate) updateData.dueDate = Timestamp.fromDate(updates.dueDate);
       if (updates.paidAt) updateData.paidAt = Timestamp.fromDate(updates.paidAt);
@@ -175,7 +152,6 @@ export const outgoingInvoiceService = {
     }
   },
 
-  // Send invoice
   async sendInvoice(invoiceId: string): Promise<void> {
     try {
       await this.updateInvoice(invoiceId, {
@@ -188,7 +164,6 @@ export const outgoingInvoiceService = {
     }
   },
 
-  // Mark as paid
   async markAsPaid(invoiceId: string): Promise<void> {
     try {
       await this.updateInvoice(invoiceId, {
@@ -201,7 +176,6 @@ export const outgoingInvoiceService = {
     }
   },
 
-  // Delete invoice
   async deleteInvoice(invoiceId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, COLLECTION_NAME, invoiceId));
@@ -211,226 +185,129 @@ export const outgoingInvoiceService = {
     }
   },
 
-  // 🔥 Generate professional PDF as Blob
-  async generateInvoicePDF(invoice: OutgoingInvoice, company: CompanyInfo): Promise<Blob> {
+  async generateInvoiceHTML(invoice: OutgoingInvoice, company: CompanyInfo): Promise<string> {
     try {
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; color: #333; line-height: 1.4; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #007bff; }
+    .company-info h1 { font-size: 32px; color: #007bff; margin-bottom: 10px; }
+    .company-info p { font-size: 12px; color: #666; margin-bottom: 3px; }
+    .company-details { font-size: 12px; color: #666; }
+    .company-details p { margin-bottom: 3px; }
+    .invoice-title { display: flex; justify-content: space-between; margin-bottom: 30px; align-items: flex-start; }
+    .invoice-title h2 { font-size: 24px; color: #000; }
+    .invoice-meta { text-align: right; font-size: 12px; }
+    .invoice-meta p { margin-bottom: 5px; }
+    .invoice-meta strong { display: inline-block; width: 100px; }
+    .section { margin-bottom: 30px; }
+    .section h3 { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #000; }
+    .customer-box { border: 1px solid #ddd; padding: 15px; background-color: #f9f9f9; font-size: 12px; }
+    .customer-box p { margin-bottom: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    table thead { background-color: #007bff; color: white; }
+    table th { padding: 12px; text-align: left; font-weight: bold; font-size: 12px; }
+    table td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 12px; }
+    table tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+    .amount-right { text-align: right; }
+    .totals { margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px; display: flex; justify-content: flex-end; }
+    .totals-box { width: 300px; }
+    .totals-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+    .totals-row.total { border-top: 2px solid #007bff; padding-top: 8px; font-size: 16px; font-weight: bold; color: #007bff; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="company-info">
+        <h1>${company.name}</h1>
+        <p>${company.address.street}</p>
+        <p>${company.address.zipCode} ${company.address.city}</p>
+        <p>${company.address.country}</p>
+      </div>
+      <div class="company-details">
+        <p><strong>KvK:</strong> ${company.kvk}</p>
+        <p><strong>BTW:</strong> ${company.taxNumber}</p>
+        <p><strong>Email:</strong> ${company.contactInfo.email}</p>
+        <p><strong>Tel:</strong> ${company.contactInfo.phone}</p>
+      </div>
+    </div>
 
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPosition = 15;
+    <div class="invoice-title">
+      <h2>FACTUUR</h2>
+      <div class="invoice-meta">
+        <p><strong>Factuurnummer:</strong> ${invoice.invoiceNumber}</p>
+        <p><strong>Factuurdatum:</strong> ${new Date(invoice.invoiceDate).toLocaleDateString('nl-NL')}</p>
+        <p><strong>Vervaldatum:</strong> ${new Date(invoice.dueDate).toLocaleDateString('nl-NL')}</p>
+      </div>
+    </div>
 
-      // Set default font
-      doc.setFont('helvetica');
+    <div class="section">
+      <h3>FACTUREREN NAAR:</h3>
+      <div class="customer-box">
+        <p><strong>${invoice.clientName}</strong></p>
+        <p>${invoice.clientAddress.street}</p>
+        <p>${invoice.clientAddress.zipCode} ${invoice.clientAddress.city}</p>
+        <p>${invoice.clientAddress.country}</p>
+        <p>Email: ${invoice.clientEmail}</p>
+        ${invoice.clientPhone ? `<p>Tel: ${invoice.clientPhone}</p>` : ''}
+      </div>
+    </div>
 
-      // ===== HEADER =====
-      doc.setFontSize(24);
-      doc.setTextColor(0, 123, 255);
-      doc.text(company.name, 20, yPosition);
-      yPosition += 10;
+    <table>
+      <thead>
+        <tr>
+          <th>Omschrijving</th>
+          <th style="width: 80px;" class="amount-right">Aantal</th>
+          <th style="width: 100px;" class="amount-right">Tarief</th>
+          <th style="width: 100px;" class="amount-right">Bedrag</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${invoice.items.map(item => `
+          <tr>
+            <td>${item.description}</td>
+            <td class="amount-right">${item.quantity}</td>
+            <td class="amount-right">€${item.rate.toFixed(2)}</td>
+            <td class="amount-right">€${item.amount.toFixed(2)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
 
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`${company.address.street}`, 20, yPosition);
-      yPosition += 5;
-      doc.text(`${company.address.zipCode} ${company.address.city}, ${company.address.country}`, 20, yPosition);
-      yPosition += 5;
-      doc.text(`KvK: ${company.kvk} | BTW: ${company.taxNumber}`, 20, yPosition);
-      yPosition += 5;
-      doc.text(`📧 ${company.contactInfo.email} | ☎ ${company.contactInfo.phone}`, 20, yPosition);
-      yPosition += 12;
+    <div class="totals">
+      <div class="totals-box">
+        <div class="totals-row">
+          <label>Subtotaal:</label>
+          <span>€${invoice.amount.toFixed(2)}</span>
+        </div>
+        <div class="totals-row">
+          <label>BTW (21%):</label>
+          <span>€${invoice.vatAmount.toFixed(2)}</span>
+        </div>
+        <div class="totals-row total">
+          <label>TOTAAL:</label>
+          <span>€${invoice.totalAmount.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
 
-      // Divider line
-      doc.setDrawColor(0, 123, 255);
-      doc.line(20, yPosition, pageWidth - 20, yPosition);
-      yPosition += 8;
-
-      // ===== INVOICE TITLE & NUMBERS =====
-      doc.setFontSize(18);
-      doc.setTextColor(0, 0, 0);
-      doc.text('FACTUUR', 20, yPosition);
-      yPosition += 10;
-
-      doc.setFontSize(10);
-      doc.setTextColor(50, 50, 50);
-      
-      // Left column
-      doc.text('Factuurnummer:', 20, yPosition);
-      doc.setFont('helvetica', 'bold');
-      doc.text(invoice.invoiceNumber, 60, yPosition);
-      doc.setFont('helvetica', 'normal');
-      yPosition += 6;
-
-      doc.text('Factuurdatum:', 20, yPosition);
-      doc.setFont('helvetica', 'bold');
-      doc.text(new Date(invoice.invoiceDate).toLocaleDateString('nl-NL'), 60, yPosition);
-      doc.setFont('helvetica', 'normal');
-      yPosition += 6;
-
-      doc.text('Vervaldatum:', 20, yPosition);
-      doc.setFont('helvetica', 'bold');
-      doc.text(new Date(invoice.dueDate).toLocaleDateString('nl-NL'), 60, yPosition);
-      doc.setFont('helvetica', 'normal');
-      yPosition += 10;
-
-      // ===== CUSTOMER INFO =====
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('FACTUREREN NAAR:', 20, yPosition);
-      yPosition += 8;
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(50, 50, 50);
-      doc.text(invoice.clientName, 20, yPosition);
-      yPosition += 5;
-      doc.text(`${invoice.clientAddress.street}`, 20, yPosition);
-      yPosition += 5;
-      doc.text(`${invoice.clientAddress.zipCode} ${invoice.clientAddress.city}`, 20, yPosition);
-      yPosition += 5;
-      doc.text(`${invoice.clientAddress.country}`, 20, yPosition);
-      yPosition += 5;
-      doc.text(`Email: ${invoice.clientEmail}`, 20, yPosition);
-      if (invoice.clientPhone) {
-        yPosition += 5;
-        doc.text(`Tel: ${invoice.clientPhone}`, 20, yPosition);
-      }
-      yPosition += 10;
-
-      // ===== ITEMS TABLE =====
-      const tableStartY = yPosition;
-      const colWidths = [100, 20, 22, 22];
-      const tableHeaders = ['Omschrijving', 'Aantal', 'Tarief', 'Bedrag'];
-
-      // Header background
-      doc.setFillColor(0, 123, 255);
-      doc.rect(20, tableStartY, pageWidth - 40, 8, 'F');
-
-      // Header text
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      let xPos = 25;
-      for (let i = 0; i < tableHeaders.length; i++) {
-        doc.text(tableHeaders[i], xPos, tableStartY + 6);
-        xPos += colWidths[i];
-      }
-
-      yPosition = tableStartY + 10;
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(50, 50, 50);
-
-      // Items
-      invoice.items.forEach((item) => {
-        // Check if we need a new page
-        if (yPosition > pageHeight - 40) {
-          doc.addPage();
-          yPosition = 20;
-        }
-
-        xPos = 25;
-        doc.text(item.description.substring(0, 40), xPos, yPosition);
-        xPos += colWidths[0];
-        doc.text(item.quantity.toString(), xPos, yPosition, { align: 'center' });
-        xPos += colWidths[1];
-        doc.text(`€${item.rate.toFixed(2)}`, xPos, yPosition, { align: 'right' });
-        xPos += colWidths[2];
-        doc.text(`€${item.amount.toFixed(2)}`, xPos, yPosition, { align: 'right' });
-
-        yPosition += 6;
-      });
-
-      yPosition += 5;
-
-      // Divider
-      doc.setDrawColor(200, 200, 200);
-      doc.line(20, yPosition, pageWidth - 20, yPosition);
-      yPosition += 8;
-
-      // ===== TOTALS =====
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-
-      // Subtotal
-      doc.text('Subtotaal:', pageWidth - 50, yPosition);
-      doc.text(`€${invoice.amount.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
-      yPosition += 6;
-
-      // VAT
-      doc.text('BTW (21%):', pageWidth - 50, yPosition);
-      doc.text(`€${invoice.vatAmount.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
-      yPosition += 8;
-
-      // Total
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.setTextColor(0, 123, 255);
-      doc.text('TOTAAL:', pageWidth - 50, yPosition);
-      doc.text(`€${invoice.totalAmount.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
-
-      yPosition += 15;
-      doc.setTextColor(50, 50, 50);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(`Factuur gegenereerd op: ${new Date().toLocaleDateString('nl-NL')} om ${new Date().toLocaleTimeString('nl-NL')}`, 20, yPosition);
-
-      // Return as Blob
-      return doc.output('blob');
+    <div class="footer">
+      <p>Factuur gegenereerd op: ${new Date().toLocaleDateString('nl-NL')} om ${new Date().toLocaleTimeString('nl-NL')}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+      return html;
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      throw new Error('Kon PDF niet genereren');
-    }
-  },
-
-  // 🔥 Generate PDF as base64 (for webhook transmission)
-  async generateInvoicePDFBase64(invoice: OutgoingInvoice, company: CompanyInfo): Promise<string> {
-    try {
-      const blob = await this.generateInvoicePDF(invoice, company);
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64 = (reader.result as string).split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('Error generating base64 PDF:', error);
-      throw new Error('Kon PDF niet genereren');
-    }
-  },
-
-  // Generate PDF and upload to Firebase Storage
-  async generateAndUploadPDF(invoice: OutgoingInvoice, company: CompanyInfo): Promise<string> {
-    try {
-      console.log('📄 Generating PDF for invoice:', invoice.invoiceNumber);
-      
-      // Generate PDF blob
-      const pdfBlob = await this.generateInvoicePDF(invoice, company);
-      
-      // Upload to Firebase Storage
-      const fileName = `invoices/${invoice.companyId}/${invoice.invoiceNumber}.pdf`;
-      const storageRef = ref(storage, fileName);
-      
-      await uploadBytes(storageRef, pdfBlob);
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      // Update invoice with PDF URL
-      if (invoice.id) {
-        await this.updateInvoice(invoice.id, { pdfUrl: downloadURL });
-      }
-      
-      console.log('✅ PDF uploaded:', downloadURL);
-      return downloadURL;
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      throw new Error('Kon PDF niet genereren');
+      console.error('Error generating HTML:', error);
+      throw new Error('Kon HTML niet genereren');
     }
   }
 };
