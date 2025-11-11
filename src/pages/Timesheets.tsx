@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Save, Send, Download } from 'lucide-react';
+import { Calendar, Clock, Save, Send, Download, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -34,6 +34,7 @@ export default function Timesheets() {
   const [currentTimesheet, setCurrentTimesheet] = useState<WeeklyTimesheet | null>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
     if (!user || !adminUserId || !selectedCompany) {
@@ -117,7 +118,6 @@ export default function Timesheets() {
     }
   }, [user, adminUserId, userRole, currentEmployeeId, selectedEmployeeId, selectedCompany, selectedYear, selectedWeek, showError]);
 
-  // ITKnecht Import Function
   const handleImportFromITKnecht = async () => {
     if (!selectedCompany || !employeeData) {
       showError('Fout', 'Selecteer eerst een bedrijf en werknemer');
@@ -126,8 +126,6 @@ export default function Timesheets() {
 
     setImporting(true);
     try {
-      // Trigger Make.com webhook to get ITKnecht data
-      // TODO: Replace 'JOUW_MAKE_WEBHOOK_URL_HIER' with your actual webhook URL
       const response = await fetch('https://hook.eu2.make.com/wh18u8c7x989zoakqxqmomjoy2cpfd3b', {
         method: 'POST',
         headers: { 
@@ -148,11 +146,10 @@ export default function Timesheets() {
 
       const itknechtData = await response.json();
       
-      // Process the ITKnecht data and update timesheet
       if (itknechtData && Array.isArray(itknechtData) && itknechtData.length > 0) {
         await processITKnechtData(itknechtData);
         success('Import geslaagd', `${itknechtData.length} ITKnecht entries geïmporteerd`);
-        await loadData(); // Reload to show updated data
+        await loadData();
       } else {
         showError('Geen data', 'Geen ITKnecht uren gevonden voor deze week/monteur');
       }
@@ -165,11 +162,9 @@ export default function Timesheets() {
     }
   };
 
-  // Process ITKnecht data and map to timesheet entries
   const processITKnechtData = async (itknechtEntries: any[]) => {
     if (!currentTimesheet || !employeeData) return;
 
-    // Normalize Make.com data format first
     const normalizedEntries = itknechtEntries.map(record => {
       const data = record.data || record;
       return {
@@ -179,7 +174,6 @@ export default function Timesheets() {
       };
     });
 
-    // Group entries by day
     const entriesByDay: { [key: string]: any[] } = {};
     
     normalizedEntries.forEach(entry => {
@@ -190,13 +184,11 @@ export default function Timesheets() {
       entriesByDay[day].push(entry);
     });
 
-    // Update timesheet entries
     const updatedEntries = [...currentTimesheet.entries];
     
     Object.keys(entriesByDay).forEach(day => {
       const dayEntries = entriesByDay[day];
       
-      // Calculate totals for this day
       const dayTotalHours = dayEntries.reduce((sum, entry) => {
         return sum + entry.totaal_factuureerbare_uren;
       }, 0);
@@ -205,7 +197,6 @@ export default function Timesheets() {
         return sum + entry.gereden_kilometers;
       }, 0);
 
-      // Find the corresponding day in the timesheet (matching day name)
       const dayIndex = updatedEntries.findIndex(entry => {
         const dayName = getDayName(entry.date);
         return dayName.toLowerCase() === day.toLowerCase();
@@ -216,7 +207,6 @@ export default function Timesheets() {
           ...updatedEntries[dayIndex],
           regularHours: dayTotalHours,
           travelKilometers: dayTotalKm,
-          // Clear other hour types to keep it simple
           overtimeHours: 0,
           eveningHours: 0,
           nightHours: 0,
@@ -227,15 +217,13 @@ export default function Timesheets() {
       }
     });
 
-    // Calculate new totals (simplified)
     const totals = calculateWeekTotals(updatedEntries);
 
-    // Update timesheet
     const updatedTimesheet = {
       ...currentTimesheet,
       entries: updatedEntries,
       totalRegularHours: totals.regularHours,
-      totalOvertimeHours: 0, // Simplified - no overtime tracking
+      totalOvertimeHours: 0,
       totalEveningHours: 0,
       totalNightHours: 0,
       totalWeekendHours: 0,
@@ -245,7 +233,6 @@ export default function Timesheets() {
 
     setCurrentTimesheet(updatedTimesheet);
 
-    // Auto-save the imported data
     if (updatedTimesheet.id) {
       await updateWeeklyTimesheet(updatedTimesheet.id, adminUserId!, updatedTimesheet);
     } else {
@@ -254,7 +241,6 @@ export default function Timesheets() {
     }
   };
 
-  // Auto-select first employee for admin users
   useEffect(() => {
     if (userRole === 'admin' && !selectedEmployeeId && selectedCompany) {
       const companyEmployees = employees.filter(emp => emp.companyId === selectedCompany.id);
@@ -402,16 +388,14 @@ export default function Timesheets() {
       return;
     }
 
-    // Check against employee's contract hours
     const contractHoursPerWeek = employeeData.contractInfo?.hoursPerWeek || 40;
-    const contractHoursPerDay = contractHoursPerWeek / 5; // Assuming 5-day work week
+    const contractHoursPerDay = contractHoursPerWeek / 5;
     const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
     const averageHoursPerDay = workDays > 0 ? currentTimesheet.totalRegularHours / workDays : 0;
     
-    // Only flag if significantly under contract (more than 15% below expected)
     const expectedWeeklyHours = contractHoursPerWeek;
     const actualWeeklyHours = currentTimesheet.totalRegularHours;
-    const underPerformanceThreshold = expectedWeeklyHours * 0.85; // 85% of contract hours
+    const underPerformanceThreshold = expectedWeeklyHours * 0.85;
     
     if (workDays > 0 && actualWeeklyHours < underPerformanceThreshold) {
       const explanation = prompt(
@@ -421,7 +405,6 @@ export default function Timesheets() {
       );
       
       if (explanation === null) {
-        // User cancelled
         return;
       }
       
@@ -430,7 +413,6 @@ export default function Timesheets() {
         return;
       }
       
-      // Add explanation to timesheet
       const updatedTimesheet = {
         ...currentTimesheet,
         lowHoursExplanation: explanation.trim(),
@@ -442,7 +424,6 @@ export default function Timesheets() {
       
       setCurrentTimesheet(updatedTimesheet);
       
-      // Save the explanation before submitting
       try {
         await updateWeeklyTimesheet(updatedTimesheet.id, adminUserId, updatedTimesheet);
       } catch (error) {
@@ -474,7 +455,7 @@ export default function Timesheets() {
     let newYear = selectedYear;
 
     if (newWeek < 1) {
-      newWeek = 52; // Assuming 52 weeks in a year for simplicity
+      newWeek = 52;
       newYear--;
     } else if (newWeek > 52) {
       newWeek = 1;
@@ -500,8 +481,8 @@ export default function Timesheets() {
 
   if (!selectedCompany) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Urenregistratie</h1>
+      <div className="space-y-6 px-4 sm:px-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Urenregistratie</h1>
         <EmptyState
           icon={Clock}
           title="Geen bedrijf geselecteerd"
@@ -516,8 +497,8 @@ export default function Timesheets() {
 
   if (!effectiveEmployeeId) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">Urenregistratie</h1>
+      <div className="space-y-6 px-4 sm:px-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Urenregistratie</h1>
         {userRole === 'admin' && companyEmployees.length === 0 ? (
           <EmptyState
             icon={Clock}
@@ -546,47 +527,54 @@ export default function Timesheets() {
   }
 
   const isReadOnly = currentTimesheet.status !== 'draft' && currentTimesheet.status !== 'rejected';
+  const contractHours = employeeData?.contractInfo?.hoursPerWeek || 40;
+  const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
+  const avgHours = workDays > 0 ? currentTimesheet.totalRegularHours / workDays : 0;
+  const isUnderContract = currentTimesheet.totalRegularHours < (contractHours * 0.85);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+    <div className="space-y-3 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
+      {/* Header */}
+      <div className="space-y-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Urenregistratie</h1>
-          <p className="text-gray-600 mt-1 text-sm">
-            Week {selectedWeek}, {selectedYear}
-            {employeeData && <span className="block sm:inline"> - {employeeData.personalInfo.firstName} {employeeData.personalInfo.lastName}</span>}
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-          {((userRole === 'admin' && selectedEmployeeId) || (userRole !== 'admin' && currentEmployeeId)) && 
-           selectedCompany && (selectedCompany.name.toLowerCase().includes('itknecht') || selectedCompany.name.toLowerCase().includes('buddy')) && (
-            <Button
-              onClick={handleImportFromITKnecht}
-              disabled={importing || saving}
-              variant="primary"
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
-            >
-              {importing ? (
-                <>
-                  <LoadingSpinner className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Importeren...</span>
-                  <span className="sm:hidden">Import...</span>
-                </>
-              ) : (
-                <>
-                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">{selectedCompany.name.toLowerCase().includes('itknecht') ? 'ITKnecht' : 'Buddy'} Uren Ophalen</span>
-                  <span className="sm:hidden">{selectedCompany.name.toLowerCase().includes('itknecht') ? 'ITKnecht' : 'Buddy'}</span>
-                </>
-              )}
-            </Button>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Urenregistratie</h1>
+          {employeeData && (
+            <p className="text-xs sm:text-sm text-gray-600 mt-2 flex items-center gap-2">
+              <User className="h-4 w-4" />
+              {employeeData.personalInfo.firstName} {employeeData.personalInfo.lastName}
+            </p>
           )}
-          {userRole === 'admin' && companyEmployees.length > 0 && (
+        </div>
+
+        {/* Week Navigation + Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
+            <button
+              onClick={() => changeWeek(-1)}
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              title="Vorige week"
+            >
+              <ChevronLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div className="text-center px-4 min-w-[120px]">
+              <p className="text-sm font-semibold text-gray-900">Week {selectedWeek}</p>
+              <p className="text-xs text-gray-500">{selectedYear}</p>
+            </div>
+            <button
+              onClick={() => changeWeek(1)}
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              title="Volgende week"
+            >
+              <ChevronRight className="h-5 w-5 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Employee Selector (Admin only) */}
+          {userRole === 'admin' && companyEmployees.length > 1 && (
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="px-2 py-1 sm:px-3 sm:py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Selecteer werknemer</option>
               {companyEmployees.map(emp => (
@@ -596,366 +584,274 @@ export default function Timesheets() {
               ))}
             </select>
           )}
-          <div className="flex items-center gap-1 sm:gap-2">
+
+          {/* Import Button */}
+          {((userRole === 'admin' && selectedEmployeeId) || (userRole !== 'admin' && currentEmployeeId)) && 
+           selectedCompany && (selectedCompany.name.toLowerCase().includes('itknecht') || selectedCompany.name.toLowerCase().includes('buddy')) && (
             <Button
-              onClick={() => changeWeek(-1)}
+              onClick={handleImportFromITKnecht}
+              disabled={importing || saving}
               variant="secondary"
               size="sm"
-              className="text-xs sm:text-sm px-2 sm:px-3"
+              className="text-xs sm:text-sm"
             >
-              <span className="hidden sm:inline">← Vorige week</span>
-              <span className="sm:hidden">← Vorige</span>
+              {importing ? (
+                <>
+                  <LoadingSpinner className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  Laden...
+                </>
+              ) : (
+                <>
+                  <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  Ophalen
+                </>
+              )}
             </Button>
-            <Button
-              onClick={() => changeWeek(1)}
-              variant="secondary"
-              size="sm"
-              className="text-xs sm:text-sm px-2 sm:px-3"
-            >
-              <span className="hidden sm:inline">Volgende week →</span>
-              <span className="sm:hidden">Volgende →</span>
-            </Button>
-          </div>
+          )}
         </div>
       </div>
 
-      {importing && (
-        <Card>
-          <div className="flex items-center gap-3 text-blue-600 p-4">
-            <LoadingSpinner className="h-5 w-5" />
-            <span>Bezig met ophalen van ITKnecht uren data...</span>
-          </div>
-        </Card>
-      )}
-
+      {/* Status Badge */}
       {currentTimesheet.status !== 'draft' && (
-        <Card>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium">Status:</span>
-            <span className={`px-2 py-1 rounded ${
-              currentTimesheet.status === 'approved' ? 'bg-green-100 text-green-800' :
-              currentTimesheet.status === 'submitted' ? 'bg-blue-100 text-blue-800' :
-              currentTimesheet.status === 'rejected' ? 'bg-red-100 text-red-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
-              {currentTimesheet.status === 'approved' ? 'Goedgekeurd' :
-               currentTimesheet.status === 'submitted' ? 'Ingediend' :
-               currentTimesheet.status === 'rejected' ? 'Afgekeurd' :
-               currentTimesheet.status === 'processed' ? 'Verwerkt' :
-               'Concept'}
-            </span>
-            {currentTimesheet.rejectionReason && (
-              <span className="text-red-600 ml-4">
-                Reden: {currentTimesheet.rejectionReason}
-              </span>
+        <div className="p-3 rounded-lg flex items-center justify-between text-sm"
+             style={{
+               backgroundColor: currentTimesheet.status === 'approved' ? '#f0fdf4' : 
+                              currentTimesheet.status === 'submitted' ? '#eff6ff' :
+                              currentTimesheet.status === 'rejected' ? '#fef2f2' : '#f3f4f6',
+               borderLeft: `4px solid ${
+                 currentTimesheet.status === 'approved' ? '#22c55e' :
+                 currentTimesheet.status === 'submitted' ? '#3b82f6' :
+                 currentTimesheet.status === 'rejected' ? '#ef4444' : '#6b7280'
+               }`
+             }}>
+          <span className="font-medium" style={{
+            color: currentTimesheet.status === 'approved' ? '#15803d' :
+                   currentTimesheet.status === 'submitted' ? '#1e40af' :
+                   currentTimesheet.status === 'rejected' ? '#991b1b' : '#374151'
+          }}>
+            Status: {currentTimesheet.status === 'approved' ? 'Goedgekeurd' :
+                     currentTimesheet.status === 'submitted' ? 'Ingediend' :
+                     currentTimesheet.status === 'rejected' ? 'Afgekeurd' :
+                     currentTimesheet.status === 'processed' ? 'Verwerkt' : 'Concept'}
+          </span>
+          {currentTimesheet.rejectionReason && (
+            <span className="text-xs text-red-600">Reden: {currentTimesheet.rejectionReason}</span>
+          )}
+        </div>
+      )}
+
+      {/* Import Status */}
+      {importing && (
+        <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3 text-blue-600 text-sm">
+          <LoadingSpinner className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span>Bezig met ophalen van data...</span>
+        </div>
+      )}
+
+      {/* Week Summary */}
+      {currentTimesheet && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 p-4 sm:p-6">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-gray-900">Week {selectedWeek} Overzicht</h3>
+            
+            {isUnderContract && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700 flex gap-2">
+                <span>⚠️</span>
+                <div>
+                  <strong>Onder contract uren:</strong> {currentTimesheet.totalRegularHours}u van {contractHours}u
+                  {currentTimesheet.lowHoursExplanation && (
+                    <p className="mt-1 text-xs">Verklaring: {currentTimesheet.lowHoursExplanation}</p>
+                  )}
+                </div>
+              </div>
             )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Totaal</p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-600">{currentTimesheet.totalRegularHours}u</p>
+              </div>
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Kilometers</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">{currentTimesheet.totalTravelKilometers}km</p>
+              </div>
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Werkdagen</p>
+                <p className="text-xl sm:text-2xl font-bold text-purple-600">{workDays}d</p>
+              </div>
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Gem./dag</p>
+                <p className={`text-xl sm:text-2xl font-bold ${avgHours < 7 ? 'text-yellow-600' : 'text-orange-600'}`}>
+                  {avgHours.toFixed(1)}u
+                </p>
+              </div>
+            </div>
           </div>
         </Card>
       )}
 
-      {/* Mobile-first Card Layout */}
-      <div className="space-y-3 sm:space-y-4">
+      {/* Days List - Collapsible */}
+      <div className="space-y-2">
         {currentTimesheet.entries.map((entry, index) => {
-          const totalHours = entry.regularHours + entry.overtimeHours + entry.eveningHours + entry.nightHours + entry.weekendHours;
+          const isExpanded = expandedDay === index;
+          const hasData = entry.regularHours > 0 || entry.travelKilometers > 0 || (entry.workActivities?.length || 0) > 0;
           const isImported = entry.notes?.includes('import');
-          
+
           return (
-            <Card key={index} className={`${isImported ? 'bg-blue-50 border-blue-200' : ''} transition-all hover:shadow-md`}>
-              <div className="p-3 sm:p-4">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-3 sm:mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
+            <div key={index}>
+              {/* Day Card - Collapsible Header */}
+              <button
+                onClick={() => setExpandedDay(isExpanded ? null : index)}
+                disabled={isReadOnly && !hasData}
+                className={`w-full p-3 sm:p-4 rounded-lg border-2 transition-all text-left flex items-center justify-between ${
+                  isExpanded 
+                    ? 'border-blue-300 bg-blue-50' 
+                    : hasData
+                    ? `border-orange-300 bg-orange-50 hover:bg-orange-100`
+                    : 'border-gray-200 bg-white hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm sm:text-base text-gray-900">
                       {getDayName(entry.date)}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-500">
+                    </p>
+                    <p className="text-xs text-gray-600">
                       {entry.date.toLocaleDateString('nl-NL')}
                     </p>
                   </div>
-                  {isImported && (
-                    <div className="flex items-center gap-1 sm:gap-2 text-blue-600 text-xs sm:text-sm">
-                      <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">Import</span>
-                    </div>
-                  )}
+
+                  {/* Quick Summary */}
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
+                    {entry.regularHours > 0 && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                        {entry.regularHours}u
+                      </span>
+                    )}
+                    {entry.travelKilometers > 0 && (
+                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
+                        {entry.travelKilometers}km
+                      </span>
+                    )}
+                    {isImported && (
+                      <Download className="h-4 w-4 text-blue-600" />
+                    )}
+                  </div>
                 </div>
 
-                {/* Input Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                  {/* Total Hours */}
-                  <div className="space-y-1 sm:space-y-2">
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
-                      Uren
-                    </label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="24"
-                      step="0.5"
-                      value={entry.regularHours}
-                      onChange={(e) => updateEntry(index, 'regularHours', parseFloat(e.target.value) || 0)}
-                      disabled={isReadOnly}
-                      className="text-center text-sm sm:text-lg font-semibold py-2 sm:py-3"
-                      placeholder="0"
-                    />
-                  </div>
+                <ChevronRight className={`h-5 w-5 text-gray-600 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-90' : ''}`} />
+              </button>
 
-                  {/* Travel Kilometers */}
-                  <div className="space-y-1 sm:space-y-2">
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
-                      Kilometers
-                    </label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={entry.travelKilometers}
-                      onChange={(e) => updateEntry(index, 'travelKilometers', parseFloat(e.target.value) || 0)}
-                      disabled={isReadOnly}
-                      className="text-center text-sm sm:text-lg font-semibold py-2 sm:py-3"
-                      placeholder="0"
-                    />
-                  </div>
-
-                  {/* Client/Project - Show when company has multiple clients */}
-                  {selectedCompany?.clients && selectedCompany.clients.length > 1 && (
-                    <div className="space-y-1 sm:space-y-2 col-span-2 sm:col-span-1">
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700">
-                        Opdrachtgever
-                      </label>
-                      <select
-                        value={entry.clientId || ''}
-                        onChange={(e) => updateEntry(index, 'clientId', e.target.value)}
+              {/* Expanded Day Content */}
+              {isExpanded && (
+                <Card className={`mt-1 p-3 sm:p-4 space-y-3 sm:space-y-4 ${isImported ? 'bg-blue-50 border-blue-200' : ''}`}>
+                  {/* Input Fields */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Uren</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="24"
+                        step="0.5"
+                        value={entry.regularHours}
+                        onChange={(e) => updateEntry(index, 'regularHours', parseFloat(e.target.value) || 0)}
                         disabled={isReadOnly}
-                        className="w-full px-2 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
-                      >
-                        <option value="">Selecteer opdrachtgever</option>
-                        {selectedCompany.clients.map(client => (
-                          <option key={client.id} value={client.id}>
-                            {client.name}
-                          </option>
-                        ))}
-                      </select>
+                        className="text-center font-semibold text-lg"
+                        placeholder="0"
+                      />
                     </div>
-                  )}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Kilometers</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={entry.travelKilometers}
+                        onChange={(e) => updateEntry(index, 'travelKilometers', parseFloat(e.target.value) || 0)}
+                        disabled={isReadOnly}
+                        className="text-center font-semibold text-lg"
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
 
                   {/* Notes */}
-                  <div className={`space-y-1 sm:space-y-2 ${
-                    selectedCompany?.clients && selectedCompany.clients.length > 1 
-                      ? 'col-span-2' 
-                      : 'col-span-2 sm:col-span-1'
-                  }`}>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
-                      Notities
-                    </label>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Notities</label>
                     <Input
                       type="text"
                       value={entry.notes || ''}
                       onChange={(e) => updateEntry(index, 'notes', e.target.value)}
                       disabled={isReadOnly}
-                      placeholder="Notities..."
-                      className="text-xs sm:text-sm py-2 sm:py-3"
+                      placeholder="Notities of opmerkingen..."
+                      className="text-sm"
                     />
                   </div>
-                </div>
 
-                {/* Quick Summary */}
-                {(entry.regularHours > 0 || entry.travelKilometers > 0) && (
-                  <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-200">
-                    <div className="flex justify-between text-xs sm:text-sm text-gray-600">
-                      <span>Dag totaal:</span>
-                      <span className="font-medium">
-                        {entry.regularHours}u {entry.travelKilometers > 0 && `• ${entry.travelKilometers}km`}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Work Activities Section */}
-                <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100">
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700">
-                      Werkzaamheden
-                    </label>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => addWorkActivity(index)}
-                      disabled={isReadOnly}
-                      className="text-xs px-2 py-1"
-                    >
-                      + Werk toevoegen
-                    </Button>
-                  </div>
-                  
-                  {/* Work Activities List */}
+                  {/* Work Activities */}
                   <div className="space-y-2">
-                    {(entry.workActivities || []).map((activity, activityIndex) => (
-                      <div 
-                        key={activityIndex} 
-                        className={`grid grid-cols-12 gap-2 items-center p-2 rounded ${
-                          activity.isITKnechtImport 
-                            ? 'bg-blue-50 border border-blue-200' 
-                            : 'bg-gray-50'
-                        }`}
-                      >
-                        <div className="col-span-3">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="24"
-                            step="0.5"
-                            value={activity.hours}
-                            onChange={(e) => updateWorkActivity(index, activityIndex, 'hours', parseFloat(e.target.value) || 0)}
-                            disabled={isReadOnly || activity.isITKnechtImport}
-                            className={`text-xs text-center ${
-                              activity.isITKnechtImport ? 'bg-blue-50' : ''
-                            }`}
-                            placeholder="0.0u"
-                          />
-                        </div>
-                        <div className="col-span-7">
-                          <div className="flex items-center gap-1">
-                            {activity.isITKnechtImport && (
-                              <Download className="h-3 w-3 text-blue-600 flex-shrink-0" />
-                            )}
-                            <Input
-                              type="text"
-                              value={activity.description}
-                              onChange={(e) => updateWorkActivity(index, activityIndex, 'description', e.target.value)}
-                              disabled={isReadOnly || activity.isITKnechtImport}
-                              className={`text-xs ${
-                                activity.isITKnechtImport ? 'bg-blue-50' : ''
-                              }`}
-                              placeholder="Wat heb je gedaan?"
-                            />
-                          </div>
-                        </div>
-                        <div className="col-span-2 flex justify-end">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => removeWorkActivity(index, activityIndex)}
-                            disabled={isReadOnly || activity.isITKnechtImport}
-                            className="text-xs px-2 py-1 text-red-600 hover:text-red-800"
-                            title={activity.isITKnechtImport ? 'ITKnecht import kan niet worden verwijderd' : 'Verwijder werkzaamheid'}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {(!entry.workActivities || entry.workActivities.length === 0) && (
-                      <div className="text-xs text-gray-500 italic">
-                        Geen werkzaamheden toegevoegd. Klik op "Werk toevoegen" om details toe te voegen.
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Work Activities Summary */}
-                  {entry.workActivities && entry.workActivities.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      <div className="flex justify-between text-xs text-gray-600">
-                        <span>Gedetailleerde uren:</span>
-                        <span className="font-medium">
-                          {entry.workActivities.reduce((sum, activity) => sum + activity.hours, 0).toFixed(1)}u
-                        </span>
-                      </div>
-                      {Math.abs(entry.regularHours - entry.workActivities.reduce((sum, activity) => sum + activity.hours, 0)) > 0.1 && (
-                        <div className="text-xs text-yellow-600 mt-1">
-                          ⚠️ Verschil met totaal uren: {(entry.regularHours - entry.workActivities.reduce((sum, activity) => sum + activity.hours, 0)).toFixed(1)}u
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700">Werkzaamheden</label>
+                      {!isReadOnly && (
+                        <Button
+                          onClick={() => addWorkActivity(index)}
+                          size="sm"
+                          variant="secondary"
+                          className="text-xs"
+                        >
+                          + Toevoegen
+                        </Button>
                       )}
                     </div>
-                  )}
-                </div>
-              </div>
-            </Card>
+
+                    {(entry.workActivities || []).map((activity, actIdx) => (
+                      <div key={actIdx} className={`p-2 rounded flex gap-2 items-center ${activity.isITKnechtImport ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="24"
+                          step="0.5"
+                          value={activity.hours}
+                          onChange={(e) => updateWorkActivity(index, actIdx, 'hours', parseFloat(e.target.value) || 0)}
+                          disabled={isReadOnly || activity.isITKnechtImport}
+                          className="w-16 text-center text-xs py-1"
+                          placeholder="0u"
+                        />
+                        <Input
+                          type="text"
+                          value={activity.description}
+                          onChange={(e) => updateWorkActivity(index, actIdx, 'description', e.target.value)}
+                          disabled={isReadOnly || activity.isITKnechtImport}
+                          placeholder="Beschrijving..."
+                          className="flex-1 text-xs py-1"
+                        />
+                        {!isReadOnly && !activity.isITKnechtImport && (
+                          <button
+                            onClick={() => removeWorkActivity(index, actIdx)}
+                            className="text-red-600 hover:text-red-800 font-bold text-lg"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </div>
           );
         })}
-
-        {/* Week Summary Card */}
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-          <div className="p-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Week Totaal</h3>
-            
-            {/* Low Hours Warning */}
-            {(() => {
-              const contractHoursPerWeek = employeeData?.contractInfo?.hoursPerWeek || 40;
-              const expectedWeeklyHours = contractHoursPerWeek;
-              const actualWeeklyHours = currentTimesheet.totalRegularHours;
-              const underPerformanceThreshold = expectedWeeklyHours * 0.85; // 85% of contract hours
-              const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
-              const averageHoursPerDay = workDays > 0 ? actualWeeklyHours / workDays : 0;
-              
-              if (workDays > 0 && actualWeeklyHours < underPerformanceThreshold) {
-                return (
-                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <div className="flex items-start gap-2">
-                      <div className="text-yellow-600 text-sm">
-                        ⚠️ <strong>Onder contract uren:</strong> {actualWeeklyHours}u van {contractHoursPerWeek}u contract 
-                        (gemiddeld {averageHoursPerDay.toFixed(1)}u per werkdag)
-                      </div>
-                    </div>
-                    {currentTimesheet.lowHoursExplanation && (
-                      <div className="mt-2 text-sm text-gray-700">
-                        <strong>Verklaring:</strong> {currentTimesheet.lowHoursExplanation}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              return null;
-            })()}
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <div className="text-center">
-                <div className="text-xl sm:text-2xl font-bold text-blue-600">
-                  {currentTimesheet.totalRegularHours}
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600">Uren</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl sm:text-2xl font-bold text-green-600">
-                  {currentTimesheet.totalTravelKilometers}
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600">Kilometers</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl sm:text-2xl font-bold text-purple-600">
-                  {currentTimesheet.entries.filter(e => e.regularHours > 0).length}
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600">Werkdagen</div>
-              </div>
-              <div className="text-center">
-                <div className={`text-xl sm:text-2xl font-bold ${
-                  (() => {
-                    const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
-                    const avg = workDays > 0 ? currentTimesheet.totalRegularHours / workDays : 0;
-                    return avg < 7 ? 'text-yellow-600' : 'text-orange-600';
-                  })()
-                }`}>
-                  {(() => {
-                    const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
-                    return workDays > 0 ? Math.round((currentTimesheet.totalRegularHours / workDays) * 10) / 10 : 0;
-                  })()}
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600">Ø per dag</div>
-              </div>
-            </div>
-          </div>
-        </Card>
       </div>
 
+      {/* Action Buttons */}
       {!isReadOnly && (
-        <div className="flex justify-end gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <Button
             onClick={handleSave}
             disabled={saving}
             variant="secondary"
+            className="flex-1 sm:flex-none"
           >
             <Save className="h-4 w-4 mr-2" />
             Opslaan
@@ -963,9 +859,10 @@ export default function Timesheets() {
           <Button
             onClick={handleSubmit}
             disabled={saving || !currentTimesheet.id}
+            className="flex-1"
           >
             <Send className="h-4 w-4 mr-2" />
-            Indienen voor goedkeuring
+            Indienen
           </Button>
         </div>
       )}
