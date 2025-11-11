@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, X, Clock, Building2, ChevronRight, AlertCircle, TrendingDown, CheckCircle, User, ChevronDown } from 'lucide-react';
+import { Check, X, Clock, Building2, ChevronRight, AlertCircle, CheckCircle, User, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -128,6 +128,13 @@ export default function TimesheetApprovals() {
     }
   };
 
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedTimesheet(null);
+    setRejectionReason('');
+    setShowRejectModal(false);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -174,7 +181,7 @@ export default function TimesheetApprovals() {
           </div>
         </Card>
 
-        <Card className="p-3 sm:p-4 border-orange-200 bg-orange-50">
+        <Card className="p-3 sm:p-4 border border-orange-200 bg-orange-50">
           <div className="space-y-1">
             <p className="text-xs text-orange-700">Wachten</p>
             <p className="text-2xl sm:text-3xl font-bold text-orange-700">{pendingCount}</p>
@@ -182,7 +189,7 @@ export default function TimesheetApprovals() {
           </div>
         </Card>
 
-        <Card className="p-3 sm:p-4 border-blue-200 bg-blue-50">
+        <Card className="p-3 sm:p-4 border border-blue-200 bg-blue-50">
           <div className="space-y-1">
             <p className="text-xs text-blue-700">Medewerkers</p>
             <p className="text-2xl sm:text-3xl font-bold text-blue-700">{employeesWithPending}</p>
@@ -190,7 +197,7 @@ export default function TimesheetApprovals() {
           </div>
         </Card>
 
-        <Card className="p-3 sm:p-4 border-green-200 bg-green-50">
+        <Card className="p-3 sm:p-4 border border-green-200 bg-green-50">
           <div className="space-y-1">
             <p className="text-xs text-green-700">Klaar</p>
             <p className="text-2xl sm:text-3xl font-bold text-green-700">
@@ -217,14 +224,19 @@ export default function TimesheetApprovals() {
 
             return (
               <div key={summary.employeeId} className="space-y-2">
-                {/* Employee Card */}
-                <Card
-                  className={`p-3 sm:p-4 cursor-pointer transition-all hover:shadow-md border-l-4 ${summary.hasPending ? 'border-l-orange-500' : 'border-l-gray-200'}`}
+                {/* Employee Card - Button */}
+                <button
                   onClick={() => {
                     if (summary.hasPending) {
                       setExpandedEmployee(isExpanded ? null : summary.employeeId);
                     }
                   }}
+                  disabled={!summary.hasPending}
+                  className={`w-full p-3 sm:p-4 rounded-lg border-l-4 transition-all hover:shadow-md text-left ${
+                    summary.hasPending 
+                      ? 'border-l-orange-500 bg-white border border-gray-200 hover:bg-gray-50 cursor-pointer' 
+                      : 'border-l-gray-200 bg-white border border-gray-200 cursor-default'
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -238,6 +250,11 @@ export default function TimesheetApprovals() {
                         {summary.hasPending && (
                           <p className="text-xs text-orange-600">
                             {summary.pendingTimesheets.length} aanvraag{summary.pendingTimesheets.length !== 1 ? 'en' : ''} wachten
+                          </p>
+                        )}
+                        {!summary.hasPending && (
+                          <p className="text-xs text-green-600 flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" /> Alles goedgekeurd
                           </p>
                         )}
                       </div>
@@ -258,7 +275,7 @@ export default function TimesheetApprovals() {
                       )}
                     </div>
                   </div>
-                </Card>
+                </button>
 
                 {/* Expanded Pending Timesheets */}
                 {isExpanded && summary.hasPending && (
@@ -268,13 +285,13 @@ export default function TimesheetApprovals() {
                       const isUnder = hoursPercentage < 85;
 
                       return (
-                        <Card
+                        <button
                           key={timesheet.id}
-                          className="p-3 sm:p-4 bg-orange-50 border-orange-200 hover:shadow-md transition-all cursor-pointer"
                           onClick={() => {
                             setSelectedTimesheet(timesheet);
                             setShowDetailsModal(true);
                           }}
+                          className="w-full p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg hover:shadow-md transition-all text-left"
                         >
                           <div className="space-y-2">
                             {/* Week Info */}
@@ -287,7 +304,7 @@ export default function TimesheetApprovals() {
                                   {timesheet.submittedAt?.toLocaleDateString('nl-NL')} ingediend
                                 </p>
                               </div>
-                              <span className="text-xs font-semibold px-2 py-1 bg-white text-orange-700 rounded border border-orange-200">
+                              <span className="text-xs font-semibold px-2 py-1 bg-white text-orange-700 rounded border border-orange-200 flex-shrink-0">
                                 Wachten
                               </span>
                             </div>
@@ -333,19 +350,19 @@ export default function TimesheetApprovals() {
                                 </p>
                               </div>
                               <div className="text-center">
-                                <p className="text-gray-600">Reiskilometers</p>
-                                <p className="font-semibold text-gray-900">{timesheet.totalTravelKilometers}km</p>
+                                <p className="text-gray-600">Km</p>
+                                <p className="font-semibold text-gray-900">{timesheet.totalTravelKilometers}</p>
                               </div>
                             </div>
 
                             {/* Action Hint */}
-                            <div className="flex items-center gap-1 text-xs text-blue-600 pt-1 border-t border-orange-200">
+                            <div className="flex items-center gap-1 text-xs text-blue-600 pt-1 border-t border-orange-100">
                               <Clock className="h-3 w-3" />
                               <span>Klik voor details en goedkeuring</span>
                               <ChevronRight className="h-3 w-3 ml-auto" />
                             </div>
                           </div>
-                        </Card>
+                        </button>
                       );
                     })}
                   </div>
@@ -359,12 +376,7 @@ export default function TimesheetApprovals() {
       {/* Details Modal */}
       <Modal
         isOpen={showDetailsModal}
-        onClose={() => {
-          setShowDetailsModal(false);
-          setSelectedTimesheet(null);
-          setRejectionReason('');
-          setShowRejectModal(false);
-        }}
+        onClose={closeDetailsModal}
         title={selectedTimesheet ? `Week ${selectedTimesheet.weekNumber}, ${selectedTimesheet.year}` : 'Uren details'}
       >
         {selectedTimesheet && (
@@ -434,14 +446,14 @@ export default function TimesheetApprovals() {
                   <div key={idx} className="p-2 bg-gray-50 rounded">
                     <div className="flex justify-between mb-1">
                       <span className="font-medium">{entry.date.toLocaleDateString('nl-NL')}</span>
-                      <span className="text-gray-600">{entry.regularHours}u</span>
+                      <span className="text-gray-600 font-semibold">{entry.regularHours}u</span>
                     </div>
                     {entry.workActivities && entry.workActivities.length > 0 && (
-                      <div className="space-y-1 mt-1">
+                      <div className="space-y-1 mt-1 pl-2 border-l border-gray-300">
                         {entry.workActivities.map((activity, actIdx) => (
                           <div key={actIdx} className="flex justify-between text-gray-600">
-                            <span>{activity.description}</span>
-                            <span>{activity.hours}u</span>
+                            <span className="text-xs">{activity.description}</span>
+                            <span className="font-semibold text-xs">{activity.hours}u</span>
                           </div>
                         ))}
                       </div>
