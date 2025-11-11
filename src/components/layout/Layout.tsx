@@ -69,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header - GEEN MENU KNOP */}
+        {/* Mobile Header */}
         <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center space-x-3">
             {canGoBack ? (
@@ -89,7 +89,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             )}
           </div>
           
-          {/* GROTER LOGO */}
           <img src="/Logo-groot.png" alt="AlloonApp Logo" className="h-12 w-auto" />
           
           <div className="w-10 flex justify-end">
@@ -105,14 +104,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <NotificationCenter />
         </header>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-auto">
-          <div className="p-4 lg:p-6 pb-20 lg:pb-6">
+        {/* Content Area - KEY FIX: overflow-y-auto en pb-24 op mobile */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 lg:pb-0">
+          <div className="p-4 lg:p-6">
             {children}
           </div>
         </main>
 
-        {/* Mobile Bottom Navigation */}
+        {/* Mobile Bottom Navigation - FIXED */}
         <MobileBottomNav onMenuClick={() => setMobileMenuOpen(true)} />
       </div>
     </div>
