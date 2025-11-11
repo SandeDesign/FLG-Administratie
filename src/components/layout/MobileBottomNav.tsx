@@ -1,6 +1,3 @@
-// src/components/layout/MobileBottomNav.tsx
-// MINIMAL CHANGES: Only add company type filtering to existing code
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
@@ -13,7 +10,7 @@ import {
   Menu,
   Send,
   Calendar,
-  Factory,
+  Briefcase,
   BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,24 +22,24 @@ interface MobileBottomNavProps {
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
   const { userRole } = useAuth();
-  const { selectedCompany } = useApp(); // ✅ NEW
+  const { selectedCompany } = useApp();
   
   if (!userRole) return null;
 
-  const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined; // ✅ NEW
+  const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined;
 
   const getCoreNavItems = () => {
-    // ✅ NEW: Different nav items per company type for admin
+    // ✅ PROJECT COMPANY - Different nav
     if (companyType === 'project') {
       return [
         { href: '/', icon: Home, label: 'Dashboard' },
-        { href: '/project-dashboard', icon: Factory, label: 'Project' },
+        { href: '/projects', icon: Briefcase, label: 'Productie' },
+        { href: '/statistics', icon: BarChart3, label: 'Stats' },
         { href: '/outgoing-invoices', icon: Send, label: 'Facturen' },
-        { href: '/settings', icon: Settings, label: 'Instellingen' },
       ];
     }
 
-    // Default employer nav items
+    // ✅ EMPLOYER COMPANY - Default nav by role
     const navItems: Record<string, Array<{ href: string; icon: any; label: string }>> = {
       employee: [
         { href: '/', icon: Home, label: 'Dashboard' },
@@ -58,9 +55,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       ],
       admin: [
         { href: '/', icon: Home, label: 'Dashboard' },
-        { href: '/timesheet-approvals', icon: Clock, label: 'Uren Verwerken' },
+        { href: '/timesheet-approvals', icon: Clock, label: 'Uren' },
         { href: '/outgoing-invoices', icon: Send, label: 'Facturen' },
-        { href: '/employees', icon: Users, label: 'Werknemers' },
+        { href: '/employees', icon: Users, label: 'Team' },
       ],
     };
     
