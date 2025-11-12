@@ -65,7 +65,6 @@ export const requestGoogleDriveAccessForSettings = async (): Promise<string> => 
   authUrl.searchParams.append('scope', SCOPES.join(' '));
   authUrl.searchParams.append('state', state);
   authUrl.searchParams.append('prompt', 'consent');
-  authUrl.searchParams.append('access_type', 'offline');
 
   const popup = window.open(authUrl.toString(), 'google_auth', 'width=500,height=600');
 
