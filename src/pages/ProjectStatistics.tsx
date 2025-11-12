@@ -4,7 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import {
   BarChart3, Calendar, MapPin, Users, Zap, TrendingUp, TrendingDown,
   AlertCircle, CheckCircle2, Activity, DollarSign, Briefcase, Clock, Award,
-  ArrowUp, ArrowDown, AlertTriangle, CheckCircle, XCircle, Target, Percent, Eye
+  ArrowUp, ArrowDown, AlertTriangle, Eye, Target, Percent
 } from 'lucide-react';
 import { EmptyState } from '../components/ui/EmptyState';
 import Card from '../components/ui/Card';
@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 
 const ProjectStatistics: React.FC = () => {
-  const { user, adminUserId } = useAuth();
+  const { user } = useAuth();
   const { selectedCompany } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,11 +33,7 @@ const ProjectStatistics: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!selectedCompany?.id || !adminUserId) {
-        console.log('Cannot load: missing selectedCompany or adminUserId', { 
-          company: selectedCompany?.id, 
-          adminUserId 
-        });
+      if (!selectedCompany?.id || !user?.uid) {
         setLoading(false);
         return;
       }
@@ -46,31 +42,26 @@ const ProjectStatistics: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // ✅ GOUDEN TOOL PARAMETERS
-        const employerCompanyId = adminUserId;  // HOOFD bedrijf = werkgever
-        const projectCompanyId = selectedCompany.id;  // PROJECT bedrijf = geselecteerde company
-
-        console.log(`📊 Loading statistics:
-          - Employer (HOOFD): ${employerCompanyId}
-          - Project (CLIENT): ${projectCompanyId}
-        `);
-
+        const companyId = selectedCompany.id;
+        const userId = user.uid;
         const now = new Date();
         const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
 
+        console.log(`📊 Loading statistics for: ${selectedCompany.name} (${companyId})`);
+
         const [weeks, days, monthly, branches, branchDetailed, employees, matrix, addresses, advInsights] = await Promise.all([
-          projectStatisticsService.getWeeklyBreakdown(employerCompanyId, projectCompanyId, now.getFullYear()),
-          projectStatisticsService.getDailyBreakdown(employerCompanyId, projectCompanyId, startDate, now),
-          projectStatisticsService.getMonthlyBreakdown(employerCompanyId, projectCompanyId, now.getFullYear()),
-          projectStatisticsService.getBranchPerformance(employerCompanyId, projectCompanyId),
-          projectStatisticsService.getBranchDetailedStats(employerCompanyId, projectCompanyId),
-          projectStatisticsService.getEmployeeDetailedStats(employerCompanyId, projectCompanyId),
-          projectStatisticsService.getEmployeeLocationMatrix(employerCompanyId, projectCompanyId),
-          projectStatisticsService.getAverageEurPerAddress(employerCompanyId, projectCompanyId),
-          projectStatisticsService.getAdvancedInsights(employerCompanyId, projectCompanyId),
+          projectStatisticsService.getWeeklyBreakdown(companyId, userId, now.getFullYear()),
+          projectStatisticsService.getDailyBreakdown(companyId, userId, startDate, now),
+          projectStatisticsService.getMonthlyBreakdown(companyId, userId, now.getFullYear()),
+          projectStatisticsService.getBranchPerformance(companyId, userId),
+          projectStatisticsService.getBranchDetailedStats(companyId, userId),
+          projectStatisticsService.getEmployeeDetailedStats(companyId, userId),
+          projectStatisticsService.getEmployeeLocationMatrix(companyId, userId),
+          projectStatisticsService.getAverageEurPerAddress(companyId, userId),
+          projectStatisticsService.getAdvancedInsights(companyId, userId),
         ]);
 
-        console.log(`✅ All data loaded successfully`);
+        console.log(`✅ All statistics loaded successfully`);
 
         setWeeklyData(weeks || []);
         setDailyData(days || []);
@@ -90,7 +81,7 @@ const ProjectStatistics: React.FC = () => {
     };
 
     loadData();
-  }, [selectedCompany?.id, adminUserId]);
+  }, [selectedCompany?.id, user?.uid]);
 
   // BEREKENDE METRIEKEN
   const computedStats = useMemo(() => {
@@ -220,71 +211,6 @@ const ProjectStatistics: React.FC = () => {
               </div>
             </Card>
           </div>
-
-          {/* GEDETAILLEERDE METRIEKEN */}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <Card className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Gem. Uren/Medew.</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{computedStats.avgHoursPerEmployee.toFixed(0)}h</p>
-            </Card>
-
-            <Card className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Kosten/Uur</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">€{computedStats.costPerHour.toFixed(2)}</p>
-            </Card>
-
-            <Card className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Kosten Ratio</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{computedStats.costRatio.toFixed(1)}%</p>
-            </Card>
-
-            <Card className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Uitgaven Ratio</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{computedStats.expenseRatio.toFixed(1)}%</p>
-            </Card>
-
-            <Card className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Reisafstand</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{insights.summary.totalTravelKm.toFixed(0)}</p>
-              <p className="text-xs text-gray-500 mt-1">km</p>
-            </Card>
-
-            <Card className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Gem. Medew. Kosten</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">€{(computedStats.averageEmployeeCost / 1000).toFixed(1)}k</p>
-            </Card>
-          </div>
-
-          {/* INZENDINGSSTATUS */}
-          <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-t-4 border-t-blue-600">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Eye className="w-6 h-6 text-blue-600" />
-              Urenstaten Inzendingsstatus
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-semibold">Totale Inzendingen</p>
-                <p className="text-3xl font-bold text-blue-600 mt-2">{computedStats.totalSubmitted}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-semibold">Concept Inzendingen</p>
-                <p className="text-3xl font-bold text-yellow-600 mt-2">{computedStats.totalDraft}</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-semibold">Inzendingspercentage</p>
-                <p className="text-3xl font-bold text-green-600 mt-2">{computedStats.submissionRate.toFixed(0)}%</p>
-              </div>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-semibold">Top Vestiging</p>
-                {computedStats.topBranch && (
-                  <>
-                    <p className="text-lg font-bold text-indigo-600 mt-2">{computedStats.topBranch.branchName}</p>
-                    <p className="text-xs text-gray-500 mt-1">€{(computedStats.topBranch.totalInvoiced / 1000).toFixed(0)}k omzet</p>
-                  </>
-                )}
-              </div>
-            </div>
-          </Card>
         </>
       )}
 
