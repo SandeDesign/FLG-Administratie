@@ -261,21 +261,21 @@ export default function TimesheetApprovals() {
             return (
               <div key={summary.employeeId} className="space-y-2">
                 {/* Employee Card - ALTIJD MET DASHBOARD BUTTON */}
-                <button
-                  onClick={() => {
-                    if (summary.hasPending) {
-                      setExpandedEmployee(isExpanded ? null : summary.employeeId);
-                    }
-                  }}
-                  disabled={!summary.hasPending}
-                  className={`w-full p-4 sm:p-5 rounded-lg border-2 transition-all text-left ${
-                    summary.hasPending 
-                      ? 'border-orange-300 bg-white hover:bg-orange-50 active:bg-orange-100 cursor-pointer' 
-                      : 'border-gray-200 bg-white cursor-default'
-                  }`}
-                >
+                <div className={`w-full p-4 sm:p-5 rounded-lg border-2 transition-all text-left ${
+                  summary.hasPending 
+                    ? 'border-orange-300 bg-white hover:bg-orange-50' 
+                    : 'border-gray-200 bg-white'
+                }`}>
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {/* Left section - expandable */}
+                    <button
+                      onClick={() => {
+                        if (summary.hasPending) {
+                          setExpandedEmployee(isExpanded ? null : summary.employeeId);
+                        }
+                      }}
+                      className={`flex-1 flex items-center gap-3 min-w-0 text-left ${summary.hasPending ? 'cursor-pointer' : 'cursor-default'}`}
+                    >
                       <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
                         <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                       </div>
@@ -315,10 +315,10 @@ export default function TimesheetApprovals() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </button>
 
-                    {/* Buttons Container - ALTIJD zichtbaar en klikbaar */}
-                    <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {/* Right section - Buttons Container - ALWAYS clickable */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => {
                           setDashboardEmployeeId(summary.employeeId);
@@ -335,7 +335,7 @@ export default function TimesheetApprovals() {
                             {summary.pendingTimesheets.length}
                           </span>
                           <ChevronDown
-                            className={`h-5 w-5 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+                            className={`h-5 w-5 text-gray-400 transition-transform flex-shrink-0 cursor-pointer ${isExpanded ? 'rotate-180' : ''}`}
                           />
                         </>
                       )}
@@ -344,7 +344,7 @@ export default function TimesheetApprovals() {
                       )}
                     </div>
                   </div>
-                </button>
+                </div>
 
                 {/* Expanded Pending Timesheets */}
                 {isExpanded && summary.hasPending && (
