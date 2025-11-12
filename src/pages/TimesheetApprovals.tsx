@@ -10,14 +10,13 @@ import { WeeklyTimesheet } from '../types/timesheet';
 import {
   getPendingTimesheets,
   approveWeeklyTimesheet,
-  rejectWeeklyTimesheet,
-  getTimeEntries
+  rejectWeeklyTimesheet
 } from '../services/timesheetService';
 import { getEmployees } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { db } from '../lib/firebase';
 
 interface EmployeeTimesheetSummary {
   employeeId: string;
