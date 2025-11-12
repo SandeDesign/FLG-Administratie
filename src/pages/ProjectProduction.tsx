@@ -18,7 +18,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, getDocs, query, where, orderBy, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 export interface ProductionEntry {
@@ -66,8 +66,9 @@ const ProjectProduction: React.FC = () => {
   const [productionData, setProductionData] = useState<ProductionWeek | null>(null);
   const [entries, setEntries] = useState<ProductionEntry[]>([]);
   const [linkedEmployees, setLinkedEmployees] = useState<any[]>([]);
+  const [existingWeek, setExistingWeek] = useState<ProductionWeek | null>(null);
 
-  // 🔥 FIXED: Load production data whenever week/year/employee changes
+  // 🔥 Load production data
   const loadProductionData = useCallback(async () => {
     if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
@@ -77,7 +78,7 @@ const ProjectProduction: React.FC = () => {
     try {
       setLoading(true);
 
-      // Get linked employees for this project company
+      // Get linked employees
       const linked = employees.filter(emp =>
         emp.workCompanies?.includes(selectedCompany.id) ||
         emp.projectCompanies?.includes(selectedCompany.id)
@@ -85,14 +86,52 @@ const ProjectProduction: React.FC = () => {
 
       setLinkedEmployees(linked);
 
-      // Auto-select first employee if available
+      // Auto-select first employee
       let empId = selectedEmployeeId;
       if (!empId && linked.length > 0) {
         empId = linked[0].id;
         setSelectedEmployeeId(empId);
       }
 
-      // Initialize empty production week
+      // Check if week already exists in Firebase
+      if (empId) {
+        const q = query(
+          collection(db, 'productionWeeks'),
+          where('userId', '==', adminUserId),
+          where('week', '==', selectedWeek),
+          where('year', '==', selectedYear),
+          where('companyId', '==', selectedCompany.id),
+          where('employeeId', '==', empId)
+        );
+        const snap = await getDocs(q);
+        
+        if (snap.docs.length > 0) {
+          const doc = snap.docs[0];
+          const data = doc.data();
+          const existing: ProductionWeek = {
+            id: doc.id,
+            week: data.week,
+            year: data.year,
+            companyId: data.companyId,
+            employeeId: data.employeeId,
+            userId: data.userId,
+            entries: data.entries || [],
+            status: data.status,
+            totalHours: data.totalHours,
+            totalEntries: data.totalEntries,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          };
+          setExistingWeek(existing);
+          setProductionData(existing);
+          setEntries(existing.entries || []);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // No existing week, create new
+      setExistingWeek(null);
       const newWeek: ProductionWeek = {
         week: selectedWeek,
         year: selectedYear,
@@ -117,7 +156,7 @@ const ProjectProduction: React.FC = () => {
     }
   }, [user, adminUserId, selectedCompany, selectedEmployeeId, employees, selectedWeek, selectedYear, showError]);
 
-  // 🔥 WEBHOOK: Import production data
+  // 🔥 Import from Make webhook
   const handleImportFromMake = async () => {
     if (!selectedCompany) {
       showError('Fout', 'Selecteer eerst een bedrijf');
@@ -129,7 +168,6 @@ const ProjectProduction: React.FC = () => {
       return;
     }
 
-    // Get selected employee
     const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
     if (!selectedEmployee) {
@@ -356,7 +394,7 @@ const ProjectProduction: React.FC = () => {
     }
   };
 
-  // 🔥 FIREBASE: Opslaan naar database
+  // 🔥 FIREBASE: Save or update production week
   const handleSave = async () => {
     if (!productionData || !user || !adminUserId || entries.length === 0) {
       showError('Fout', 'Voeg minstens 1 entry toe voordat je opslaat');
@@ -365,7 +403,6 @@ const ProjectProduction: React.FC = () => {
 
     setSaving(true);
     try {
-      // Convert dates to Timestamps for Firestore
       const dataToSave = {
         week: productionData.week,
         year: productionData.year,
@@ -389,24 +426,25 @@ const ProjectProduction: React.FC = () => {
         status: 'draft',
         totalHours: productionData.totalHours,
         totalEntries: productionData.totalEntries,
-        createdAt: Timestamp.fromDate(new Date()),
+        createdAt: Timestamp.fromDate(productionData.createdAt),
         updatedAt: Timestamp.fromDate(new Date())
       };
 
       console.log('💾 Saving production week:', dataToSave);
 
-      // 🔥 SAVE TO FIRESTORE
-      const docRef = await addDoc(collection(db, 'productionWeeks'), dataToSave);
+      if (existingWeek?.id) {
+        // Update existing
+        await updateDoc(doc(db, 'productionWeeks', existingWeek.id), dataToSave);
+        console.log('✅ Updated with ID:', existingWeek.id);
+        success('Bijgewerkt', `Week ${selectedWeek} productie bijgewerkt met ${entries.length} entries`);
+      } else {
+        // Create new
+        const docRef = await addDoc(collection(db, 'productionWeeks'), dataToSave);
+        console.log('✅ Saved with ID:', docRef.id);
+        setExistingWeek({ ...productionData, id: docRef.id });
+        success('Opgeslagen', `Week ${selectedWeek} productie opgeslagen met ${entries.length} entries`);
+      }
       
-      console.log('✅ Saved with ID:', docRef.id);
-
-      success('Opgeslagen', `Week ${selectedWeek} productie opgeslagen met ${entries.length} entries`);
-      
-      // 🔥 RESET FORM nach save
-      setEntries([]);
-      setProductionData(null);
-      
-      // 🔥 RELOAD data
       setTimeout(() => {
         loadProductionData();
       }, 500);
@@ -434,10 +472,9 @@ const ProjectProduction: React.FC = () => {
     setSelectedYear(newYear);
   };
 
-  // 🔥 FIXED: Trigger load on mount and when dependencies change
   useEffect(() => {
     loadProductionData();
-  }, [selectedWeek, selectedYear, selectedCompany, selectedEmployeeId]);
+  }, [loadProductionData]);
 
   if (loading) {
     return (
@@ -798,7 +835,7 @@ const ProjectProduction: React.FC = () => {
           className="flex-1 sm:flex-none"
         >
           <Save className="h-4 w-4 mr-2" />
-          {saving ? 'Opslaan...' : 'Opslaan'}
+          {saving ? 'Opslaan...' : existingWeek ? 'Bijwerken' : 'Opslaan'}
         </Button>
       </div>
     </div>
