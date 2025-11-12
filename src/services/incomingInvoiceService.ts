@@ -13,6 +13,14 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
 
+export interface OCRData {
+  supplierName?: string;
+  invoiceNumber?: string;
+  amount?: number;
+  date?: Date;
+  confidence: number;
+}
+
 export interface IncomingInvoice {
   id?: string;
   userId: string;
@@ -35,19 +43,18 @@ export interface IncomingInvoice {
   fileName: string;
   fileUrl: string;
   driveFileId?: string;
+  driveFileLink?: string;
   ocrProcessed: boolean;
-  ocrData?: {
-    supplierName?: string;
-    invoiceNumber?: string;
-    amount?: number;
-    date?: Date;
-    confidence: number;
-  };
+  ocrData?: OCRData;
+  archivedToDrive?: boolean;
+  archivedAt?: Date;
+  driveArchiveId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const COLLECTION_NAME = 'incomingInvoices';
+const ARCHIVE_COLLECTION_NAME = 'invoiceArchives';
 
 export const incomingInvoiceService = {
   // Upload and create invoice
@@ -87,6 +94,7 @@ export const incomingInvoiceService = {
         fileUrl,
         ocrProcessed: !!ocrData,
         ocrData,
+        archivedToDrive: false,
         createdAt: now,
         updatedAt: now
       };
@@ -135,6 +143,7 @@ export const incomingInvoiceService = {
           approvedAt: data.approvedAt?.toDate(),
           paidAt: data.paidAt?.toDate(),
           rejectedAt: data.rejectedAt?.toDate(),
+          archivedAt: data.archivedAt?.toDate(),
           ocrData: data.ocrData ? {
             ...data.ocrData,
             date: data.ocrData.date?.toDate()
@@ -146,6 +155,140 @@ export const incomingInvoiceService = {
     } catch (error) {
       console.error('Error getting invoices:', error);
       throw new Error('Kon facturen niet laden');
+    }
+  },
+
+  // Archive invoice to Google Drive
+  async archiveToGoogleDrive(
+    invoiceId: string,
+    userId: string,
+    companyId: string,
+    invoice: IncomingInvoice
+  ): Promise<string> {
+    try {
+      // Create archive record in Firestore
+      const now = new Date();
+      const archiveData = {
+        userId,
+        companyId,
+        invoiceId,
+        invoiceNumber: invoice.invoiceNumber,
+        supplierName: invoice.supplierName,
+        totalAmount: invoice.totalAmount,
+        amount: invoice.amount,
+        vatAmount: invoice.vatAmount,
+        currency: 'EUR',
+        invoiceDate: Timestamp.fromDate(invoice.invoiceDate),
+        dueDate: Timestamp.fromDate(invoice.dueDate),
+        description: invoice.description,
+        fileName: invoice.fileName,
+        fileUrl: invoice.fileUrl,
+        ocrProcessed: invoice.ocrProcessed,
+        ocrData: invoice.ocrData ? {
+          ...invoice.ocrData,
+          date: invoice.ocrData.date ? Timestamp.fromDate(invoice.ocrData.date) : null
+        } : null,
+        status: 'archived',
+        folderPath: `${companyId}/facturen/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+        tags: ['archived', invoice.supplierName],
+        notes: `Gearchiveerd op ${now.toLocaleDateString('nl-NL')}`,
+        createdAt: Timestamp.fromDate(now),
+        archivedAt: Timestamp.fromDate(now)
+      };
+
+      // Add to archive collection
+      const archiveRef = await addDoc(
+        collection(db, ARCHIVE_COLLECTION_NAME),
+        archiveData
+      );
+
+      // Update original invoice to mark as archived
+      const invoiceRef = doc(db, COLLECTION_NAME, invoiceId);
+      await updateDoc(invoiceRef, {
+        archivedToDrive: true,
+        archivedAt: Timestamp.fromDate(now),
+        driveArchiveId: archiveRef.id,
+        updatedAt: Timestamp.fromDate(now)
+      });
+
+      // Sync to Google Drive if configured
+      try {
+        await this.syncArchiveToGoogleDrive(archiveRef.id, invoice, companyId, userId);
+      } catch (driveError) {
+        console.warn('Google Drive sync failed, archive saved locally:', driveError);
+      }
+
+      return archiveRef.id;
+    } catch (error) {
+      console.error('Error archiving to Google Drive:', error);
+      throw new Error('Kon factuur niet archiveren');
+    }
+  },
+
+  // Sync archive to Google Drive (placeholder for actual Google Drive API integration)
+  async syncArchiveToGoogleDrive(
+    archiveId: string,
+    invoice: IncomingInvoice,
+    companyId: string,
+    userId: string
+  ): Promise<void> {
+    try {
+      // TODO: Implement actual Google Drive API calls here
+      // This would upload the file and create a folder structure in Google Drive
+      // For now, this is a placeholder that logs the intent
+      console.log(`Syncing archive ${archiveId} to Google Drive for company ${companyId}`);
+      
+      // When implemented, this should:
+      // 1. Create a folder structure: /Bedrijf/Jaar/Maand/
+      // 2. Upload the invoice file
+      // 3. Store the driveFileId and driveFileLink
+      // 4. Create a metadata file with OCR extracted data
+    } catch (error) {
+      console.error('Error syncing to Google Drive:', error);
+      throw error;
+    }
+  },
+
+  // Get archived invoices
+  async getArchivedInvoices(
+    userId: string,
+    companyId?: string
+  ): Promise<any[]> {
+    try {
+      let q = query(
+        collection(db, ARCHIVE_COLLECTION_NAME),
+        where('userId', '==', userId),
+        orderBy('archivedAt', 'desc')
+      );
+
+      if (companyId) {
+        q = query(
+          collection(db, ARCHIVE_COLLECTION_NAME),
+          where('userId', '==', userId),
+          where('companyId', '==', companyId),
+          orderBy('archivedAt', 'desc')
+        );
+      }
+
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          invoiceDate: data.invoiceDate?.toDate(),
+          dueDate: data.dueDate?.toDate(),
+          archivedAt: data.archivedAt?.toDate(),
+          createdAt: data.createdAt?.toDate(),
+          ocrData: data.ocrData ? {
+            ...data.ocrData,
+            date: data.ocrData.date?.toDate()
+          } : undefined
+        };
+      });
+    } catch (error) {
+      console.error('Error getting archived invoices:', error);
+      throw new Error('Kon gearchiveerde facturen niet laden');
     }
   },
 
@@ -197,7 +340,7 @@ export const incomingInvoiceService = {
   },
 
   // Process OCR (placeholder for Tesseract.js or Google Vision API)
-  async processOCR(file: File): Promise<any> {
+  async processOCR(file: File): Promise<OCRData | null> {
     try {
       // This is a placeholder - implement with Tesseract.js or Google Vision API
       const text = await this.extractTextFromFile(file);
@@ -223,7 +366,7 @@ export const incomingInvoiceService = {
 
   // Extract text from file (implement with Tesseract.js)
   async extractTextFromFile(file: File): Promise<string> {
-    // This is a placeholder - implement with Tesseract.js
+    // This is a placeholder - implement with Tesseract.js or similar
     return "Factuur nummer: INV-2024-001\nVan: Test Leverancier B.V.\nTotaal: €299.99";
   },
 
@@ -242,6 +385,7 @@ export const incomingInvoiceService = {
       if (updates.approvedAt) updateData.approvedAt = Timestamp.fromDate(updates.approvedAt);
       if (updates.paidAt) updateData.paidAt = Timestamp.fromDate(updates.paidAt);
       if (updates.rejectedAt) updateData.rejectedAt = Timestamp.fromDate(updates.rejectedAt);
+      if (updates.archivedAt) updateData.archivedAt = Timestamp.fromDate(updates.archivedAt);
 
       await updateDoc(docRef, updateData);
     } catch (error) {
@@ -257,6 +401,39 @@ export const incomingInvoiceService = {
     } catch (error) {
       console.error('Error deleting invoice:', error);
       throw new Error('Kon factuur niet verwijderen');
+    }
+  },
+
+  // Get invoice statistics
+  async getInvoiceStatistics(
+    userId: string,
+    companyId?: string
+  ): Promise<{
+    totalCount: number;
+    pendingCount: number;
+    approvedCount: number;
+    paidCount: number;
+    rejectedCount: number;
+    totalAmount: number;
+    averageAmount: number;
+  }> {
+    try {
+      const invoices = await this.getInvoices(userId, companyId);
+      
+      return {
+        totalCount: invoices.length,
+        pendingCount: invoices.filter(inv => inv.status === 'pending').length,
+        approvedCount: invoices.filter(inv => inv.status === 'approved').length,
+        paidCount: invoices.filter(inv => inv.status === 'paid').length,
+        rejectedCount: invoices.filter(inv => inv.status === 'rejected').length,
+        totalAmount: invoices.reduce((sum, inv) => sum + inv.totalAmount, 0),
+        averageAmount: invoices.length > 0 
+          ? invoices.reduce((sum, inv) => sum + inv.totalAmount, 0) / invoices.length 
+          : 0
+      };
+    } catch (error) {
+      console.error('Error getting statistics:', error);
+      throw new Error('Kon statistieken niet laden');
     }
   }
 };
