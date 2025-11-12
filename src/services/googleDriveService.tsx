@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, Timestamp, addDoc, collection } from 'firebase/firestore';
 
 const CLIENT_ID = '896567545879-t7ps2toen24v8nrjn5ulf59esnjg1hok.apps.googleusercontent.com';
 const REDIRECT_URI = window.location.origin;
