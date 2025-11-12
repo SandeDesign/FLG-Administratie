@@ -3,9 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 if (typeof window !== 'undefined' && !window.WebSocket) {
   (window as any).WebSocket = class FakeWebSocket {
-    constructor(url: string) {
-      console.warn('WebSocket not available');
-    }
+    constructor(url: string) {}
     addEventListener() {}
     removeEventListener() {}
     send() {}
@@ -146,19 +144,29 @@ export const extractTextFromImage = async (
 };
 
 /**
- * Parse Nederlands getal: 15.339,66 -> 15339.66
+ * Parse Nederlands getal CORRECT: 15.339,66 → 15339.66
  */
 function parseNederlandsNumber(str: string): number {
-  const cleaned = str.replace(/\./g, '').replace(',', '.');
+  if (!str) return 0;
+  
+  // Stap 1: Verwijder €, spaties, etc
+  let cleaned = str.replace(/€/g, '').replace(/\s/g, '').trim();
+  
+  // Stap 2: Vervang punten door niks (die zijn thousands separators)
+  cleaned = cleaned.replace(/\./g, '');
+  
+  // Stap 3: Vervang komma door punt (dat is decimal separator)
+  cleaned = cleaned.replace(',', '.');
+  
   return parseFloat(cleaned) || 0;
 }
 
 /**
- * Extract getal uit line - kijkt naar patroon: "€ 15.339,66"
+ * Extract getal uit string
  */
-function extractNumber(line: string): number {
-  // Zoek naar: optioneel €, spaties, getal met punten/komma's
-  const match = line.match(/€?\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/);
+function extractAmount(text: string): number {
+  // Zoek naar: €1.234,56 of 1.234,56 of €1234,56
+  const match = text.match(/€?\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)/);
   if (match) {
     return parseNederlandsNumber(match[1]);
   }
@@ -166,7 +174,8 @@ function extractNumber(line: string): number {
 }
 
 /**
- * WERKENDE invoice data extraction - simpel en effectief
+ * WERKENDE invoice extraction
+ * Zoekt naar LABELS en haalt bedragen eruit
  */
 export const extractInvoiceData = (ocrText: string) => {
   const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l);
@@ -174,128 +183,125 @@ export const extractInvoiceData = (ocrText: string) => {
   let supplierName = 'Onbekend';
   let invoiceNumber = `INV-${Date.now()}`;
   let invoiceDate = new Date();
-  let dueDate = new Date();
-  let subtotal = 0;
+  let subtotalExclVat = 0;
   let vatAmount = 0;
-  let vatRate = 21;
   let totalInclVat = 0;
 
-  console.log('[OCR] Processing', lines.length, 'lines');
-
-  // ===== SUPPLIER NAME =====
-  for (let i = 0; i < Math.min(15, lines.length); i++) {
-    if (lines[i].includes('bv') || lines[i].includes('B.V') || lines[i].includes('Ltd')) {
-      supplierName = lines[i].replace(/B\.V\.?/gi, '').replace(/Ltd/gi, '').trim();
-      if (supplierName.length > 3) break;
+  // ===== SUPPLIER (eerste bedrijfsnaam) =====
+  for (let i = 0; i < Math.min(25, lines.length); i++) {
+    const line = lines[i];
+    if (line.match(/^[A-Z\s&\.]{5,}/)) {
+      supplierName = line.split('\n')[0];
+      break;
     }
   }
 
   // ===== INVOICE NUMBER =====
-  for (const line of lines) {
-    if (line.toLowerCase().includes('factuurnummer') || line.toLowerCase().includes('invoice')) {
-      const parts = line.split(':');
-      if (parts.length > 1) {
-        invoiceNumber = parts[1].trim().toUpperCase();
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].toLowerCase().includes('factuurnummer')) {
+      // Kijk naar huidy lijn EN volgende lijn
+      let num = lines[i].match(/:\s*([A-Z0-9\-]+)/)?.[1];
+      if (!num) num = lines[i + 1]?.match(/([A-Z0-9\-]+)/)?.[1];
+      if (num) {
+        invoiceNumber = num;
         break;
       }
     }
   }
 
-  // ===== DATES - patroon: DD-MM-YYYY =====
+  // ===== DATUM =====
   const datePattern = /(\d{1,2})-(\d{1,2})-(\d{4})/;
-  let dateCount = 0;
   for (const line of lines) {
     const match = line.match(datePattern);
     if (match) {
-      const day = parseInt(match[1]);
-      const month = parseInt(match[2]);
-      const year = parseInt(match[3]);
-      if (day > 0 && day <= 31 && month > 0 && month <= 12) {
-        const date = new Date(year, month - 1, day);
-        if (dateCount === 0) invoiceDate = date;
-        else if (dateCount === 1) dueDate = date;
-        dateCount++;
-      }
+      invoiceDate = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+      break;
     }
   }
 
-  // ===== BEDRAGEN =====
-  // Zoek naar specifieke labels en neem getal van VOLGENDE lijn
+  // ===== BEDRAGEN - EXTREEM SIMPEL =====
+  // Zoek naar "Subtotaal" LABEL op één lijn, bedrag op volgende lijn
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].toLowerCase();
+    const line = lines[i];
     const nextLine = lines[i + 1] || '';
+    const lower = line.toLowerCase();
 
-    // Subtotaal
-    if (line.includes('subtotaal') || line.includes('subtotal')) {
-      const num = extractNumber(nextLine);
-      if (num > 0) subtotal = num;
+    // SUBTOTAAL EX BTW
+    if (lower.includes('subtotaal') && !line.includes('€')) {
+      subtotalExclVat = extractAmount(nextLine);
+      if (subtotalExclVat === 0) {
+        // Probeer op dezelfde lijn
+        subtotalExclVat = extractAmount(line);
+      }
     }
 
-    // VAT - zoek naar "21% btw" of gewoon "btw"
-    if ((line.includes('21') && line.includes('btw')) || (line.includes('btw') && !line.includes('betaling'))) {
-      const num = extractNumber(nextLine);
-      if (num > 0) vatAmount = num;
+    // 21% BTW bedrag
+    if (lower.includes('21') && lower.includes('btw') && !lower.includes('tarief')) {
+      vatAmount = extractAmount(nextLine);
+      if (vatAmount === 0) {
+        vatAmount = extractAmount(line);
+      }
     }
 
-    // Totaal
-    if (line.includes('totaal te voldoen') || 
-        line.includes('total incl') || 
-        line.includes('bedrag incl')) {
-      const num = extractNumber(nextLine);
-      if (num > 0) totalInclVat = num;
+    // TOTAAL TE VOLDOEN (= totaal incl BTW)
+    if ((lower.includes('totaal') && lower.includes('voldoen')) || lower.includes('bedrag incl')) {
+      totalInclVat = extractAmount(nextLine);
+      if (totalInclVat === 0) {
+        totalInclVat = extractAmount(line);
+      }
     }
   }
 
-  // ===== FALLBACK: Kijk naar getallen die OP dezelfde lijn als label staan =====
-  if (subtotal === 0 || vatAmount === 0 || totalInclVat === 0) {
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const lowerLine = line.toLowerCase();
-
-      if (lowerLine.includes('subtotaal') && subtotal === 0) {
-        subtotal = extractNumber(line);
+  // ===== FALLBACK: Als niks gevonden, zoek ALLE bedragen =====
+  if (subtotalExclVat === 0 && totalInclVat === 0) {
+    const amounts: number[] = [];
+    for (const line of lines) {
+      const amount = extractAmount(line);
+      if (amount > 50) {
+        amounts.push(amount);
       }
-      if (lowerLine.includes('btw') && !lowerLine.includes('betaling') && vatAmount === 0) {
-        vatAmount = extractNumber(line);
-      }
-      if ((lowerLine.includes('totaal') || lowerLine.includes('voldoen')) && totalInclVat === 0) {
-        totalInclVat = extractNumber(line);
-      }
+    }
+    
+    // Laatste bedragen zijn meestal: subtotaal, btw, totaal
+    if (amounts.length >= 3) {
+      subtotalExclVat = amounts[amounts.length - 3];
+      vatAmount = amounts[amounts.length - 2];
+      totalInclVat = amounts[amounts.length - 1];
+    } else if (amounts.length >= 1) {
+      totalInclVat = amounts[amounts.length - 1];
     }
   }
 
   // ===== BEREKEN ONTBREKENDE =====
-  if (subtotal > 0 && vatAmount === 0) {
-    vatAmount = Math.round((subtotal * vatRate) / 100 * 100) / 100;
+  if (subtotalExclVat > 0 && vatAmount === 0) {
+    vatAmount = Math.round((subtotalExclVat * 0.21) * 100) / 100;
   }
-  if (totalInclVat === 0 && subtotal > 0 && vatAmount > 0) {
-    totalInclVat = Math.round((subtotal + vatAmount) * 100) / 100;
+  if (subtotalExclVat > 0 && totalInclVat === 0) {
+    totalInclVat = subtotalExclVat + vatAmount;
   }
-  if (totalInclVat === 0 && subtotal > 0) {
-    totalInclVat = Math.round((subtotal * (1 + vatRate / 100)) * 100) / 100;
+  if (totalInclVat > 0 && subtotalExclVat === 0 && vatAmount > 0) {
+    subtotalExclVat = totalInclVat - vatAmount;
   }
 
-  const amount = totalInclVat > 0 ? totalInclVat : subtotal;
-
-  console.log('[OCR] Result:', {
-    supplier: supplierName,
-    invoice: invoiceNumber,
-    date: invoiceDate,
-    subtotal,
-    vat: vatAmount,
-    total: totalInclVat,
-  });
+  console.log('\n========== INVOICE EXTRACTED ==========');
+  console.log('Supplier:        ', supplierName);
+  console.log('Invoice Number:  ', invoiceNumber);
+  console.log('Date:            ', invoiceDate.toLocaleDateString('nl-NL'));
+  console.log('');
+  console.log('Excl. BTW:       ', `€ ${subtotalExclVat.toFixed(2)}`);
+  console.log('BTW (21%):       ', `€ ${vatAmount.toFixed(2)}`);
+  console.log('Incl. BTW:       ', `€ ${totalInclVat.toFixed(2)}`);
+  console.log('=========================================\n');
 
   return {
     supplierName,
     invoiceNumber,
     invoiceDate,
-    dueDate,
-    amount: amount,
-    subtotal: subtotal,
-    vatAmount: vatAmount,
-    vatRate: vatRate,
-    totalInclVat: totalInclVat,
+    amount: totalInclVat || subtotalExclVat,
+    subtotal: subtotalExclVat,
+    vatAmount,
+    vatRate: 21,
+    totalInclVat,
     rawText: ocrText,
   };
 };
