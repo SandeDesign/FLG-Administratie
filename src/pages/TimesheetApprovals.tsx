@@ -45,7 +45,6 @@ export default function TimesheetApprovals() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [employeeSummaries, setEmployeeSummaries] = useState<EmployeeTimesheetSummary[]>([]);
   const [expandedEmployee, setExpandedEmployee] = useState<string | null>(null);
-  const [showDashboardModal, setShowDashboardModal] = useState(false);
   const [dashboardEmployeeId, setDashboardEmployeeId] = useState<string | null>(null);
 
   // 🔥 Load ALL timesheets from Firebase (not just pending)
@@ -323,7 +322,6 @@ export default function TimesheetApprovals() {
                       <button
                         onClick={() => {
                           setDashboardEmployeeId(summary.employeeId);
-                          setShowDashboardModal(true);
                         }}
                         className="px-2 py-1 rounded-lg bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200 active:bg-blue-300 flex items-center gap-1 whitespace-nowrap transition-colors"
                         title="Dashboard met alle weken"
@@ -448,9 +446,8 @@ export default function TimesheetApprovals() {
 
       {/* DASHBOARD MODAL - ALLE WEKEN UIT FIREBASE */}
       <Modal
-        isOpen={showDashboardModal}
+        isOpen={!!dashboardEmployeeId}
         onClose={() => {
-          setShowDashboardModal(false);
           setDashboardEmployeeId(null);
         }}
         title={dashboardEmployeeId ? `Dashboard - ${employeeSummaries.find(e => e.employeeId === dashboardEmployeeId)?.firstName} ${employeeSummaries.find(e => e.employeeId === dashboardEmployeeId)?.lastName}` : 'Dashboard'}
