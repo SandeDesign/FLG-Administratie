@@ -18,7 +18,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
-import GoogleDriveSettings from '../components/GoogleDriveSettings';
+
 
 const Settings: React.FC = () => {
   const { user, userRole, adminUserId } = useAuth();
@@ -276,7 +276,58 @@ const Settings: React.FC = () => {
 
       {activeTab === 'drive' && (
         <div className="space-y-6">
-          <GoogleDriveSettings />
+          <Card>
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <HardDrive className="h-6 w-6 text-blue-600" />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Google Drive Integratie</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Verbind Google Drive om facturen automatisch op te slaan.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                  <strong>Mappenstructuur:</strong>
+                  <div className="mt-2 text-xs font-mono">
+                    Alloon/<br />
+                    └── Bedrijfsnaam/<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;├── Inkomende Facturen<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;├── Uitgaande Facturen<br />
+                    &nbsp;&nbsp;&nbsp;&nbsp;└── Exports
+                  </div>
+                </div>
+
+                <Button
+                  onClick={async () => {
+                    if (!user) return;
+                    try {
+                      setSaving(true);
+                      const { signInToGoogleDrive, saveGoogleDriveToken } = await import('../services/googleDriveService');
+                      const token = await signInToGoogleDrive();
+                      await saveGoogleDriveToken(user.uid, token);
+                      success('Verbonden!', 'Google Drive is succesvol gekoppeld');
+                      // Refresh page to update status
+                      setTimeout(() => window.location.reload(), 1000);
+                    } catch (error) {
+                      showError('Verbinding mislukt', error instanceof Error ? error.message : 'Kon Google Drive niet verbinden');
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving}
+                  icon={HardDrive}
+                  variant="primary"
+                >
+                  {saving ? 'Bezig met verbinden...' : 'Verbind Google Drive'}
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
       )}
 
