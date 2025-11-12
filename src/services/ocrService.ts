@@ -5,7 +5,6 @@ import * as pdfjsLib from 'pdfjs-dist';
 if (typeof window !== 'undefined' && !window.WebSocket) {
   (window as any).WebSocket = class FakeWebSocket {
     constructor(url: string) {
-      // Ignore WebSocket errors in non-supported environments
       console.warn('WebSocket not available, continuing anyway');
     }
     addEventListener() {}
@@ -185,30 +184,149 @@ export const extractTextFromImage = async (
 };
 
 /**
- * Extract invoice data from OCR text
+ * Extract invoice data from OCR text - Proper Dutch invoice parsing
  */
 export const extractInvoiceData = (ocrText: string) => {
-  // Simple regex patterns for Dutch invoices
-  const supplierMatch = ocrText.match(/(?:Van|From|Leverancier)[\s:]*([^\n]+)/i);
-  const invoiceNumberMatch = ocrText.match(
-    /(?:Factuur|Invoice|Factuurnummer|Nummer)[\s:]*([A-Z0-9\-]+)/i
-  );
-  const dateMatch = ocrText.match(/(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
-  const amountMatch = ocrText.match(
-    /(?:Totaal|Total|Bedrag|Totale)[\s:]*€?\s*([0-9.,]+)/i
-  );
-  const dueDateMatch = ocrText.match(
-    /(?:Vervaldatum|Due Date|Betaaltermijn)[\s:]*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i
-  );
+  const normalized = ocrText.toLowerCase().replace(/\r\n/g, '\n');
+
+  // ===== SUPPLIER NAME =====
+  const supplierPatterns = [
+    /(?:van|leverancier|bedrijf|maatschappij|door)[\s:]*([^\n]+?)(?:\n|bedrijf|adres|kvk|btw|€)/i,
+    /^([a-z\s&\.]+?)(?:\n\n|\s{2,}(?:adres|straat|kvk))/im,
+  ];
+  let supplierName = 'Onbekend';
+  for (const pattern of supplierPatterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      supplierName = match[1].trim().split(/\n/)[0].trim();
+      if (supplierName.length > 3 && supplierName.length < 100) break;
+    }
+  }
+
+  // ===== INVOICE NUMBER =====
+  const invoiceNumberPatterns = [
+    /(?:factuur\s*(?:nr|nummer|#|no)?\.?|invoice\s*(?:nr|number)?\.?|factuurnummer)[:\s]+([a-z0-9\-\.\/]+)/i,
+    /^(?:inv|f|factuur)[:\s]*([a-z0-9\-\.]{3,})/im,
+  ];
+  let invoiceNumber = `INV-${Date.now()}`;
+  for (const pattern of invoiceNumberPatterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      invoiceNumber = match[1].trim().toUpperCase();
+      break;
+    }
+  }
+
+  // ===== DATES =====
+  const dateRegex = /(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{2,4})/g;
+  const dates: Date[] = [];
+  let dateMatch;
+  while ((dateMatch = dateRegex.exec(ocrText)) !== null) {
+    let day = parseInt(dateMatch[1]);
+    let month = parseInt(dateMatch[2]);
+    let year = parseInt(dateMatch[3]);
+
+    if (year < 100) year = year < 30 ? 2000 + year : 1900 + year;
+    if (month > 12) [day, month] = [month, day];
+
+    if (day > 0 && day <= 31 && month > 0 && month <= 12) {
+      dates.push(new Date(year, month - 1, day));
+    }
+  }
+
+  const invoiceDate = dates.length > 0 ? dates[0] : new Date();
+  const dueDate = dates.length > 1 ? dates[1] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+  // ===== AMOUNTS - Proper Dutch invoice parsing =====
+  const parseAmount = (str?: string): number => {
+    if (!str) return 0;
+    // Remove dots (thousands separator) and replace comma with dot
+    return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+  };
+
+  // Subtotal excl VAT
+  const subtotalPatterns = [
+    /(?:subtotaal|netto bedrag|bedrag\s*ex(?:cl)?\.?\s*btw|totaal\s*ex\s*btw)[:\s]*€?\s*([0-9]{1,10}[.,][0-9]{2})/i,
+    /ex\s*btw[:\s]*€?\s*([0-9]{1,10}[.,][0-9]{2})/i,
+  ];
+  let subtotal = 0;
+  for (const pattern of subtotalPatterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      subtotal = parseAmount(match[1]);
+      if (subtotal > 0) break;
+    }
+  }
+
+  // VAT Rate
+  const vatRateMatch = normalized.match(/btw\s*(?:tarief)?[:\s]*(\d{1,2})%/i);
+  const vatRate = vatRateMatch ? parseInt(vatRateMatch[1]) : 21;
+
+  // VAT Amount - be specific to avoid false positives
+  const vatPatterns = [
+    /btw\s*(?:21%)?[:\s]*€?\s*([0-9]{1,10}[.,][0-9]{2})(?:\s|$)/i,
+    /(?:21%?\s*)?btw\s*bedrag[:\s]*€?\s*([0-9]{1,10}[.,][0-9]{2})/i,
+  ];
+  let vatAmount = 0;
+  for (const pattern of vatPatterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      vatAmount = parseAmount(match[1]);
+      if (vatAmount > 0) break;
+    }
+  }
+
+  // Total incl VAT - most specific patterns first
+  const totalPatterns = [
+    /totaal\s*(?:incl)?\.?\s*btw[:\s]*€?\s*([0-9]{1,10}[.,][0-9]{2})/i,
+    /totaalbedrag[:\s]*€?\s*([0-9]{1,10}[.,][0-9]{2})/i,
+    /totaal\s*te\s*betalen[:\s]*€?\s*([0-9]{1,10}[.,][0-9]{2})/i,
+    /bedrag\s*incl\.?\s*btw[:\s]*€?\s*([0-9]{1,10}[.,][0-9]{2})/i,
+    /(?:incl\s*btw|inclusive)[:\s]*€?\s*([0-9]{1,10}[.,][0-9]{2})/i,
+  ];
+  let totalInclVat = 0;
+  for (const pattern of totalPatterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      totalInclVat = parseAmount(match[1]);
+      if (totalInclVat > 0) break;
+    }
+  }
+
+  // ===== CALCULATE MISSING AMOUNTS =====
+  // If we have subtotal but no VAT, calculate it
+  if (subtotal > 0 && vatAmount === 0) {
+    vatAmount = (subtotal * vatRate) / 100;
+  }
+
+  // If we have subtotal but no total, calculate it
+  if (subtotal > 0 && totalInclVat === 0) {
+    totalInclVat = subtotal + (vatAmount > 0 ? vatAmount : (subtotal * vatRate) / 100);
+  }
+
+  // If we have total and VAT but no subtotal, calculate it
+  if (totalInclVat > 0 && vatAmount > 0 && subtotal === 0) {
+    subtotal = totalInclVat - vatAmount;
+  }
+
+  // If only total exists, assume 21% VAT
+  if (totalInclVat > 0 && subtotal === 0 && vatAmount === 0) {
+    subtotal = totalInclVat / (1 + vatRate / 100);
+    vatAmount = totalInclVat - subtotal;
+  }
+
+  const amount = totalInclVat > 0 ? totalInclVat : subtotal;
 
   return {
-    supplierName: supplierMatch ? supplierMatch[1].trim() : 'Onbekend',
-    invoiceNumber: invoiceNumberMatch ? invoiceNumberMatch[1].trim() : `INV-${Date.now()}`,
-    invoiceDate: dateMatch ? new Date(dateMatch[1]) : new Date(),
-    amount: amountMatch ? parseFloat(amountMatch[1].replace(',', '.')) : 0,
-    dueDate: dueDateMatch
-      ? new Date(dueDateMatch[1])
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    supplierName,
+    invoiceNumber,
+    invoiceDate,
+    dueDate,
+    amount: Math.round(amount * 100) / 100,
+    subtotal: Math.round(subtotal * 100) / 100,
+    vatAmount: Math.round(vatAmount * 100) / 100,
+    vatRate: vatRate,
+    totalInclVat: Math.round(totalInclVat * 100) / 100,
     rawText: ocrText,
   };
 };
