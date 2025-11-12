@@ -1,58 +1,610 @@
-// src/pages/ProjectProduction.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  Factory,
+  Building2,
+  Download,
+  Save,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash2,
+  AlertCircle,
+  CheckCircle,
+  Eye
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { Factory, Building2 } from 'lucide-react';
 import { EmptyState } from '../components/ui/EmptyState';
 import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { useToast } from '../hooks/useToast';
+
+export interface ProductionEntry {
+  id?: string;
+  monteur: string;
+  datum: string;
+  uren: number;
+  opdrachtgever: string;
+  locaties: string;
+  week: number;
+  year: number;
+  companyId: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ProductionWeek {
+  id?: string;
+  week: number;
+  year: number;
+  companyId: string;
+  userId: string;
+  entries: ProductionEntry[];
+  status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'processed';
+  totalHours: number;
+  totalEntries: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const ProjectProduction: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
+  const { success, error: showError } = useToast();
+
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selectedWeek, setSelectedWeek] = useState<number>(getWeekNumber(new Date()));
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [productionData, setProductionData] = useState<ProductionWeek | null>(null);
+  const [entries, setEntries] = useState<ProductionEntry[]>([]);
+
+  const loadProductionData = useCallback(async () => {
+    if (!user || !adminUserId || !selectedCompany) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Initialize empty production week
+      const newWeek: ProductionWeek = {
+        week: selectedWeek,
+        year: selectedYear,
+        companyId: selectedCompany.id,
+        userId: adminUserId,
+        entries: [],
+        status: 'draft',
+        totalHours: 0,
+        totalEntries: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      setProductionData(newWeek);
+      setEntries([]);
+    } catch (error) {
+      console.error('Error loading production data:', error);
+      showError('Fout bij laden', 'Kan productie gegevens niet laden');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, adminUserId, selectedCompany, selectedWeek, selectedYear, showError]);
+
+  const handleImportFromMake = async () => {
+    if (!selectedCompany) {
+      showError('Fout', 'Selecteer eerst een bedrijf');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const response = await fetch(
+        'https://hook.eu2.make.com/qmvow9qbpesofmm9p8srgvck550i7xr6',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'get_production_data',
+            week: selectedWeek,
+            year: selectedYear,
+            companyId: selectedCompany.id
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Webhook call failed');
+      }
+
+      const productionResponse = await response.json();
+
+      if (
+        productionResponse &&
+        Array.isArray(productionResponse) &&
+        productionResponse.length > 0
+      ) {
+        await processProductionData(productionResponse);
+        success('Import geslaagd', `${productionResponse.length} productie entries geïmporteerd`);
+        await loadProductionData();
+      } else {
+        showError('Geen data', 'Geen productie gegevens gevonden voor deze week');
+      }
+    } catch (error) {
+      console.error('Error importing production data:', error);
+      showError('Import fout', 'Kon productie gegevens niet ophalen');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const processProductionData = async (rawData: any[]) => {
+    const normalizedEntries: ProductionEntry[] = rawData.map((record) => {
+      const data = record.data || record;
+      return {
+        monteur: data.Monteur || data.monteur || '',
+        datum: data.Datum || data.datum || '',
+        uren: parseFloat(data.Uren || data.uren || 0),
+        opdrachtgever: data.Opdrachtgever || data.opdrachtgever || '',
+        locaties: data.Locaties || data.locaties || '',
+        week: selectedWeek,
+        year: selectedYear,
+        companyId: selectedCompany!.id,
+        userId: adminUserId!,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    });
+
+    const totalHours = normalizedEntries.reduce((sum, entry) => sum + entry.uren, 0);
+
+    const updatedWeek: ProductionWeek = {
+      week: selectedWeek,
+      year: selectedYear,
+      companyId: selectedCompany!.id,
+      userId: adminUserId!,
+      entries: normalizedEntries,
+      status: 'draft',
+      totalHours: totalHours,
+      totalEntries: normalizedEntries.length,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    setProductionData(updatedWeek);
+    setEntries(normalizedEntries);
+  };
+
+  const updateEntry = (index: number, field: keyof ProductionEntry, value: any) => {
+    const updatedEntries = [...entries];
+    updatedEntries[index] = {
+      ...updatedEntries[index],
+      [field]: field === 'uren' ? parseFloat(value) || 0 : value,
+      updatedAt: new Date()
+    };
+
+    const totalHours = updatedEntries.reduce((sum, entry) => sum + entry.uren, 0);
+
+    setEntries(updatedEntries);
+    if (productionData) {
+      setProductionData({
+        ...productionData,
+        entries: updatedEntries,
+        totalHours: totalHours,
+        totalEntries: updatedEntries.length,
+        updatedAt: new Date()
+      });
+    }
+  };
+
+  const addEntry = () => {
+    const newEntry: ProductionEntry = {
+      monteur: '',
+      datum: new Date().toISOString().split('T')[0],
+      uren: 0,
+      opdrachtgever: '',
+      locaties: '',
+      week: selectedWeek,
+      year: selectedYear,
+      companyId: selectedCompany!.id,
+      userId: adminUserId!,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const updatedEntries = [...entries, newEntry];
+    setEntries(updatedEntries);
+
+    if (productionData) {
+      setProductionData({
+        ...productionData,
+        entries: updatedEntries,
+        totalEntries: updatedEntries.length,
+        updatedAt: new Date()
+      });
+    }
+  };
+
+  const removeEntry = (index: number) => {
+    const updatedEntries = entries.filter((_, i) => i !== index);
+    const totalHours = updatedEntries.reduce((sum, entry) => sum + entry.uren, 0);
+
+    setEntries(updatedEntries);
+    if (productionData) {
+      setProductionData({
+        ...productionData,
+        entries: updatedEntries,
+        totalHours: totalHours,
+        totalEntries: updatedEntries.length,
+        updatedAt: new Date()
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    if (!productionData || !user || !adminUserId) return;
+
+    setSaving(true);
+    try {
+      // TODO: Implement Firebase save logic
+      success('Gegevens opgeslagen', 'Productie gegevens succesvol opgeslagen');
+    } catch (error) {
+      console.error('Error saving production data:', error);
+      showError('Fout bij opslaan', 'Kon productie gegevens niet opslaan');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const changeWeek = (delta: number) => {
+    let newWeek = selectedWeek + delta;
+    let newYear = selectedYear;
+
+    if (newWeek < 1) {
+      newWeek = 52;
+      newYear--;
+    } else if (newWeek > 52) {
+      newWeek = 1;
+      newYear++;
+    }
+
+    setSelectedWeek(newWeek);
+    setSelectedYear(newYear);
+  };
 
   useEffect(() => {
-    // Load production data
-    setLoading(false);
-  }, [selectedCompany]);
+    loadProductionData();
+  }, [loadProductionData]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   if (!selectedCompany) {
     return (
-      <EmptyState
-        icon={Building2}
-        title="Geen bedrijf geselecteerd"
-        description="Selecteer een projectbedrijf om productie te verwerken."
-      />
+      <div className="space-y-6 px-4 sm:px-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
+        <EmptyState
+          icon={Building2}
+          title="Geen bedrijf geselecteerd"
+          description="Selecteer een projectbedrijf om productie te verwerken."
+        />
+      </div>
     );
   }
 
   if (selectedCompany.companyType !== 'project') {
     return (
-      <EmptyState
-        icon={Factory}
-        title="Dit is geen projectbedrijf"
-        description="Productie verwerking is alleen beschikbaar voor projectbedrijven."
-      />
+      <div className="space-y-6 px-4 sm:px-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
+        <EmptyState
+          icon={Factory}
+          title="Dit is geen projectbedrijf"
+          description="Productie verwerking is alleen beschikbaar voor projectbedrijven."
+        />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Productie Verwerking</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Beheer productie voor {selectedCompany.name}
-        </p>
+    <div className="space-y-3 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
+      {/* Header */}
+      <div className="space-y-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-2">
+            Beheer productie voor {selectedCompany.name}
+          </p>
+        </div>
+
+        {/* Week Navigation + Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
+            <button
+              onClick={() => changeWeek(-1)}
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              title="Vorige week"
+            >
+              <ChevronLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div className="text-center px-4 min-w-[120px]">
+              <p className="text-sm font-semibold text-gray-900">Week {selectedWeek}</p>
+              <p className="text-xs text-gray-500">{selectedYear}</p>
+            </div>
+            <button
+              onClick={() => changeWeek(1)}
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              title="Volgende week"
+            >
+              <ChevronRight className="h-5 w-5 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Import Button */}
+          <Button
+            onClick={handleImportFromMake}
+            disabled={importing || saving}
+            variant="secondary"
+            size="sm"
+            className="text-xs sm:text-sm"
+          >
+            {importing ? (
+              <>
+                <LoadingSpinner className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                Laden...
+              </>
+            ) : (
+              <>
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                Ophalen
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
-      <Card className="p-8">
-        <div className="text-center">
-          <Factory className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500">Productie verwerking inhoud wordt hier ingevuld</p>
-        </div>
-      </Card>
+      {/* Summary Card */}
+      {productionData && (
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 p-4 sm:p-6">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-gray-900">Week {selectedWeek} Samenvatting</h3>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Totaal Uren</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">
+                  {productionData.totalHours}u
+                </p>
+              </div>
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Entries</p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                  {productionData.totalEntries}
+                </p>
+              </div>
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Status</p>
+                <p className="text-xs font-bold text-gray-600 capitalize">
+                  {productionData.status}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Production Entries Table */}
+      {entries.length > 0 ? (
+        <Card className="p-3 sm:p-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Productie Entries</h3>
+              <Button
+                onClick={addEntry}
+                size="sm"
+                variant="secondary"
+                className="text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Toevoegen
+              </Button>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="text-left py-2 px-3">Monteur</th>
+                    <th className="text-left py-2 px-3">Datum</th>
+                    <th className="text-left py-2 px-3">Uren</th>
+                    <th className="text-left py-2 px-3">Opdrachtgever</th>
+                    <th className="text-left py-2 px-3">Locaties</th>
+                    <th className="text-center py-2 px-3">Acties</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry, index) => (
+                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="py-2 px-3">
+                        <Input
+                          type="text"
+                          value={entry.monteur}
+                          onChange={(e) => updateEntry(index, 'monteur', e.target.value)}
+                          className="text-xs"
+                          placeholder="Monteur"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="date"
+                          value={entry.datum}
+                          onChange={(e) => updateEntry(index, 'datum', e.target.value)}
+                          className="text-xs"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.25"
+                          value={entry.uren}
+                          onChange={(e) => updateEntry(index, 'uren', e.target.value)}
+                          className="text-xs text-center"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="text"
+                          value={entry.opdrachtgever}
+                          onChange={(e) => updateEntry(index, 'opdrachtgever', e.target.value)}
+                          className="text-xs"
+                          placeholder="Opdrachtgever"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="text"
+                          value={entry.locaties}
+                          onChange={(e) => updateEntry(index, 'locaties', e.target.value)}
+                          className="text-xs"
+                          placeholder="Locaties"
+                        />
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <button
+                          onClick={() => removeEntry(index)}
+                          className="text-red-600 hover:text-red-800 p-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-2">
+              {entries.map((entry, index) => (
+                <Card key={index} className="p-3 bg-gray-50">
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-600 font-medium">Monteur</label>
+                        <Input
+                          type="text"
+                          value={entry.monteur}
+                          onChange={(e) => updateEntry(index, 'monteur', e.target.value)}
+                          className="text-xs"
+                          placeholder="Monteur"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-600 font-medium">Datum</label>
+                        <Input
+                          type="date"
+                          value={entry.datum}
+                          onChange={(e) => updateEntry(index, 'datum', e.target.value)}
+                          className="text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-600 font-medium">Uren</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.25"
+                          value={entry.uren}
+                          onChange={(e) => updateEntry(index, 'uren', e.target.value)}
+                          className="text-xs text-center"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          onClick={() => removeEntry(index)}
+                          className="w-full text-red-600 hover:text-red-800 p-2 bg-red-50 rounded"
+                        >
+                          <Trash2 className="h-4 w-4 mx-auto" />
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 font-medium">Opdrachtgever</label>
+                      <Input
+                        type="text"
+                        value={entry.opdrachtgever}
+                        onChange={(e) => updateEntry(index, 'opdrachtgever', e.target.value)}
+                        className="text-xs"
+                        placeholder="Opdrachtgever"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 font-medium">Locaties</label>
+                      <Input
+                        type="text"
+                        value={entry.locaties}
+                        onChange={(e) => updateEntry(index, 'locaties', e.target.value)}
+                        className="text-xs"
+                        placeholder="Locaties"
+                      />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <Card className="p-8">
+          <div className="text-center">
+            <Factory className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500 mb-4">Geen productie entries beschikbaar</p>
+            <Button onClick={addEntry} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Eerste Entry Toevoegen
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex gap-2 sm:gap-3">
+        <Button
+          onClick={handleSave}
+          disabled={saving || entries.length === 0}
+          variant="secondary"
+          className="flex-1 sm:flex-none"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          Opslaan
+        </Button>
+      </div>
     </div>
   );
 };
+
+function getWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
 
 export default ProjectProduction;
