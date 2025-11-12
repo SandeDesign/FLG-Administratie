@@ -1,22 +1,26 @@
 import {
-  collection, query, where, getDocs, Timestamp, getFirestore, orderBy, limit, startAfter, getDocs as getDocsRaw,
+  collection, query, where, getDocs, getFirestore,
 } from 'firebase/firestore';
 import { getApp } from 'firebase/app';
 
 const db = getFirestore(getApp());
 
 export const projectStatisticsService = {
-  // WEEK-BY-WEEK ANALYTICS
+  // WEEK-BY-WEEK ANALYTICS - ALLE DATA LADEN
   async getWeeklyBreakdown(companyId: string, userId: string, year: number) {
     try {
+      console.log(`📊 Loading weekly data for company: ${companyId}, year: ${year}`);
+      
       const timesheetsSnap = await getDocs(
         query(
           collection(db, 'weeklyTimesheets'),
           where('companyId', '==', companyId),
-          where('userId', '==', userId),
           where('year', '==', year)
+          // REMOVED: userId filter - dit was het probleem!
         )
       );
+
+      console.log(`✓ Loaded ${timesheetsSnap.docs.length} weekly timesheets`);
 
       const timesheets = timesheetsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const weeklyData = new Map<number, any>();
@@ -50,7 +54,7 @@ export const projectStatisticsService = {
 
       return Array.from(weeklyData.values());
     } catch (error) {
-      console.error('Error getting weekly breakdown:', error);
+      console.error('❌ Error getting weekly breakdown:', error);
       throw error;
     }
   },
@@ -58,13 +62,17 @@ export const projectStatisticsService = {
   // DAY-BY-DAY ANALYTICS
   async getDailyBreakdown(companyId: string, userId: string, startDate: Date, endDate: Date) {
     try {
+      console.log(`📅 Loading daily data for company: ${companyId}`);
+      
       const timeEntriesSnap = await getDocs(
         query(
           collection(db, 'timeEntries'),
-          where('companyId', '==', companyId),
-          where('userId', '==', userId)
+          where('companyId', '==', companyId)
+          // REMOVED: userId filter
         )
       );
+
+      console.log(`✓ Loaded ${timeEntriesSnap.docs.length} time entries`);
 
       const entries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const filtered = entries.filter((e: any) => {
@@ -119,7 +127,7 @@ export const projectStatisticsService = {
         entryCount: day.entries.length,
       }));
     } catch (error) {
-      console.error('Error getting daily breakdown:', error);
+      console.error('❌ Error getting daily breakdown:', error);
       throw error;
     }
   },
@@ -127,13 +135,17 @@ export const projectStatisticsService = {
   // LOCATION/BRANCH ANALYTICS
   async getBranchPerformance(companyId: string, userId: string) {
     try {
+      console.log(`🏢 Loading branch performance for company: ${companyId}`);
+      
       const [branchesSnap, timeEntriesSnap, employeesSnap, invoicesSnap, expensesSnap] = await Promise.all([
         getDocs(query(collection(db, 'branches'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId), where('userId', '==', userId))),
-        getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId), where('userId', '==', userId))),
-        getDocs(query(collection(db, 'outgoingInvoices'), where('companyId', '==', companyId), where('userId', '==', userId))),
+        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
+        getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
+        getDocs(query(collection(db, 'outgoingInvoices'), where('companyId', '==', companyId))),
         getDocs(query(collection(db, 'expenses'), where('companyId', '==', companyId))),
       ]);
+
+      console.log(`✓ Loaded branches: ${branchesSnap.docs.length}, timeEntries: ${timeEntriesSnap.docs.length}, employees: ${employeesSnap.docs.length}, invoices: ${invoicesSnap.docs.length}`);
 
       const branches = branchesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const timeEntries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -182,7 +194,7 @@ export const projectStatisticsService = {
 
       return branchMetrics.sort((a, b) => b.totalInvoiced - a.totalInvoiced);
     } catch (error) {
-      console.error('Error getting branch performance:', error);
+      console.error('❌ Error getting branch performance:', error);
       throw error;
     }
   },
@@ -190,12 +202,16 @@ export const projectStatisticsService = {
   // EMPLOYEE × LOCATION MATRIX
   async getEmployeeLocationMatrix(companyId: string, userId: string) {
     try {
+      console.log(`👥 Loading employee location matrix for company: ${companyId}`);
+      
       const [employeesSnap, timeEntriesSnap, branchesSnap, payrollSnap] = await Promise.all([
         getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId), where('userId', '==', userId))),
+        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
         getDocs(query(collection(db, 'branches'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'payrollCalculations'), where('userId', '==', userId))),
+        getDocs(query(collection(db, 'payrollCalculations')))
       ]);
+
+      console.log(`✓ Loaded for matrix: employees: ${employeesSnap.docs.length}, timeEntries: ${timeEntriesSnap.docs.length}`);
 
       const employees = employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const timeEntries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -249,7 +265,7 @@ export const projectStatisticsService = {
 
       return matrix.sort((a, b) => b.totalHours - a.totalHours);
     } catch (error) {
-      console.error('Error getting employee location matrix:', error);
+      console.error('❌ Error getting employee location matrix:', error);
       throw error;
     }
   },
@@ -257,6 +273,8 @@ export const projectStatisticsService = {
   // AVERAGE EUR PER ADDRESS
   async getAverageEurPerAddress(companyId: string, userId: string) {
     try {
+      console.log(`💰 Loading average EUR per address for company: ${companyId}`);
+      
       const matrix = await this.getEmployeeLocationMatrix(companyId, userId);
       
       const locationMetrics = new Map<string, any>();
@@ -302,7 +320,7 @@ export const projectStatisticsService = {
         entryCount: loc.entryCount,
       })).sort((a, b) => b.averageEuroPerHour - a.averageEuroPerHour);
     } catch (error) {
-      console.error('Error getting average EUR per address:', error);
+      console.error('❌ Error getting average EUR per address:', error);
       throw error;
     }
   },
@@ -310,16 +328,20 @@ export const projectStatisticsService = {
   // ADVANCED INSIGHTS
   async getAdvancedInsights(companyId: string, userId: string) {
     try {
+      console.log(`🔍 Loading advanced insights for company: ${companyId}`);
+      
       const [employeesSnap, timeEntriesSnap, leaveSnap, expensesSnap, timesheetsSnap, invoicesSnap, payrollSnap, payslipsSnap] = await Promise.all([
         getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId), where('userId', '==', userId))),
+        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
         getDocs(query(collection(db, 'leaveRequests'), where('companyId', '==', companyId))),
         getDocs(query(collection(db, 'expenses'), where('companyId', '==', companyId))),
         getDocs(query(collection(db, 'weeklyTimesheets'), where('companyId', '==', companyId))),
         getDocs(query(collection(db, 'outgoingInvoices'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'payrollCalculations'), where('userId', '==', userId))),
-        getDocs(query(collection(db, 'payslips'), where('userId', '==', userId))),
+        getDocs(query(collection(db, 'payrollCalculations'))),
+        getDocs(query(collection(db, 'payslips'))),
       ]);
+
+      console.log(`✓ All insights data loaded successfully`);
 
       const employees = employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const timeEntries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -460,7 +482,7 @@ export const projectStatisticsService = {
         peakDaysOfWeek,
       };
     } catch (error) {
-      console.error('Error getting advanced insights:', error);
+      console.error('❌ Error getting advanced insights:', error);
       throw error;
     }
   },
@@ -470,8 +492,8 @@ export const projectStatisticsService = {
     try {
       const [employeesSnap, timeEntriesSnap, payrollSnap, leaveSnap] = await Promise.all([
         getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId), where('userId', '==', userId))),
-        getDocs(query(collection(db, 'payrollCalculations'), where('userId', '==', userId))),
+        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
+        getDocs(query(collection(db, 'payrollCalculations'))),
         getDocs(query(collection(db, 'leaveRequests'), where('companyId', '==', companyId))),
       ]);
 
@@ -518,7 +540,7 @@ export const projectStatisticsService = {
 
       return employeeStats;
     } catch (error) {
-      console.error('Error getting employee detailed stats:', error);
+      console.error('❌ Error getting employee detailed stats:', error);
       throw error;
     }
   },
@@ -529,10 +551,10 @@ export const projectStatisticsService = {
       const [branchesSnap, employeesSnap, timeEntriesSnap, invoicesSnap, expensesSnap, payrollSnap] = await Promise.all([
         getDocs(query(collection(db, 'branches'), where('companyId', '==', companyId))),
         getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId), where('userId', '==', userId))),
+        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
         getDocs(query(collection(db, 'outgoingInvoices'), where('companyId', '==', companyId))),
         getDocs(query(collection(db, 'expenses'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'payrollCalculations'), where('userId', '==', userId))),
+        getDocs(query(collection(db, 'payrollCalculations'))),
       ]);
 
       let branches = branchesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -585,7 +607,7 @@ export const projectStatisticsService = {
 
       return branchStats;
     } catch (error) {
-      console.error('Error getting branch detailed stats:', error);
+      console.error('❌ Error getting branch detailed stats:', error);
       throw error;
     }
   },
@@ -596,23 +618,20 @@ export const projectStatisticsService = {
       const timeEntriesSnap = await getDocs(
         query(
           collection(db, 'timeEntries'),
-          where('companyId', '==', companyId),
-          where('userId', '==', userId)
+          where('companyId', '==', companyId)
         )
       );
 
       const invoicesSnap = await getDocs(
         query(
           collection(db, 'outgoingInvoices'),
-          where('companyId', '==', companyId),
-          where('userId', '==', userId)
+          where('companyId', '==', companyId)
         )
       );
 
       const payrollSnap = await getDocs(
         query(
-          collection(db, 'payrollCalculations'),
-          where('userId', '==', userId)
+          collection(db, 'payrollCalculations')
         )
       );
 
@@ -659,7 +678,7 @@ export const projectStatisticsService = {
 
       return Array.from(monthlyData.values());
     } catch (error) {
-      console.error('Error getting monthly breakdown:', error);
+      console.error('❌ Error getting monthly breakdown:', error);
       throw error;
     }
   },
