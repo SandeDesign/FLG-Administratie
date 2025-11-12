@@ -194,7 +194,7 @@ const Sidebar: React.FC = () => {
 
   const sections: Section[] = [
     { 
-      title: 'Personeel', 
+      title: 'HR-Beheer, 
       icon: Activity, 
       defaultOpen: false,
       items: filteredNavigation.filter(i => ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Verzuim Beheren'].includes(i.name)) 
