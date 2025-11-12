@@ -2,26 +2,42 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Factory,
   Building2,
-  Calendar,
+  Download,
+  Save,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash2,
+  User as UserIcon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { EmptyState } from '../components/ui/EmptyState';
 import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, getDocs, query, where, orderBy, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-interface ProductionEntry {
+export interface ProductionEntry {
+  id?: string;
   monteur: string;
   datum: string;
   uren: number;
   opdrachtgever: string;
   locaties: string;
+  week: number;
+  year: number;
+  companyId: string;
+  employeeId: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-interface ProductionWeek {
+export interface ProductionWeek {
   id?: string;
   week: number;
   year: number;
@@ -36,35 +52,24 @@ interface ProductionWeek {
   updatedAt: Date;
 }
 
-interface EmployeeWeekData {
-  employeeId: string;
-  firstName: string;
-  lastName: string;
-  weeks: Map<string, ProductionWeek | null>;
-  totalHours: number;
-  importedWeeks: number;
-}
-
 const ProjectProduction: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { selectedCompany, employees } = useApp();
-  const { showError } = useToast();
+  const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [employeeData, setEmployeeData] = useState<EmployeeWeekData[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selectedWeek, setSelectedWeek] = useState<number>(getWeekNumber(new Date()));
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [productionData, setProductionData] = useState<ProductionWeek | null>(null);
+  const [entries, setEntries] = useState<ProductionEntry[]>([]);
+  const [linkedEmployees, setLinkedEmployees] = useState<any[]>([]);
+  const [existingWeek, setExistingWeek] = useState<ProductionWeek | null>(null);
 
-  const getDateOfWeek = (year: number, week: number): Date => {
-    const simple = new Date(year, 0, 1 + (week - 1) * 7);
-    const dow = simple.getDay();
-    const ISOweekStart = simple;
-    if (dow <= 4) ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-    else ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-    return ISOweekStart;
-  };
-
-  const loadAllData = useCallback(async () => {
+  // 🔥 Load production data
+  const loadProductionData = useCallback(async () => {
     if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
@@ -73,79 +78,403 @@ const ProjectProduction: React.FC = () => {
     try {
       setLoading(true);
 
+      // Get linked employees
       const linked = employees.filter(emp =>
         emp.workCompanies?.includes(selectedCompany.id) ||
         emp.projectCompanies?.includes(selectedCompany.id)
       );
 
-      const q = query(
-        collection(db, 'productionWeeks'),
-        where('userId', '==', adminUserId),
-        where('companyId', '==', selectedCompany.id),
-        orderBy('week', 'desc')
-      );
+      setLinkedEmployees(linked);
 
-      const snap = await getDocs(q);
-      const firebaseWeeks: ProductionWeek[] = snap.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          week: data.week,
-          year: data.year,
-          companyId: data.companyId,
-          employeeId: data.employeeId,
-          userId: data.userId,
-          entries: data.entries || [],
-          status: data.status,
-          totalHours: data.totalHours || 0,
-          totalEntries: data.totalEntries || 0,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-        };
-      });
+      // Auto-select first employee
+      let empId = selectedEmployeeId;
+      if (!empId && linked.length > 0) {
+        empId = linked[0].id;
+        setSelectedEmployeeId(empId);
+      }
 
-      const employeeWeeksMap = new Map<string, EmployeeWeekData>();
-
-      linked.forEach((emp) => {
-        const weeksMap = new Map<string, ProductionWeek | null>();
+      // Check if week already exists in Firebase
+      if (empId) {
+        const q = query(
+          collection(db, 'productionWeeks'),
+          where('userId', '==', adminUserId),
+          where('week', '==', selectedWeek),
+          where('year', '==', selectedYear),
+          where('companyId', '==', selectedCompany.id),
+          where('employeeId', '==', empId)
+        );
+        const snap = await getDocs(q);
         
-        for (let year of [selectedYear - 1, selectedYear]) {
-          for (let week = 1; week <= 52; week++) {
-            const key = `${year}-W${week}`;
-            const found = firebaseWeeks.find(
-              (w) => w.employeeId === emp.id && w.week === week && w.year === year
-            );
-            weeksMap.set(key, found || null);
-          }
+        if (snap.docs.length > 0) {
+          const doc = snap.docs[0];
+          const data = doc.data();
+          const existing: ProductionWeek = {
+            id: doc.id,
+            week: data.week,
+            year: data.year,
+            companyId: data.companyId,
+            employeeId: data.employeeId,
+            userId: data.userId,
+            entries: data.entries || [],
+            status: data.status,
+            totalHours: data.totalHours,
+            totalEntries: data.totalEntries,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          };
+          setExistingWeek(existing);
+          setProductionData(existing);
+          setEntries(existing.entries || []);
+          setLoading(false);
+          return;
         }
+      }
 
-        const employeeWeeks = Array.from(weeksMap.values()).filter(
-          (w) => w !== null
-        ) as ProductionWeek[];
-        const totalHours = employeeWeeks.reduce((sum, w) => sum + w.totalHours, 0);
+      // No existing week, create new
+      setExistingWeek(null);
+      const newWeek: ProductionWeek = {
+        week: selectedWeek,
+        year: selectedYear,
+        companyId: selectedCompany.id,
+        employeeId: empId,
+        userId: adminUserId,
+        entries: [],
+        status: 'draft',
+        totalHours: 0,
+        totalEntries: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
-        employeeWeeksMap.set(emp.id, {
-          employeeId: emp.id,
-          firstName: emp.personalInfo.firstName,
-          lastName: emp.personalInfo.lastName,
-          weeks: weeksMap,
-          totalHours,
-          importedWeeks: employeeWeeks.length,
-        });
-      });
-
-      setEmployeeData(Array.from(employeeWeeksMap.values()));
+      setProductionData(newWeek);
+      setEntries([]);
     } catch (error) {
-      console.error('Error loading data:', error);
-      showError('Fout', 'Kon data niet laden');
+      console.error('Error loading production data:', error);
+      showError('Fout bij laden', 'Kan productie gegevens niet laden');
     } finally {
       setLoading(false);
     }
-  }, [user, adminUserId, selectedCompany, employees, selectedYear, showError]);
+  }, [user, adminUserId, selectedCompany, selectedEmployeeId, employees, selectedWeek, selectedYear, showError]);
+
+  // 🔥 Import from Make webhook
+  const handleImportFromMake = async () => {
+    if (!selectedCompany) {
+      showError('Fout', 'Selecteer eerst een bedrijf');
+      return;
+    }
+
+    if (!selectedEmployeeId) {
+      showError('Fout', 'Selecteer een medewerker');
+      return;
+    }
+
+    const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
+
+    if (!selectedEmployee) {
+      showError('Fout', 'Medewerker niet gevonden');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const response = await fetch(
+        'https://hook.eu2.make.com/qmvow9qbpesofmm9p8srgvck550i7xr6',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'get_production_data',
+            week: selectedWeek,
+            year: selectedYear,
+            companyId: selectedCompany.id,
+            employee: {
+              id: selectedEmployee.id,
+              firstName: selectedEmployee.personalInfo.firstName,
+              lastName: selectedEmployee.personalInfo.lastName,
+              fullName: `${selectedEmployee.personalInfo.firstName} ${selectedEmployee.personalInfo.lastName}`
+            },
+            employeeName: `${selectedEmployee.personalInfo.firstName} ${selectedEmployee.personalInfo.lastName}`
+          })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Webhook call failed: ${response.status}`);
+      }
+
+      let productionResponse;
+      const contentType = response.headers.get('content-type');
+      
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          productionResponse = await response.json();
+        } else {
+          const text = await response.text();
+          console.log('Raw webhook response:', text);
+          
+          try {
+            productionResponse = JSON.parse(text);
+          } catch {
+            if (text.toLowerCase().includes('accepted') || text === '202') {
+              showError('Verwerking loopt', 'Make.com verwerkt je aanvraag. Dit kan enkele seconden duren. Probeer opnieuw.');
+              setImporting(false);
+              return;
+            }
+            throw new Error(`Onverwacht antwoord: ${text}`);
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing webhook response:', parseError);
+        showError('Parse fout', 'Kon webhook antwoord niet interpreteren');
+        setImporting(false);
+        return;
+      }
+
+      console.log('✅ Webhook response:', productionResponse);
+
+      if (
+        productionResponse &&
+        Array.isArray(productionResponse) &&
+        productionResponse.length > 0
+      ) {
+        await processProductionData(productionResponse, selectedEmployeeId);
+        success('Import geslaagd', `${productionResponse.length} productie entries geïmporteerd`);
+      } else if (productionResponse) {
+        console.log('Webhook response:', productionResponse);
+        showError('Geen data', 'Geen productie gegevens gevonden voor deze week/medewerker');
+      } else {
+        showError('Leeg antwoord', 'Webhook gaf geen data terug');
+      }
+    } catch (error) {
+      console.error('Error importing production data:', error);
+      showError('Import fout', 'Kon productie gegevens niet ophalen');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const processProductionData = async (rawData: any[], employeeId: string) => {
+    console.log('🔍 Raw data received:', rawData);
+    
+    const normalizedEntries = rawData.map((record, idx) => {
+      const data = record.data || record;
+      
+      let monteur = '';
+      let datum = '';
+      let uren = 0;
+      let opdrachtgever = '';
+      let locaties = '';
+      
+      // Try numeric indices first (Make.com format)
+      if (data['0'] !== undefined) {
+        monteur = data['0'] || '';
+        datum = data['1'] ? data['1'].replace(/['"]/g, '') : '';
+        uren = parseFloat(data['2']) || 0;
+        opdrachtgever = data['3'] || '';
+        locaties = data['4'] ? data['4'].replace(/\n/g, ' ').trim() : '';
+      } else {
+        // Fallback to named properties
+        monteur = data.Monteur || data.monteur || '';
+        datum = data.Datum || data.datum || '';
+        uren = parseFloat(data.Uren || data.uren || 0);
+        opdrachtgever = data.Opdrachtgever || data.opdrachtgever || '';
+        locaties = data.Locaties || data.locaties || '';
+      }
+      
+      return {
+        dag: datum,
+        monteur,
+        uren,
+        opdrachtgever,
+        locaties
+      };
+    });
+
+    const updatedEntries: ProductionEntry[] = normalizedEntries.map((entry) => ({
+      monteur: entry.monteur,
+      datum: entry.dag,
+      uren: entry.uren,
+      opdrachtgever: entry.opdrachtgever,
+      locaties: entry.locaties,
+      week: selectedWeek,
+      year: selectedYear,
+      companyId: selectedCompany!.id,
+      employeeId: employeeId,
+      userId: adminUserId!,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }));
+
+    const totalHours = updatedEntries.reduce((sum, entry) => sum + entry.uren, 0);
+
+    const updatedWeek: ProductionWeek = {
+      week: selectedWeek,
+      year: selectedYear,
+      companyId: selectedCompany!.id,
+      employeeId: employeeId,
+      userId: adminUserId!,
+      entries: updatedEntries,
+      status: 'draft',
+      totalHours: totalHours,
+      totalEntries: updatedEntries.length,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    setProductionData(updatedWeek);
+    setEntries(updatedEntries);
+  };
+
+  const updateEntry = (index: number, field: keyof ProductionEntry, value: any) => {
+    const updatedEntries = [...entries];
+    updatedEntries[index] = {
+      ...updatedEntries[index],
+      [field]: field === 'uren' ? parseFloat(value) || 0 : value,
+      updatedAt: new Date()
+    };
+
+    const totalHours = updatedEntries.reduce((sum, entry) => sum + entry.uren, 0);
+
+    setEntries(updatedEntries);
+    if (productionData) {
+      setProductionData({
+        ...productionData,
+        entries: updatedEntries,
+        totalHours: totalHours,
+        totalEntries: updatedEntries.length,
+        updatedAt: new Date()
+      });
+    }
+  };
+
+  const addEntry = () => {
+    const newEntry: ProductionEntry = {
+      monteur: '',
+      datum: new Date().toISOString().split('T')[0],
+      uren: 0,
+      opdrachtgever: '',
+      locaties: '',
+      week: selectedWeek,
+      year: selectedYear,
+      companyId: selectedCompany!.id,
+      employeeId: selectedEmployeeId,
+      userId: adminUserId!,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const updatedEntries = [...entries, newEntry];
+    setEntries(updatedEntries);
+
+    if (productionData) {
+      setProductionData({
+        ...productionData,
+        entries: updatedEntries,
+        totalEntries: updatedEntries.length,
+        updatedAt: new Date()
+      });
+    }
+  };
+
+  const removeEntry = (index: number) => {
+    const updatedEntries = entries.filter((_, i) => i !== index);
+    const totalHours = updatedEntries.reduce((sum, entry) => sum + entry.uren, 0);
+
+    setEntries(updatedEntries);
+    if (productionData) {
+      setProductionData({
+        ...productionData,
+        entries: updatedEntries,
+        totalHours: totalHours,
+        totalEntries: updatedEntries.length,
+        updatedAt: new Date()
+      });
+    }
+  };
+
+  // 🔥 FIREBASE: Save or update production week
+  const handleSave = async () => {
+    if (!productionData || !user || !adminUserId || entries.length === 0) {
+      showError('Fout', 'Voeg minstens 1 entry toe voordat je opslaat');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const dataToSave = {
+        week: productionData.week,
+        year: productionData.year,
+        companyId: productionData.companyId,
+        employeeId: productionData.employeeId,
+        userId: adminUserId,
+        entries: entries.map(entry => ({
+          monteur: entry.monteur,
+          datum: entry.datum,
+          uren: entry.uren,
+          opdrachtgever: entry.opdrachtgever,
+          locaties: entry.locaties,
+          week: entry.week,
+          year: entry.year,
+          companyId: entry.companyId,
+          employeeId: entry.employeeId,
+          userId: entry.userId,
+          createdAt: Timestamp.fromDate(entry.createdAt),
+          updatedAt: Timestamp.fromDate(entry.updatedAt)
+        })),
+        status: 'draft',
+        totalHours: productionData.totalHours,
+        totalEntries: productionData.totalEntries,
+        createdAt: Timestamp.fromDate(productionData.createdAt),
+        updatedAt: Timestamp.fromDate(new Date())
+      };
+
+      console.log('💾 Saving production week:', dataToSave);
+
+      if (existingWeek?.id) {
+        // Update existing
+        await updateDoc(doc(db, 'productionWeeks', existingWeek.id), dataToSave);
+        console.log('✅ Updated with ID:', existingWeek.id);
+        success('Bijgewerkt', `Week ${selectedWeek} productie bijgewerkt met ${entries.length} entries`);
+      } else {
+        // Create new
+        const docRef = await addDoc(collection(db, 'productionWeeks'), dataToSave);
+        console.log('✅ Saved with ID:', docRef.id);
+        setExistingWeek({ ...productionData, id: docRef.id });
+        success('Opgeslagen', `Week ${selectedWeek} productie opgeslagen met ${entries.length} entries`);
+      }
+      
+      setTimeout(() => {
+        loadProductionData();
+      }, 500);
+    } catch (error) {
+      console.error('Error saving production data:', error);
+      showError('Fout bij opslaan', `Kon productie niet opslaan: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const changeWeek = (delta: number) => {
+    let newWeek = selectedWeek + delta;
+    let newYear = selectedYear;
+
+    if (newWeek < 1) {
+      newWeek = 52;
+      newYear--;
+    } else if (newWeek > 52) {
+      newWeek = 1;
+      newYear++;
+    }
+
+    setSelectedWeek(newWeek);
+    setSelectedYear(newYear);
+  };
 
   useEffect(() => {
-    loadAllData();
-  }, [loadAllData]);
+    loadProductionData();
+  }, [loadProductionData]);
 
   if (loading) {
     return (
@@ -155,211 +484,370 @@ const ProjectProduction: React.FC = () => {
     );
   }
 
-  if (!selectedCompany || selectedCompany.companyType !== 'project') {
+  if (!selectedCompany) {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
+        <EmptyState
+          icon={Building2}
+          title="Geen bedrijf geselecteerd"
+          description="Selecteer een projectbedrijf om productie te verwerken."
+        />
+      </div>
+    );
+  }
+
+  if (selectedCompany.companyType !== 'project') {
+    return (
+      <div className="space-y-6 px-4 sm:px-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
         <EmptyState
           icon={Factory}
           title="Dit is geen projectbedrijf"
-          description="Productie is alleen beschikbaar voor projectbedrijven."
+          description="Productie verwerking is alleen beschikbaar voor projectbedrijven."
         />
       </div>
     );
   }
 
-  if (employeeData.length === 0) {
+  if (linkedEmployees.length === 0) {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
         <EmptyState
-          icon={Building2}
+          icon={UserIcon}
           title="Geen medewerkers gekoppeld"
-          description="Koppel medewerkers aan dit projectbedrijf."
+          description="Koppel eerst medewerkers aan dit projectbedrijf om productie in te voeren."
         />
       </div>
     );
   }
 
-  const totalHours = employeeData.reduce((sum, emp) => sum + emp.totalHours, 0);
-  const totalImportedWeeks = employeeData.reduce((sum, emp) => sum + emp.importedWeeks, 0);
+  const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
 
   return (
-    <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
+    <div className="space-y-3 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Overzicht</h1>
-        <p className="text-sm text-gray-600 mt-1">{selectedCompany.name}</p>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <p className="text-xs font-medium text-blue-700">Medewerkers</p>
-          <p className="text-2xl font-bold text-blue-900 mt-2">{employeeData.length}</p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <p className="text-xs font-medium text-green-700">Geïmporteerde Weken</p>
-          <p className="text-2xl font-bold text-green-900 mt-2">{totalImportedWeeks}</p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-          <p className="text-xs font-medium text-purple-700">Totaal Uren</p>
-          <p className="text-2xl font-bold text-purple-900 mt-2">{totalHours}u</p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
-          <p className="text-xs font-medium text-amber-700">Gemiddeld/Persoon</p>
-          <p className="text-2xl font-bold text-amber-900 mt-2">
-            {(totalHours / employeeData.length).toFixed(0)}u
+      <div className="space-y-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-2">
+            Beheer productie voor {selectedCompany.name}
           </p>
+        </div>
+
+        {/* Week Navigation + Employee Selector + Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          {/* Week Selector */}
+          <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
+            <button
+              onClick={() => changeWeek(-1)}
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              title="Vorige week"
+            >
+              <ChevronLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div className="text-center px-4 min-w-[120px]">
+              <p className="text-sm font-semibold text-gray-900">Week {selectedWeek}</p>
+              <p className="text-xs text-gray-500">{selectedYear}</p>
+            </div>
+            <button
+              onClick={() => changeWeek(1)}
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              title="Volgende week"
+            >
+              <ChevronRight className="h-5 w-5 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Employee Selector */}
+          {linkedEmployees.length > 1 && (
+            <select
+              value={selectedEmployeeId}
+              onChange={(e) => setSelectedEmployeeId(e.target.value)}
+              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="">Selecteer medewerker...</option>
+              {linkedEmployees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Import Button */}
+          <Button
+            onClick={handleImportFromMake}
+            disabled={importing || saving || !selectedEmployeeId}
+            variant="secondary"
+            size="sm"
+            className="text-xs sm:text-sm"
+          >
+            {importing ? (
+              <>
+                <LoadingSpinner className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                Laden...
+              </>
+            ) : (
+              <>
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                Ophalen
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Selected Employee Info */}
+      {selectedEmployee && (
+        <Card className="bg-blue-50 border-blue-200 p-3 sm:p-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-100 rounded-full p-2">
+              <UserIcon className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs text-blue-600 font-medium">Geselecteerde medewerker</p>
+              <p className="font-semibold text-gray-900">
+                {selectedEmployee.personalInfo.firstName} {selectedEmployee.personalInfo.lastName}
+              </p>
+            </div>
+          </div>
         </Card>
-      </div>
+      )}
 
-      {/* Employee Sections */}
-      <div className="space-y-4">
-        {employeeData.map((emp) => {
-          const importedWeeks = Array.from(emp.weeks.values()).filter((w) => w !== null) as ProductionWeek[];
-          const displayWeeks: Array<{
-            key: string;
-            week: number;
-            year: number;
-            data: ProductionWeek | null;
-          }> = [];
+      {/* Summary Card */}
+      {productionData && (
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 p-4 sm:p-6">
+          <div className="space-y-3">
+            <h3 className="font-semibold text-gray-900">Week {selectedWeek} Samenvatting</h3>
 
-          for (let year of [selectedYear - 1, selectedYear]) {
-            for (let week = 1; week <= 52; week++) {
-              const key = `${year}-W${week}`;
-              const data = emp.weeks.get(key) || null;
-              displayWeeks.push({ key, week, year, data });
-            }
-          }
-
-          const monthStart = new Date(selectedYear, selectedMonth, 1);
-          const monthEnd = new Date(selectedYear, selectedMonth + 1, 0);
-          
-          const monthWeeks = displayWeeks.filter((w) => {
-            const weekDate = getDateOfWeek(w.year, w.week);
-            return weekDate >= monthStart && weekDate <= monthEnd;
-          });
-
-          return (
-            <Card key={emp.employeeId} className="p-4">
-              <div className="space-y-4">
-                {/* Employee Header */}
-                <div className="flex items-start justify-between border-b pb-3 border-gray-200">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Calendar className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {emp.firstName} {emp.lastName}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {emp.importedWeeks} weken geïmporteerd • {emp.totalHours}u totaal
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-blue-600">{emp.totalHours}u</p>
-                  </div>
-                </div>
-
-                {/* Week Grid - Color coded */}
-                {monthWeeks.length > 0 ? (
-                  <div className="grid grid-cols-7 gap-1">
-                    {monthWeeks.map((w) => (
-                      <div
-                        key={w.key}
-                        className={`p-2 rounded text-center text-xs transition-all ${
-                          w.data
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200 cursor-pointer'
-                            : 'bg-gray-100 text-gray-400'
-                        }`}
-                        title={`Week ${w.week} ${w.year}${w.data ? ` - ${w.data.totalHours}u` : ''}`}
-                      >
-                        <div className="font-semibold">W{w.week}</div>
-                        {w.data && <div className="text-xs font-bold">{w.data.totalHours}u</div>}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-500">Geen weken in deze maand</p>
-                )}
-
-                {/* Imported Weeks Details */}
-                {importedWeeks.length > 0 && (
-                  <div className="pt-3 border-t border-gray-200">
-                    <p className="text-xs font-semibold text-gray-900 mb-2">Geïmporteerde Weken Details:</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                      {importedWeeks.map((week) => (
-                        <div key={week.id} className="p-2 bg-green-50 border border-green-200 rounded text-xs">
-                          <p className="font-semibold text-green-900">Week {week.week} ({week.year})</p>
-                          <div className="mt-1 space-y-0.5 text-green-700 text-xs">
-                            <p>🕐 {week.totalHours}u</p>
-                            <p>📝 {week.totalEntries} entries</p>
-                            <p className="capitalize">📊 {week.status}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Totaal Uren</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">
+                  {productionData.totalHours}u
+                </p>
               </div>
-            </Card>
-          );
-        })}
-      </div>
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Entries</p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                  {productionData.totalEntries}
+                </p>
+              </div>
+              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">Status</p>
+                <p className="text-xs font-bold text-gray-600 capitalize">
+                  {productionData.status}
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
-      {/* Full Data Table */}
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Alle Weken - Detail Tabel</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100 border-b-2 border-gray-300">
-                <th className="text-left py-3 px-4 font-bold">Medewerker</th>
-                <th className="text-center py-3 px-4 font-bold">Week</th>
-                <th className="text-center py-3 px-4 font-bold">Jaar</th>
-                <th className="text-center py-3 px-4 font-bold">Uren</th>
-                <th className="text-center py-3 px-4 font-bold">Entries</th>
-                <th className="text-left py-3 px-4 font-bold">Status</th>
-                <th className="text-center py-3 px-4 font-bold">Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employeeData.flatMap((emp) =>
-                Array.from(emp.weeks.values())
-                  .filter((w) => w !== null)
-                  .sort((a, b) => (b!.year - a!.year) || (b!.week - a!.week))
-                  .map((week) => (
-                    <tr key={week!.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm">{emp.firstName} {emp.lastName}</td>
-                      <td className="py-3 px-4 text-center font-bold">{week!.week}</td>
-                      <td className="py-3 px-4 text-center">{week!.year}</td>
-                      <td className="py-3 px-4 text-center font-bold text-blue-600">{week!.totalHours}u</td>
-                      <td className="py-3 px-4 text-center">{week!.totalEntries}</td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-block text-xs px-2 py-1 rounded font-semibold ${
-                          week!.status === 'draft' ? 'bg-gray-100 text-gray-700' :
-                          week!.status === 'submitted' ? 'bg-blue-100 text-blue-700' :
-                          week!.status === 'approved' ? 'bg-green-100 text-green-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {week!.status}
-                        </span>
+      {/* Production Entries Table */}
+      {entries.length > 0 ? (
+        <Card className="p-3 sm:p-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Productie Entries</h3>
+              <Button
+                onClick={addEntry}
+                size="sm"
+                variant="secondary"
+                className="text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Toevoegen
+              </Button>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="text-left py-2 px-3">Monteur</th>
+                    <th className="text-left py-2 px-3">Datum</th>
+                    <th className="text-left py-2 px-3">Uren</th>
+                    <th className="text-left py-2 px-3">Opdrachtgever</th>
+                    <th className="text-left py-2 px-3">Locaties</th>
+                    <th className="text-center py-2 px-3">Acties</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry, index) => (
+                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="py-2 px-3">
+                        <Input
+                          type="text"
+                          value={entry.monteur}
+                          onChange={(e) => updateEntry(index, 'monteur', e.target.value)}
+                          className="text-xs"
+                          placeholder="Monteur"
+                        />
                       </td>
-                      <td className="py-3 px-4 text-center text-xs text-gray-500">
-                        {week!.updatedAt.toLocaleDateString('nl-NL')}
+                      <td className="py-2 px-3">
+                        <Input
+                          type="date"
+                          value={entry.datum}
+                          onChange={(e) => updateEntry(index, 'datum', e.target.value)}
+                          className="text-xs"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.25"
+                          value={entry.uren}
+                          onChange={(e) => updateEntry(index, 'uren', e.target.value)}
+                          className="text-xs text-center"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="text"
+                          value={entry.opdrachtgever}
+                          onChange={(e) => updateEntry(index, 'opdrachtgever', e.target.value)}
+                          className="text-xs"
+                          placeholder="Opdrachtgever"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="text"
+                          value={entry.locaties}
+                          onChange={(e) => updateEntry(index, 'locaties', e.target.value)}
+                          className="text-xs"
+                          placeholder="Locaties"
+                        />
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <button
+                          onClick={() => removeEntry(index)}
+                          className="text-red-600 hover:text-red-800 p-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
-                  ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-2">
+              {entries.map((entry, index) => (
+                <Card key={index} className="p-3 bg-gray-50">
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-600 font-medium">Monteur</label>
+                        <Input
+                          type="text"
+                          value={entry.monteur}
+                          onChange={(e) => updateEntry(index, 'monteur', e.target.value)}
+                          className="text-xs"
+                          placeholder="Monteur"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-600 font-medium">Datum</label>
+                        <Input
+                          type="date"
+                          value={entry.datum}
+                          onChange={(e) => updateEntry(index, 'datum', e.target.value)}
+                          className="text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-600 font-medium">Uren</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.25"
+                          value={entry.uren}
+                          onChange={(e) => updateEntry(index, 'uren', e.target.value)}
+                          className="text-xs text-center"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          onClick={() => removeEntry(index)}
+                          className="w-full text-red-600 hover:text-red-800 p-2 bg-red-50 rounded"
+                        >
+                          <Trash2 className="h-4 w-4 mx-auto" />
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 font-medium">Opdrachtgever</label>
+                      <Input
+                        type="text"
+                        value={entry.opdrachtgever}
+                        onChange={(e) => updateEntry(index, 'opdrachtgever', e.target.value)}
+                        className="text-xs"
+                        placeholder="Opdrachtgever"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600 font-medium">Locaties</label>
+                      <Input
+                        type="text"
+                        value={entry.locaties}
+                        onChange={(e) => updateEntry(index, 'locaties', e.target.value)}
+                        className="text-xs"
+                        placeholder="Locaties"
+                      />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <Card className="p-8">
+          <div className="text-center">
+            <Factory className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500 mb-4">Geen productie entries beschikbaar</p>
+            <Button onClick={addEntry} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Eerste Entry Toevoegen
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex gap-2 sm:gap-3">
+        <Button
+          onClick={handleSave}
+          disabled={saving || entries.length === 0}
+          loading={saving}
+          className="flex-1 sm:flex-none"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          {saving ? 'Opslaan...' : existingWeek ? 'Bijwerken' : 'Opslaan'}
+        </Button>
       </div>
     </div>
   );
 };
+
+function getWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
 
 export default ProjectProduction;
