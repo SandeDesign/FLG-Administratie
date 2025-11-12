@@ -375,7 +375,7 @@ export const getCompanyDriveFolders = async (companyId: string) => {
 };
 
 /**
- * Upload invoice to Drive
+ * Upload invoice to Drive with OCR data
  */
 export const uploadInvoiceToDrive = async (
   file: File,
@@ -387,7 +387,8 @@ export const uploadInvoiceToDrive = async (
     supplierName?: string;
     invoiceNumber?: string;
     amount?: number;
-  }
+  },
+  ocrData?: any
 ): Promise<{
   invoiceId: string;
   driveFileId: string;
@@ -424,8 +425,23 @@ export const uploadInvoiceToDrive = async (
 
     console.log('File uploaded to:', uploadResult.webViewLink);
 
+    // Save invoice with OCR data
+    const invoiceId = await saveInvoiceWithDriveFile(
+      {
+        supplierName: metadata?.supplierName || 'Onbekend',
+        invoiceNumber: metadata?.invoiceNumber || `INV-${Date.now()}`,
+        totalAmount: metadata?.amount || 0,
+        fileName: file.name,
+      },
+      uploadResult.fileId,
+      uploadResult.webViewLink,
+      userId,
+      companyId,
+      ocrData
+    );
+
     return {
-      invoiceId: `invoice_${Date.now()}`,
+      invoiceId,
       driveFileId: uploadResult.fileId,
       driveWebLink: uploadResult.webViewLink,
     };
