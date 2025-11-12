@@ -197,7 +197,7 @@ const Sidebar: React.FC = () => {
       title: 'HR Beheer', 
       icon: Activity, 
       defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Verzuim Beheren'].includes(i.name)) 
+      items: filteredNavigation.filter(i => ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Ziekte Beheren'].includes(i.name)) 
     },
     { 
       title: 'Financieel', 
