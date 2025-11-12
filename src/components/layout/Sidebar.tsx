@@ -200,7 +200,7 @@ const Sidebar: React.FC = () => {
       items: filteredNavigation.filter(i => ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Verzuim Beheren'].includes(i.name)) 
     },
     { 
-      title: 'Facturatie', 
+      title: 'Financieel', 
       icon: Receipt, 
       defaultOpen: false,
       items: filteredNavigation.filter(i => ['Relaties', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)) 
