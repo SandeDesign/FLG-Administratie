@@ -7,6 +7,7 @@ import {
   Shield,
   Database,
   Download,
+  HardDrive,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -17,12 +18,13 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
+import GoogleDriveSettings from '../components/GoogleDriveSettings';
 
 const Settings: React.FC = () => {
   const { user, userRole, adminUserId } = useAuth();
   const { companies } = useApp();
   const { success, error: showError } = useToast();
-  const [activeTab, setActiveTab] = useState<'general' | 'company' | 'notifications' | 'security' | 'data'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'company' | 'notifications' | 'security' | 'data' | 'drive'>('general');
   const [loading, setLoading] = useState(false);
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [selectedDefaultCompanyId, setSelectedDefaultCompanyId] = useState<string>('');
@@ -101,6 +103,7 @@ const Settings: React.FC = () => {
   const tabs = [
     { id: 'general', name: 'Algemeen', icon: SettingsIcon },
     { id: 'company', name: 'Bedrijfsinstellingen', icon: Building2 },
+    { id: 'drive', name: 'Google Drive', icon: HardDrive },
     { id: 'notifications', name: 'Meldingen', icon: Bell },
     { id: 'security', name: 'Beveiliging', icon: Shield },
     { id: 'data', name: 'Data & Privacy', icon: Database },
@@ -118,8 +121,7 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="border-b border-gray-200 dark:border-gray-700">
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex space-x-8 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -138,7 +140,6 @@ const Settings: React.FC = () => {
             );
           })}
         </nav>
-      </div>
       </div>
 
       {activeTab === 'general' && (
@@ -270,6 +271,12 @@ const Settings: React.FC = () => {
               </p>
             </div>
           </Card>
+        </div>
+      )}
+
+      {activeTab === 'drive' && (
+        <div className="space-y-6">
+          <GoogleDriveSettings />
         </div>
       )}
 
