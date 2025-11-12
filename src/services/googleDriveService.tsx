@@ -275,9 +275,16 @@ export const uploadInvoiceToDrive = async (
       throw new Error('Google Drive not connected. Please connect in Settings.');
     }
 
+    console.log('Checking/creating folder structure for company:', companyName);
+
+    // Check if folders exist, if not create them
     let folders = await getCompanyDriveFolders(companyId);
     if (!folders) {
+      console.log('Folder structure not found, creating...');
       folders = await getOrCreateCompanyDriveFolder(companyId, companyName, token);
+      console.log('Folder structure created:', folders);
+    } else {
+      console.log('Using existing folder structure:', folders);
     }
 
     const uploadResult = await uploadFileToDrive(
@@ -286,6 +293,8 @@ export const uploadInvoiceToDrive = async (
       token,
       `${metadata?.invoiceNumber || 'INV'}-${Date.now()}.pdf`
     );
+
+    console.log('File uploaded to:', uploadResult.webViewLink);
 
     return {
       invoiceId: `invoice_${Date.now()}`,
