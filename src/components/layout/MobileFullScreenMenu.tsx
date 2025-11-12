@@ -58,7 +58,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
   // ✅ NEW: Updated menu with company types
   const menuCategories: MenuCategory[] = [
     {
-      title: 'Personeel',
+      title: 'HR Beheer',
       icon: Activity,
       items: [
         { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'], companyTypes: ['employer'], color: 'text-emerald-600' },
@@ -69,7 +69,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       ]
     },
     {
-      title: 'Facturatie',
+      title: 'Financieel',
       icon: Receipt,
       items: [
         { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project'], color: 'text-indigo-600' },
