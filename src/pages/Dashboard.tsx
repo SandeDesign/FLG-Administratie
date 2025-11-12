@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Users, 
-  Clock, 
+import {
+  Users,
+  Clock,
   AlertCircle,
   Calendar,
   CheckCircle,
-  Zap,
+  TrendingUp,
   ChevronRight,
   Bell,
   Briefcase,
@@ -14,7 +14,12 @@ import {
   HeartPulse,
   FileText,
   Download,
-  Settings
+  Settings,
+  Zap,
+  ArrowUpRight,
+  ArrowDownRight,
+  BarChart3,
+  Target,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -23,672 +28,589 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPendingLeaveApprovals,
-  getTimeEntries,
   getPendingExpenses,
-  getLeaveRequests,
-  getSickLeaveRecords
+  getSickLeaveRecords,
 } from '../services/firebase';
-
-interface PendingItem {
-  id: string;
-  type: 'leave' | 'timesheet' | 'expense' | 'absence' | 'invoice';
-  title: string;
-  description?: string;
-  employee?: string;
-  dateRange?: string;
-  icon: React.ComponentType<any>;
-  color: string;
-  action: () => void;
-}
-
-interface QuickAction {
-  title: string;
-  description: string;
-  icon: React.ComponentType<any>;
-  action: () => void;
-  color: string;
-  count?: number;
-  badge?: string;
-}
-
-interface ActivityLog {
-  id: string;
-  action: string;
-  employee?: string;
-  time: string;
-  status: 'completed' | 'pending' | 'warning';
-}
+import { getPendingTimesheets } from '../services/timesheetService';
+import { getPayrollCalculations } from '../services/payrollService';
 
 const Dashboard: React.FC = () => {
   const { employees, companies, loading, selectedCompany } = useApp();
-  const { user, userRole } = useAuth();
+  const { user, userRole, currentEmployeeId } = useAuth();
   const navigate = useNavigate();
 
-  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [recentActivity, setRecentActivity] = useState<ActivityLog[]>([]);
+  // ========== SHARED STATE ==========
   const [dashLoading, setDashLoading] = useState(false);
-  const [statsOverview, setStatsOverview] = useState({
+  const [pendingTimesheets, setPendingTimesheets] = useState<any[]>([]);
+  const [pendingLeave, setPendingLeave] = useState<any[]>([]);
+  const [pendingExpenses, setPendingExpenses] = useState<any[]>([]);
+  const [stats, setStats] = useState({
     activeEmployees: 0,
-    pendingApprovals: 0,
-    companiesCount: 0
+    approvedThisMonth: 0,
+    pendingActions: 0,
+    totalExpenses: 0,
   });
 
-  // Fetch ALL pending items from Firebase
-  const fetchPendingItems = useCallback(async () => {
+  // ========== LOAD ADMIN DATA ==========
+  const loadAdminData = useCallback(async () => {
     if (!user || !selectedCompany || userRole !== 'admin') return;
 
     setDashLoading(true);
     try {
-      const items: PendingItem[] = [];
-      const activities: ActivityLog[] = [];
+      // Pending timesheets
+      const timesheets = await getPendingTimesheets(user.uid, selectedCompany.id);
+      setPendingTimesheets(timesheets.slice(0, 5));
 
-      // ========== VERLOF ==========
-      const leaveRequests = await getPendingLeaveApprovals(selectedCompany.id, user.uid);
-      leaveRequests.forEach((leave: any) => {
-        items.push({
-          id: `leave-${leave.id}`,
-          type: 'leave',
-          title: `Verlofaanvraag van ${leave.employeeName || 'Medewerker'}`,
-          description: leave.type === 'sick' ? 'Ziekmelding' : leave.type === 'vacation' ? 'Jaarlijks verlof' : 'Verlofaanvraag',
-          employee: leave.employeeName,
-          dateRange: leave.startDate && leave.endDate 
-            ? `${new Date(leave.startDate).toLocaleDateString('nl-NL')} - ${new Date(leave.endDate).toLocaleDateString('nl-NL')}`
-            : undefined,
-          icon: Calendar,
-          color: 'orange',
-          action: () => navigate('/admin/leave-approvals')
-        });
-      });
+      // Pending leave
+      const leave = await getPendingLeaveApprovals(selectedCompany.id, user.uid);
+      setPendingLeave(leave.slice(0, 5));
 
-      // ========== VERZUIM ==========
-      try {
-        const sickLeave = await getSickLeaveRecords(user.uid);
-        const pendingSick = sickLeave.filter((s: any) => s.status === 'pending' || s.status === 'reported');
-        if (pendingSick.length > 0) {
-          items.push({
-            id: 'absence-pending',
-            type: 'absence',
-            title: `Verzuim ter controle`,
-            description: `${pendingSick.length} melding${pendingSick.length !== 1 ? 'en' : ''}`,
-            icon: HeartPulse,
-            color: 'red',
-            action: () => navigate('/admin/absence-management')
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching sick leave:', error);
-      }
-
-      // ========== UREN ==========
-      const timeEntries = await getTimeEntries(user.uid);
-      const pendingTime = timeEntries.filter((t: any) => t.status === 'submitted' || t.status === 'pending');
-      if (pendingTime.length > 0) {
-        items.push({
-          id: 'timesheet-pending',
-          type: 'timesheet',
-          title: `Uren ter goedkeuring`,
-          description: `${pendingTime.length} ingedie${pendingTime.length !== 1 ? 'ningen' : 'ning'}`,
-          icon: Clock,
-          color: 'blue',
-          action: () => navigate('/timesheet-approvals')
-        });
-      }
-
-      // ========== ONKOSTEN ==========
+      // Pending expenses
       try {
         const expenses = await getPendingExpenses(selectedCompany.id, user.uid);
-        if (expenses.length > 0) {
-          const totalAmount = expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
-          items.push({
-            id: 'expense-pending',
-            type: 'expense',
-            title: `Onkosten ter goedkeuring`,
-            description: `€ ${totalAmount.toFixed(2)} (${expenses.length} items)`,
-            icon: AlertCircle,
-            color: 'purple',
-            action: () => navigate('/admin/expenses')
-          });
-        }
+        setPendingExpenses(expenses.slice(0, 5));
+        setStats((prev) => ({
+          ...prev,
+          totalExpenses: expenses.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0),
+        }));
       } catch (error) {
-        console.error('Error fetching expenses:', error);
+        console.error('Error loading expenses:', error);
       }
 
-      // ========== FACTUREN ==========
-      // Placeholder voor future invoice pending logic
-      items.push({
-        id: 'invoice-manage',
-        type: 'invoice',
-        title: `Facturen beheren`,
-        description: `Uitgaande en inkomende facturen`,
-        icon: Send,
-        color: 'green',
-        action: () => navigate('/outgoing-invoices')
-      });
-
-      setPendingItems(items);
-      setPendingCount(items.length);
-
-      // ========== ACTIVITY LOG ==========
-      // Goedgekeurde verlofaanvragen
-      const approvedLeave = leaveRequests
-        .filter((l: any) => l.status === 'approved')
-        .sort((a: any, b: any) => new Date(b.approvedAt).getTime() - new Date(a.approvedAt).getTime())
-        .slice(0, 5);
-
-      approvedLeave.forEach((leave: any) => {
-        activities.push({
-          id: `act-leave-${leave.id}`,
-          action: 'Verlof goedgekeurd',
-          employee: leave.employeeName,
-          time: leave.approvedAt 
-            ? `${new Date(leave.approvedAt).toLocaleDateString('nl-NL')} om ${new Date(leave.approvedAt).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`
-            : 'Recent',
-          status: 'completed'
-        });
-      });
-
-      // Stats update
-      setStatsOverview({
-        activeEmployees: employees?.length || 0,
-        pendingApprovals: items.length,
-        companiesCount: companies?.length || 0
-      });
-
-      setRecentActivity(activities.slice(0, 3));
+      // Stats
+      const activeEmps = employees?.filter((e: any) => e.status === 'active').length || 0;
+      setStats((prev) => ({
+        ...prev,
+        activeEmployees: activeEmps,
+        pendingActions: (timesheets.length || 0) + (leave.length || 0),
+      }));
     } catch (error) {
-      console.error('Error fetching pending items:', error);
+      console.error('Error loading admin data:', error);
     } finally {
       setDashLoading(false);
     }
-  }, [user, selectedCompany, userRole, navigate, employees?.length, companies?.length]);
+  }, [user, selectedCompany, userRole, employees]);
+
+  // ========== LOAD MANAGER DATA ==========
+  const loadManagerData = useCallback(async () => {
+    if (!user || !selectedCompany || userRole !== 'manager') return;
+
+    setDashLoading(true);
+    try {
+      const timesheets = await getPendingTimesheets(user.uid, selectedCompany.id);
+      setPendingTimesheets(timesheets.slice(0, 5));
+
+      const leave = await getPendingLeaveApprovals(selectedCompany.id, user.uid);
+      setPendingLeave(leave.slice(0, 5));
+
+      setStats((prev) => ({
+        ...prev,
+        pendingActions: (timesheets.length || 0) + (leave.length || 0),
+      }));
+    } catch (error) {
+      console.error('Error loading manager data:', error);
+    } finally {
+      setDashLoading(false);
+    }
+  }, [user, selectedCompany, userRole]);
+
+  // ========== LOAD EMPLOYEE DATA ==========
+  const loadEmployeeData = useCallback(async () => {
+    if (!user || !currentEmployeeId) return;
+
+    setDashLoading(true);
+    try {
+      // Get payroll for this employee
+      const payroll = await getPayrollCalculations(user.uid, currentEmployeeId);
+      // Use payroll data if needed
+    } catch (error) {
+      console.error('Error loading employee data:', error);
+    } finally {
+      setDashLoading(false);
+    }
+  }, [user, currentEmployeeId]);
 
   useEffect(() => {
-    fetchPendingItems();
-  }, [fetchPendingItems]);
-
-  // ========== QUICK ACTIONS - BASED ON ROLE ==========
-  const getQuickActions = (): QuickAction[] => {
-    if (userRole === 'admin') {
-      return [
-        {
-          title: 'Werknemers',
-          description: 'Team beheren',
-          icon: Users,
-          action: () => navigate('/employees'),
-          color: 'blue'
-        },
-        {
-          title: 'Verlof',
-          description: 'Goedkeuren',
-          icon: Calendar,
-          action: () => navigate('/admin/leave-approvals'),
-          color: 'orange',
-          count: pendingItems.filter(i => i.type === 'leave').length || undefined
-        },
-        {
-          title: 'Uren',
-          description: 'Verwerken',
-          icon: Clock,
-          action: () => navigate('/timesheet-approvals'),
-          color: 'purple',
-          count: pendingItems.filter(i => i.type === 'timesheet').length || undefined
-        },
-        {
-          title: 'Verzuim',
-          description: 'Beheren',
-          icon: HeartPulse,
-          action: () => navigate('/admin/absence-management'),
-          color: 'red',
-          count: pendingItems.filter(i => i.type === 'absence').length || undefined
-        },
-        {
-          title: 'Facturen',
-          description: 'Beheren',
-          icon: Send,
-          action: () => navigate('/outgoing-invoices'),
-          color: 'green'
-        },
-        {
-          title: 'Exports',
-          description: 'Downloaden',
-          icon: Download,
-          action: () => navigate('/timesheet-export'),
-          color: 'indigo'
-        },
-        {
-          title: 'Bedrijven',
-          description: 'Instellingen',
-          icon: Briefcase,
-          action: () => navigate('/companies'),
-          color: 'cyan'
-        },
-        {
-          title: 'Instellingen',
-          description: 'Systeem',
-          icon: Settings,
-          action: () => navigate('/settings'),
-          color: 'gray'
-        }
-      ];
-    }
-
-    if (userRole === 'manager') {
-      return [
-        {
-          title: 'Team',
-          description: 'Werknemers',
-          icon: Users,
-          action: () => navigate('/employees'),
-          color: 'blue'
-        },
-        {
-          title: 'Uren',
-          description: 'Goedkeuren',
-          icon: Clock,
-          action: () => navigate('/timesheet-approvals'),
-          color: 'purple',
-          count: pendingItems.filter(i => i.type === 'timesheet').length || undefined
-        },
-        {
-          title: 'Verlof',
-          description: 'Goedkeuren',
-          icon: Calendar,
-          action: () => navigate('/admin/leave-approvals'),
-          color: 'orange',
-          count: pendingItems.filter(i => i.type === 'leave').length || undefined
-        },
-        {
-          title: 'Exports',
-          description: 'Uren exporteren',
-          icon: Download,
-          action: () => navigate('/timesheet-export'),
-          color: 'green'
-        }
-      ];
-    }
-
-    return [];
-  };
-
-  const quickActions = getQuickActions();
+    if (userRole === 'admin') loadAdminData();
+    if (userRole === 'manager') loadManagerData();
+    if (userRole === 'employee') loadEmployeeData();
+  }, [loadAdminData, loadManagerData, loadEmployeeData, userRole]);
 
   if (loading || dashLoading) {
     return <LoadingSpinner />;
   }
 
-  // Empty state
-  if (userRole === 'admin' && (!companies || companies.length === 0)) {
+  if (!selectedCompany && userRole !== 'employee') {
     return (
       <div className="space-y-6 pb-24 sm:pb-6 px-4 sm:px-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welkom!</h1>
           <p className="text-sm text-gray-600 mt-1">Laten we beginnen met je loonadministratie</p>
         </div>
-
         <EmptyState
           icon={Briefcase}
-          title="Geen bedrijven gevonden"
-          description="Maak je eerste bedrijf aan om werknemers en loonadministratie in te stellen"
-          actionLabel="Bedrijf Toevoegen"
-          onAction={() => navigate('/companies')}
+          title="Geen bedrijf geselecteerd"
+          description="Selecteer een bedrijf uit de dropdown om aan de slag te gaan"
         />
       </div>
     );
   }
 
-  const getColorClasses = (color: string) => {
-    const colors: Record<string, { bg: string; text: string; icon: string; border: string }> = {
-      blue: { bg: 'bg-blue-50', text: 'text-blue-700', icon: 'text-blue-500', border: 'border-blue-200' },
-      orange: { bg: 'bg-orange-50', text: 'text-orange-700', icon: 'text-orange-500', border: 'border-orange-200' },
-      purple: { bg: 'bg-purple-50', text: 'text-purple-700', icon: 'text-purple-500', border: 'border-purple-200' },
-      green: { bg: 'bg-green-50', text: 'text-green-700', icon: 'text-green-500', border: 'border-green-200' },
-      red: { bg: 'bg-red-50', text: 'text-red-700', icon: 'text-red-500', border: 'border-red-200' },
-      indigo: { bg: 'bg-indigo-50', text: 'text-indigo-700', icon: 'text-indigo-500', border: 'border-indigo-200' },
-      cyan: { bg: 'bg-cyan-50', text: 'text-cyan-700', icon: 'text-cyan-500', border: 'border-cyan-200' },
-      gray: { bg: 'bg-gray-50', text: 'text-gray-700', icon: 'text-gray-500', border: 'border-gray-200' }
-    };
-    return colors[color] || colors.blue;
-  };
-
-  // ============ DYNAMISCHE LAYOUT CHECK ============
   const isProjectCompany = selectedCompany?.companyType === 'project';
-  
-  // DEBUG
-  console.log('🔍 Company Type Check:', {
-    companyName: selectedCompany?.name,
-    companyType: selectedCompany?.companyType,
-    isProjectCompany: isProjectCompany,
-    fullCompany: selectedCompany
-  });
+  const totalPending = pendingTimesheets.length + pendingLeave.length + pendingExpenses.length;
 
-  // ============ PROJECT COMPANY DASHBOARD ============
-  if (isProjectCompany) {
+  // ========== PROJECT COMPANY DASHBOARD ==========
+  if (isProjectCompany && (userRole === 'admin' || userRole === 'manager')) {
     return (
-      <div className="space-y-3 sm:space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Project Dashboard</h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            {selectedCompany ? `${selectedCompany.name}` : 'Projectbeheer'}
-          </p>
+      <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
+        {/* Hero Header */}
+        <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 rounded-xl p-6 text-white space-y-2">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Project Dashboard</h1>
+              <p className="text-blue-100 mt-1">{selectedCompany?.name}</p>
+            </div>
+            <Briefcase className="h-12 w-12 text-blue-200 opacity-50" />
+          </div>
         </div>
 
-        {/* Priority Alert */}
-        {pendingCount > 0 && (
-          <div
-            onClick={() => {
-              if (pendingItems.length > 0) {
-                pendingItems[0].action();
-              }
-            }}
-            className="p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors flex items-start gap-3"
-          >
+        {/* Alert Banner */}
+        {totalPending > 0 && (
+          <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg flex items-start gap-3">
             <Bell className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-orange-900">
-                {pendingCount} item{pendingCount !== 1 ? 's' : ''} wachten op actie
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-orange-900">{totalPending} items wachten op actie</h3>
+              <p className="text-xs text-orange-700 mt-1">
+                {pendingTimesheets.length} uren • {pendingLeave.length} verlof • €{stats.totalExpenses.toFixed(0)} onkosten
               </p>
-              <p className="text-xs text-orange-700 mt-0.5">Tap hier om te beginnen</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-orange-600 flex-shrink-0" />
           </div>
         )}
 
-        {/* PROJECT QUICK ACTIONS - Productie, Statistieken, Facturatie */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* PRODUCTIE */}
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Uren Wachten */}
+          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-blue-700">Uren</p>
+                <p className="text-2xl font-bold text-blue-900 mt-2">{pendingTimesheets.length}</p>
+                <p className="text-xs text-blue-600 mt-2">wachten</p>
+              </div>
+              <Clock className="h-8 w-8 text-blue-300" />
+            </div>
+          </Card>
+
+          {/* Verlof */}
+          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-purple-700">Verlof</p>
+                <p className="text-2xl font-bold text-purple-900 mt-2">{pendingLeave.length}</p>
+                <p className="text-xs text-purple-600 mt-2">aanvragen</p>
+              </div>
+              <Calendar className="h-8 w-8 text-purple-300" />
+            </div>
+          </Card>
+
+          {/* Onkosten */}
+          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-green-700">Onkosten</p>
+                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
+                <p className="text-xs text-green-600 mt-2">in behandeling</p>
+              </div>
+              <ArrowUpRight className="h-8 w-8 text-green-300" />
+            </div>
+          </Card>
+
+          {/* Team */}
+          <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-orange-700">Team</p>
+                <p className="text-2xl font-bold text-orange-900 mt-2">{employees?.length || 0}</p>
+                <p className="text-xs text-orange-600 mt-2">medewerkers</p>
+              </div>
+              <Users className="h-8 w-8 text-orange-300" />
+            </div>
+          </Card>
+        </div>
+
+        {/* Action Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
             onClick={() => navigate('/project-production')}
-            className="p-4 rounded-lg border border-blue-200 hover:shadow-md transition-all flex flex-col items-start gap-3 bg-blue-50 group"
+            className="p-5 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all group"
           >
-            <div className="p-2 rounded-lg bg-blue-100">
-              <Briefcase className="h-6 w-6 text-blue-600" />
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-blue-200 rounded-lg">
+                <Briefcase className="h-5 w-5 text-blue-700" />
+              </div>
+              <ChevronRight className="h-5 w-5 text-blue-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900">Productie</p>
-              <p className="text-xs text-gray-600 mt-1">Projecten beheren</p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-blue-600 mt-auto self-end group-hover:translate-x-1 transition-transform" />
+            <p className="font-semibold text-gray-900 text-left">Productie</p>
+            <p className="text-xs text-gray-600 mt-1 text-left">Projecten beheren</p>
           </button>
 
-          {/* STATISTIEKEN */}
           <button
             onClick={() => navigate('/project-statistics')}
-            className="p-4 rounded-lg border border-purple-200 hover:shadow-md transition-all flex flex-col items-start gap-3 bg-purple-50 group"
+            className="p-5 rounded-lg border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 transition-all group"
           >
-            <div className="p-2 rounded-lg bg-purple-100">
-              <Zap className="h-6 w-6 text-purple-600" />
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-purple-200 rounded-lg">
+                <BarChart3 className="h-5 w-5 text-purple-700" />
+              </div>
+              <ChevronRight className="h-5 w-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900">Statistieken</p>
-              <p className="text-xs text-gray-600 mt-1">Projectoverzicht</p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-purple-600 mt-auto self-end group-hover:translate-x-1 transition-transform" />
+            <p className="font-semibold text-gray-900 text-left">Statistieken</p>
+            <p className="text-xs text-gray-600 mt-1 text-left">Projectoverzicht</p>
           </button>
 
-          {/* FACTURATIE */}
           <button
             onClick={() => navigate('/outgoing-invoices')}
-            className="p-4 rounded-lg border border-green-200 hover:shadow-md transition-all flex flex-col items-start gap-3 bg-green-50 group"
+            className="p-5 rounded-lg border-2 border-green-200 bg-green-50 hover:bg-green-100 transition-all group"
           >
-            <div className="p-2 rounded-lg bg-green-100">
-              <Send className="h-6 w-6 text-green-600" />
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-green-200 rounded-lg">
+                <Send className="h-5 w-5 text-green-700" />
+              </div>
+              <ChevronRight className="h-5 w-5 text-green-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900">Facturatie</p>
-              <p className="text-xs text-gray-600 mt-1">Facturen beheren</p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-green-600 mt-auto self-end group-hover:translate-x-1 transition-transform" />
+            <p className="font-semibold text-gray-900 text-left">Facturatie</p>
+            <p className="text-xs text-gray-600 mt-1 text-left">Facturen beheren</p>
           </button>
         </div>
 
-        {/* PROJECT STATS */}
-        <Card>
-          <div className="p-3 sm:p-4 border-b border-gray-100">
-            <h2 className="text-sm sm:text-base font-semibold text-gray-900">Projectoverzicht</h2>
-          </div>
-
-          <div className="p-3 sm:p-4 space-y-2">
-            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
-              <div className="flex items-center gap-2">
-                <Briefcase className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-gray-700">Actieve Projecten</span>
-              </div>
-              <span className="text-sm font-semibold text-gray-900">-</span>
+        {/* Pending Items */}
+        {totalPending > 0 && (
+          <Card>
+            <div className="p-4 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-900">Actie Vereist</h2>
             </div>
-
-            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-gray-700">Afgerond</span>
-              </div>
-              <span className="text-sm font-semibold text-gray-900">-</span>
+            <div className="divide-y divide-gray-100">
+              {pendingTimesheets.map((ts) => (
+                <button
+                  key={ts.id}
+                  onClick={() => navigate('/timesheet-approvals')}
+                  className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center justify-between group"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      Week {ts.weekNumber} • {employees?.find((e: any) => e.id === ts.employeeId)?.personalInfo?.firstName || 'Medewerker'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{ts.totalRegularHours}u uren ingediend</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              ))}
             </div>
-
-            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-gray-700">In Progress</span>
-              </div>
-              <span className="text-sm font-semibold text-orange-600">-</span>
-            </div>
-          </div>
-        </Card>
-
-        {/* Info Footer */}
-        <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-          <p className="text-xs sm:text-sm text-blue-900">
-            Dashboard geupdate op: {new Date().toLocaleDateString('nl-NL')} om {new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-          </p>
-        </div>
+          </Card>
+        )}
       </div>
     );
   }
 
-  // ============ EMPLOYER COMPANY DASHBOARD (ORIGINEEL) ============
-  return (
-    <div className="space-y-3 sm:space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          {userRole === 'admin' ? 'Management Dashboard' : 'Team Dashboard'}
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">
-          {selectedCompany ? `${selectedCompany.name}` : 'Loonadministratie & HR'}
-        </p>
-      </div>
-
-      {/* Priority Alert */}
-      {pendingCount > 0 && (
-        <div
-          onClick={() => {
-            // Navigate to first pending item
-            if (pendingItems.length > 0) {
-              pendingItems[0].action();
-            }
-          }}
-          className="p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg cursor-pointer hover:bg-orange-100 transition-colors flex items-start gap-3"
-        >
-          <Bell className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-orange-900">
-              {pendingCount} item{pendingCount !== 1 ? 's' : ''} wachten op actie
-            </p>
-            <p className="text-xs text-orange-700 mt-0.5">Tap hier om te beginnen</p>
+  // ========== ADMIN/MANAGER EMPLOYER DASHBOARD ==========
+  if ((userRole === 'admin' || userRole === 'manager') && !isProjectCompany) {
+    return (
+      <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
+        {/* Hero Header */}
+        <div className="bg-gradient-to-br from-indigo-600 via-indigo-500 to-purple-700 rounded-xl p-6 text-white space-y-2">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">
+                {userRole === 'admin' ? 'Management Dashboard' : 'Team Dashboard'}
+              </h1>
+              <p className="text-indigo-100 mt-1">{selectedCompany?.name || 'Loonadministratie'}</p>
+            </div>
+            <TrendingUp className="h-12 w-12 text-indigo-200 opacity-50" />
           </div>
-          <ChevronRight className="h-5 w-5 text-orange-600 flex-shrink-0" />
         </div>
-      )}
 
-      {/* Pending Items */}
-      {pendingItems.length > 0 && (
-        <Card>
-          <div className="p-3 sm:p-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-amber-500" />
-              <h2 className="text-sm sm:text-base font-semibold text-gray-900">
-                Actie Vereist
+        {/* Alert Banner */}
+        {totalPending > 0 && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-red-900">{totalPending} items wachten!</h3>
+              <p className="text-xs text-red-700 mt-1">
+                {pendingTimesheets.length} uren • {pendingLeave.length} verlof • {pendingExpenses.length} onkosten
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                if (pendingTimesheets.length > 0) navigate('/timesheet-approvals');
+                else if (pendingLeave.length > 0) navigate('/admin/leave-approvals');
+              }}
+              className="text-red-600 hover:text-red-700 font-semibold text-sm"
+            >
+              Bekijk →
+            </button>
+          </div>
+        )}
+
+        {/* Key Metrics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Active Employees */}
+          <Card className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-gray-600">Actieve Medewerkers</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{stats.activeEmployees}</p>
+              </div>
+              <Users className="h-8 w-8 text-blue-400" />
+            </div>
+          </Card>
+
+          {/* Pending Timesheets */}
+          <Card className="p-4 bg-orange-50 border-orange-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-orange-700">Uren Wachten</p>
+                <p className="text-2xl font-bold text-orange-900 mt-2">{pendingTimesheets.length}</p>
+              </div>
+              <Clock className="h-8 w-8 text-orange-300" />
+            </div>
+          </Card>
+
+          {/* Pending Leave */}
+          <Card className="p-4 bg-purple-50 border-purple-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-purple-700">Verlof Wachten</p>
+                <p className="text-2xl font-bold text-purple-900 mt-2">{pendingLeave.length}</p>
+              </div>
+              <Calendar className="h-8 w-8 text-purple-300" />
+            </div>
+          </Card>
+
+          {/* Pending Expenses */}
+          <Card className="p-4 bg-green-50 border-green-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-green-700">Onkosten</p>
+                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
+              </div>
+              <ArrowUpRight className="h-8 w-8 text-green-300" />
+            </div>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            {
+              title: 'Uren Goedkeuren',
+              count: pendingTimesheets.length,
+              icon: Clock,
+              onClick: () => navigate('/timesheet-approvals'),
+              color: 'blue',
+            },
+            {
+              title: 'Verlof Goedkeuren',
+              count: pendingLeave.length,
+              icon: Calendar,
+              onClick: () => navigate('/admin/leave-approvals'),
+              color: 'purple',
+            },
+            {
+              title: 'Team Beheren',
+              icon: Users,
+              onClick: () => navigate('/employees'),
+              color: 'green',
+            },
+            {
+              title: 'Instellingen',
+              icon: Settings,
+              onClick: () => navigate('/settings'),
+              color: 'gray',
+            },
+          ].map((action) => {
+            const Icon = action.icon;
+            const colorClass = {
+              blue: 'bg-blue-50 border-blue-200 hover:bg-blue-100',
+              purple: 'bg-purple-50 border-purple-200 hover:bg-purple-100',
+              green: 'bg-green-50 border-green-200 hover:bg-green-100',
+              gray: 'bg-gray-50 border-gray-200 hover:bg-gray-100',
+            }[action.color] || 'bg-gray-50 border-gray-200';
+
+            const iconColor = {
+              blue: 'text-blue-600',
+              purple: 'text-purple-600',
+              green: 'text-green-600',
+              gray: 'text-gray-600',
+            }[action.color] || 'text-gray-600';
+
+            return (
+              <button
+                key={action.title}
+                onClick={action.onClick}
+                className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 text-center group relative ${colorClass}`}
+              >
+                <Icon className={`h-6 w-6 ${iconColor}`} />
+                <p className="text-xs font-medium text-gray-900 line-clamp-1">{action.title}</p>
+                {action.count && action.count > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {action.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Pending Items Details */}
+        {(pendingTimesheets.length > 0 || pendingLeave.length > 0 || pendingExpenses.length > 0) && (
+          <Card>
+            <div className="p-4 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-amber-500" />
+                Vereist Actie
               </h2>
             </div>
-            <span className="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold">
-              {pendingCount}
-            </span>
-          </div>
-          
-          <div className="divide-y divide-gray-100">
-            {pendingItems.slice(0, 4).map((item) => {
-              const IconComponent = item.icon;
-              const colors = getColorClasses(item.color);
-              
-              return (
+            <div className="divide-y divide-gray-100">
+              {pendingTimesheets.slice(0, 3).map((ts) => (
                 <button
-                  key={item.id}
-                  onClick={item.action}
-                  className="w-full p-3 sm:p-4 text-left hover:bg-gray-50 transition-colors flex items-start justify-between group"
+                  key={ts.id}
+                  onClick={() => navigate('/timesheet-approvals')}
+                  className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-start justify-between group"
                 >
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <div className={`p-2 rounded-lg ${colors.bg} flex-shrink-0`}>
-                      <IconComponent className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.icon}`} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                        {item.title}
-                      </p>
-                      {item.description && (
-                        <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
-                      )}
-                      {item.dateRange && (
-                        <p className="text-xs text-gray-400 mt-1">{item.dateRange}</p>
-                      )}
-                    </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      📋 Week {ts.weekNumber} - {employees?.find((e: any) => e.id === ts.employeeId)?.personalInfo?.firstName}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{ts.totalRegularHours}u • Ingediend op {new Date(ts.submittedAt).toLocaleDateString('nl-NL')}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="h-4 w-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
-              );
-            })}
-          </div>
-
-          {pendingItems.length > 4 && (
-            <button
-              onClick={() => navigate('/admin/leave-approvals')}
-              className="w-full p-3 text-center text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors"
-            >
-              Alle items zien ({pendingItems.length})
-            </button>
-          )}
-        </Card>
-      )}
-
-      {/* Quick Actions Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-        {quickActions.map((action) => {
-          const IconComponent = action.icon;
-          const colors = getColorClasses(action.color);
-          
-          return (
-            <button
-              key={action.title}
-              onClick={action.action}
-              className={`p-3 sm:p-4 rounded-lg border ${colors.border} hover:shadow-md transition-all flex flex-col items-center gap-2 text-center relative group`}
-            >
-              <div className={`p-2 rounded-lg ${colors.bg}`}>
-                <IconComponent className={`h-5 w-5 sm:h-6 sm:w-6 ${colors.icon}`} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-gray-900 line-clamp-1">
-                  {action.title}
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                  {action.description}
-                </p>
-              </div>
-              
-              {action.count && action.count > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  {action.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
+    );
+  }
 
-      {/* Status Summary */}
-      <Card>
-        <div className="p-3 sm:p-4 border-b border-gray-100">
-          <h2 className="text-sm sm:text-base font-semibold text-gray-900">Overzicht</h2>
+  // ========== EMPLOYEE DASHBOARD ==========
+  if (userRole === 'employee') {
+    const [employeeStats, setEmployeeStats] = useState({
+      pendingTimesheets: 0,
+      approvedThisMonth: 0,
+      nextPayday: null as Date | null,
+    });
+
+    useEffect(() => {
+      const loadEmployeeStats = async () => {
+        if (!user || !currentEmployeeId) return;
+        try {
+          const payroll = await getPayrollCalculations(user.uid, currentEmployeeId);
+          if (payroll.length > 0) {
+            setEmployeeStats((prev) => ({
+              ...prev,
+              approvedThisMonth: payroll.filter((p: any) => p.status === 'approved').length,
+            }));
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      };
+      loadEmployeeStats();
+    }, [user, currentEmployeeId]);
+
+    return (
+      <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
+        {/* Welcome Hero */}
+        <div className="bg-gradient-to-br from-green-500 via-green-400 to-emerald-600 rounded-xl p-6 text-white space-y-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Welkom terug!</h1>
+              <p className="text-green-100 mt-1">Hier is je overzicht</p>
+            </div>
+            <CheckCircle className="h-12 w-12 text-green-200 opacity-50" />
+          </div>
         </div>
 
-        <div className="p-3 sm:p-4 space-y-2">
-          <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
-            <div className="flex items-center gap-2 min-w-0">
-              <Users className="h-4 w-4 text-blue-500 flex-shrink-0" />
-              <span className="text-xs sm:text-sm text-gray-700">Werknemers</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900">
-              {statsOverview.activeEmployees}
-            </span>
-          </div>
+        {/* Key Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <Card className="p-4 bg-blue-50 border-blue-200">
+            <p className="text-xs font-medium text-blue-700">Uren Deze Week</p>
+            <p className="text-2xl font-bold text-blue-900 mt-2">-</p>
+            <p className="text-xs text-blue-600 mt-1">uren</p>
+          </Card>
 
-          {statsOverview.pendingApprovals > 0 && (
-            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
-              <div className="flex items-center gap-2 min-w-0">
-                <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-gray-700">Wachten op actie</span>
-              </div>
-              <span className="text-sm font-semibold text-orange-600">
-                {statsOverview.pendingApprovals}
-              </span>
-            </div>
-          )}
+          <Card className="p-4 bg-green-50 border-green-200">
+            <p className="text-xs font-medium text-green-700">Goedgekeurd</p>
+            <p className="text-2xl font-bold text-green-900 mt-2">{employeeStats.approvedThisMonth}</p>
+            <p className="text-xs text-green-600 mt-1">deze maand</p>
+          </Card>
 
-          <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
-            <div className="flex items-center gap-2 min-w-0">
-              <Briefcase className="h-4 w-4 text-green-500 flex-shrink-0" />
-              <span className="text-xs sm:text-sm text-gray-700">Bedrijven</span>
-            </div>
-            <span className="text-sm font-semibold text-gray-900">
-              {statsOverview.companiesCount}
-            </span>
-          </div>
+          <Card className="p-4 bg-purple-50 border-purple-200">
+            <p className="text-xs font-medium text-purple-700">Saldo</p>
+            <p className="text-2xl font-bold text-purple-900 mt-2">-</p>
+            <p className="text-xs text-purple-600 mt-1">verlof</p>
+          </Card>
         </div>
-      </Card>
 
-      {/* Recent Activity */}
-      {recentActivity.length > 0 && (
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => navigate('/employee-dashboard/timesheets')}
+            className="p-4 rounded-lg bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 transition-all text-left group"
+          >
+            <Clock className="h-6 w-6 text-blue-600 mb-2" />
+            <p className="font-semibold text-gray-900">Uren Invoeren</p>
+            <p className="text-xs text-gray-600 mt-1">Jouw uren registreren</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/employee-dashboard/leave')}
+            className="p-4 rounded-lg bg-purple-50 border-2 border-purple-200 hover:bg-purple-100 transition-all text-left group"
+          >
+            <Calendar className="h-6 w-6 text-purple-600 mb-2" />
+            <p className="font-semibold text-gray-900">Verlof Aanvragen</p>
+            <p className="text-xs text-gray-600 mt-1">Verlof indienen</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/employee-dashboard/expenses')}
+            className="p-4 rounded-lg bg-green-50 border-2 border-green-200 hover:bg-green-100 transition-all text-left group"
+          >
+            <AlertCircle className="h-6 w-6 text-green-600 mb-2" />
+            <p className="font-semibold text-gray-900">Onkosten</p>
+            <p className="text-xs text-gray-600 mt-1">Kosten indienen</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/employee-dashboard/payslips')}
+            className="p-4 rounded-lg bg-amber-50 border-2 border-amber-200 hover:bg-amber-100 transition-all text-left group"
+          >
+            <FileText className="h-6 w-6 text-amber-600 mb-2" />
+            <p className="font-semibold text-gray-900">Loonstroken</p>
+            <p className="text-xs text-gray-600 mt-1">Jouw betalingen</p>
+          </button>
+        </div>
+
+        {/* Info Card */}
         <Card>
-          <div className="p-3 sm:p-4 border-b border-gray-100">
-            <h2 className="text-sm sm:text-base font-semibold text-gray-900">Recente Acties</h2>
-          </div>
-
-          <div className="p-3 sm:p-4 space-y-3">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0">
-                <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-gray-900">
-                    <span className="font-medium">{activity.action}</span>
-                    {activity.employee && (
-                      <span className="text-gray-600"> - {activity.employee}</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                </div>
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div className="flex items-start gap-3">
+              <Target className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-gray-900 text-sm">Tips</p>
+                <p className="text-xs text-gray-600 mt-2">
+                  Zorg dat je uren op tijd indient en verlof vooraf aanvraagt. Je loonstroken zijn beschikbaar na verwerking.
+                </p>
               </div>
-            ))}
+            </div>
           </div>
         </Card>
-      )}
-
-      {/* Info Footer */}
-      <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-        <p className="text-xs sm:text-sm text-blue-900">
-          Dashboard geupdate op: {new Date().toLocaleDateString('nl-NL')} om {new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-        </p>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 };
 
 export default Dashboard;
