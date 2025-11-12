@@ -93,7 +93,7 @@ const IncomingInvoices: React.FC = () => {
 
           console.log('OCR completed:', ocrResult);
 
-          // Upload to Google Drive
+          // Upload to Google Drive with OCR data
           const uploadResult = await uploadInvoiceToDrive(
             file,
             selectedCompany.id,
@@ -104,31 +104,16 @@ const IncomingInvoices: React.FC = () => {
               supplierName: ocrResult.invoiceData.supplierName,
               invoiceNumber: ocrResult.invoiceData.invoiceNumber,
               amount: ocrResult.invoiceData.amount,
-            }
-          );
-
-          // Save invoice with OCR data
-          await incomingInvoiceService.saveInvoiceWithOCR(
-            {
-              supplierName: ocrResult.invoiceData.supplierName,
-              invoiceNumber: ocrResult.invoiceData.invoiceNumber,
-              totalAmount: ocrResult.invoiceData.amount,
-              invoiceDate: ocrResult.invoiceData.invoiceDate,
-              dueDate: ocrResult.invoiceData.dueDate,
-              fileName: file.name,
-              driveFileId: uploadResult.driveFileId,
-              driveWebLink: uploadResult.driveWebLink,
-              status: 'pending',
             },
             {
               text: ocrResult.text,
               confidence: ocrResult.confidence,
               pages: ocrResult.pages,
-              rawText: ocrResult.text,
-            },
-            user.uid,
-            selectedCompany.id
+            }
           );
+
+          // Invoice is already saved via googleDriveService during upload
+          console.log('Invoice saved with OCR data');
 
           success('Factuur verwerkt', `OCR klaar (${ocrResult.confidence.toFixed(1)}% accuraat)`);
         } catch (ocrError) {
