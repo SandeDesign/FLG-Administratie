@@ -7,7 +7,6 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import Card from '../components/ui/Card';
-import Modal from '../components/ui/Modal';
 import { outgoingInvoiceService, OutgoingInvoice, CompanyInfo } from '../services/outgoingInvoiceService';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -73,6 +72,7 @@ const OutgoingInvoices: React.FC = () => {
   const [productionWeeks, setProductionWeeks] = useState<ProductionWeek[]>([]);
   const [selectedProductionWeek, setSelectedProductionWeek] = useState<ProductionWeek | null>(null);
   const [selectedProductionEmployeeId, setSelectedProductionEmployeeId] = useState('');
+  const [selectedProductionWeekId, setSelectedProductionWeekId] = useState('');
   const [loadingProduction, setLoadingProduction] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -134,13 +134,15 @@ const OutgoingInvoices: React.FC = () => {
     }
   }, [user, selectedCompany]);
 
-  // 🔥 Load production weeks from Firebase
+  // Load production weeks when employee is selected
   const handleLoadProductionWeeks = async () => {
     if (!selectedProductionEmployeeId || !user || !selectedCompany) {
+      console.error('❌ Missing data:', { selectedProductionEmployeeId, user: !!user, selectedCompany: !!selectedCompany });
       showError('Fout', 'Selecteer een medewerker');
       return;
     }
 
+    console.log('🔄 Loading production weeks for employee:', selectedProductionEmployeeId);
     setLoadingProduction(true);
     try {
       const q = query(
@@ -152,10 +154,13 @@ const OutgoingInvoices: React.FC = () => {
       );
 
       const snap = await getDocs(q);
+      console.log('✅ Got snapshots:', snap.size);
+      
       const weeks: ProductionWeek[] = [];
 
       snap.docs.forEach(doc => {
         const data = doc.data();
+        console.log('📋 Week data:', { week: data.week, year: data.year, entries: data.entries?.length });
         weeks.push({
           id: doc.id,
           week: data.week,
@@ -166,26 +171,56 @@ const OutgoingInvoices: React.FC = () => {
         });
       });
 
+      console.log('✅ Loaded weeks:', weeks.length);
       setProductionWeeks(weeks);
+      setSelectedProductionWeekId('');
+      setSelectedProductionWeek(null);
+      
       if (weeks.length === 0) {
-        showError('Geen data', `Geen productie weken gevonden voor deze medewerker`);
+        showError('Geen data', `Geen productie weken gevonden`);
       } else {
         success('Geladen', `${weeks.length} weken gevonden`);
       }
     } catch (error) {
-      console.error('Error loading production weeks:', error);
-      showError('Fout', 'Kon productie weken niet laden');
+      console.error('❌ Error loading production weeks:', error);
+      showError('Fout', `Kon productie weken niet laden: ${error instanceof Error ? error.message : 'Onbekend'}`);
     } finally {
       setLoadingProduction(false);
     }
   };
 
-  // 🔥 Add production week as ONE invoice item with proper format
+  // Handle week selection
+  const handleWeekSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const weekId = e.target.value;
+    setSelectedProductionWeekId(weekId);
+    
+    const week = productionWeeks.find(w => w.id === weekId);
+    if (week) {
+      console.log('✅ Selected week:', { week: week.week, entries: week.entries.length });
+      setSelectedProductionWeek(week);
+    } else {
+      console.error('❌ Week not found:', weekId);
+      setSelectedProductionWeek(null);
+    }
+  };
+
+  // Add production week as ONE invoice item
   const addAllProductionItems = () => {
-    if (!selectedProductionWeek || selectedProductionWeek.entries.length === 0) {
+    console.log('🚀 Adding production items...');
+    
+    if (!selectedProductionWeek) {
+      console.error('❌ No week selected');
+      showError('Fout', 'Selecteer een week');
+      return;
+    }
+
+    if (!selectedProductionWeek.entries || selectedProductionWeek.entries.length === 0) {
+      console.error('❌ No entries in week');
       showError('Fout', 'Geen entries in geselecteerde week');
       return;
     }
+
+    console.log('✅ Processing week with entries:', selectedProductionWeek.entries.length);
 
     const employee = employees.find(e => e.id === selectedProductionEmployeeId);
     const employeeName = employee 
@@ -199,10 +234,8 @@ const OutgoingInvoices: React.FC = () => {
       .join('\n');
     
     const description = `${tableHeader}\n${tableRows}`;
-
-    // Create ONE invoice item for the entire week
     const totalUren = selectedProductionWeek.totalHours;
-    const rate = 44; // Standard 44 euro ex BTW
+    const rate = 44;
     const amount = totalUren * rate;
 
     const newItem: InvoiceItem = {
@@ -213,14 +246,19 @@ const OutgoingInvoices: React.FC = () => {
       amount: amount
     };
 
+    console.log('✅ New item:', { title: newItem.title, quantity: newItem.quantity, rate: newItem.rate, amount: newItem.amount });
+
     // Remove empty first item if it exists
     const updatedItems = items.filter(i => i.title.trim() !== '');
     setItems([...updatedItems, newItem]);
     
     setSelectedProductionWeek(null);
+    setSelectedProductionWeekId('');
     setProductionWeeks([]);
+    setSelectedProductionEmployeeId('');
     setShowProductionImport(false);
-    success('Toegevoegd', `Week ${selectedProductionWeek.week} met ${selectedProductionWeek.entries.length} entries`);
+    
+    success('✅ Toegevoegd', `Week ${selectedProductionWeek.week} met ${selectedProductionWeek.entries.length} entries`);
   };
 
   const handleCreateNew = () => {
@@ -245,6 +283,7 @@ const OutgoingInvoices: React.FC = () => {
     setProductionWeeks([]);
     setSelectedProductionWeek(null);
     setSelectedProductionEmployeeId('');
+    setSelectedProductionWeekId('');
     loadRelations();
     generateNextInvoiceNumber();
     setView('create');
@@ -636,11 +675,11 @@ const OutgoingInvoices: React.FC = () => {
           </Card>
 
           {/* Production Data */}
-          <Card className="p-4 sm:p-5 bg-amber-50 border-amber-200">
+          <Card className="p-4 sm:p-5 bg-amber-50 border-2 border-amber-200">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-amber-100 rounded">
-                  <Factory className="h-3 w-3 text-amber-600" />
+                  <Factory className="h-4 w-4 text-amber-600" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-amber-700">Production data</p>
@@ -650,101 +689,108 @@ const OutgoingInvoices: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowProductionImport(!showProductionImport)}
-                className="px-2 py-1 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded transition-colors whitespace-nowrap"
+                className="px-3 py-1 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded transition-colors whitespace-nowrap"
               >
-                {showProductionImport ? '−' : '+'}
+                {showProductionImport ? '✕ Sluit' : '+ Open'}
               </button>
             </div>
             
             {showProductionImport && (
-              <div className="mt-3 pt-3 border-t border-amber-200 space-y-3">
-                {/* Employee Selector */}
-                <div>
-                  <label className="block text-xs font-medium text-amber-700 mb-1">Medewerker</label>
-                  <select
-                    value={selectedProductionEmployeeId}
-                    onChange={(e) => {
-                      setSelectedProductionEmployeeId(e.target.value);
-                      setProductionWeeks([]);
-                      setSelectedProductionWeek(null);
-                    }}
-                    className="w-full px-3 py-2 border border-amber-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"
-                  >
-                    <option value="">Selecteer medewerker...</option>
-                    {employees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.personalInfo.firstName} {emp.personalInfo.lastName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Load Button */}
-                <button
-                  type="button"
-                  onClick={handleLoadProductionWeeks}
-                  disabled={loadingProduction || !selectedProductionEmployeeId}
-                  className="w-full px-3 py-2 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 rounded transition-colors"
-                >
-                  {loadingProduction ? 'Laden...' : 'Laad weken'}
-                </button>
-
-                {/* Week Selector */}
-                {productionWeeks.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-amber-200 space-y-3">
+                <div className="bg-white rounded-lg p-3 space-y-3">
+                  {/* Step 1: Employee Selector */}
                   <div>
-                    <label className="block text-xs font-medium text-amber-700 mb-1">Selecteer week</label>
+                    <label className="block text-xs font-semibold text-amber-900 mb-2">STAP 1: Selecteer medewerker</label>
                     <select
-                      value={selectedProductionWeek?.id || ''}
+                      value={selectedProductionEmployeeId}
                       onChange={(e) => {
-                        const week = productionWeeks.find(w => w.id === e.target.value);
-                        setSelectedProductionWeek(week || null);
+                        setSelectedProductionEmployeeId(e.target.value);
+                        setProductionWeeks([]);
+                        setSelectedProductionWeek(null);
+                        setSelectedProductionWeekId('');
                       }}
-                      className="w-full px-3 py-2 border border-amber-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"
+                      className="w-full px-3 py-2 border-2 border-amber-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
                     >
-                      <option value="">Selecteer week...</option>
-                      {productionWeeks.map((week) => (
-                        <option key={week.id} value={week.id}>
-                          Week {week.week} {week.year} ({week.entries.length} entries, {week.totalHours}u)
+                      <option value="">-- Kies medewerker --</option>
+                      {employees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.personalInfo.firstName} {emp.personalInfo.lastName}
                         </option>
                       ))}
                     </select>
                   </div>
-                )}
 
-                {/* Show entries of selected week in table format */}
-                {selectedProductionWeek && selectedProductionWeek.entries.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="bg-white p-3 rounded border border-amber-200 space-y-1 max-h-48 overflow-y-auto">
-                      <div className="text-xs font-mono font-semibold text-amber-900 pb-2 border-b border-amber-200">
-                        <div className="grid grid-cols-5 gap-1">
-                          <div>Monteur</div>
-                          <div>Datum</div>
-                          <div>Uren</div>
-                          <div>Opdrachtgever</div>
-                          <div>Locaties</div>
-                        </div>
-                      </div>
-                      {selectedProductionWeek.entries.map((entry, idx) => (
-                        <div key={idx} className="text-xs font-mono text-amber-800 py-1">
-                          <div className="grid grid-cols-5 gap-1">
-                            <div className="truncate">{entry.monteur}</div>
-                            <div>{entry.datum}</div>
-                            <div className="text-right">{entry.uren}</div>
-                            <div className="truncate">{entry.opdrachtgever}</div>
-                            <div className="truncate">{entry.locaties}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                  {/* Step 2: Load Button */}
+                  {selectedProductionEmployeeId && (
                     <button
                       type="button"
-                      onClick={addAllProductionItems}
-                      className="w-full px-3 py-2 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 rounded transition-colors"
+                      onClick={handleLoadProductionWeeks}
+                      disabled={loadingProduction}
+                      className="w-full px-3 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 rounded transition-colors"
                     >
-                      Voeg als 1 factuurlijn toe
+                      {loadingProduction ? '⏳ Laden...' : '📥 LAAD WEKEN'}
                     </button>
-                  </div>
-                )}
+                  )}
+
+                  {/* Step 3: Week Selector */}
+                  {productionWeeks.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-semibold text-amber-900 mb-2">STAP 2: Selecteer week</label>
+                      <select
+                        value={selectedProductionWeekId}
+                        onChange={handleWeekSelect}
+                        className="w-full px-3 py-2 border-2 border-amber-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                      >
+                        <option value="">-- Kies week --</option>
+                        {productionWeeks.map((week) => (
+                          <option key={week.id} value={week.id}>
+                            Week {week.week} ({week.year}) - {week.entries.length} entries - {week.totalHours}u
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Step 4: Preview */}
+                  {selectedProductionWeek && selectedProductionWeek.entries.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-amber-900">STAP 3: Preview entries</p>
+                      <div className="bg-white border-2 border-amber-200 rounded p-2 max-h-32 overflow-y-auto">
+                        <div className="text-xs font-mono text-amber-900 space-y-1">
+                          {selectedProductionWeek.entries.map((entry, idx) => (
+                            <div key={idx} className="pb-1 border-b border-amber-100 last:border-0">
+                              <div className="grid grid-cols-5 gap-1 text-xs">
+                                <div className="truncate">{entry.monteur}</div>
+                                <div>{entry.datum}</div>
+                                <div className="text-right font-semibold">{entry.uren}u</div>
+                                <div className="truncate">{entry.opdrachtgever}</div>
+                                <div className="truncate text-amber-700">{entry.locaties}</div>
+                              </div>
+                            </div>
+                          ))}
+                          <div className="pt-2 border-t-2 border-amber-300 mt-2 font-bold text-amber-900">
+                            Totaal: {selectedProductionWeek.totalHours} uren
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 5: Add Button */}
+                      <button
+                        type="button"
+                        onClick={addAllProductionItems}
+                        className="w-full px-3 py-3 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
+                      >
+                        ✅ VOEG ALS FACTUURLIJN TOE
+                      </button>
+                    </div>
+                  )}
+
+                  {productionWeeks.length === 0 && selectedProductionEmployeeId && !loadingProduction && (
+                    <p className="text-xs text-amber-600 p-2 bg-amber-100 rounded">
+                      ⚠️ Klik "LAAD WEKEN" om productie weken op te halen
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </Card>
@@ -794,7 +840,7 @@ const OutgoingInvoices: React.FC = () => {
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Hoeveelheid (uren)</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Uren</label>
                       <input
                         type="number"
                         value={item.quantity}
@@ -805,7 +851,7 @@ const OutgoingInvoices: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Tarief €/uur</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">€/uur</label>
                       <input
                         type="number"
                         value={item.rate}
