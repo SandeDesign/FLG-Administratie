@@ -13,7 +13,8 @@ import {
   FileText,
   Scan,
   Trash2,
-  HardDrive
+  HardDrive,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -24,6 +25,7 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { incomingInvoiceService, IncomingInvoice } from '../services/incomingInvoiceService';
 import { uploadInvoiceToDrive } from '../services/googleDriveService';
+import { processInvoiceFile } from '../services/ocrService';
 
 const IncomingInvoices: React.FC = () => {
   const { user } = useAuth();
@@ -32,6 +34,8 @@ const IncomingInvoices: React.FC = () => {
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [processingFile, setProcessingFile] = useState<string | null>(null);
+  const [ocrProgress, setOcrProgress] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDragOver, setIsDragOver] = useState(false);
@@ -61,14 +65,6 @@ const IncomingInvoices: React.FC = () => {
     loadInvoices();
   }, [loadInvoices]);
 
-  // Initialize Google Drive access on mount
-  useEffect(() => {
-    if (user) {
-      // Token wordt nu vanuit Settings opgeslagen
-      // Geen popup nodig meer
-    }
-  }, [user]);
-
   const handleFileUpload = async (files: FileList) => {
     if (!files.length || !selectedCompany || !user) return;
 
@@ -85,23 +81,73 @@ const IncomingInvoices: React.FC = () => {
           continue;
         }
 
-        // Upload to Google Drive
-        await uploadInvoiceToDrive(
-          file,
-          selectedCompany.id,
-          selectedCompany.name,
-          user.uid,
-          user.email || undefined // Pass user email for silent refresh
-        );
+        setProcessingFile(file.name);
+        setOcrProgress(0);
+
+        try {
+          // Process file with OCR
+          console.log('Starting OCR processing...');
+          const ocrResult = await processInvoiceFile(file, (progress) => {
+            setOcrProgress(Math.round(progress));
+          });
+
+          console.log('OCR completed:', ocrResult);
+
+          // Upload to Google Drive
+          const uploadResult = await uploadInvoiceToDrive(
+            file,
+            selectedCompany.id,
+            selectedCompany.name,
+            user.uid,
+            user.email || undefined,
+            {
+              supplierName: ocrResult.invoiceData.supplierName,
+              invoiceNumber: ocrResult.invoiceData.invoiceNumber,
+              amount: ocrResult.invoiceData.amount,
+            }
+          );
+
+          // Save invoice with OCR data
+          await incomingInvoiceService.saveInvoiceWithOCR(
+            {
+              supplierName: ocrResult.invoiceData.supplierName,
+              invoiceNumber: ocrResult.invoiceData.invoiceNumber,
+              totalAmount: ocrResult.invoiceData.amount,
+              invoiceDate: ocrResult.invoiceData.invoiceDate,
+              dueDate: ocrResult.invoiceData.dueDate,
+              fileName: file.name,
+              driveFileId: uploadResult.driveFileId,
+              driveWebLink: uploadResult.driveWebLink,
+              status: 'pending',
+            },
+            {
+              text: ocrResult.text,
+              confidence: ocrResult.confidence,
+              pages: ocrResult.pages,
+              rawText: ocrResult.text,
+            },
+            user.uid,
+            selectedCompany.id
+          );
+
+          success('Factuur verwerkt', `OCR klaar (${ocrResult.confidence.toFixed(1)}% accuraat)`);
+        } catch (ocrError) {
+          console.error('OCR error:', ocrError);
+          showError('OCR fout', ocrError instanceof Error ? ocrError.message : 'OCR verwerking mislukt');
+        }
+
+        setProcessingFile(null);
+        setOcrProgress(0);
       }
-      
-      success('Bestanden geüpload', 'Facturen zijn naar Google Drive geüpload');
+
       loadInvoices();
     } catch (error) {
       console.error('Upload error:', error);
       showError('Fout bij uploaden', error instanceof Error ? error.message : 'Kon bestanden niet uploaden');
     } finally {
       setUploading(false);
+      setProcessingFile(null);
+      setOcrProgress(0);
     }
   };
 
@@ -230,7 +276,7 @@ const IncomingInvoices: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Inkomende Facturen</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Beheer inkomende facturen voor {selectedCompany.name}
+            Beheer inkomende facturen voor {selectedCompany.name} - met automatische OCR
           </p>
         </div>
         <div className="flex space-x-2 mt-4 sm:mt-0">
@@ -248,6 +294,26 @@ const IncomingInvoices: React.FC = () => {
           </label>
         </div>
       </div>
+
+      {/* OCR Progress */}
+      {processingFile && (
+        <Card>
+          <div className="p-6">
+            <div className="flex items-center space-x-3 mb-3">
+              <Zap className="h-5 w-5 text-blue-600 animate-pulse" />
+              <h3 className="font-medium text-gray-900">OCR verwerking bezig...</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-3">{processingFile}</p>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all"
+                style={{ width: `${ocrProgress}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-2">{ocrProgress}%</p>
+          </div>
+        </Card>
+      )}
 
       {/* Upload Zone */}
       <div
@@ -275,7 +341,7 @@ const IncomingInvoices: React.FC = () => {
           </label>
         </p>
         <p className="mt-1 text-xs text-gray-500">
-          PDF, PNG, JPG tot 10MB per bestand - Geüpload naar Google Drive
+          PDF, PNG, JPG tot 10MB - Automatische OCR + Google Drive upload
         </p>
       </div>
 
@@ -347,7 +413,7 @@ const IncomingInvoices: React.FC = () => {
                           {invoice.ocrProcessed && (
                             <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
                               <Scan className="h-3 w-3 mr-1" />
-                              OCR
+                              OCR ({(invoice as any).ocrConfidence?.toFixed(0) || 0}%)
                             </span>
                           )}
                         </div>
@@ -365,9 +431,9 @@ const IncomingInvoices: React.FC = () => {
                             €{invoice.totalAmount.toFixed(2)}
                           </div>
                         </div>
-                        {invoice.status === 'rejected' && invoice.rejectionReason && (
+                        {invoice.status === 'rejected' && (invoice as any).rejectionReason && (
                           <div className="mt-2 text-sm text-red-600">
-                            Afgewezen: {invoice.rejectionReason}
+                            Afgewezen: {(invoice as any).rejectionReason}
                           </div>
                         )}
                       </div>
