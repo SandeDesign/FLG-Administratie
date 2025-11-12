@@ -288,6 +288,44 @@ export const uploadFileToDrive = async (
 };
 
 /**
+ * Save invoice metadata to Firestore with Drive reference and OCR data
+ */
+export const saveInvoiceWithDriveFile = async (
+  invoiceData: any,
+  driveFileId: string,
+  driveWebLink: string,
+  userId: string,
+  companyId: string,
+  ocrData?: any
+): Promise<string> => {
+  try {
+    const now = new Date();
+    const docData = {
+      ...invoiceData,
+      userId,
+      companyId,
+      driveFileId,
+      driveWebLink,
+      fileUrl: driveWebLink,
+      status: 'pending',
+      invoiceDate: Timestamp.fromDate(invoiceData.invoiceDate || now),
+      dueDate: Timestamp.fromDate(invoiceData.dueDate || new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)),
+      createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now),
+      ocrProcessed: !!ocrData,
+      ocrData: ocrData || null,
+      ocrConfidence: ocrData?.confidence || 0,
+    };
+
+    const docRef = await addDoc(collection(db, 'incomingInvoices'), docData);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving invoice:', error);
+    throw new Error('Kon factuur niet opslaan');
+  }
+};
+
+/**
  * Get or create company folder structure
  */
 export const getOrCreateCompanyDriveFolder = async (
