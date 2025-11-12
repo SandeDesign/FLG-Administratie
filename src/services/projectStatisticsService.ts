@@ -6,21 +6,33 @@ import { getApp } from 'firebase/app';
 const db = getFirestore(getApp());
 
 export const projectStatisticsService = {
-  // WEEK-BY-WEEK ANALYTICS - ALLE DATA LADEN
+  /**
+   * MULTI-TENANT SYSTEM:
+   * - companyId parameter = welk bedrijf data weergeven (PROJECT/CLIENT bedrijf)
+   * - Timesheet data staat ALTIJD in employer bedrijf collection
+   * 
+   * Data sources:
+   * Timesheets → companyId (uren registratie op EMPLOYER)
+   * TimeEntries → companyId (productie op PROJECT)
+   * Invoices → companyId (omzet gegenereerd op PROJECT/EMPLOYER)
+   * Payroll → companyId (salarissen op EMPLOYER)
+   * Employees → companyId (in dienst bij)
+   */
+
+  // WEEK-BY-WEEK ANALYTICS - Timesheet = op basis van companyId
   async getWeeklyBreakdown(companyId: string, userId: string, year: number) {
     try {
-      console.log(`📊 Loading weekly data for company: ${companyId}, year: ${year}`);
+      console.log(`📊 Weekly: companyId=${companyId}, year=${year}`);
       
       const timesheetsSnap = await getDocs(
         query(
           collection(db, 'weeklyTimesheets'),
           where('companyId', '==', companyId),
           where('year', '==', year)
-          // REMOVED: userId filter - dit was het probleem!
         )
       );
 
-      console.log(`✓ Loaded ${timesheetsSnap.docs.length} weekly timesheets`);
+      console.log(`✓ Loaded ${timesheetsSnap.docs.length} timesheets from EMPLOYER`);
 
       const timesheets = timesheetsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const weeklyData = new Map<number, any>();
@@ -54,25 +66,24 @@ export const projectStatisticsService = {
 
       return Array.from(weeklyData.values());
     } catch (error) {
-      console.error('❌ Error getting weekly breakdown:', error);
+      console.error('❌ Error weekly breakdown:', error);
       throw error;
     }
   },
 
-  // DAY-BY-DAY ANALYTICS
-  async getDailyBreakdown(companyId: string, userId: string, startDate: Date, endDate: Date) {
+  // DAY-BY-DAY ANALYTICS - Production = PROJECT bedrijf
+  async getDailyBreakdown(employerCompanyId: string, projectCompanyId: string, startDate: Date, endDate: Date) {
     try {
-      console.log(`📅 Loading daily data for company: ${companyId}`);
+      console.log(`📅 Daily: employer=${employerCompanyId}, project=${projectCompanyId}`);
       
       const timeEntriesSnap = await getDocs(
         query(
           collection(db, 'timeEntries'),
-          where('companyId', '==', companyId)
-          // REMOVED: userId filter
+          where('projectCompanyId', '==', projectCompanyId) // ✅ PROJECT = waar werk wordt gedaan
         )
       );
 
-      console.log(`✓ Loaded ${timeEntriesSnap.docs.length} time entries`);
+      console.log(`✓ Loaded ${timeEntriesSnap.docs.length} time entries from PROJECT`);
 
       const entries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const filtered = entries.filter((e: any) => {
@@ -127,25 +138,25 @@ export const projectStatisticsService = {
         entryCount: day.entries.length,
       }));
     } catch (error) {
-      console.error('❌ Error getting daily breakdown:', error);
+      console.error('❌ Error daily breakdown:', error);
       throw error;
     }
   },
 
-  // LOCATION/BRANCH ANALYTICS
-  async getBranchPerformance(companyId: string, userId: string) {
+  // BRANCH PERFORMANCE - PROJECT bedrijf data
+  async getBranchPerformance(employerCompanyId: string, projectCompanyId: string) {
     try {
-      console.log(`🏢 Loading branch performance for company: ${companyId}`);
+      console.log(`🏢 Branch performance: employer=${employerCompanyId}, project=${projectCompanyId}`);
       
       const [branchesSnap, timeEntriesSnap, employeesSnap, invoicesSnap, expensesSnap] = await Promise.all([
-        getDocs(query(collection(db, 'branches'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'outgoingInvoices'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'expenses'), where('companyId', '==', companyId))),
+        getDocs(query(collection(db, 'branches'), where('projectCompanyId', '==', projectCompanyId))), // ✅ PROJECT
+        getDocs(query(collection(db, 'timeEntries'), where('projectCompanyId', '==', projectCompanyId))), // ✅ PROJECT
+        getDocs(query(collection(db, 'employees'), where('employerCompanyId', '==', employerCompanyId))), // ✅ EMPLOYER
+        getDocs(query(collection(db, 'outgoingInvoices'), where('projectCompanyId', '==', projectCompanyId))), // ✅ PROJECT
+        getDocs(query(collection(db, 'expenses'), where('projectCompanyId', '==', projectCompanyId))), // ✅ PROJECT
       ]);
 
-      console.log(`✓ Loaded branches: ${branchesSnap.docs.length}, timeEntries: ${timeEntriesSnap.docs.length}, employees: ${employeesSnap.docs.length}, invoices: ${invoicesSnap.docs.length}`);
+      console.log(`✓ Loaded: branches=${branchesSnap.docs.length}, entries=${timeEntriesSnap.docs.length}, emps=${employeesSnap.docs.length}`);
 
       const branches = branchesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const timeEntries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -194,24 +205,22 @@ export const projectStatisticsService = {
 
       return branchMetrics.sort((a, b) => b.totalInvoiced - a.totalInvoiced);
     } catch (error) {
-      console.error('❌ Error getting branch performance:', error);
+      console.error('❌ Error branch performance:', error);
       throw error;
     }
   },
 
   // EMPLOYEE × LOCATION MATRIX
-  async getEmployeeLocationMatrix(companyId: string, userId: string) {
+  async getEmployeeLocationMatrix(employerCompanyId: string, projectCompanyId: string) {
     try {
-      console.log(`👥 Loading employee location matrix for company: ${companyId}`);
+      console.log(`👥 Employee location matrix: employer=${employerCompanyId}, project=${projectCompanyId}`);
       
       const [employeesSnap, timeEntriesSnap, branchesSnap, payrollSnap] = await Promise.all([
-        getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'branches'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'payrollCalculations')))
+        getDocs(query(collection(db, 'employees'), where('employerCompanyId', '==', employerCompanyId))), // ✅ EMPLOYER
+        getDocs(query(collection(db, 'timeEntries'), where('projectCompanyId', '==', projectCompanyId))), // ✅ PROJECT
+        getDocs(query(collection(db, 'branches'), where('projectCompanyId', '==', projectCompanyId))), // ✅ PROJECT
+        getDocs(query(collection(db, 'payrollCalculations'), where('employerCompanyId', '==', employerCompanyId))) // ✅ EMPLOYER
       ]);
-
-      console.log(`✓ Loaded for matrix: employees: ${employeesSnap.docs.length}, timeEntries: ${timeEntriesSnap.docs.length}`);
 
       const employees = employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const timeEntries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -265,17 +274,15 @@ export const projectStatisticsService = {
 
       return matrix.sort((a, b) => b.totalHours - a.totalHours);
     } catch (error) {
-      console.error('❌ Error getting employee location matrix:', error);
+      console.error('❌ Error employee location matrix:', error);
       throw error;
     }
   },
 
   // AVERAGE EUR PER ADDRESS
-  async getAverageEurPerAddress(companyId: string, userId: string) {
+  async getAverageEurPerAddress(employerCompanyId: string, projectCompanyId: string) {
     try {
-      console.log(`💰 Loading average EUR per address for company: ${companyId}`);
-      
-      const matrix = await this.getEmployeeLocationMatrix(companyId, userId);
+      const matrix = await this.getEmployeeLocationMatrix(employerCompanyId, projectCompanyId);
       
       const locationMetrics = new Map<string, any>();
 
@@ -320,28 +327,26 @@ export const projectStatisticsService = {
         entryCount: loc.entryCount,
       })).sort((a, b) => b.averageEuroPerHour - a.averageEuroPerHour);
     } catch (error) {
-      console.error('❌ Error getting average EUR per address:', error);
+      console.error('❌ Error EUR per address:', error);
       throw error;
     }
   },
 
   // ADVANCED INSIGHTS
-  async getAdvancedInsights(companyId: string, userId: string) {
+  async getAdvancedInsights(employerCompanyId: string, projectCompanyId: string) {
     try {
-      console.log(`🔍 Loading advanced insights for company: ${companyId}`);
+      console.log(`🔍 Advanced insights: employer=${employerCompanyId}, project=${projectCompanyId}`);
       
       const [employeesSnap, timeEntriesSnap, leaveSnap, expensesSnap, timesheetsSnap, invoicesSnap, payrollSnap, payslipsSnap] = await Promise.all([
-        getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'leaveRequests'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'expenses'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'weeklyTimesheets'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'outgoingInvoices'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'payrollCalculations'))),
-        getDocs(query(collection(db, 'payslips'))),
+        getDocs(query(collection(db, 'employees'), where('employerCompanyId', '==', employerCompanyId))), // ✅ EMPLOYER
+        getDocs(query(collection(db, 'timeEntries'), where('projectCompanyId', '==', projectCompanyId))), // ✅ PROJECT
+        getDocs(query(collection(db, 'leaveRequests'), where('employerCompanyId', '==', employerCompanyId))), // ✅ EMPLOYER
+        getDocs(query(collection(db, 'expenses'), where('projectCompanyId', '==', projectCompanyId))), // ✅ PROJECT
+        getDocs(query(collection(db, 'weeklyTimesheets'), where('employerCompanyId', '==', employerCompanyId))), // ✅ EMPLOYER
+        getDocs(query(collection(db, 'outgoingInvoices'), where('projectCompanyId', '==', projectCompanyId))), // ✅ PROJECT
+        getDocs(query(collection(db, 'payrollCalculations'), where('employerCompanyId', '==', employerCompanyId))), // ✅ EMPLOYER
+        getDocs(query(collection(db, 'payslips'), where('employerCompanyId', '==', employerCompanyId))), // ✅ EMPLOYER
       ]);
-
-      console.log(`✓ All insights data loaded successfully`);
 
       const employees = employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const timeEntries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -376,25 +381,21 @@ export const projectStatisticsService = {
         };
       }).filter(e => e.hours > 0).sort((a, b) => b.efficiency - a.efficiency).slice(0, 10);
 
-      // Leave Compliance
       const leaveApproved = leave.filter((l: any) => l.status === 'approved').length;
       const leavePending = leave.filter((l: any) => l.status === 'pending').length;
       const leaveRejected = leave.filter((l: any) => l.status === 'rejected').length;
       const leaveCompliance = employees.length > 0 ? (leaveApproved / employees.length) * 100 : 0;
 
-      // Overtime Analysis
       const totalOvertime = timeEntries.reduce((sum, te: any) => sum + (te.overtimeHours || 0), 0);
       const employeesWithOvertime = new Set(timeEntries.filter((te: any) => te.overtimeHours > 0).map((te: any) => te.employeeId)).size;
       const totalTravelKm = timeEntries.reduce((sum, te: any) => sum + (te.travelKilometers || 0), 0);
 
-      // Profit Analysis
       const totalRevenue = invoices.reduce((sum, inv: any) => sum + (inv.totalAmount || 0), 0);
       const totalExpenses = expenses.reduce((sum, e: any) => sum + (e.amount || 0), 0);
       const totalGrossPay = payroll.reduce((sum, p: any) => sum + (p.grossPay || 0), 0);
       const totalProfit = totalRevenue - totalExpenses - totalGrossPay;
       const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
-      // Peak Days
       const dayData = new Map<number, number>();
       timeEntries.forEach((te: any) => {
         const date = te.date?.toDate?.() || new Date(te.date);
@@ -408,16 +409,13 @@ export const projectStatisticsService = {
         .map(([day, hours]) => ({ day: days[day], hours }))
         .sort((a, b) => b.hours - a.hours);
 
-      // Employee Stats
       const activeEmployees = employees.filter((e: any) => e.status === 'active').length;
       const inactiveEmployees = employees.filter((e: any) => e.status === 'inactive').length;
 
-      // Timesheet Stats
       const submittedTimesheets = timesheets.filter((ts: any) => ts.status !== 'draft').length;
       const draftTimesheets = timesheets.filter((ts: any) => ts.status === 'draft').length;
       const processedTimesheets = timesheets.filter((ts: any) => ts.status === 'processed').length;
 
-      // Average Metrics
       const totalHours = timeEntries.reduce((sum, te: any) => sum + (te.regularHours || 0), 0);
       const avgHoursPerEmployee = employees.length > 0 ? totalHours / employees.length : 0;
       const avgRevenuePerEmployee = activeEmployees > 0 ? totalRevenue / activeEmployees : 0;
@@ -441,72 +439,37 @@ export const projectStatisticsService = {
           avgCostPerEmployee,
         },
         topPerformers,
-        leaveCompliance: {
-          complianceRate: leaveCompliance,
-          totalRequests: leave.length,
-          approved: leaveApproved,
-          pending: leavePending,
-          rejected: leaveRejected,
-        },
-        overtimeAnalysis: {
-          totalOvertimeHours: totalOvertime,
-          employeesWithOvertime,
-          averageOvertimePerEmployee: employeesWithOvertime > 0 ? totalOvertime / employeesWithOvertime : 0,
-        },
-        travelAnalysis: {
-          totalKilometers: totalTravelKm,
-          averageKmPerEmployee: activeEmployees > 0 ? totalTravelKm / activeEmployees : 0,
-        },
-        profitAnalysis: {
-          revenue: totalRevenue,
-          expenses: totalExpenses,
-          grossPay: totalGrossPay,
-          profit: totalProfit,
-          margin: profitMargin,
-          revenuePerHour: timeEntries.length > 0 ? totalRevenue / timeEntries.length : 0,
-          costPerHour: timeEntries.length > 0 ? totalGrossPay / timeEntries.length : 0,
-        },
-        timesheetStats: {
-          total: timesheets.length,
-          submitted: submittedTimesheets,
-          draft: draftTimesheets,
-          processed: processedTimesheets,
-          submissionRate: timesheets.length > 0 ? (submittedTimesheets / timesheets.length) * 100 : 0,
-        },
-        payrollStats: {
-          totalPayrollRecords: payroll.length,
-          totalPayslips: payslips.length,
-          totalGrossPayroll: totalGrossPay,
-          averageGrossPerRecord: payroll.length > 0 ? totalGrossPay / payroll.length : 0,
-        },
+        leaveCompliance: { complianceRate: leaveCompliance, totalRequests: leave.length, approved: leaveApproved, pending: leavePending, rejected: leaveRejected },
+        overtimeAnalysis: { totalOvertimeHours: totalOvertime, employeesWithOvertime, averageOvertimePerEmployee: employeesWithOvertime > 0 ? totalOvertime / employeesWithOvertime : 0 },
+        travelAnalysis: { totalKilometers: totalTravelKm, averageKmPerEmployee: activeEmployees > 0 ? totalTravelKm / activeEmployees : 0 },
+        profitAnalysis: { revenue: totalRevenue, expenses: totalExpenses, grossPay: totalGrossPay, profit: totalProfit, margin: profitMargin, revenuePerHour: timeEntries.length > 0 ? totalRevenue / timeEntries.length : 0, costPerHour: timeEntries.length > 0 ? totalGrossPay / timeEntries.length : 0 },
+        timesheetStats: { total: timesheets.length, submitted: submittedTimesheets, draft: draftTimesheets, processed: processedTimesheets, submissionRate: timesheets.length > 0 ? (submittedTimesheets / timesheets.length) * 100 : 0 },
+        payrollStats: { totalPayrollRecords: payroll.length, totalPayslips: payslips.length, totalGrossPayroll: totalGrossPay, averageGrossPerRecord: payroll.length > 0 ? totalGrossPay / payroll.length : 0 },
         peakDaysOfWeek,
       };
     } catch (error) {
-      console.error('❌ Error getting advanced insights:', error);
+      console.error('❌ Error advanced insights:', error);
       throw error;
     }
   },
 
-  // EMPLOYEE DETAILED STATS
-  async getEmployeeDetailedStats(companyId: string, userId: string, employeeId?: string) {
+  async getEmployeeDetailedStats(employerCompanyId: string, projectCompanyId: string, employeeId?: string) {
     try {
       const [employeesSnap, timeEntriesSnap, payrollSnap, leaveSnap] = await Promise.all([
-        getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'payrollCalculations'))),
-        getDocs(query(collection(db, 'leaveRequests'), where('companyId', '==', companyId))),
+        getDocs(query(collection(db, 'employees'), where('employerCompanyId', '==', employerCompanyId))),
+        getDocs(query(collection(db, 'timeEntries'), where('projectCompanyId', '==', projectCompanyId))),
+        getDocs(query(collection(db, 'payrollCalculations'), where('employerCompanyId', '==', employerCompanyId))),
+        getDocs(query(collection(db, 'leaveRequests'), where('employerCompanyId', '==', employerCompanyId))),
       ]);
 
       let employees = employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      if (employeeId) {
-        employees = employees.filter(e => e.id === employeeId);
-      }
+      if (employeeId) employees = employees.filter(e => e.id === employeeId);
 
       const timeEntries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const payroll = payrollSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const leave = leaveSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      const employeeStats = employees.map((emp: any) => {
+      return employees.map((emp: any) => {
         const empEntries = timeEntries.filter((te: any) => te.employeeId === emp.id);
         const empPayroll = payroll.filter((p: any) => p.employeeId === emp.id);
         const empLeave = leave.filter((l: any) => l.employeeId === emp.id);
@@ -515,52 +478,42 @@ export const projectStatisticsService = {
         const totalOvertime = empEntries.reduce((sum, te: any) => sum + (te.overtimeHours || 0), 0);
         const totalGross = empPayroll.reduce((sum, p: any) => sum + (p.grossPay || 0), 0);
         const totalNet = empPayroll.reduce((sum, p: any) => sum + (p.netPay || 0), 0);
-        const totalTax = empPayroll.reduce((sum, p: any) => 
-          sum + (p.taxes?.incomeTax || 0) + (p.taxes?.socialSecurityEmployee || 0), 0);
+        const totalTax = empPayroll.reduce((sum, p: any) => sum + (p.taxes?.incomeTax || 0) + (p.taxes?.socialSecurityEmployee || 0), 0);
 
         return {
           employeeId: emp.id,
           name: `${emp.personalInfo?.firstName} ${emp.personalInfo?.lastName}`,
           status: emp.status,
           contractType: emp.contractInfo?.type,
-          hoursPerWeek: emp.contractInfo?.hoursPerWeek,
           hourlyRate: emp.salaryInfo?.hourlyRate,
           totalHours,
           totalOvertime,
-          averageHoursPerWeek: empEntries.length > 0 ? totalHours / Math.ceil(empEntries.length / 5) : 0,
           totalGross,
           totalNet,
           totalTax,
-          averageGrossPerMonth: empPayroll.length > 0 ? totalGross / empPayroll.length : 0,
           totalLeave: empLeave.length,
           approvedLeave: empLeave.filter((l: any) => l.status === 'approved').length,
-          payrollRecords: empPayroll.length,
         };
       });
-
-      return employeeStats;
     } catch (error) {
-      console.error('❌ Error getting employee detailed stats:', error);
+      console.error('❌ Error employee stats:', error);
       throw error;
     }
   },
 
-  // BRANCH DETAILED STATS
-  async getBranchDetailedStats(companyId: string, userId: string, branchId?: string) {
+  async getBranchDetailedStats(employerCompanyId: string, projectCompanyId: string, branchId?: string) {
     try {
       const [branchesSnap, employeesSnap, timeEntriesSnap, invoicesSnap, expensesSnap, payrollSnap] = await Promise.all([
-        getDocs(query(collection(db, 'branches'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'employees'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'timeEntries'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'outgoingInvoices'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'expenses'), where('companyId', '==', companyId))),
-        getDocs(query(collection(db, 'payrollCalculations'))),
+        getDocs(query(collection(db, 'branches'), where('projectCompanyId', '==', projectCompanyId))),
+        getDocs(query(collection(db, 'employees'), where('employerCompanyId', '==', employerCompanyId))),
+        getDocs(query(collection(db, 'timeEntries'), where('projectCompanyId', '==', projectCompanyId))),
+        getDocs(query(collection(db, 'outgoingInvoices'), where('projectCompanyId', '==', projectCompanyId))),
+        getDocs(query(collection(db, 'expenses'), where('projectCompanyId', '==', projectCompanyId))),
+        getDocs(query(collection(db, 'payrollCalculations'), where('employerCompanyId', '==', employerCompanyId))),
       ]);
 
       let branches = branchesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      if (branchId) {
-        branches = branches.filter(b => b.id === branchId);
-      }
+      if (branchId) branches = branches.filter(b => b.id === branchId);
 
       const employees = employeesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const timeEntries = timeEntriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -568,15 +521,11 @@ export const projectStatisticsService = {
       const expenses = expensesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const payroll = payrollSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      const branchStats = branches.map((branch: any) => {
+      return branches.map((branch: any) => {
         const branchEmployees = employees.filter((e: any) => e.branchId === branch.id);
         const branchEntries = timeEntries.filter((te: any) => te.branchId === branch.id);
-        const branchPayroll = payroll.filter((p: any) => 
-          branchEmployees.some((e: any) => e.id === p.employeeId)
-        );
-        const branchExpenses = expenses.filter((ex: any) => 
-          branchEmployees.some((e: any) => e.id === ex.employeeId)
-        );
+        const branchPayroll = payroll.filter((p: any) => branchEmployees.some((e: any) => e.id === p.employeeId));
+        const branchExpenses = expenses.filter((ex: any) => branchEmployees.some((e: any) => e.id === ex.employeeId));
 
         const totalHours = branchEntries.reduce((sum, te: any) => sum + (te.regularHours || 0), 0);
         const totalOvertime = branchEntries.reduce((sum, te: any) => sum + (te.overtimeHours || 0), 0);
@@ -588,7 +537,6 @@ export const projectStatisticsService = {
           branchId: branch.id,
           branchName: branch.name,
           location: branch.location,
-          costCenter: branch.costCenter,
           employeeCount: branchEmployees.length,
           activeEmployees: branchEmployees.filter((e: any) => e.status === 'active').length,
           totalHours,
@@ -598,42 +546,19 @@ export const projectStatisticsService = {
           totalGross,
           profit: totalInvoiced - totalExpenses,
           profitMargin: totalInvoiced > 0 ? ((totalInvoiced - totalExpenses) / totalInvoiced) * 100 : 0,
-          timeEntryCount: branchEntries.length,
-          invoiceCount: invoices.length,
-          expenseCount: branchExpenses.length,
-          payrollRecords: branchPayroll.length,
         };
       });
-
-      return branchStats;
     } catch (error) {
-      console.error('❌ Error getting branch detailed stats:', error);
+      console.error('❌ Error branch stats:', error);
       throw error;
     }
   },
 
-  // MONTHLY BREAKDOWN
-  async getMonthlyBreakdown(companyId: string, userId: string, year: number) {
+  async getMonthlyBreakdown(employerCompanyId: string, projectCompanyId: string, year: number) {
     try {
-      const timeEntriesSnap = await getDocs(
-        query(
-          collection(db, 'timeEntries'),
-          where('companyId', '==', companyId)
-        )
-      );
-
-      const invoicesSnap = await getDocs(
-        query(
-          collection(db, 'outgoingInvoices'),
-          where('companyId', '==', companyId)
-        )
-      );
-
-      const payrollSnap = await getDocs(
-        query(
-          collection(db, 'payrollCalculations')
-        )
-      );
+      const timeEntriesSnap = await getDocs(query(collection(db, 'timeEntries'), where('projectCompanyId', '==', projectCompanyId)));
+      const invoicesSnap = await getDocs(query(collection(db, 'outgoingInvoices'), where('projectCompanyId', '==', projectCompanyId)));
+      const payrollSnap = await getDocs(query(collection(db, 'payrollCalculations'), where('employerCompanyId', '==', employerCompanyId)));
 
       const entries = timeEntriesSnap.docs.map(doc => doc.data());
       const invoices = invoicesSnap.docs.map(doc => doc.data());
@@ -672,13 +597,12 @@ export const projectStatisticsService = {
           averageRevenue: totalHours > 0 ? totalInvoiced / totalHours : 0,
           invoiceCount: monthInvoices.length,
           entryCount: monthEntries.length,
-          payrollRecords: monthPayroll.length,
         });
       }
 
       return Array.from(monthlyData.values());
     } catch (error) {
-      console.error('❌ Error getting monthly breakdown:', error);
+      console.error('❌ Error monthly breakdown:', error);
       throw error;
     }
   },
