@@ -293,9 +293,7 @@ export const projectStatisticsService = {
     }
   },
 
-  // Helper methods
-
-  private calculateProcessingSpeed(invoices: any[]): number {
+  calculateProcessingSpeed(invoices: any[]): number {
     if (invoices.length === 0) return 0;
     
     const approved = invoices.filter((inv: any) => inv.status === 'approved' || inv.status === 'paid');
@@ -329,7 +327,7 @@ export const projectStatisticsService = {
       }));
   },
 
-  private calculateAverageValuePerHour(invoices: any[]): number {
+  calculateAverageValuePerHour(invoices: any[]): number {
     // This would need to calculate based on actual hours tracked
     // Placeholder: average invoice value / average items per invoice
     if (invoices.length === 0) return 0;
@@ -342,7 +340,7 @@ export const projectStatisticsService = {
     return totalEstimatedHours > 0 ? totalValue / totalEstimatedHours : 0;
   },
 
-  private calculateAverageDaysToInvoice(invoices: any[]): number {
+  calculateAverageDaysToInvoice(invoices: any[]): number {
     if (invoices.length === 0) return 0;
 
     const days = invoices
@@ -356,7 +354,7 @@ export const projectStatisticsService = {
     return days.length > 0 ? days.reduce((a, b) => a + b, 0) / days.length : 0;
   },
 
-  private calculateHoursByType(productions: any[]): any[] {
+  calculateHoursByType(productions: any[]): any[] {
     const hoursByType: { [key: string]: number } = {
       'Reguliere Uren': 0,
       'Overuren': 0,
@@ -377,7 +375,7 @@ export const projectStatisticsService = {
       .filter(item => item.value > 0);
   },
 
-  private calculateWeeklyTrend(productions: any[]): MonthlyData[] {
+  calculateWeeklyTrend(productions: any[]): MonthlyData[] {
     const weekMap = new Map<number, number>();
 
     productions.forEach((prod: any) => {
