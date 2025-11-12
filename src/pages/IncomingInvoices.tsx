@@ -90,7 +90,8 @@ const IncomingInvoices: React.FC = () => {
           file,
           selectedCompany.id,
           selectedCompany.name,
-          user.uid
+          user.uid,
+          user.email || undefined // Pass user email for silent refresh
         );
       }
       
