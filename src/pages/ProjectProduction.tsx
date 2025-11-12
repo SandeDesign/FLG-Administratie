@@ -67,6 +67,7 @@ const ProjectProduction: React.FC = () => {
   const [entries, setEntries] = useState<ProductionEntry[]>([]);
   const [linkedEmployees, setLinkedEmployees] = useState<any[]>([]);
 
+  // 🔥 FIXED: Load production data whenever week/year/employee changes
   const loadProductionData = useCallback(async () => {
     if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
@@ -85,8 +86,10 @@ const ProjectProduction: React.FC = () => {
       setLinkedEmployees(linked);
 
       // Auto-select first employee if available
-      if (linked.length > 0 && !selectedEmployeeId) {
-        setSelectedEmployeeId(linked[0].id);
+      let empId = selectedEmployeeId;
+      if (!empId && linked.length > 0) {
+        empId = linked[0].id;
+        setSelectedEmployeeId(empId);
       }
 
       // Initialize empty production week
@@ -94,7 +97,7 @@ const ProjectProduction: React.FC = () => {
         week: selectedWeek,
         year: selectedYear,
         companyId: selectedCompany.id,
-        employeeId: selectedEmployeeId || linked[0]?.id || '',
+        employeeId: empId,
         userId: adminUserId,
         entries: [],
         status: 'draft',
@@ -112,7 +115,7 @@ const ProjectProduction: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, adminUserId, selectedCompany, selectedEmployeeId, employees, showError]);
+  }, [user, adminUserId, selectedCompany, selectedEmployeeId, employees, selectedWeek, selectedYear, showError]);
 
   // 🔥 WEBHOOK: Import production data
   const handleImportFromMake = async () => {
@@ -192,12 +195,6 @@ const ProjectProduction: React.FC = () => {
       }
 
       console.log('✅ Webhook response:', productionResponse);
-      console.log('Response type:', typeof productionResponse);
-      console.log('Is array:', Array.isArray(productionResponse));
-      if (Array.isArray(productionResponse) && productionResponse.length > 0) {
-        console.log('First entry:', JSON.stringify(productionResponse[0], null, 2));
-        console.log('First entry keys:', Object.keys(productionResponse[0]));
-      }
 
       if (
         productionResponse &&
@@ -222,12 +219,9 @@ const ProjectProduction: React.FC = () => {
 
   const processProductionData = async (rawData: any[], employeeId: string) => {
     console.log('🔍 Raw data received:', rawData);
-    console.log('🔍 Raw data length:', rawData.length);
     
     const normalizedEntries = rawData.map((record, idx) => {
       const data = record.data || record;
-      console.log(`Entry ${idx} raw:`, record);
-      console.log(`Entry ${idx} extracted data:`, data);
       
       let monteur = '';
       let datum = '';
@@ -237,7 +231,6 @@ const ProjectProduction: React.FC = () => {
       
       // Try numeric indices first (Make.com format)
       if (data['0'] !== undefined) {
-        console.log(`Entry ${idx} using numeric indices`);
         monteur = data['0'] || '';
         datum = data['1'] ? data['1'].replace(/['"]/g, '') : '';
         uren = parseFloat(data['2']) || 0;
@@ -245,7 +238,6 @@ const ProjectProduction: React.FC = () => {
         locaties = data['4'] ? data['4'].replace(/\n/g, ' ').trim() : '';
       } else {
         // Fallback to named properties
-        console.log(`Entry ${idx} using named properties`);
         monteur = data.Monteur || data.monteur || '';
         datum = data.Datum || data.datum || '';
         uren = parseFloat(data.Uren || data.uren || 0);
@@ -253,18 +245,14 @@ const ProjectProduction: React.FC = () => {
         locaties = data.Locaties || data.locaties || '';
       }
       
-      const normalized = {
+      return {
         dag: datum,
         monteur,
         uren,
         opdrachtgever,
         locaties
       };
-      console.log(`Entry ${idx} normalized:`, normalized);
-      return normalized;
     });
-
-    console.log('✅ Normalized entries:', normalizedEntries);
 
     const updatedEntries: ProductionEntry[] = normalizedEntries.map((entry) => ({
       monteur: entry.monteur,
@@ -405,19 +393,23 @@ const ProjectProduction: React.FC = () => {
         updatedAt: Timestamp.fromDate(new Date())
       };
 
+      console.log('💾 Saving production week:', dataToSave);
+
       // 🔥 SAVE TO FIRESTORE
       const docRef = await addDoc(collection(db, 'productionWeeks'), dataToSave);
       
-      setProductionData({
-        ...productionData,
-        id: docRef.id
-      });
+      console.log('✅ Saved with ID:', docRef.id);
 
       success('Opgeslagen', `Week ${selectedWeek} productie opgeslagen met ${entries.length} entries`);
       
-      // Reset form
+      // 🔥 RESET FORM nach save
       setEntries([]);
       setProductionData(null);
+      
+      // 🔥 RELOAD data
+      setTimeout(() => {
+        loadProductionData();
+      }, 500);
     } catch (error) {
       console.error('Error saving production data:', error);
       showError('Fout bij opslaan', `Kon productie niet opslaan: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
@@ -442,9 +434,10 @@ const ProjectProduction: React.FC = () => {
     setSelectedYear(newYear);
   };
 
+  // 🔥 FIXED: Trigger load on mount and when dependencies change
   useEffect(() => {
     loadProductionData();
-  }, [loadProductionData]);
+  }, [selectedWeek, selectedYear, selectedCompany, selectedEmployeeId]);
 
   if (loading) {
     return (
