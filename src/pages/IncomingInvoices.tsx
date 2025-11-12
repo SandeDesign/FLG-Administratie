@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Upload,
-  Eye,
   Download,
   Search,
   Calendar,
@@ -14,7 +13,6 @@ import {
   FileText,
   Scan,
   Trash2,
-  Archive,
   HardDrive
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,7 +23,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { incomingInvoiceService, IncomingInvoice } from '../services/incomingInvoiceService';
-import { firebaseStorageHelper } from '../utils/firebase-storage-helper';
+import { uploadInvoiceToDrive, requestGoogleDriveAccess } from '../services/googleDriveService';
 
 const IncomingInvoices: React.FC = () => {
   const { user } = useAuth();
@@ -34,12 +32,9 @@ const IncomingInvoices: React.FC = () => {
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [archiving, setArchiving] = useState<string | null>(null);
-  const [downloading, setDownloading] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDragOver, setIsDragOver] = useState(false);
-  const [showArchiveInfo, setShowArchiveInfo] = useState(false);
 
   const loadInvoices = useCallback(async () => {
     if (!user) {
@@ -66,6 +61,15 @@ const IncomingInvoices: React.FC = () => {
     loadInvoices();
   }, [loadInvoices]);
 
+  // Initialize Google Drive access on mount
+  useEffect(() => {
+    if (user) {
+      requestGoogleDriveAccess().catch(err => {
+        console.warn('Google Drive not initialized yet:', err);
+      });
+    }
+  }, [user]);
+
   const handleFileUpload = async (files: FileList) => {
     if (!files.length || !selectedCompany || !user) return;
 
@@ -82,70 +86,22 @@ const IncomingInvoices: React.FC = () => {
           continue;
         }
 
-        await incomingInvoiceService.uploadInvoice(file, user.uid, selectedCompany.id);
+        // Upload to Google Drive
+        await uploadInvoiceToDrive(
+          file,
+          selectedCompany.id,
+          selectedCompany.name,
+          user.uid
+        );
       }
       
-      success('Bestanden geüpload', 'Facturen zijn geüpload en verwerkt');
+      success('Bestanden geüpload', 'Facturen zijn naar Google Drive geüpload');
       loadInvoices();
     } catch (error) {
-      showError('Fout bij uploaden', 'Kon bestanden niet uploaden');
+      console.error('Upload error:', error);
+      showError('Fout bij uploaden', error instanceof Error ? error.message : 'Kon bestanden niet uploaden');
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleArchiveToGoogleDrive = async (invoiceId: string) => {
-    if (!user || !selectedCompany) return;
-
-    setArchiving(invoiceId);
-    try {
-      const invoice = invoices.find(inv => inv.id === invoiceId);
-      if (!invoice) {
-        showError('Fout', 'Factuur niet gevonden');
-        return;
-      }
-
-      await incomingInvoiceService.archiveToGoogleDrive(
-        invoiceId,
-        user.uid,
-        selectedCompany.id,
-        invoice
-      );
-
-      success('Gearchiveerd', 'Factuur is gearchiveerd in Google Drive');
-      loadInvoices();
-    } catch (error) {
-      showError('Fout bij archiveren', error instanceof Error ? error.message : 'Kon factuur niet archiveren');
-    } finally {
-      setArchiving(null);
-    }
-  };
-
-  const handleDownloadFile = async (invoice: IncomingInvoice) => {
-    if (!selectedCompany) return;
-    
-    setDownloading(invoice.id!);
-    try {
-      const storagePath = `incoming-invoices/${selectedCompany.id}/${Date.now()}-${invoice.fileName}`;
-      await firebaseStorageHelper.downloadFile(storagePath, invoice.fileName);
-      success('Download gestart', `${invoice.fileName} wordt gedownload`);
-    } catch (error) {
-      console.error('Download error:', error);
-      showError('Download fout', 'Kon bestand niet downloaden');
-    } finally {
-      setDownloading(null);
-    }
-  };
-
-  const handleViewFile = async (invoice: IncomingInvoice) => {
-    if (!selectedCompany) return;
-    
-    try {
-      const storagePath = `incoming-invoices/${selectedCompany.id}/${Date.now()}-${invoice.fileName}`;
-      await firebaseStorageHelper.viewFile(storagePath);
-    } catch (error) {
-      console.error('View error:', error);
-      showError('View fout', 'Kon bestand niet openen');
     }
   };
 
@@ -210,6 +166,10 @@ const IncomingInvoices: React.FC = () => {
     } catch (error) {
       showError('Fout bij verwijderen', 'Kon factuur niet verwijderen');
     }
+  };
+
+  const handleDownload = (invoice: IncomingInvoice) => {
+    window.open(invoice.fileUrl, '_blank');
   };
 
   const getStatusColor = (status: IncomingInvoice['status']) => {
@@ -286,34 +246,8 @@ const IncomingInvoices: React.FC = () => {
               onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
             />
           </label>
-          <Button
-            variant="ghost"
-            icon={HardDrive}
-            onClick={() => setShowArchiveInfo(!showArchiveInfo)}
-          >
-            Google Drive
-          </Button>
         </div>
       </div>
-
-      {/* Archive Info Box */}
-      {showArchiveInfo && (
-        <Card className="bg-blue-50 border-blue-200">
-          <div className="p-4">
-            <div className="flex items-start space-x-3">
-              <HardDrive className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-medium text-blue-900">Google Drive Archivering</h3>
-                <p className="mt-1 text-sm text-blue-800">
-                  Goedgekeurde facturen kunnen worden gearchiveerd in Google Drive. Dit slaat de originele bestanden op 
-                  en extraheert alle gegevens automatisch via OCR voor administratieve doeleinden. De bedragen worden 
-                  bewaard voor rapportage en financiële overzichten.
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
 
       {/* Upload Zone */}
       <div
@@ -326,7 +260,7 @@ const IncomingInvoices: React.FC = () => {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
       >
-        <Upload className="mx-auto h-12 w-12 text-gray-400" />
+        <HardDrive className="mx-auto h-12 w-12 text-blue-400" />
         <p className="mt-2 text-sm text-gray-600">
           Sleep facturen hierheen of{' '}
           <label className="font-medium text-blue-600 hover:text-blue-500 cursor-pointer">
@@ -341,7 +275,7 @@ const IncomingInvoices: React.FC = () => {
           </label>
         </p>
         <p className="mt-1 text-xs text-gray-500">
-          PDF, PNG, JPG tot 10MB per bestand
+          PDF, PNG, JPG tot 10MB per bestand - Geüpload naar Google Drive
         </p>
       </div>
 
@@ -391,9 +325,6 @@ const IncomingInvoices: React.FC = () => {
         <div className="grid gap-4">
           {filteredInvoices.map((invoice) => {
             const StatusIcon = getStatusIcon(invoice.status);
-            const isDownloading = downloading === invoice.id;
-            const isArchiving = archiving === invoice.id;
-
             return (
               <Card key={invoice.id}>
                 <div className="p-6">
@@ -419,12 +350,6 @@ const IncomingInvoices: React.FC = () => {
                               OCR
                             </span>
                           )}
-                          {invoice.archivedToDrive && (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                              <HardDrive className="h-3 w-3 mr-1" />
-                              Drive
-                            </span>
-                          )}
                         </div>
                         <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
                           <div className="flex items-center">
@@ -440,11 +365,6 @@ const IncomingInvoices: React.FC = () => {
                             €{invoice.totalAmount.toFixed(2)}
                           </div>
                         </div>
-                        {invoice.ocrData && invoice.ocrData.confidence < 0.8 && (
-                          <div className="mt-2 text-sm text-amber-600">
-                            ⚠️ OCR betrouwbaarheid: {Math.round(invoice.ocrData.confidence * 100)}% - Controleer gegevens
-                          </div>
-                        )}
                         {invoice.status === 'rejected' && invoice.rejectionReason && (
                           <div className="mt-2 text-sm text-red-600">
                             Afgewezen: {invoice.rejectionReason}
@@ -456,22 +376,10 @@ const IncomingInvoices: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        icon={Eye}
-                        onClick={() => handleViewFile(invoice)}
-                        disabled={isDownloading}
-                        title="Open PDF in nieuw venster"
-                      >
-                        Bekijken
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
                         icon={Download}
-                        onClick={() => handleDownloadFile(invoice)}
-                        disabled={isDownloading}
-                        className={isDownloading ? 'opacity-50' : ''}
+                        onClick={() => handleDownload(invoice)}
                       >
-                        {isDownloading ? 'Download...' : 'Download'}
+                        Download
                       </Button>
                       {invoice.status === 'pending' && (
                         <>
@@ -493,29 +401,7 @@ const IncomingInvoices: React.FC = () => {
                           </Button>
                         </>
                       )}
-                      {invoice.status === 'approved' && !invoice.archivedToDrive && (
-                        <>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            icon={Archive}
-                            onClick={() => handleArchiveToGoogleDrive(invoice.id!)}
-                            disabled={isArchiving}
-                            className={isArchiving ? 'opacity-50' : ''}
-                          >
-                            {isArchiving ? 'Archiveren...' : 'Archiveren'}
-                          </Button>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            icon={CheckCircle}
-                            onClick={() => handleMarkAsPaid(invoice.id!)}
-                          >
-                            Betaald
-                          </Button>
-                        </>
-                      )}
-                      {invoice.status === 'approved' && invoice.archivedToDrive && (
+                      {invoice.status === 'approved' && (
                         <Button
                           variant="primary"
                           size="sm"
