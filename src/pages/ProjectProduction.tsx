@@ -159,10 +159,38 @@ const ProjectProduction: React.FC = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Webhook call failed');
+        throw new Error(`Webhook call failed: ${response.status}`);
       }
 
-      const productionResponse = await response.json();
+      let productionResponse;
+      const contentType = response.headers.get('content-type');
+      
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          productionResponse = await response.json();
+        } else {
+          const text = await response.text();
+          console.log('Raw webhook response:', text);
+          
+          // Try to parse as JSON anyway
+          try {
+            productionResponse = JSON.parse(text);
+          } catch {
+            // If response is "Accepted" or other status, treat as pending
+            if (text.toLowerCase().includes('accepted') || text === '202') {
+              showError('Verwerking loopt', 'Make.com verwerkt je aanvraag. Dit kan enkele seconden duren. Probeer opnieuw.');
+              setImporting(false);
+              return;
+            }
+            throw new Error(`Onverwacht antwoord: ${text}`);
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing webhook response:', parseError);
+        showError('Parse fout', 'Kon webhook antwoord niet interpreteren');
+        setImporting(false);
+        return;
+      }
 
       if (
         productionResponse &&
@@ -171,8 +199,11 @@ const ProjectProduction: React.FC = () => {
       ) {
         await processProductionData(productionResponse, selectedEmployeeId);
         success('Import geslaagd', `${productionResponse.length} productie entries geïmporteerd`);
-      } else {
+      } else if (productionResponse) {
+        console.log('Webhook response:', productionResponse);
         showError('Geen data', 'Geen productie gegevens gevonden voor deze week/medewerker');
+      } else {
+        showError('Leeg antwoord', 'Webhook gaf geen data terug');
       }
     } catch (error) {
       console.error('Error importing production data:', error);
