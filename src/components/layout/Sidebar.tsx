@@ -194,13 +194,13 @@ const Sidebar: React.FC = () => {
 
   const sections: Section[] = [
     { 
-      title: 'HR-Beheer, 
+      title: 'Personeel', 
       icon: Activity, 
       defaultOpen: false,
       items: filteredNavigation.filter(i => ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Verzuim Beheren'].includes(i.name)) 
     },
     { 
-      title: 'Financieel', 
+      title: 'Facturatie', 
       icon: Receipt, 
       defaultOpen: false,
       items: filteredNavigation.filter(i => ['Relaties', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)) 
