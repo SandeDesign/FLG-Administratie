@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Upload,
-  Download,
   Search,
-  Calendar,
-  Euro,
   Building2,
-  User,
+  FileText,
+  Zap,
+  HardDrive,
+  X,
+  ChevronDown,
+  Download,
+  Edit2,
   CheckCircle,
   AlertCircle,
-  Clock,
-  FileText,
-  Scan,
   Trash2,
-  HardDrive,
-  Zap,
-  Edit2,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -24,8 +21,6 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
-import { InvoiceEditModal } from '../components/InvoiceEditModal';
-import { CollapsibleInvoiceCard } from '../components/CollapsibleInvoiceCard';
 import { incomingInvoiceService, IncomingInvoice } from '../services/incomingInvoiceService';
 import { uploadInvoiceToDrive } from '../services/googleDriveService';
 import { processInvoiceFile } from '../services/ocrService';
@@ -43,6 +38,12 @@ const IncomingInvoices: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<IncomingInvoice | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    supplierName: '',
+    invoiceNumber: '',
+    subtotal: 0,
+  });
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadInvoices = useCallback(async () => {
     if (!user) {
@@ -89,7 +90,6 @@ const IncomingInvoices: React.FC = () => {
         setOcrProgress(0);
 
         try {
-          // Process file with OCR
           console.log('Starting OCR processing...');
           const ocrResult = await processInvoiceFile(file, (progress) => {
             setOcrProgress(Math.round(progress));
@@ -97,7 +97,6 @@ const IncomingInvoices: React.FC = () => {
 
           console.log('OCR completed:', ocrResult);
 
-          // Upload to Google Drive with FULL OCR data
           const uploadResult = await uploadInvoiceToDrive(
             file,
             selectedCompany.id,
@@ -110,7 +109,6 @@ const IncomingInvoices: React.FC = () => {
               amount: ocrResult.invoiceData.amount,
             },
             {
-              // Pass all invoice data from OCR
               ...ocrResult.invoiceData,
               text: ocrResult.text,
               confidence: ocrResult.confidence,
@@ -118,7 +116,6 @@ const IncomingInvoices: React.FC = () => {
             }
           );
 
-          // Add to state immediately
           const newInvoice: IncomingInvoice = {
             id: uploadResult.invoiceId,
             userId: user.uid,
@@ -143,9 +140,6 @@ const IncomingInvoices: React.FC = () => {
           };
 
           setInvoices([newInvoice, ...invoices]);
-
-          console.log('Invoice saved with OCR data');
-
           success('Factuur verwerkt', `OCR klaar (${ocrResult.confidence.toFixed(1)}% accuraat)`);
         } catch (ocrError) {
           console.error('OCR error:', ocrError);
@@ -185,7 +179,6 @@ const IncomingInvoices: React.FC = () => {
 
   const handleApprove = async (invoiceId: string) => {
     if (!user) return;
-    
     try {
       await incomingInvoiceService.approveInvoice(invoiceId, user.uid);
       success('Factuur goedgekeurd', 'De factuur is goedgekeurd voor betaling');
@@ -230,14 +223,44 @@ const IncomingInvoices: React.FC = () => {
     }
   };
 
-  const handleEdit = async (invoice: IncomingInvoice, updates: Partial<IncomingInvoice>) => {
+  const handleDownload = (invoice: IncomingInvoice) => {
+    window.open(invoice.fileUrl, '_blank');
+  };
+
+  const openEditModal = (invoice: IncomingInvoice) => {
+    setEditingInvoice(invoice);
+    setEditFormData({
+      supplierName: invoice.supplierName,
+      invoiceNumber: invoice.invoiceNumber,
+      subtotal: invoice.amount,
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingInvoice) return;
+    
+    const vat = editFormData.subtotal * 0.21;
+    const total = editFormData.subtotal + vat;
+
     try {
-      await incomingInvoiceService.updateInvoice(invoice.id!, updates);
-      
-      // Update local state
+      await incomingInvoiceService.updateInvoice(editingInvoice.id!, {
+        supplierName: editFormData.supplierName,
+        invoiceNumber: editFormData.invoiceNumber,
+        amount: editFormData.subtotal,
+        vatAmount: vat,
+        totalAmount: total,
+      });
+
       const updated = invoices.map(inv =>
-        inv.id === invoice.id
-          ? { ...inv, ...updates }
+        inv.id === editingInvoice.id
+          ? {
+              ...inv,
+              supplierName: editFormData.supplierName,
+              invoiceNumber: editFormData.invoiceNumber,
+              amount: editFormData.subtotal,
+              vatAmount: vat,
+              totalAmount: total,
+            }
           : inv
       );
       setInvoices(updated);
@@ -249,27 +272,13 @@ const IncomingInvoices: React.FC = () => {
     }
   };
 
-  const handleDownload = (invoice: IncomingInvoice) => {
-    window.open(invoice.fileUrl, '_blank');
-  };
-
   const getStatusColor = (status: IncomingInvoice['status']) => {
     switch (status) {
-      case 'pending': return 'text-orange-600 bg-orange-100';
-      case 'approved': return 'text-blue-600 bg-blue-100';
-      case 'paid': return 'text-green-600 bg-green-100';
-      case 'rejected': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getStatusIcon = (status: IncomingInvoice['status']) => {
-    switch (status) {
-      case 'pending': return Clock;
-      case 'approved': return CheckCircle;
-      case 'paid': return CheckCircle;
-      case 'rejected': return AlertCircle;
-      default: return Clock;
+      case 'pending': return 'bg-orange-100 text-orange-800';
+      case 'approved': return 'bg-blue-100 text-blue-800';
+      case 'paid': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -413,7 +422,7 @@ const IncomingInvoices: React.FC = () => {
         </div>
       </Card>
 
-      {/* Invoices List */}
+      {/* Invoices List - COMPACT */}
       {filteredInvoices.length === 0 ? (
         <EmptyState
           icon={FileText}
@@ -423,135 +432,219 @@ const IncomingInvoices: React.FC = () => {
             : "Upload je eerste factuur"}
         />
       ) : (
-        <div className="grid gap-4">
-          {filteredInvoices.map((invoice) => {
-            const StatusIcon = getStatusIcon(invoice.status);
-            return (
-              <Card key={invoice.id}>
-                <div className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                          <FileText className="h-6 w-6 text-orange-600" />
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="text-lg font-medium text-gray-900">
-                            {invoice.invoiceNumber}
-                          </h3>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                            <StatusIcon className="h-3 w-3 mr-1" />
-                            {getStatusText(invoice.status)}
-                          </span>
-                          {invoice.ocrProcessed && (
-                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
-                              <Scan className="h-3 w-3 mr-1" />
-                              OCR ({(invoice as any).ocrConfidence?.toFixed(0) || 0}%)
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 mr-1" />
-                            {invoice.supplierName}
-                          </div>
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            {invoice.invoiceDate.toLocaleDateString('nl-NL')}
-                          </div>
-                        </div>
-                        <div className="mt-2 grid grid-cols-4 gap-2 text-sm">
-                          <div className="bg-gray-50 p-2 rounded">
-                            <p className="text-xs text-gray-600">Excl. BTW</p>
-                            <p className="font-semibold text-gray-900">€{((invoice as any).subtotal || invoice.totalAmount / 1.21).toFixed(2)}</p>
-                          </div>
-                          <div className="bg-gray-50 p-2 rounded">
-                            <p className="text-xs text-gray-600">BTW (21%)</p>
-                            <p className="font-semibold text-gray-900">€{((invoice as any).vatAmount || (invoice.totalAmount / 1.21 * 0.21)).toFixed(2)}</p>
-                          </div>
-                          <div className="bg-blue-50 p-2 rounded">
-                            <p className="text-xs text-blue-600">Incl. BTW</p>
-                            <p className="font-semibold text-blue-900">€{invoice.totalAmount.toFixed(2)}</p>
-                          </div>
-                          <div className="bg-gray-50 p-2 rounded">
-                            <p className="text-xs text-gray-600">Vervaldatum</p>
-                            <p className="font-semibold text-gray-900">{(invoice as any).dueDate ? new Date((invoice as any).dueDate).toLocaleDateString('nl-NL') : 'N/A'}</p>
-                          </div>
-                        </div>
-                        {invoice.status === 'rejected' && (invoice as any).rejectionReason && (
-                          <div className="mt-2 text-sm text-red-600">
-                            Afgewezen: {(invoice as any).rejectionReason}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+        <div className="space-y-1">
+          {filteredInvoices.map((invoice) => (
+            <div
+              key={invoice.id}
+              className="border border-gray-200 rounded-lg hover:shadow-sm transition-all"
+            >
+              {/* Compact Header - Always Visible */}
+              <div
+                className="p-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                onClick={() => setExpandedId(expandedId === invoice.id ? null : invoice.id)}
+              >
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <ChevronDown
+                    className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${
+                      expandedId === invoice.id ? 'rotate-180' : ''
+                    }`}
+                  />
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={Download}
-                        onClick={() => handleDownload(invoice)}
-                      >
-                        Download
-                      </Button>
-                      {invoice.status === 'pending' && (
+                      <span className="font-medium text-sm text-gray-900">
+                        {invoice.invoiceNumber}
+                      </span>
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${getStatusColor(invoice.status)}`}>
+                        {getStatusText(invoice.status)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">
+                      {invoice.supplierName} • {invoice.invoiceDate.toLocaleDateString('nl-NL')}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0 ml-2">
+                  <p className="font-semibold text-sm text-gray-900">
+                    €{invoice.totalAmount.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Expanded Details */}
+              {expandedId === invoice.id && (
+                <div className="border-t border-gray-200 bg-gray-50 p-3 space-y-3">
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="bg-white p-2 rounded border border-gray-200">
+                      <p className="text-gray-600">Excl. BTW</p>
+                      <p className="font-semibold text-gray-900">€{invoice.amount.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded border border-gray-200">
+                      <p className="text-gray-600">BTW</p>
+                      <p className="font-semibold text-gray-900">€{invoice.vatAmount.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-blue-50 p-2 rounded border border-blue-200">
+                      <p className="text-blue-600">Incl. BTW</p>
+                      <p className="font-semibold text-blue-900">€{invoice.totalAmount.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  {invoice.status === 'rejected' && (invoice as any).rejectionReason && (
+                    <div className="bg-red-50 p-2 rounded text-xs text-red-700">
+                      <strong>Reden:</strong> {(invoice as any).rejectionReason}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={Download}
+                      onClick={() => handleDownload(invoice)}
+                      className="text-xs py-1"
+                    >
+                      Download
+                    </Button>
+
+                    {invoice.status === 'pending' && (
+                      <>
                         <Button
                           variant="ghost"
                           size="sm"
                           icon={Edit2}
-                          onClick={() => handleEdit(invoice)}
+                          onClick={() => openEditModal(invoice)}
+                          className="text-xs py-1"
                         >
                           Bewerken
                         </Button>
-                      )}
-                      {invoice.status === 'pending' && (
-                        <>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            icon={CheckCircle}
-                            onClick={() => handleApprove(invoice.id!)}
-                          >
-                            Goedkeuren
-                          </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            icon={AlertCircle}
-                            onClick={() => handleReject(invoice.id!)}
-                          >
-                            Afwijzen
-                          </Button>
-                        </>
-                      )}
-                      {invoice.status === 'approved' && (
                         <Button
                           variant="primary"
                           size="sm"
                           icon={CheckCircle}
-                          onClick={() => handleMarkAsPaid(invoice.id!)}
+                          onClick={() => handleApprove(invoice.id!)}
+                          className="text-xs py-1"
                         >
-                          Betaald
+                          Goedkeuren
                         </Button>
-                      )}
-                      {(invoice.status === 'rejected' || invoice.status === 'pending') && (
                         <Button
                           variant="danger"
                           size="sm"
-                          icon={Trash2}
-                          onClick={() => handleDelete(invoice.id!)}
+                          icon={AlertCircle}
+                          onClick={() => handleReject(invoice.id!)}
+                          className="text-xs py-1"
                         >
-                          Verwijderen
+                          Afwijzen
                         </Button>
-                      )}
-                    </div>
+                      </>
+                    )}
+
+                    {invoice.status === 'approved' && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={CheckCircle}
+                        onClick={() => handleMarkAsPaid(invoice.id!)}
+                        className="text-xs py-1"
+                      >
+                        Betaald
+                      </Button>
+                    )}
+
+                    {(invoice.status === 'rejected' || invoice.status === 'pending') && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        icon={Trash2}
+                        onClick={() => handleDelete(invoice.id!)}
+                        className="text-xs py-1"
+                      >
+                        Verwijderen
+                      </Button>
+                    )}
                   </div>
                 </div>
-              </Card>
-            );
-          })}
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingInvoice && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">Factuur bewerken</h2>
+                <button
+                  onClick={() => setEditingInvoice(null)}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Leverancier
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.supplierName}
+                    onChange={(e) => setEditFormData({...editFormData, supplierName: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Factuurnummer
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.invoiceNumber}
+                    onChange={(e) => setEditFormData({...editFormData, invoiceNumber: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Excl. BTW (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.subtotal}
+                    onChange={(e) => setEditFormData({...editFormData, subtotal: parseFloat(e.target.value)})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="bg-gray-50 p-3 rounded text-sm">
+                  <p className="text-gray-600">BTW 21%: €{(editFormData.subtotal * 0.21).toFixed(2)}</p>
+                  <p className="font-semibold text-gray-900">Totaal: €{(editFormData.subtotal * 1.21).toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setEditingInvoice(null)}
+                  className="flex-1"
+                >
+                  Annuleren
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleSaveEdit}
+                  className="flex-1"
+                >
+                  Opslaan
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
       )}
     </div>
