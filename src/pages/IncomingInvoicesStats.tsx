@@ -515,7 +515,7 @@ const IncomingInvoicesStats: React.FC = () => {
                               <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600">
                                 <p className="text-xs text-gray-600 dark:text-gray-400">Excl. BTW</p>
                                 <p className="font-bold text-gray-900 dark:text-white">
-                                  {formatCurrency(invoice.amount)}
+                                  {formatCurrency(invoice.subtotal || invoice.amount || 0)}
                                 </p>
                               </div>
                               <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600">
