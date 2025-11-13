@@ -145,7 +145,7 @@ const IncomingInvoices: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inkomende Facturen</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Inkoopbonnen Uploaden</h1>
           <p className="mt-1 text-sm text-gray-500">
             Upload facturen voor {selectedCompany.name} - automatische OCR + Google Drive
           </p>
