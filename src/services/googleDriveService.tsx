@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, Timestamp, addDoc, collection } from 'firebase/firestore';
 
 const CLIENT_ID = '896567545879-t7ps2toen24v8nrjn5ulf59esnjg1hok.apps.googleusercontent.com';
 const REDIRECT_URI = window.location.origin;
@@ -320,16 +320,39 @@ export const uploadInvoiceToDrive = async (
     // Upload file
     const uploadResult = await uploadFileToDrive(
       file,
-      monthFolderId,
+      productieFolderId,
       token,
       `${metadata?.invoiceNumber || 'INV'}-${Date.now()}.${file.name.split('.').pop()}`
     );
 
     console.log(`✓ Upload complete: ${uploadResult.webViewLink}`);
 
-    // Return invoice data (no Firestore save, just Drive data)
+    // Save to Firestore - OCR data only
+    const now = new Date();
+    const invoiceData = {
+      userId,
+      companyId,
+      supplierName: ocrData?.supplierName || metadata?.supplierName || 'Onbekend',
+      invoiceNumber: ocrData?.invoiceNumber || metadata?.invoiceNumber || `INV-${Date.now()}`,
+      amount: ocrData?.amount || metadata?.amount || 0,
+      totalAmount: (ocrData?.amount || metadata?.amount || 0) * 1.21,
+      vatAmount: (ocrData?.amount || metadata?.amount || 0) * 0.21,
+      invoiceDate: Timestamp.fromDate(ocrData?.date || now),
+      dueDate: Timestamp.fromDate(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)),
+      status: 'pending',
+      driveFileId: uploadResult.fileId,
+      driveWebLink: uploadResult.webViewLink,
+      ocrData: ocrData || null,
+      ocrConfidence: ocrData?.confidence || 0,
+      createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now)
+    };
+
+    const docRef = await addDoc(collection(db, 'incomingInvoices'), invoiceData);
+    console.log(`✓ OCR data saved to Firestore: ${docRef.id}`);
+
     return {
-      invoiceId: uploadResult.fileId,
+      invoiceId: docRef.id,
       driveFileId: uploadResult.fileId,
       driveWebLink: uploadResult.webViewLink,
     };
