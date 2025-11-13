@@ -38,11 +38,7 @@ const IncomingInvoices: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<IncomingInvoice | null>(null);
-  const [editFormData, setEditFormData] = useState({
-    supplierName: '',
-    invoiceNumber: '',
-    subtotal: 0,
-  });
+  const [editFormData, setEditFormData] = useState<IncomingInvoice | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadInvoices = useCallback(async () => {
@@ -226,7 +222,6 @@ const IncomingInvoices: React.FC = () => {
   };
 
   const handleDownload = (invoice: IncomingInvoice) => {
-    // ✅ FIXED: Controleer op fileUrl en driveWebLink, open in nieuw tabblad
     const downloadUrl = invoice.fileUrl || invoice.driveWebLink;
     if (downloadUrl) {
       window.open(downloadUrl, '_blank');
@@ -237,26 +232,20 @@ const IncomingInvoices: React.FC = () => {
 
   const openEditModal = (invoice: IncomingInvoice) => {
     setEditingInvoice(invoice);
-    setEditFormData({
-      supplierName: invoice.supplierName || '',
-      invoiceNumber: invoice.invoiceNumber || '',
-      subtotal: invoice.amount || 0,
-    });
+    setEditFormData({ ...invoice });
   };
 
   const handleSaveEdit = async () => {
-    if (!editingInvoice) return;
-    
-    const vat = Math.round(editFormData.subtotal * 0.21 * 100) / 100;
-    const total = editFormData.subtotal + vat;
+    if (!editingInvoice || !editFormData) return;
 
     try {
       await incomingInvoiceService.updateInvoice(editingInvoice.id!, {
         supplierName: editFormData.supplierName,
         invoiceNumber: editFormData.invoiceNumber,
-        amount: editFormData.subtotal,
-        vatAmount: vat,
-        totalAmount: total,
+        amount: editFormData.amount,
+        vatAmount: editFormData.vatAmount,
+        totalAmount: editFormData.totalAmount,
+        description: editFormData.description,
       });
 
       const updated = invoices.map(inv =>
@@ -265,15 +254,17 @@ const IncomingInvoices: React.FC = () => {
               ...inv,
               supplierName: editFormData.supplierName,
               invoiceNumber: editFormData.invoiceNumber,
-              amount: editFormData.subtotal,
-              vatAmount: vat,
-              totalAmount: total,
+              amount: editFormData.amount,
+              vatAmount: editFormData.vatAmount,
+              totalAmount: editFormData.totalAmount,
+              description: editFormData.description,
               updatedAt: new Date(),
             }
           : inv
       );
       setInvoices(updated);
       setEditingInvoice(null);
+      setEditFormData(null);
 
       success('Factuur bijgewerkt', 'De gegevens zijn opgeslagen');
     } catch (error) {
@@ -432,7 +423,7 @@ const IncomingInvoices: React.FC = () => {
         </div>
       </Card>
 
-      {/* Invoices List - COMPACT */}
+      {/* Invoices List */}
       {filteredInvoices.length === 0 ? (
         <EmptyState
           icon={FileText}
@@ -448,7 +439,7 @@ const IncomingInvoices: React.FC = () => {
               key={invoice.id}
               className="border border-gray-200 rounded-lg hover:shadow-sm transition-all"
             >
-              {/* Compact Header - Always Visible */}
+              {/* Compact Header */}
               <div
                 className="p-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
                 onClick={() => setExpandedId(expandedId === invoice.id ? null : invoice.id)}
@@ -579,14 +570,17 @@ const IncomingInvoices: React.FC = () => {
       )}
 
       {/* Edit Modal */}
-      {editingInvoice && (
+      {editingInvoice && editFormData && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-gray-900">Factuur bewerken</h2>
                 <button
-                  onClick={() => setEditingInvoice(null)}
+                  onClick={() => {
+                    setEditingInvoice(null);
+                    setEditFormData(null);
+                  }}
                   className="p-1 hover:bg-gray-100 rounded"
                 >
                   <X className="h-5 w-5" />
@@ -600,7 +594,7 @@ const IncomingInvoices: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={editFormData.supplierName}
+                    value={editFormData.supplierName || ''}
                     onChange={(e) => setEditFormData({...editFormData, supplierName: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -612,7 +606,7 @@ const IncomingInvoices: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={editFormData.invoiceNumber}
+                    value={editFormData.invoiceNumber || ''}
                     onChange={(e) => setEditFormData({...editFormData, invoiceNumber: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
@@ -625,11 +619,46 @@ const IncomingInvoices: React.FC = () => {
                   <input
                     type="number"
                     step="0.01"
-                    value={editFormData.subtotal || ''}
-                    onChange={(e) => {
-                      const val = e.target.value ? parseFloat(e.target.value) : 0;
-                      setEditFormData({...editFormData, subtotal: val});
-                    }}
+                    value={editFormData.amount ?? ''}
+                    onChange={(e) => setEditFormData({...editFormData, amount: parseFloat(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    BTW (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.vatAmount ?? ''}
+                    onChange={(e) => setEditFormData({...editFormData, vatAmount: parseFloat(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Incl. BTW (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.totalAmount ?? ''}
+                    onChange={(e) => setEditFormData({...editFormData, totalAmount: parseFloat(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Beschrijving
+                  </label>
+                  <textarea
+                    value={editFormData.description || ''}
+                    onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                    rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -638,15 +667,15 @@ const IncomingInvoices: React.FC = () => {
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="bg-white p-2 rounded border border-gray-200">
                       <p className="text-gray-600">Excl. BTW</p>
-                      <p className="font-semibold text-gray-900">€{(editFormData.subtotal || 0).toFixed(2)}</p>
+                      <p className="font-semibold text-gray-900">€{(editFormData.amount || 0).toFixed(2)}</p>
                     </div>
                     <div className="bg-white p-2 rounded border border-gray-200">
                       <p className="text-gray-600">BTW</p>
-                      <p className="font-semibold text-gray-900">€{(Math.round(editFormData.subtotal * 0.21 * 100) / 100).toFixed(2)}</p>
+                      <p className="font-semibold text-gray-900">€{(editFormData.vatAmount || 0).toFixed(2)}</p>
                     </div>
                     <div className="bg-blue-50 p-2 rounded border border-blue-200">
                       <p className="text-blue-600">Incl. BTW</p>
-                      <p className="font-semibold text-blue-900">€{(editFormData.subtotal + Math.round(editFormData.subtotal * 0.21 * 100) / 100).toFixed(2)}</p>
+                      <p className="font-semibold text-blue-900">€{(editFormData.totalAmount || 0).toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
@@ -655,7 +684,10 @@ const IncomingInvoices: React.FC = () => {
               <div className="flex gap-2 mt-4">
                 <Button
                   variant="ghost"
-                  onClick={() => setEditingInvoice(null)}
+                  onClick={() => {
+                    setEditingInvoice(null);
+                    setEditFormData(null);
+                  }}
                   className="flex-1"
                 >
                   Annuleren
