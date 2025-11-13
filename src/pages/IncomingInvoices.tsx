@@ -122,7 +122,7 @@ const IncomingInvoices: React.FC = () => {
             companyId: selectedCompany.id,
             supplierName: ocrResult.invoiceData.supplierName,
             invoiceNumber: ocrResult.invoiceData.invoiceNumber,
-            amount: ocrResult.invoiceData.amount || 0,
+            amount: ocrResult.invoiceData.subtotalExclVat || 0,
             vatAmount: ocrResult.invoiceData.vatAmount || 0,
             totalAmount: ocrResult.invoiceData.totalInclVat || 0,
             description: `Factuur van ${ocrResult.invoiceData.supplierName}`,
