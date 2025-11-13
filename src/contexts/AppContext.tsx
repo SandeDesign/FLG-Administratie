@@ -5,6 +5,8 @@ import { getCompanies, getEmployees, getBranches, getPendingLeaveApprovals, getU
 import { getPendingExpenses } from '../services/firebase';
 import { getPayrollCalculations } from '../services/payrollService';
 import { getPendingTimesheets } from '../services/timesheetService';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface AppContextType {
   companies: Company[];
@@ -136,7 +138,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.log('Loaded employees:', employeesData.length, employeesData);
       console.log('Loaded branches:', branchesData.length, branchesData);
 
-      setCompanies(companiesData);
+      // ⭐ NIEUW: Verrijk companies met bankAccount en andere velden van Firestore
+      const enrichedCompanies = await Promise.all(
+        companiesData.map(async (company) => {
+          try {
+            const companyDocRef = doc(db, 'companies', company.id);
+            const companyDocSnap = await getDoc(companyDocRef);
+            const companyData = companyDocSnap.data();
+            
+            return {
+              ...company,
+              bankAccount: companyData?.bankAccount || '' // ✅ Voeg bankAccount toe
+            };
+          } catch (error) {
+            console.error(`Error enriching company ${company.id}:`, error);
+            return company; // Fallback: return original company
+          }
+        })
+      );
+
+      setCompanies(enrichedCompanies);
       setEmployees(employeesData);
       setBranches(branchesData);
 
@@ -161,7 +182,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (userRole === 'employee' && currentEmployeeId) {
         const currentEmployee = employeesData.find(e => e.id === currentEmployeeId);
         if (currentEmployee) {
-          const employeeCompany = companiesData.find(c => c.id === currentEmployee.companyId);
+          const employeeCompany = enrichedCompanies.find(c => c.id === currentEmployee.companyId);
           if (employeeCompany) {
             setSelectedCompany(prev => {
               if (prev?.id !== employeeCompany.id) {
@@ -171,12 +192,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
           }
         }
-      } else if (companiesData.length > 0) {
+      } else if (enrichedCompanies.length > 0) {
         const companyToSelect = defaultCompanyId 
-          ? companiesData.find(c => c.id === defaultCompanyId) 
-          : companiesData[0];
+          ? enrichedCompanies.find(c => c.id === defaultCompanyId) 
+          : enrichedCompanies[0];
         
-        setSelectedCompany(companyToSelect || companiesData[0]);
+        setSelectedCompany(companyToSelect || enrichedCompanies[0]);
         
         // Save to localStorage as fallback
         if (companyToSelect) {
@@ -185,7 +206,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (userRole === 'admin') {
-        await calculateDashboardStats(companiesData, employeesData, branchesData, adminUserId);
+        await calculateDashboardStats(enrichedCompanies, employeesData, branchesData, adminUserId);
       }
     } catch (error) {
       console.error('Error loading app data:', error);
