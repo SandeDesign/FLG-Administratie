@@ -24,6 +24,7 @@ import {
   UserCheck,
   Briefcase,
   BarChart3,
+  Factory,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -55,7 +56,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
   const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined; // ✅ NEW
 
-  // ✅ NEW: Updated menu with company types
+  // ✅ UPDATED: Menu with Statistieken voor beide company types
   const menuCategories: MenuCategory[] = [
     {
       title: 'HR Beheer',
@@ -73,16 +74,17 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       icon: Receipt,
       items: [
         { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project'], color: 'text-indigo-600' },
-        { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project'], color: 'text-green-600' },
-        { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project'], color: 'text-orange-600' },
+        { name: 'Verkoop Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project'], color: 'text-green-600' },
+        { name: 'Inkoopbonnen', href: '/incoming-invoices-stats', icon: BarChart3, roles: ['admin'], companyTypes: ['employer', 'project'], color: 'text-purple-600' },
+        { name: 'Facturen Uploaden', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project'], color: 'text-orange-600' },
       ]
     },
     {
       title: 'Project',
-      icon: Briefcase,
+      icon: Factory,
       items: [
-        { name: 'Productie', href: '/project-production', icon: Briefcase, roles: ['admin'], companyTypes: ['project'], color: 'text-cyan-600' },
-        { name: 'Statistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['project'], color: 'text-purple-600' },
+        { name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin'], companyTypes: ['project'], color: 'text-cyan-600' },
+        { name: 'Statistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['employer', 'project'], color: 'text-purple-600' },
       ]
     },
     {
