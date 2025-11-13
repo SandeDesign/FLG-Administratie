@@ -5,17 +5,12 @@ import {
   AlertCircle,
   XCircle,
   Search,
-  Filter,
   Download,
   Eye,
   Edit2,
   Trash2,
-  ArrowUpRight,
   ArrowDownLeft,
-  Calendar,
-  Euro,
   TrendingUp,
-  ChevronDown,
   X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,7 +32,6 @@ const IncomingInvoicesStats: React.FC = () => {
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
 
-  // State Management
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,12 +39,11 @@ const IncomingInvoicesStats: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'status'>('date');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [editingInvoice, setEditingInvoice] = useState<IncomingInvoice | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editFormData, setEditFormData] = useState<Partial<IncomingInvoice>>({});
+  const [editFormData, setEditFormData] = useState<IncomingInvoice | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // Load Invoices
+  // Load Invoices from Firestore
   const loadInvoices = useCallback(async () => {
     if (!user || !selectedCompany) {
       setLoading(false);
@@ -76,13 +69,12 @@ const IncomingInvoicesStats: React.FC = () => {
     loadInvoices();
   }, [loadInvoices]);
 
-  // Filter and Sort Logic
+  // Filter and Sort
   const filteredInvoices = invoices
     .filter(invoice => {
       const matchesSearch =
         invoice.supplierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.description.toLowerCase().includes(searchTerm.toLowerCase());
+        invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
         statusFilter === 'all' || invoice.status === statusFilter;
@@ -101,7 +93,7 @@ const IncomingInvoicesStats: React.FC = () => {
       }
     });
 
-  // Statistics Calculation
+  // Statistics
   const statistics = {
     total: invoices.reduce((sum, inv) => sum + inv.totalAmount, 0),
     pending: invoices.filter(inv => inv.status === 'pending').reduce((sum, inv) => sum + inv.totalAmount, 0),
@@ -113,7 +105,7 @@ const IncomingInvoicesStats: React.FC = () => {
     paidCount: invoices.filter(inv => inv.status === 'paid').length,
   };
 
-  // Status Badge Component
+  // Status Badge
   const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     const statusConfig = {
       pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock, label: 'In behandeling' },
@@ -164,7 +156,6 @@ const IncomingInvoicesStats: React.FC = () => {
       success('Factuur goedgekeurd');
     } catch (err) {
       showError('Kon factuur niet goedkeuren');
-      console.error('Error approving invoice:', err);
     } finally {
       setIsSaving(false);
     }
@@ -199,70 +190,67 @@ const IncomingInvoicesStats: React.FC = () => {
       success('Factuur gemarkeerd als betaald');
     } catch (err) {
       showError('Kon factuur niet bijwerken');
-      console.error('Error marking as paid:', err);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Handle Edit
-  const handleEdit = (invoice: IncomingInvoice) => {
+  // Open Edit Modal
+  const openEdit = (invoice: IncomingInvoice) => {
     setEditingInvoice(invoice);
-    setEditFormData(invoice);
-    setShowEditModal(true);
+    setEditFormData({ ...invoice });
   };
 
-  // Handle Save Edit
+  // Save Edit
   const handleSaveEdit = async () => {
-    if (!editingInvoice || !editingInvoice.id) return;
+    if (!editingInvoice || !editFormData || !editingInvoice.id) return;
 
     try {
       setIsSaving(true);
       const invoiceRef = doc(db, 'incomingInvoices', editingInvoice.id);
 
       const updateData: any = {
-        ...editFormData,
-        updatedAt: Timestamp.fromDate(new Date()),
-      };
-
-      if (editFormData.invoiceDate) {
-        updateData.invoiceDate = Timestamp.fromDate(
+        supplierName: editFormData.supplierName,
+        invoiceNumber: editFormData.invoiceNumber,
+        amount: editFormData.amount,
+        vatAmount: editFormData.vatAmount,
+        totalAmount: editFormData.totalAmount,
+        description: editFormData.description,
+        supplierEmail: editFormData.supplierEmail,
+        invoiceDate: Timestamp.fromDate(
           editFormData.invoiceDate instanceof Date
             ? editFormData.invoiceDate
             : new Date(editFormData.invoiceDate)
-        );
-      }
-
-      if (editFormData.dueDate) {
-        updateData.dueDate = Timestamp.fromDate(
+        ),
+        dueDate: Timestamp.fromDate(
           editFormData.dueDate instanceof Date
             ? editFormData.dueDate
             : new Date(editFormData.dueDate)
-        );
-      }
+        ),
+        updatedAt: Timestamp.fromDate(new Date()),
+      };
 
       await updateDoc(invoiceRef, updateData);
 
       setInvoices(prev =>
         prev.map(inv =>
           inv.id === editingInvoice.id
-            ? { ...inv, ...editFormData, updatedAt: new Date() }
+            ? { ...editFormData, id: editingInvoice.id }
             : inv
         )
       );
 
       success('Factuur bijgewerkt');
-      setShowEditModal(false);
       setEditingInvoice(null);
+      setEditFormData(null);
     } catch (err) {
       showError('Kon factuur niet bijwerken');
-      console.error('Error saving edit:', err);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Handle Delete
+  // Delete Invoice
   const handleDelete = async (invoiceId: string) => {
     if (!window.confirm('Weet je zeker dat je deze factuur wilt verwijderen?')) return;
 
@@ -275,13 +263,21 @@ const IncomingInvoicesStats: React.FC = () => {
       success('Factuur verwijderd');
     } catch (err) {
       showError('Kon factuur niet verwijderen');
-      console.error('Error deleting invoice:', err);
     } finally {
       setIsDeleting(null);
     }
   };
 
-  // Format Currency
+  // Download
+  const handleDownload = (invoice: IncomingInvoice) => {
+    const url = invoice.fileUrl || invoice.driveWebLink;
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      showError('Download niet beschikbaar');
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nl-NL', {
       style: 'currency',
@@ -289,7 +285,6 @@ const IncomingInvoicesStats: React.FC = () => {
     }).format(amount);
   };
 
-  // Format Date
   const formatDate = (date: Date | string) => {
     return new Intl.DateTimeFormat('nl-NL', {
       year: 'numeric',
@@ -365,56 +360,50 @@ const IncomingInvoicesStats: React.FC = () => {
         ))}
       </div>
 
-      {/* Filters and Search */}
+      {/* Filters */}
       <Card className="p-4">
-        <div className="space-y-4">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Zoeken op leverancier, factuurnummer..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-
-            {/* Filter */}
-            <div className="flex gap-2">
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="all">Alle statussen</option>
-                <option value="pending">In behandeling</option>
-                <option value="approved">Goedgekeurd</option>
-                <option value="paid">Betaald</option>
-                <option value="rejected">Afgewezen</option>
-              </select>
-
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="date">Sorteer op datum</option>
-                <option value="amount">Sorteer op bedrag</option>
-                <option value="status">Sorteer op status</option>
-              </select>
-            </div>
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Zoeken op leverancier, factuurnummer..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+            />
           </div>
+
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+          >
+            <option value="all">Alle statussen</option>
+            <option value="pending">In behandeling</option>
+            <option value="approved">Goedgekeurd</option>
+            <option value="paid">Betaald</option>
+            <option value="rejected">Afgewezen</option>
+          </select>
+
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as any)}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+          >
+            <option value="date">Sorteer op datum</option>
+            <option value="amount">Sorteer op bedrag</option>
+            <option value="status">Sorteer op status</option>
+          </select>
         </div>
       </Card>
 
-      {/* Invoices Table */}
+      {/* Table */}
       {filteredInvoices.length === 0 ? (
         <EmptyState
           icon={AlertCircle}
           title="Geen facturen gevonden"
-          description="Er zijn nog geen inkomende facturen geregistreerd"
+          description="Er zijn nog geen inkomende facturen"
         />
       ) : (
         <Card className="overflow-hidden">
@@ -422,24 +411,12 @@ const IncomingInvoicesStats: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">
-                    Leverancier
-                  </th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">
-                    Factuurnummer
-                  </th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">
-                    Bedrag
-                  </th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">
-                    Datum
-                  </th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white">
-                    Acties
-                  </th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">Leverancier</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">Factuurnummer</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">Bedrag</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">Datum</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-900 dark:text-white">Status</th>
+                  <th className="px-6 py-3 text-right font-semibold text-gray-900 dark:text-white">Acties</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -464,13 +441,8 @@ const IncomingInvoicesStats: React.FC = () => {
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end items-center gap-2">
                           <button
-                            onClick={() =>
-                              setExpandedRow(
-                                expandedRow === invoice.id ? null : invoice.id
-                              )
-                            }
+                            onClick={() => setExpandedRow(expandedRow === invoice.id ? null : invoice.id)}
                             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                            title="Details weergeven"
                           >
                             <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                           </button>
@@ -481,14 +453,12 @@ const IncomingInvoicesStats: React.FC = () => {
                                 onClick={() => handleApprove(invoice)}
                                 disabled={isSaving}
                                 className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors disabled:opacity-50"
-                                title="Goedkeuren"
                               >
                                 <CheckCircle className="w-4 h-4 text-green-600" />
                               </button>
                               <button
-                                onClick={() => handleEdit(invoice)}
+                                onClick={() => openEdit(invoice)}
                                 className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
-                                title="Bewerken"
                               >
                                 <Edit2 className="w-4 h-4 text-blue-600" />
                               </button>
@@ -500,7 +470,6 @@ const IncomingInvoicesStats: React.FC = () => {
                               onClick={() => handleMarkPaid(invoice)}
                               disabled={isSaving}
                               className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900 rounded-lg transition-colors disabled:opacity-50"
-                              title="Gemarkeerd als betaald"
                             >
                               <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
                             </button>
@@ -510,7 +479,6 @@ const IncomingInvoicesStats: React.FC = () => {
                             onClick={() => handleDelete(invoice.id!)}
                             disabled={isDeleting === invoice.id}
                             className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors disabled:opacity-50"
-                            title="Verwijderen"
                           >
                             <Trash2 className="w-4 h-4 text-red-600" />
                           </button>
@@ -518,92 +486,62 @@ const IncomingInvoicesStats: React.FC = () => {
                       </td>
                     </tr>
 
-                    {/* Expanded Details Row */}
                     {expandedRow === invoice.id && (
                       <tr className="bg-gray-50 dark:bg-gray-700/50">
                         <td colSpan={6} className="px-6 py-4">
                           <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                               <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  Beschrijving
-                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Beschrijving</p>
                                 <p className="font-medium text-gray-900 dark:text-white">
                                   {invoice.description}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  Leverancier e-mail
-                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">E-mail</p>
                                 <p className="font-medium text-gray-900 dark:text-white">
-                                  {invoice.supplierEmail || 'Niet ingevuld'}
+                                  {invoice.supplierEmail || '-'}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  Vervaldatum
-                                </p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Vervaldatum</p>
                                 <p className="font-medium text-gray-900 dark:text-white">
                                   {formatDate(invoice.dueDate)}
                                 </p>
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  Subtotaal
-                                </p>
-                                <p className="font-medium text-gray-900 dark:text-white">
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600">
+                                <p className="text-xs text-gray-600 dark:text-gray-400">Excl. BTW</p>
+                                <p className="font-bold text-gray-900 dark:text-white">
                                   {formatCurrency(invoice.amount)}
                                 </p>
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  BTW ({invoice.amount ? ((invoice.vatAmount / invoice.amount) * 100).toFixed(0) : 0}%)
-                                </p>
-                                <p className="font-medium text-gray-900 dark:text-white">
+                              <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600">
+                                <p className="text-xs text-gray-600 dark:text-gray-400">BTW</p>
+                                <p className="font-bold text-gray-900 dark:text-white">
                                   {formatCurrency(invoice.vatAmount)}
                                 </p>
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  Totaalbedrag
-                                </p>
-                                <p className="font-bold text-gray-900 dark:text-white text-lg">
+                              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded border border-blue-200 dark:border-blue-700">
+                                <p className="text-xs text-blue-600 dark:text-blue-400">Incl. BTW</p>
+                                <p className="font-bold text-blue-900 dark:text-blue-200">
                                   {formatCurrency(invoice.totalAmount)}
                                 </p>
                               </div>
                             </div>
 
-                            {invoice.ocrProcessed && invoice.ocrData && (
-                              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-                                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                  OCR Gegevens
-                                </p>
-                                <div className="bg-white dark:bg-gray-800 rounded p-3 text-sm space-y-1">
-                                  <p>
-                                    <span className="text-gray-600 dark:text-gray-400">
-                                      Betrouwbaarheid:
-                                    </span>{' '}
-                                    <span className="font-medium text-gray-900 dark:text-white">
-                                      {(invoice.ocrData.confidence * 100).toFixed(0)}%
-                                    </span>
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-
-                            {invoice.approvedAt && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
-                                Goedgekeurd op {formatDate(invoice.approvedAt)} door{' '}
-                                {invoice.approvedBy || 'onbekend'}
-                              </div>
-                            )}
-
-                            {invoice.paidAt && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Betaald op {formatDate(invoice.paidAt)}
-                              </div>
-                            )}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                icon={Download}
+                                onClick={() => handleDownload(invoice)}
+                              >
+                                Download
+                              </Button>
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -617,22 +555,23 @@ const IncomingInvoicesStats: React.FC = () => {
       )}
 
       {/* Edit Modal */}
-      {showEditModal && editingInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Factuur bewerken
-              </h2>
+      {editingInvoice && editFormData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Factuur bewerken</h2>
               <button
-                onClick={() => setShowEditModal(false)}
+                onClick={() => {
+                  setEditingInvoice(null);
+                  setEditFormData(null);
+                }}
                 className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
+            <div className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -640,13 +579,8 @@ const IncomingInvoicesStats: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={editFormData.supplierName || ''}
-                    onChange={e =>
-                      setEditFormData({
-                        ...editFormData,
-                        supplierName: e.target.value,
-                      })
-                    }
+                    value={editFormData.supplierName ?? ''}
+                    onChange={e => setEditFormData({ ...editFormData, supplierName: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   />
                 </div>
@@ -657,31 +591,59 @@ const IncomingInvoicesStats: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={editFormData.invoiceNumber || ''}
-                    onChange={e =>
-                      setEditFormData({
-                        ...editFormData,
-                        invoiceNumber: e.target.value,
-                      })
-                    }
+                    value={editFormData.invoiceNumber ?? ''}
+                    onChange={e => setEditFormData({ ...editFormData, invoiceNumber: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Bedrag
+                    Excl. BTW (€)
                   </label>
                   <input
                     type="number"
                     step="0.01"
-                    value={editFormData.amount || 0}
-                    onChange={e =>
-                      setEditFormData({
-                        ...editFormData,
-                        amount: parseFloat(e.target.value),
-                      })
-                    }
+                    value={editFormData.amount ?? ''}
+                    onChange={e => setEditFormData({ ...editFormData, amount: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    BTW (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.vatAmount ?? ''}
+                    onChange={e => setEditFormData({ ...editFormData, vatAmount: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Incl. BTW (€)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.totalAmount ?? ''}
+                    onChange={e => setEditFormData({ ...editFormData, totalAmount: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    value={editFormData.supplierEmail ?? ''}
+                    onChange={e => setEditFormData({ ...editFormData, supplierEmail: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   />
                 </div>
@@ -694,17 +656,10 @@ const IncomingInvoicesStats: React.FC = () => {
                     type="date"
                     value={
                       editFormData.invoiceDate
-                        ? new Date(editFormData.invoiceDate)
-                          .toISOString()
-                          .split('T')[0]
+                        ? new Date(editFormData.invoiceDate).toISOString().split('T')[0]
                         : ''
                     }
-                    onChange={e =>
-                      setEditFormData({
-                        ...editFormData,
-                        invoiceDate: new Date(e.target.value),
-                      })
-                    }
+                    onChange={e => setEditFormData({ ...editFormData, invoiceDate: new Date(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   />
                 </div>
@@ -717,40 +672,12 @@ const IncomingInvoicesStats: React.FC = () => {
                     type="date"
                     value={
                       editFormData.dueDate
-                        ? new Date(editFormData.dueDate)
-                          .toISOString()
-                          .split('T')[0]
+                        ? new Date(editFormData.dueDate).toISOString().split('T')[0]
                         : ''
                     }
-                    onChange={e =>
-                      setEditFormData({
-                        ...editFormData,
-                        dueDate: new Date(e.target.value),
-                      })
-                    }
+                    onChange={e => setEditFormData({ ...editFormData, dueDate: new Date(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={editFormData.status || 'pending'}
-                    onChange={e =>
-                      setEditFormData({
-                        ...editFormData,
-                        status: e.target.value as any,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="pending">In behandeling</option>
-                    <option value="approved">Goedgekeurd</option>
-                    <option value="paid">Betaald</option>
-                    <option value="rejected">Afgewezen</option>
-                  </select>
                 </div>
               </div>
 
@@ -759,23 +686,45 @@ const IncomingInvoicesStats: React.FC = () => {
                   Beschrijving
                 </label>
                 <textarea
-                  value={editFormData.description || ''}
-                  onChange={e =>
-                    setEditFormData({
-                      ...editFormData,
-                      description: e.target.value,
-                    })
-                  }
+                  value={editFormData.description ?? ''}
+                  onChange={e => setEditFormData({ ...editFormData, description: e.target.value })}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
+
+              <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Preview</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-white dark:bg-gray-700 p-3 rounded">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Excl. BTW</p>
+                    <p className="font-bold text-gray-900 dark:text-white">
+                      {formatCurrency(editFormData.amount || 0)}
+                    </p>
+                  </div>
+                  <div className="bg-white dark:bg-gray-700 p-3 rounded">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">BTW</p>
+                    <p className="font-bold text-gray-900 dark:text-white">
+                      {formatCurrency(editFormData.vatAmount || 0)}
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded">
+                    <p className="text-xs text-blue-600 dark:text-blue-400">Incl. BTW</p>
+                    <p className="font-bold text-blue-900 dark:text-blue-200">
+                      {formatCurrency(editFormData.totalAmount || 0)}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
               <Button
                 variant="secondary"
-                onClick={() => setShowEditModal(false)}
+                onClick={() => {
+                  setEditingInvoice(null);
+                  setEditFormData(null);
+                }}
               >
                 Annuleren
               </Button>
