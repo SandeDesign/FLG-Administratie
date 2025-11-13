@@ -617,15 +617,24 @@ const IncomingInvoices: React.FC = () => {
                   <input
                     type="number"
                     step="0.01"
-                    value={editFormData.subtotal}
-                    onChange={(e) => setEditFormData({...editFormData, subtotal: parseFloat(e.target.value)})}
+                    value={editFormData.subtotal || ''}
+                    onChange={(e) => {
+                      const val = e.target.value ? parseFloat(e.target.value) : 0;
+                      setEditFormData({...editFormData, subtotal: val});
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
-                <div className="bg-gray-50 p-3 rounded text-sm">
-                  <p className="text-gray-600">BTW 21%: €{(editFormData.subtotal * 0.21).toFixed(2)}</p>
-                  <p className="font-semibold text-gray-900">Totaal: €{(editFormData.subtotal * 1.21).toFixed(2)}</p>
+                <div className="bg-gray-50 p-3 rounded text-sm space-y-2">
+                  <div>
+                    <p className="text-gray-600 text-xs">BTW 21%</p>
+                    <p className="font-semibold text-gray-900">€{(editFormData.subtotal * 0.21).toFixed(2)}</p>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2">
+                    <p className="text-blue-600 text-xs font-medium">Totaal Incl. BTW</p>
+                    <p className="font-bold text-blue-900 text-lg">€{(editFormData.subtotal * 1.21).toFixed(2)}</p>
+                  </div>
                 </div>
               </div>
 
