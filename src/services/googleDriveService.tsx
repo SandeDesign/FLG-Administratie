@@ -309,14 +309,11 @@ export const uploadInvoiceToDrive = async (
     
     const alloonFolderId = await findOrCreateFolder('Alloon', token);
     const companyFolderId = await findOrCreateFolder(companyName, token, alloonFolderId);
-    const incomingFolderId = await findOrCreateFolder('Inkomende Facturen', token, companyFolderId);
-    const yearFolderId = await findOrCreateFolder(
-      new Date().getFullYear().toString(),
-      token,
-      incomingFolderId
-    );
-    const monthName = new Date().toLocaleString('nl-NL', { month: 'long' });
-    const monthFolderId = await findOrCreateFolder(monthName, token, yearFolderId);
+    
+    // Create category folders
+    const inkoopFolderId = await findOrCreateFolder('Inkoop', token, companyFolderId);
+    const verkoopFolderId = await findOrCreateFolder('Verkoop', token, companyFolderId);
+    const productieFolderId = await findOrCreateFolder('Productie', token, companyFolderId);
 
     console.log('Uploading file...');
 
