@@ -106,7 +106,9 @@ const IncomingInvoices: React.FC = () => {
             {
               supplierName: ocrResult.invoiceData.supplierName,
               invoiceNumber: ocrResult.invoiceData.invoiceNumber,
-              amount: ocrResult.invoiceData.amount,
+              amount: ocrResult.invoiceData.subtotal,
+              vatAmount: ocrResult.invoiceData.vatAmount,
+              totalAmount: ocrResult.invoiceData.totalInclVat,
             },
             {
               ...ocrResult.invoiceData,
