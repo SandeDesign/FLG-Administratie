@@ -224,15 +224,22 @@ const IncomingInvoices: React.FC = () => {
   };
 
   const handleDownload = (invoice: IncomingInvoice) => {
-    window.open(invoice.fileUrl, '_blank');
+    // ✅ FIXED: Controleer op fileUrl en driveWebLink, open in nieuw tabblad
+    const downloadUrl = invoice.fileUrl || invoice.driveWebLink;
+    if (downloadUrl) {
+      window.open(downloadUrl, '_blank');
+    } else {
+      showError('Fout', 'Download link niet beschikbaar');
+    }
   };
 
   const openEditModal = (invoice: IncomingInvoice) => {
     setEditingInvoice(invoice);
+    // ✅ FIXED: Zorg dat we het correct ingevoerde bedrag gebruiken (niet totalAmount)
     setEditFormData({
       supplierName: invoice.supplierName || '',
       invoiceNumber: invoice.invoiceNumber || '',
-      subtotal: invoice.amount || 0,
+      subtotal: invoice.amount || 0, // Hier gebruiken we 'amount' (excl. BTW)
     });
   };
 
