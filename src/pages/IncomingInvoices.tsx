@@ -24,6 +24,8 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
+import { InvoiceEditModal } from '../components/InvoiceEditModal';
+import { CollapsibleInvoiceCard } from '../components/CollapsibleInvoiceCard';
 import { incomingInvoiceService, IncomingInvoice } from '../services/incomingInvoiceService';
 import { uploadInvoiceToDrive } from '../services/googleDriveService';
 import { processInvoiceFile } from '../services/ocrService';
@@ -40,6 +42,7 @@ const IncomingInvoices: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<IncomingInvoice | null>(null);
 
   const loadInvoices = useCallback(async () => {
     if (!user) {
@@ -227,43 +230,18 @@ const IncomingInvoices: React.FC = () => {
     }
   };
 
-  const handleEdit = async (invoice: IncomingInvoice) => {
-    const supplierName = prompt('Leverancier:', invoice.supplierName);
-    if (!supplierName) return;
-
-    const invoiceNumber = prompt('Factuurnummer:', invoice.invoiceNumber);
-    if (!invoiceNumber) return;
-
-    const subtotal = prompt('Excl. BTW:', invoice.amount.toString());
-    if (!subtotal) return;
-
+  const handleEdit = async (invoice: IncomingInvoice, updates: Partial<IncomingInvoice>) => {
     try {
-      const newSubtotal = parseFloat(subtotal);
-      const newVat = newSubtotal * 0.21;
-      const newTotal = newSubtotal + newVat;
-
-      await incomingInvoiceService.updateInvoice(invoice.id!, {
-        supplierName,
-        invoiceNumber,
-        amount: newSubtotal,
-        vatAmount: newVat,
-        totalAmount: newTotal,
-      });
-
+      await incomingInvoiceService.updateInvoice(invoice.id!, updates);
+      
       // Update local state
       const updated = invoices.map(inv =>
         inv.id === invoice.id
-          ? {
-              ...inv,
-              supplierName,
-              invoiceNumber,
-              amount: newSubtotal,
-              vatAmount: newVat,
-              totalAmount: newTotal,
-            }
+          ? { ...inv, ...updates }
           : inv
       );
       setInvoices(updated);
+      setEditingInvoice(null);
 
       success('Factuur bijgewerkt', 'De gegevens zijn opgeslagen');
     } catch (error) {
