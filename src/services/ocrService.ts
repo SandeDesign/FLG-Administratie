@@ -27,6 +27,18 @@ export interface OCRResult {
   engine: 'tesseract-psm4' | 'tesseract-psm11' | 'ocr-space';
 }
 
+export interface InvoiceData {
+  supplierName: string;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  amount: number;
+  subtotal: number;
+  vatAmount: number;
+  vatRate: number;
+  totalInclVat: number;
+  rawText: string;
+}
+
 let workerInstance: any = null;
 
 const getWorker = async () => {
@@ -39,7 +51,148 @@ const getWorker = async () => {
 };
 
 /**
- * ✅ GRATIS FALLBACK: OCR.space API (geen auth nodig!)
+ * ✅ CLAUDE EXTRACTION - Works with ANY invoice format!
+ */
+const extractWithClaude = async (ocrText: string, apiKey?: string): Promise<InvoiceData> => {
+  if (!apiKey) {
+    console.warn('No Claude API key provided, using basic extraction');
+    return extractInvoiceDataBasic(ocrText);
+  }
+
+  try {
+    const prompt = `You are an invoice parsing expert. Extract the following data from this OCR text.
+
+OCR TEXT:
+${ocrText}
+
+EXTRACT THESE FIELDS (respond ONLY with valid JSON, no markdown, no code blocks):
+{
+  "supplierName": "company name or 'Unknown'",
+  "invoiceNumber": "invoice/receipt number",
+  "invoiceDate": "date in YYYY-MM-DD format",
+  "totalAmount": "the TOTAL amount including VAT (highest number)",
+  "subtotalExclVat": "amount before VAT if available",
+  "vatAmount": "VAT amount if visible"
+}
+
+Rules:
+- Amounts: convert 85,92 or 85.92 to 85.92
+- Date: any format is OK
+- TOTAAL/TOTAL/Amount = final amount
+- If unclear, make best guess
+- Response MUST be valid JSON`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 500,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Claude API error: ${response.status}`);
+    }
+
+    const data = (await response.json()) as any;
+    const responseText = data.content[0].text;
+
+    console.log('Claude response:', responseText);
+
+    let jsonData;
+    try {
+      jsonData = JSON.parse(responseText);
+    } catch (e) {
+      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        jsonData = JSON.parse(jsonMatch[1]);
+      } else {
+        throw new Error('Could not parse Claude response');
+      }
+    }
+
+    const invoiceDate = parseDate(jsonData.invoiceDate);
+    const totalAmount = parseAmount(jsonData.totalAmount);
+    const subtotal = parseAmount(jsonData.subtotalExclVat) || totalAmount;
+    const vatAmount = parseAmount(jsonData.vatAmount) || Math.round((subtotal * 0.21) * 100) / 100;
+
+    console.log('\n========== 📄 INVOICE EXTRACTED (Claude) ==========');
+    console.log('Supplier:        ', jsonData.supplierName);
+    console.log('Invoice Number:  ', jsonData.invoiceNumber);
+    console.log('Date:            ', invoiceDate.toLocaleDateString('nl-NL'));
+    console.log('Excl. BTW:       ', `€ ${subtotal.toFixed(2)}`);
+    console.log('BTW (21%):       ', `€ ${vatAmount.toFixed(2)}`);
+    console.log('Incl. BTW:       ', `€ ${totalAmount.toFixed(2)}`);
+    console.log('====================================================\n');
+
+    return {
+      supplierName: jsonData.supplierName || 'Unknown',
+      invoiceNumber: jsonData.invoiceNumber || `INV-${Date.now()}`,
+      invoiceDate,
+      amount: totalAmount,
+      subtotal,
+      vatAmount,
+      vatRate: 21,
+      totalInclVat: totalAmount,
+      rawText: ocrText,
+    };
+  } catch (error) {
+    console.error('Claude extraction failed, falling back to basic extraction:', error);
+    return extractInvoiceDataBasic(ocrText);
+  }
+};
+
+function parseAmount(value: any): number {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+
+  const str = String(value);
+  const cleaned = str
+    .replace(/€/g, '')
+    .replace(/\s/g, '')
+    .trim()
+    .replace(/\./g, '')
+    .replace(',', '.');
+  return parseFloat(cleaned) || 0;
+}
+
+function parseDate(value: any): Date {
+  if (!value) return new Date();
+  if (value instanceof Date) return value;
+
+  const str = String(value).trim();
+
+  const isoMatch = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return new Date(parseInt(isoMatch[1]), parseInt(isoMatch[2]) - 1, parseInt(isoMatch[3]));
+  }
+
+  const datedMatch = str.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+  if (datedMatch) {
+    const day = parseInt(datedMatch[1]);
+    const month = parseInt(datedMatch[2]);
+    const year = parseInt(datedMatch[3]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return new Date(year, month - 1, day);
+    }
+  }
+
+  return new Date();
+}
+
+/**
+ * GRATIS FALLBACK: OCR.space API
  */
 export const recognizeWithOCRSpace = async (
   imageFile: File
@@ -48,7 +201,7 @@ export const recognizeWithOCRSpace = async (
     const formData = new FormData();
     formData.append('filename', imageFile.name);
     formData.append('file', imageFile);
-    formData.append('apikey', 'K87899142591'); // Free tier
+    formData.append('apikey', 'K87899142591');
     formData.append('language', 'eng');
 
     const response = await fetch('https://api.ocr.space/parse/image', {
@@ -61,7 +214,7 @@ export const recognizeWithOCRSpace = async (
     if (!data.IsErroredOnProcessing && data.ParsedText) {
       return {
         text: data.ParsedText,
-        confidence: 0.85, // Estimate
+        confidence: 0.85,
       };
     }
 
@@ -73,7 +226,7 @@ export const recognizeWithOCRSpace = async (
 };
 
 /**
- * ✅ HEIC → JPG
+ * HEIC → JPG
  */
 export const convertHEICToJPG = async (file: File): Promise<File> => {
   try {
@@ -89,7 +242,7 @@ export const convertHEICToJPG = async (file: File): Promise<File> => {
       });
     }
   } catch (error) {
-    console.warn('HEIC conversion failed, fallback canvas:', error);
+    console.warn('HEIC conversion failed');
   }
 
   return new Promise((resolve, reject) => {
@@ -131,30 +284,22 @@ export const convertHEICToJPG = async (file: File): Promise<File> => {
 };
 
 /**
- * ✅ MINIMAL PREPROCESSING - let Tesseract do its job
- * Photo quality is already good - preprocessing was destroying it!
+ * MINIMAL PREPROCESSING
  */
 export const preprocessImage = async (img: HTMLImageElement): Promise<HTMLCanvasElement> => {
   const canvas = document.createElement('canvas');
-
-  // NO upscaling - photo already good resolution
   canvas.width = img.width;
   canvas.height = img.height;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas context failed');
 
-  // Draw image as-is
   ctx.drawImage(img, 0, 0);
-
-  // That's it! NO aggressive preprocessing
-  // Let Tesseract handle contrast/brightness internally
   return canvas;
 };
 
 /**
- * ✅ TESSERACT MET PSM 4 - RECEIPTS/INVOICES
- * PSM 4 = Assume a single column of text of variable sizes
+ * PSM 4 - RECEIPTS/INVOICES
  */
 export const extractTextFromImagePSM4 = async (
   file: File,
@@ -163,7 +308,6 @@ export const extractTextFromImagePSM4 = async (
   try {
     onProgress?.(10);
 
-    // HEIC → JPG
     let imageFile = file;
     if (file.type === 'image/heic' || file.name.endsWith('.heic')) {
       console.log('📱 Converting HEIC to JPG...');
@@ -184,7 +328,6 @@ export const extractTextFromImagePSM4 = async (
 
           const worker = await getWorker();
 
-          // ✅ INSTELLE PSM 4 VOOR RECEIPTS
           console.log('🤖 Running OCR with PSM 4 (receipts/invoices)...');
           await worker.setParameters({
             tessedit_pageseg_mode: 4,
@@ -229,8 +372,7 @@ export const extractTextFromImagePSM4 = async (
 };
 
 /**
- * ✅ TESSERACT MET PSM 11 - SLECHTE FOTO'S/SPARSE TEXT
- * PSM 11 = Sparse text. Find as much text as possible in no particular order.
+ * PSM 11 - SPARSE TEXT/BAD PHOTOS
  */
 export const extractTextFromImagePSM11 = async (
   file: File,
@@ -239,7 +381,6 @@ export const extractTextFromImagePSM11 = async (
   try {
     onProgress?.(10);
 
-    // HEIC → JPG
     let imageFile = file;
     if (file.type === 'image/heic' || file.name.endsWith('.heic')) {
       console.log('📱 Converting HEIC to JPG...');
@@ -260,7 +401,6 @@ export const extractTextFromImagePSM11 = async (
 
           const worker = await getWorker();
 
-          // ✅ INSTELLE PSM 11 VOOR SLECHTE FOTO'S
           console.log('🤖 Running OCR with PSM 11 (sparse text/bad photos)...');
           await worker.setParameters({
             tessedit_pageseg_mode: 11,
@@ -305,10 +445,7 @@ export const extractTextFromImagePSM11 = async (
 };
 
 /**
- * ✅ SMART ROUTING:
- * 1. Probeer PSM 4 (voor facturen/receipts)
- * 2. Confidence laag? → PSM 11 (sparse text)
- * 3. Nog steeds slecht? → OCR.space (GRATIS fallback)
+ * SMART ROUTING
  */
 export const extractTextFromImageSmart = async (
   file: File,
@@ -317,7 +454,6 @@ export const extractTextFromImageSmart = async (
   try {
     onProgress?.(10);
 
-    // STAP 1: PSM 4 proberen
     console.log('📄 Attempting PSM 4 (receipt/invoice mode)...');
     const result_psm4 = await extractTextFromImagePSM4(file, onProgress);
 
@@ -328,7 +464,6 @@ export const extractTextFromImageSmart = async (
       return result_psm4;
     }
 
-    // STAP 2: PSM 11 proberen (sparse text)
     console.log('⚠️  PSM 4 confidence low, trying PSM 11 (sparse text)...');
     const result_psm11 = await extractTextFromImagePSM11(file, onProgress);
 
@@ -339,7 +474,6 @@ export const extractTextFromImageSmart = async (
       return result_psm11;
     }
 
-    // STAP 3: OCR.space fallback (GRATIS!)
     console.log('🆘 Both PSM modes failed, trying OCR.space...');
     const result_space = await recognizeWithOCRSpace(file);
 
@@ -360,7 +494,6 @@ export const extractTextFromImageSmart = async (
       };
     }
 
-    // Fallback: return best result
     console.log('⚠️  All methods attempted, returning best result');
     return result_psm11.confidence > result_psm4.confidence
       ? result_psm11
@@ -387,7 +520,6 @@ export const extractTextFromPDF = async (
     let allText = '';
     const worker = await getWorker();
 
-    // Use PSM 4 for PDFs (receipts/invoices)
     await worker.setParameters({
       tessedit_pageseg_mode: 4,
     });
@@ -440,182 +572,83 @@ export const extractTextFromPDF = async (
   }
 };
 
-// ... (rest van het bestand: parseNederlandsNumber, extractInvoiceData, etc.)
-function parseNederlandsNumber(str: string): number {
-  if (!str) return 0;
-  let cleaned = str.replace(/€/g, '').replace(/\s/g, '').trim();
-  cleaned = cleaned.replace(/\./g, '');
-  cleaned = cleaned.replace(',', '.');
-  return parseFloat(cleaned) || 0;
-}
-
-function extractAmount(text: string): number {
-  const match = text.match(/€?\s*([\d\.]+,\d{1,2})/);
-  if (match) {
-    return parseNederlandsNumber(match[1]);
-  }
-  return 0;
-}
-
-function detectDocumentType(ocrText: string): 'invoice' | 'receipt' {
-  const lower = ocrText.toLowerCase();
-
-  if (lower.includes('totaal') && (lower.includes('prijs') || lower.includes('pomp'))) {
-    return 'receipt';
-  }
-
-  if (
-    lower.includes('factuurnummer') ||
-    lower.includes('subtotaal') ||
-    lower.includes('factuur')
-  ) {
-    return 'invoice';
-  }
-
-  return 'receipt';
-}
-
-export const extractInvoiceData = (ocrText: string) => {
+/**
+ * BASIC EXTRACTION (fallback if Claude unavailable)
+ */
+function extractInvoiceDataBasic(ocrText: string): InvoiceData {
   const lines = ocrText
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
-  const docType = detectDocumentType(ocrText);
 
   let supplierName = 'Onbekend';
   let invoiceNumber = `INV-${Date.now()}`;
   let invoiceDate = new Date();
-  let subtotalExclVat = 0;
-  let vatAmount = 0;
-  let totalInclVat = 0;
 
   for (let i = 0; i < Math.min(15, lines.length); i++) {
     const line = lines[i];
-    if (line.includes('PAGE') || line.includes('---') || line.length < 3)
-      continue;
-    if (
-      line.match(/[A-Z][a-z]+.*(?:BV|Ltd|Inc|b\.v|B\.V|GROUP|EXPRESS|bv)/i) ||
-      (line.length > 5 &&
-        !line.match(/^\d/) &&
-        line !== line.toLowerCase() &&
-        line.match(/[A-Z]/))
-    ) {
+    if (line.length > 3 && !line.match(/^\d/) && line.match(/[A-Z]/)) {
       supplierName = line;
       break;
     }
   }
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const lower = line.toLowerCase();
-    if (lower.includes('factuurnummer') || lower.includes('ticketnumber')) {
-      const num =
-        line.match(/:\s*([A-Z0-9\-\.]+)/)?.[1] ||
-        lines[i + 1]?.match(/^([A-Z0-9\-\.]+)/)?.[1];
-      if (num) {
-        invoiceNumber = num;
-        break;
-      }
-    }
-  }
-
-  const datePattern = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/;
+  const datePattern = /(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/;
   for (const line of lines) {
     const match = line.match(datePattern);
     if (match) {
       const day = parseInt(match[1]);
       const month = parseInt(match[2]);
       const year = parseInt(match[3]);
-      if (
-        month >= 1 &&
-        month <= 12 &&
-        day >= 1 &&
-        day <= 31 &&
-        year >= 2020 &&
-        year <= 2030
-      ) {
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
         invoiceDate = new Date(year, month - 1, day);
         break;
       }
     }
   }
 
-  if (docType === 'receipt') {
-    for (let i = lines.length - 1; i >= 0; i--) {
-      const line = lines[i];
-      const lower = line.toLowerCase();
-
-      if (lower.includes('totaal') && !lower.includes('subtotaal')) {
-        totalInclVat = extractAmount(line);
-        if (totalInclVat > 0) break;
-      }
-    }
-
-    subtotalExclVat = totalInclVat;
-    vatAmount = 0;
-  } else {
-    for (let i = lines.length - 1; i >= 0; i--) {
-      const line = lines[i];
-      const lower = line.toLowerCase();
-
-      if (totalInclVat === 0 && lower.includes('totaal') && lower.includes('voldoen')) {
-        totalInclVat = extractAmount(line);
-        continue;
-      }
-
-      if (vatAmount === 0 && lower.includes('btw') && lower.match(/\d+%/)) {
-        vatAmount = extractAmount(line);
-        continue;
-      }
-
-      if (subtotalExclVat === 0 && lower.includes('subtotaal')) {
-        subtotalExclVat = extractAmount(line);
-        continue;
-      }
+  const amountPattern = /€?\s*([\d.,]+)/g;
+  const amounts: number[] = [];
+  let match;
+  while ((match = amountPattern.exec(ocrText)) !== null) {
+    const amount = parseAmount(match[1]);
+    if (amount > 0 && amount < 10000) {
+      amounts.push(amount);
     }
   }
 
-  if (subtotalExclVat > 0 && vatAmount === 0) {
-    vatAmount = Math.round((subtotalExclVat * 0.21) * 100) / 100;
-  }
-  if (subtotalExclVat > 0 && totalInclVat === 0) {
-    totalInclVat = subtotalExclVat + vatAmount;
-  }
-  if (totalInclVat > 0 && subtotalExclVat === 0) {
-    if (vatAmount > 0) {
-      subtotalExclVat = totalInclVat - vatAmount;
-    } else {
-      subtotalExclVat = totalInclVat;
-    }
-  }
+  const totalInclVat = amounts.length > 0 ? Math.max(...amounts) : 0;
+  const subtotalExclVat = totalInclVat / 1.21;
+  const vatAmount = totalInclVat - subtotalExclVat;
 
-  console.log('\n========== 📄 INVOICE EXTRACTED ==========');
-  console.log('Type:            ', docType);
+  console.log('\n========== 📄 INVOICE EXTRACTED (Basic) ==========');
   console.log('Supplier:        ', supplierName);
   console.log('Invoice Number:  ', invoiceNumber);
   console.log('Date:            ', invoiceDate.toLocaleDateString('nl-NL'));
-  console.log('Excl. BTW:       ', `€ ${subtotalExclVat.toFixed(2)}`);
-  console.log('BTW (21%):       ', `€ ${vatAmount.toFixed(2)}`);
   console.log('Incl. BTW:       ', `€ ${totalInclVat.toFixed(2)}`);
-  console.log('=========================================\n');
+  console.log('=================================================\n');
 
   return {
     supplierName,
     invoiceNumber,
     invoiceDate,
-    amount: totalInclVat || subtotalExclVat,
+    amount: totalInclVat,
     subtotal: subtotalExclVat,
     vatAmount,
     vatRate: 21,
     totalInclVat,
     rawText: ocrText,
   };
-};
+}
 
+/**
+ * MAIN FUNCTION - with Claude integration
+ */
 export const processInvoiceFile = async (
   file: File,
+  claudeApiKey?: string,
   onProgress?: (progress: number) => void
-): Promise<OCRResult & { invoiceData: ReturnType<typeof extractInvoiceData> }> => {
+): Promise<OCRResult & { invoiceData: InvoiceData }> => {
   try {
     let ocrResult: OCRResult;
 
@@ -631,12 +664,13 @@ export const processInvoiceFile = async (
       throw new Error(`Unsupported file type: ${file.type}`);
     }
 
-    // ✅ DEBUG: LOG RAW TEXT
     console.log('=== RAW OCR TEXT ===');
     console.log(ocrResult.text);
     console.log('=== END RAW TEXT ===');
 
-    const invoiceData = extractInvoiceData(ocrResult.text);
+    const invoiceData = claudeApiKey
+      ? await extractWithClaude(ocrResult.text, claudeApiKey)
+      : extractInvoiceDataBasic(ocrResult.text);
 
     return {
       ...ocrResult,
