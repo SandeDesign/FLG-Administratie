@@ -131,48 +131,24 @@ export const convertHEICToJPG = async (file: File): Promise<File> => {
 };
 
 /**
- * ✅ AGGRESSIVE PREPROCESSING - voor Tesseract
+ * ✅ MINIMAL PREPROCESSING - let Tesseract do its job
+ * Photo quality is already good - preprocessing was destroying it!
  */
 export const preprocessImage = async (img: HTMLImageElement): Promise<HTMLCanvasElement> => {
   const canvas = document.createElement('canvas');
 
-  // Upscale
-  const scaleFactor = img.width < 1200 ? 1.5 : 1;
-  canvas.width = img.width * scaleFactor;
-  canvas.height = img.height * scaleFactor;
+  // NO upscaling - photo already good resolution
+  canvas.width = img.width;
+  canvas.height = img.height;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas context failed');
 
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  // Draw image as-is
+  ctx.drawImage(img, 0, 0);
 
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-
-  // Grayscale
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-    data[i] = gray;
-    data[i + 1] = gray;
-    data[i + 2] = gray;
-  }
-
-  // Contrast + brightness AGGRESSIVE
-  const contrast = 2.2;
-  const brightness = 50;
-
-  for (let i = 0; i < data.length; i += 4) {
-    for (let j = 0; j < 3; j++) {
-      let pixel = data[i + j];
-      pixel = (pixel - 128) * contrast + 128 + brightness;
-      data[i + j] = Math.max(0, Math.min(255, pixel));
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0);
+  // That's it! NO aggressive preprocessing
+  // Let Tesseract handle contrast/brightness internally
   return canvas;
 };
 
@@ -654,6 +630,11 @@ export const processInvoiceFile = async (
     } else {
       throw new Error(`Unsupported file type: ${file.type}`);
     }
+
+    // ✅ DEBUG: LOG RAW TEXT
+    console.log('=== RAW OCR TEXT ===');
+    console.log(ocrResult.text);
+    console.log('=== END RAW TEXT ===');
 
     const invoiceData = extractInvoiceData(ocrResult.text);
 
