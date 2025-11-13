@@ -207,7 +207,7 @@ const Sidebar: React.FC = () => {
       title: 'Financieel', 
       icon: Receipt, 
       defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Relaties', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Facturen Stats'].includes(i.name)) 
+      items: filteredNavigation.filter(i => ['Relaties', 'Verkoop Facturen', 'Facturen Uploaden', 'Inkoopbonnen'].includes(i.name)) 
     },
     {
       title: 'Project',
