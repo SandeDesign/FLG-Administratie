@@ -12,6 +12,7 @@ interface CompanyFormData {
   name: string;
   kvk: string;
   taxNumber: string;
+  bankAccount?: string; // ✅ NIEUW: Bankrekening voor facturen
   street: string;
   city: string;
   zipCode: string;
@@ -85,6 +86,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         name: company.name,
         kvk: company.kvk,
         taxNumber: company.taxNumber,
+        bankAccount: company.bankAccount, // ✅ NIEUW: Load bankAccount
         street: company.address.street,
         city: company.address.city,
         zipCode: company.address.zipCode,
@@ -131,6 +133,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         name: data.name,
         kvk: data.kvk,
         taxNumber: data.taxNumber,
+        bankAccount: data.bankAccount, // ✅ NIEUW: Save bankAccount
         companyType: data.companyType,
         address: {
           street: data.street,
@@ -271,11 +274,19 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
           />
         </div>
 
-        <Input
-          label="Belastingnummer"
-          {...register('taxNumber')}
-          error={errors.taxNumber?.message}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Belastingnummer"
+            {...register('taxNumber')}
+            error={errors.taxNumber?.message}
+          />
+          <Input
+            label="Bankrekening voor facturen"
+            placeholder="NL91 ABNA 0417 1643 00"
+            {...register('bankAccount')}
+            error={errors.bankAccount?.message}
+          />
+        </div>
 
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Adresgegevens</h3>
