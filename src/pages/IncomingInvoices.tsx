@@ -114,6 +114,32 @@ const IncomingInvoices: React.FC = () => {
             }
           );
 
+          // Add to state immediately
+          const newInvoice: IncomingInvoice = {
+            id: uploadResult.invoiceId,
+            userId: user.uid,
+            companyId: selectedCompany.id,
+            supplierName: ocrResult.invoiceData.supplierName,
+            invoiceNumber: ocrResult.invoiceData.invoiceNumber,
+            amount: ocrResult.invoiceData.subtotal || 0,
+            vatAmount: ocrResult.invoiceData.vatAmount || 0,
+            totalAmount: ocrResult.invoiceData.totalInclVat || 0,
+            description: `Factuur van ${ocrResult.invoiceData.supplierName}`,
+            invoiceDate: ocrResult.invoiceData.invoiceDate,
+            dueDate: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
+            status: 'pending',
+            fileName: file.name,
+            fileUrl: uploadResult.driveWebLink,
+            driveFileId: uploadResult.driveFileId,
+            driveWebLink: uploadResult.driveWebLink,
+            ocrProcessed: true,
+            ocrData: ocrResult.invoiceData,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          setInvoices([newInvoice, ...invoices]);
+
           console.log('Invoice saved with OCR data');
 
           success('Factuur verwerkt', `OCR klaar (${ocrResult.confidence.toFixed(1)}% accuraat)`);
