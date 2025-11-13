@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alloon-v1.3.1.9.5.2';
+const CACHE_NAME = 'alloon-v1.3.1.9.5.3';
 const urlsToCache = [
   '/',
   '/Logo.png',
