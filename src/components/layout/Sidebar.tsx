@@ -25,6 +25,7 @@ import {
   UserCheck,
   Briefcase,
   BarChart3,
+  Factory,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -39,7 +40,7 @@ export interface NavigationItem {
   color?: string;
 }
 
-// ✅ UPDATED: Navigation with company type filtering
+// ✅ UPDATED: Navigation with company type filtering + Statistieken
 export const navigation: NavigationItem[] = [
   // ✅ DASHBOARD - SOLO (NO SECTION)
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['employer', 'project'] },
@@ -56,9 +57,9 @@ export const navigation: NavigationItem[] = [
   { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project'] },
   { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project'] },
   
-  // PROJECT COMPANY SPECIFIC ✅ NEW
-  { name: 'Productie', href: '/project-production', icon: Briefcase, roles: ['admin'], companyTypes: ['project'] },
-  { name: 'Statistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['project'] },
+  // PROJECT COMPANY SPECIFIC ✅ UPDATED
+  { name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin'], companyTypes: ['project'] },
+  { name: 'Statistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['employer', 'project'] },
   
   // DATA & EXPORTS SECTION (employer only)
   { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin', 'manager'], companyTypes: ['employer'] },
@@ -207,7 +208,7 @@ const Sidebar: React.FC = () => {
     },
     {
       title: 'Project',
-      icon: Briefcase,
+      icon: Factory,
       defaultOpen: false,
       items: filteredNavigation.filter(i => ['Productie', 'Statistieken'].includes(i.name))
     },
