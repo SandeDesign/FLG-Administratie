@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
-import { createSickLeave, getEmployeeById } from '../../services/firebase';
-import { Employee } from '../../types';
+import { createSickLeave, getEmployeeById, syncSickLeaveToTimesheet } from '../../services/firebase';
+import { Employee, SickLeave } from '../../types';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
@@ -31,7 +31,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<SickLeaveFormData>({
-    startDate: new Date().toISOString().split('T'),
+    startDate: new Date().toISOString().split('T')[0],
     workCapacityPercentage: 0,
     notes: '',
   });
@@ -63,7 +63,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
 
   const handleClose = () => {
     setFormData({
-      startDate: new Date().toISOString().split('T'),
+      startDate: new Date().toISOString().split('T')[0],
       workCapacityPercentage: 0,
       notes: '',
     });
@@ -88,7 +88,8 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
 
     setSubmitting(true);
     try {
-      await createSickLeave(adminUserId, { // Use user.uid as adminUserId
+      // 1️⃣ Create SickLeave record
+      const sickLeaveId = await createSickLeave(adminUserId, {
         employeeId,
         companyId: currentEmployee.companyId,
         startDate: new Date(formData.startDate),
@@ -103,12 +104,38 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
         doctorVisits: [],
       });
 
-      success('Ziekmelding succesvol ingediend');
+      // Create SickLeave object for sync
+      const newSickLeave: SickLeave = {
+        id: sickLeaveId,
+        userId: adminUserId,
+        employeeId,
+        companyId: currentEmployee.companyId,
+        startDate: new Date(formData.startDate),
+        reportedAt: new Date(),
+        reportedBy: user?.displayName || user?.email || 'Werknemer',
+        reportedVia: 'app',
+        workCapacityPercentage: formData.workCapacityPercentage,
+        status: 'active',
+        arboServiceContacted: false,
+        poortwachterActive: false,
+        doctorVisits: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // 2️⃣ ✅ AUTO-SYNC: Update timesheet entries
+      await syncSickLeaveToTimesheet(newSickLeave);
+
+      success(
+        'Ziekmelding geregistreerd',
+        'Je bent ziek gemeld en je urenregistratie is automatisch aangepast'
+      );
+      
       if (onSuccess) onSuccess();
       handleClose();
     } catch (err) {
       console.error('Error creating sick leave:', err);
-      showError('Fout bij indienen', 'Kon ziekmelding niet indienen');
+      showError('Fout bij indienen', 'Kon ziekmelding niet indienen of urenregistratie niet aanpassen');
     } finally {
       setSubmitting(false);
     }
