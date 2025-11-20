@@ -12,23 +12,20 @@ import {
   Settings,
   ArrowRight,
   HeartPulse,
-  TrendingUp,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../hooks/useToast';
 import {
   getPendingLeaveApprovals,
-  getTimeEntries,
   getLeaveRequests,
   getSickLeaveRecords,
   getEmployeesByCompany,
   db,
 } from '../services/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { showSuccess, showError } from '../utils/toast';
-import { formatDutchDate, formatDateRange } from '../utils/dateUtils';
 
 interface ManagerStats {
   totalTeamMembers: number;
@@ -60,6 +57,7 @@ interface TeamMember {
 const ManagerDashboard: React.FC = () => {
   const { selectedCompany, employees } = useApp();
   const { user, userRole } = useAuth();
+  const { success, error: showError } = useToast();
   const navigate = useNavigate();
 
   const [stats, setStats] = useState<ManagerStats | null>(null);
@@ -67,6 +65,29 @@ const ManagerDashboard: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
+
+  // Format date range helper
+  const formatDateRange = (startDate: any, endDate: any): string => {
+    try {
+      const start = startDate?.toDate ? startDate.toDate() : new Date(startDate);
+      const end = endDate?.toDate ? endDate.toDate() : new Date(endDate);
+      
+      const formatDate = (date: Date) => {
+        return new Intl.DateTimeFormat('nl-NL', {
+          day: 'numeric',
+          month: 'short',
+          year: '2-digit'
+        }).format(date);
+      };
+
+      if (start.toDateString() === end.toDateString()) {
+        return formatDate(start);
+      }
+      return `${formatDate(start)} - ${formatDate(end)}`;
+    } catch {
+      return 'Geen datum';
+    }
+  };
 
   // Load dashboard data
   const loadDashboardData = useCallback(async () => {
@@ -200,7 +221,7 @@ const ManagerDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, userRole]);
+  }, [user, selectedCompany, userRole, showError]);
 
   useEffect(() => {
     loadDashboardData();
