@@ -25,7 +25,7 @@ const ManagerDashboard: React.FC = () => {
   const { selectedCompany } = useApp();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [pendingTimesheets, setPendingTimesheets] = useState<any[]>([]);
   const [pendingLeaveRequests, setPendingLeaveRequests] = useState<any[]>([]);
@@ -38,23 +38,27 @@ const ManagerDashboard: React.FC = () => {
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
-      setLoading(false);
+      console.log('No user or selectedCompany');
       return;
     }
 
     try {
       setLoading(true);
+      console.log('Loading manager data for company:', selectedCompany.id);
 
       // Get team members
       const employees = await getEmployees(user.uid, selectedCompany.id);
+      console.log('Employees:', employees.length);
       setTeamMembers(employees.slice(0, 8));
 
       // Get pending timesheets
       const timesheets = await getPendingTimesheets(user.uid, selectedCompany.id);
+      console.log('Pending timesheets:', timesheets.length);
       setPendingTimesheets(timesheets.slice(0, 5));
 
       // Get pending leave approvals
       const leaveRequests = await getPendingLeaveApprovals(selectedCompany.id, user.uid);
+      console.log('Pending leave:', leaveRequests.length);
       setPendingLeaveRequests(leaveRequests.slice(0, 5));
 
       // Calculate stats
@@ -64,6 +68,7 @@ const ManagerDashboard: React.FC = () => {
         pendingHours: timesheets.length,
         pendingLeave: leaveRequests.length,
       });
+      console.log('Manager data loaded successfully');
     } catch (error) {
       console.error('Error loading manager data:', error);
     } finally {
@@ -75,10 +80,10 @@ const ManagerDashboard: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  if (loading) {
+  if (!selectedCompany) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <LoadingSpinner />
+      <div className="text-center py-12">
+        <p className="text-gray-600">Selecteer een bedrijf</p>
       </div>
     );
   }
