@@ -23,8 +23,8 @@ import {
   getLeaveRequests,
   getSickLeaveRecords,
   getEmployeesByCompany,
-  db,
 } from '../services/firebase';
+import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 
 interface ManagerStats {
