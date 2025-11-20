@@ -114,7 +114,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await updateProfile(user, { displayName });
 
       const { createUserRole } = await import('../services/firebase');
-      await createUserRole(user.uid, 'admin');
+      await createUserRole(user.uid, 'admin', undefined, {
+  firstName: displayName.split(' ')[0],
+  lastName: displayName.split(' ').slice(1).join(' '),
+  email: email,
+});
       setUserRole('admin');
 
       success('Account aangemaakt!', 'Je kunt nu beginnen met het beheren van je loonadministratie');
