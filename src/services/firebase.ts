@@ -689,7 +689,12 @@ export const createEmployeeAuthAccount = async (
     await updateDoc(employeeRef, cleanedData);
     
     // Create user role for the new employee
-    await createUserRole(newUserId, 'employee', employeeId);
+    const employee = await getEmployee(employeeId, userId);
+await createUserRole(newUserId, 'employee', employeeId, {
+  firstName: employee?.personalInfo.firstName,
+  lastName: employee?.personalInfo.lastName,
+  email: employee?.personalInfo.contactInfo.email,
+});
     
     return newUserId;
   } catch (error) {
