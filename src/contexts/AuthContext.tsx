@@ -45,17 +45,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCurrentEmployeeId(roleData?.employeeId || null);
 
           if (roleData?.role === 'admin') {
-            setAdminUserId(user.uid);
-          } else if (roleData?.role === 'employee' && roleData?.employeeId) {
-            const employeeDoc = await getEmployeeById(roleData.employeeId);
-            if (employeeDoc) {
-              setAdminUserId(employeeDoc.userId);
-            } else {
-              setAdminUserId(null);
-            }
-          } else {
-            setAdminUserId(null);
-          }
+  setAdminUserId(user.uid);
+} else if (roleData?.role === 'manager') {
+  // Manager krijgt hun eigenuid, zodat ze hun bedrijf kunnen laden
+  setAdminUserId(user.uid);
+} else if (roleData?.role === 'employee' && roleData?.employeeId) {
+  const employeeDoc = await getEmployeeById(roleData.employeeId);
+  if (employeeDoc) {
+    setAdminUserId(employeeDoc.userId);
+  } else {
+    setAdminUserId(null);
+  }
+} else {
+  setAdminUserId(null);
+}
         } catch (err) {
           console.error('Error loading user role:', err);
           setUserRole(null);
