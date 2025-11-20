@@ -215,6 +215,19 @@ export const getCompany = async (id: string, userId: string): Promise<Company | 
   } as Company;
 };
 
+// ✅ NEW: Get company without userId check (for managers loading their assigned company)
+export const getCompanyById = async (id: string): Promise<Company | null> => {
+  const docRef = doc(db, 'companies', id);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return null;
+  
+  return {
+    id: docSnap.id,
+    ...convertTimestamps(docSnap.data())
+  } as Company;
+};
+
 // Updated createCompany with undefined value filtering
 export const createCompany = async (userId: string, company: Omit<Company, 'id' | 'userId'>): Promise<string> => {
   // Validate project company has primaryEmployerId
