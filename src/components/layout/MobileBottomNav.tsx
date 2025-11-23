@@ -29,13 +29,20 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
   const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined;
 
   const getCoreNavItems = () => {
-    // ✅ PROJECT COMPANY
+    // ✅ PROJECT COMPANY - Admin & Manager see same items
     if (companyType === 'project') {
+      if (userRole === 'admin' || userRole === 'manager') {
+        return [
+          { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-blue-500 to-blue-600' },
+          { href: '/project-production', icon: Cpu, label: 'Productie', gradient: 'from-purple-500 to-purple-600' },
+          { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-green-500 to-green-600' },
+          { href: '/timesheets', icon: Clock, label: 'Uren', gradient: 'from-cyan-500 to-cyan-600' },
+        ];
+      }
+      // Employee in project company
       return [
         { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-blue-500 to-blue-600' },
-        { href: '/project-production', icon: Cpu, label: 'Productie', gradient: 'from-purple-500 to-purple-600' },
-        { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-green-500 to-green-600' },
-        { href: '/incoming-invoices', icon: Download, label: 'Uploaden', gradient: 'from-orange-500 to-orange-600' },
+        { href: '/settings', icon: Settings, label: 'Profiel', gradient: 'from-gray-500 to-gray-600' },
       ];
     }
 
@@ -50,7 +57,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       manager: [
         { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-blue-500 to-blue-600' },
         { href: '/employees', icon: Users, label: 'Team', gradient: 'from-indigo-500 to-indigo-600' },
-        { href: '/timesheets', icon: Clock, label: 'Uren', gradient: 'from-cyan-500 to-cyan-600' },
+        { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-green-500 to-green-600' },
         { href: '/timesheet-approvals', icon: CheckCircle2, label: 'Beheren', gradient: 'from-emerald-500 to-emerald-600' },
       ],
       admin: [
@@ -60,7 +67,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
         { href: '/employees', icon: Users, label: 'Team', gradient: 'from-indigo-500 to-indigo-600' },
       ],
     };
-    
+
     return navItems[userRole] || navItems.employee;
   };
 
