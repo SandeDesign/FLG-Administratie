@@ -1,10 +1,8 @@
-import { auth } from '../lib/firebase';
-
-// Cloud Function URL (update after deployment)
-const CLOUD_FUNCTION_URL = 'https://europe-west1-alloon.cloudfunctions.net';
+import { auth, db } from '../lib/firebase';
+import { doc, addDoc, collection, Timestamp } from 'firebase/firestore';
 
 /**
- * Upload a file to Google Drive via Cloud Function
+ * Upload a file to Google Drive via Netlify Edge Function
  * Uses Service Account - no per-user OAuth needed!
  */
 export const uploadInvoiceToDrive = async (
@@ -29,14 +27,6 @@ export const uploadInvoiceToDrive = async (
   try {
     console.log(`Uploading: ${file.name} for ${companyName}`);
 
-    // Get Firebase Auth token
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      throw new Error('Not authenticated');
-    }
-
-    const idToken = await currentUser.getIdToken();
-
     // Prepare form data
     const formData = new FormData();
     formData.append('file', file);
@@ -52,12 +42,9 @@ export const uploadInvoiceToDrive = async (
       ocrConfidence: ocrData?.confidence || 0,
     }));
 
-    // Call Cloud Function
-    const response = await fetch(`${CLOUD_FUNCTION_URL}/uploadToDrive`, {
+    // Call Netlify Edge Function
+    const response = await fetch('/api/upload-to-drive', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${idToken}`,
-      },
       body: formData,
     });
 
@@ -67,10 +54,34 @@ export const uploadInvoiceToDrive = async (
     }
 
     const result = await response.json();
-    console.log(`✓ Upload complete: ${result.driveWebLink}`);
+    console.log(`✓ Drive upload complete: ${result.driveWebLink}`);
+
+    // Save to Firestore
+    const now = new Date();
+    const invoiceData = {
+      userId,
+      companyId,
+      supplierName: ocrData?.supplierName || metadata?.supplierName || 'Onbekend',
+      invoiceNumber: ocrData?.invoiceNumber || metadata?.invoiceNumber || `INV-${Date.now()}`,
+      subtotal: ocrData?.subtotal || metadata?.amount || 0,
+      vatAmount: ocrData?.vatAmount || metadata?.vatAmount || 0,
+      totalAmount: ocrData?.totalInclVat || metadata?.totalAmount || 0,
+      invoiceDate: Timestamp.fromDate(ocrData?.invoiceDate || now),
+      dueDate: Timestamp.fromDate(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)),
+      status: 'pending',
+      driveFileId: result.driveFileId,
+      driveWebLink: result.driveWebLink,
+      ocrData: ocrData || null,
+      ocrConfidence: ocrData?.confidence || 0,
+      createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now)
+    };
+
+    const docRef = await addDoc(collection(db, 'incomingInvoices'), invoiceData);
+    console.log(`✓ Saved to Firestore: ${docRef.id}`);
 
     return {
-      invoiceId: result.invoiceId,
+      invoiceId: docRef.id,
       driveFileId: result.driveFileId,
       driveWebLink: result.driveWebLink,
     };
@@ -83,33 +94,31 @@ export const uploadInvoiceToDrive = async (
 
 /**
  * Check if Google Drive connection is working
- * (Service Account is always connected - just verify the Cloud Function works)
  */
 export const checkDriveConnection = async (): Promise<{
   connected: boolean;
   message: string;
-  files?: string[];
 }> => {
   try {
-    const response = await fetch(`${CLOUD_FUNCTION_URL}/driveHealthCheck`);
-    const data = await response.json();
+    // Simple health check - try to call the function
+    const response = await fetch('/api/upload-to-drive', {
+      method: 'OPTIONS',
+    });
 
     return {
-      connected: data.success,
-      message: data.message || 'Connected',
-      files: data.filesInRoot,
+      connected: response.ok,
+      message: response.ok ? 'Google Drive verbonden via Service Account' : 'Verbinding niet beschikbaar',
     };
   } catch (error) {
     return {
       connected: false,
-      message: 'Could not connect to Cloud Function',
+      message: 'Kon geen verbinding maken',
     };
   }
 };
 
 // ============================================
 // LEGACY FUNCTIONS - Kept for backward compatibility
-// These are no longer needed with Service Account
 // ============================================
 
 /** @deprecated No longer needed - Service Account handles auth */
@@ -135,17 +144,17 @@ export const getGoogleDriveToken = async (userId: string): Promise<string | null
   return 'service-account-token';
 };
 
-/** @deprecated Use Cloud Function instead */
+/** @deprecated Use uploadInvoiceToDrive instead */
 export const findOrCreateFolder = async (
   folderName: string,
   token: string,
   parentFolderId?: string
 ): Promise<string> => {
-  console.warn('findOrCreateFolder is deprecated - Cloud Function handles folders');
-  return 'handled-by-cloud-function';
+  console.warn('findOrCreateFolder is deprecated - handled by edge function');
+  return 'handled-by-edge-function';
 };
 
-/** @deprecated Use Cloud Function instead */
+/** @deprecated Use uploadInvoiceToDrive instead */
 export const uploadFileToDrive = async (
   file: File,
   folderId: string,

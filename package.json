@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@netlify/functions": "^2.8.0",
     "@react-pdf/renderer": "^4.3.1",
     "date-fns": "^4.1.0",
     "firebase": "^12.3.0",
+    "googleapis": "^140.0.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.344.0",

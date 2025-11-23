@@ -1,75 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { HardDrive, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../hooks/useToast';
+import { HardDrive, CheckCircle, RefreshCw } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { requestGoogleDriveAccessForSettings, saveGoogleDriveToken, getGoogleDriveToken } from '../services/googleDriveService';
+import { checkDriveConnection } from '../services/googleDriveService';
 
 const GoogleDriveSettings: React.FC = () => {
-  const { user } = useAuth();
-  const { success, error: showError } = useToast();
-  const [isConnected, setIsConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [connecting, setConnecting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{
+    connected: boolean;
+    message: string;
+  } | null>(null);
+  const [checking, setChecking] = useState(true);
 
-  // Check if already connected on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const token = await getGoogleDriveToken(user.uid);
-        setIsConnected(!!token);
-      } catch (error) {
-        console.error('Error checking connection:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkConnection();
-  }, [user]);
-
-  const handleConnect = async () => {
-    if (!user) return;
-
-    setConnecting(true);
+  const checkConnection = async () => {
+    setChecking(true);
     try {
-      // Request access through Settings
-      const token = await requestGoogleDriveAccessForSettings();
-
-      // Save token to Firestore
-      await saveGoogleDriveToken(user.uid, token, 3600); // 1 hour expiry
-
-      setIsConnected(true);
-      success('Verbonden!', 'Google Drive is succesvol gekoppeld');
+      const status = await checkDriveConnection();
+      setConnectionStatus(status);
     } catch (error) {
-      console.error('Connection error:', error);
-      showError('Verbinding mislukt', error instanceof Error ? error.message : 'Kon Google Drive niet verbinden');
+      setConnectionStatus({
+        connected: false,
+        message: 'Kon verbinding niet controleren',
+      });
     } finally {
-      setConnecting(false);
+      setChecking(false);
     }
   };
 
-  const handleDisconnect = async () => {
-    if (!user) return;
-
-    try {
-      // TODO: Delete token from Firestore
-      setIsConnected(false);
-      success('Ontkoppeld', 'Google Drive verbinding verwijderd');
-    } catch (error) {
-      showError('Fout', 'Kon verbinding niet verwijderen');
-    }
-  };
-
-  if (loading) {
-    return <div>Laden...</div>;
-  }
+  useEffect(() => {
+    checkConnection();
+  }, []);
 
   return (
     <Card>
@@ -80,58 +39,56 @@ const GoogleDriveSettings: React.FC = () => {
             <div>
               <h3 className="text-lg font-medium text-gray-900">Google Drive Integratie</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {isConnected
-                  ? 'Google Drive is verbonden. Alle facturen worden opgeslagen in je Drive.'
-                  : 'Verbind Google Drive om facturen automatisch op te slaan.'}
+                Centrale verbinding via Service Account - werkt voor alle gebruikers
               </p>
             </div>
           </div>
 
-          {isConnected && (
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-medium text-green-600">Verbonden</span>
-            </div>
-          )}
-
-          {!isConnected && (
-            <div className="flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-amber-600" />
-              <span className="text-sm font-medium text-amber-600">Niet verbonden</span>
-            </div>
-          )}
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <span className="text-sm font-medium text-green-600">Altijd verbonden</span>
+          </div>
         </div>
 
         <div className="mt-4 space-y-3">
+          {/* Info box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+            <strong>Service Account Verbinding</strong>
+            <p className="mt-1 text-xs">
+              Google Drive is verbonden via een centrale Service Account.
+              Alle uploads gaan automatisch naar de gedeelde FLG-Administratie map.
+              Geen handmatige connectie nodig per gebruiker.
+            </p>
+          </div>
+
+          {/* Folder structure */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
             <strong>Mappenstructuur:</strong>
             <div className="mt-1 text-xs font-mono">
               FLG-Administratie/<br />
               └── Bedrijfsnaam/<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;├── Inkomende Facturen<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;├── Uitgaande Facturen<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;└── Exports
+              &nbsp;&nbsp;&nbsp;&nbsp;├── Inkoop/<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;├── Verkoop/<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;└── Productie/
             </div>
           </div>
 
-          <div className="flex space-x-2">
-            {!isConnected ? (
-              <Button
-                onClick={handleConnect}
-                disabled={connecting}
-                icon={HardDrive}
-                variant="primary"
-              >
-                {connecting ? 'Bezig met verbinden...' : 'Verbind Google Drive'}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleDisconnect}
-                icon={LogOut}
-                variant="danger"
-              >
-                Ontkoppelen
-              </Button>
+          {/* Status check button */}
+          <div className="flex items-center space-x-3">
+            <Button
+              onClick={checkConnection}
+              disabled={checking}
+              variant="secondary"
+              size="sm"
+              icon={RefreshCw}
+            >
+              {checking ? 'Controleren...' : 'Verbinding testen'}
+            </Button>
+
+            {connectionStatus && (
+              <span className={`text-sm ${connectionStatus.connected ? 'text-green-600' : 'text-red-600'}`}>
+                {connectionStatus.message}
+              </span>
             )}
           </div>
         </div>
