@@ -21,21 +21,22 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    // Get base64-encoded service account JSON from env
-    // This is the ONLY reliable way - see: https://stackoverflow.com/questions/74131595
-    const base64ServiceAccount = process.env.GOOGLE_SERVICE_ACCOUNT_BASE64;
-    if (!base64ServiceAccount) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'GOOGLE_SERVICE_ACCOUNT_BASE64 not configured' }) };
+    // Get credentials from env (split to stay under 4KB limit)
+    const privateKeyBase64 = process.env.GOOGLE_PRIVATE_KEY_BASE64;
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL || 'firebase-adminsdk-fbsvc@alloon.iam.gserviceaccount.com';
+
+    if (!privateKeyBase64) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'GOOGLE_PRIVATE_KEY_BASE64 not configured' }) };
     }
 
-    // Decode and parse the full service account JSON
-    const serviceAccount = JSON.parse(Buffer.from(base64ServiceAccount, 'base64').toString('utf-8'));
+    // Decode the private key from base64
+    const privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf-8');
 
-    // Create auth with the decoded credentials
+    // Create auth
     const auth = new google.auth.JWT(
-      serviceAccount.client_email,
+      clientEmail,
       undefined,
-      serviceAccount.private_key,
+      privateKey,
       ['https://www.googleapis.com/auth/drive.file']
     );
 
