@@ -21,29 +21,18 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    // Get service account JSON from env (base64 encoded)
-    const serviceAccountB64 = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-    if (!serviceAccountB64) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'GOOGLE_SERVICE_ACCOUNT_JSON not configured' }) };
+    // Get private key from env
+    const rawKey = process.env.GOOGLE_DRIVE_PRIVATE_KEY;
+    if (!rawKey) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'GOOGLE_DRIVE_PRIVATE_KEY not configured' }) };
     }
 
-    // Decode and parse service account
-    const serviceAccount = JSON.parse(Buffer.from(serviceAccountB64, 'base64').toString('utf8'));
-
-    // Fix private key newlines (Google JSON uses literal \n)
-    let privateKey = serviceAccount.private_key;
-    if (privateKey && !privateKey.includes('\n')) {
-      // Key has literal \n strings, replace them
-      privateKey = privateKey.replace(/\\n/g, '\n');
-    }
-    // Ensure proper PEM format
-    privateKey = privateKey
-      .replace(/-----BEGIN PRIVATE KEY-----\s*/, '-----BEGIN PRIVATE KEY-----\n')
-      .replace(/\s*-----END PRIVATE KEY-----/, '\n-----END PRIVATE KEY-----\n');
+    // Fix newlines - Netlify stores literal \n, need actual newlines
+    const privateKey = rawKey.replace(/\\n/g, '\n');
 
     // Create auth
     const auth = new google.auth.JWT(
-      serviceAccount.client_email,
+      'firebase-adminsdk-fbsvc@alloon.iam.gserviceaccount.com',
       undefined,
       privateKey,
       ['https://www.googleapis.com/auth/drive.file']
