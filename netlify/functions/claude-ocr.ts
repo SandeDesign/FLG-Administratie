@@ -39,7 +39,7 @@ const handler: Handler = async (event) => {
         max_tokens: 500,
         messages: [{
           role: 'user',
-          content: `Extract invoice data from this OCR text. Return ONLY valid JSON:
+          content: `Extract invoice data from this Dutch OCR text. Return ONLY valid JSON:
 {
   "supplierName": "company name",
   "invoiceNumber": "invoice number",
@@ -57,13 +57,12 @@ ${ocrText}`
 
     if (!response.ok) {
       const err = await response.text();
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Claude API error', details: err }) };
+      console.error('Anthropic error:', err);
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Claude API error' }) };
     }
 
     const data = await response.json() as any;
     const text = data.content[0].text;
-
-    // Parse JSON (handle markdown code blocks)
     const clean = text.replace(/```json?\n?|\n?```/g, '').trim();
     const invoiceData = JSON.parse(clean);
 
