@@ -70,10 +70,11 @@ const OutgoingInvoices: React.FC = () => {
   // Production Import State
   const [showProductionImport, setShowProductionImport] = useState(false);
   const [productionWeeks, setProductionWeeks] = useState<ProductionWeek[]>([]);
-  const [selectedProductionWeek, setSelectedProductionWeek] = useState<ProductionWeek | null>(null);
+  const [selectedProductionWeeks, setSelectedProductionWeeks] = useState<ProductionWeek[]>([]);
   const [selectedProductionEmployeeId, setSelectedProductionEmployeeId] = useState('');
-  const [selectedProductionWeekId, setSelectedProductionWeekId] = useState('');
+  const [selectedProductionWeekIds, setSelectedProductionWeekIds] = useState<string[]>([]);
   const [loadingProduction, setLoadingProduction] = useState(false);
+  const [invoicedWeekIds, setInvoicedWeekIds] = useState<Set<string>>(new Set());
 
   const [formData, setFormData] = useState({
     clientId: '',
@@ -134,6 +135,43 @@ const OutgoingInvoices: React.FC = () => {
     }
   }, [user, selectedCompany]);
 
+  // Load which weeks have already been invoiced for an employee
+  const loadInvoicedWeeks = async (employeeId: string) => {
+    if (!user || !selectedCompany) return new Set<string>();
+
+    try {
+      // Get all invoices for this company
+      const invoiceData = await outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id);
+
+      // Find the employee name
+      const employee = employees.find(e => e.id === employeeId);
+      const employeeName = employee
+        ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
+        : '';
+
+      // Check all invoice items for week references for this employee
+      const usedWeekIds = new Set<string>();
+
+      invoiceData.forEach(invoice => {
+        invoice.items.forEach(item => {
+          // Check if title matches pattern "Week X EmployeeName"
+          if (item.title && employeeName && item.title.includes(employeeName)) {
+            const weekMatch = item.title.match(/Week (\d+)/);
+            if (weekMatch) {
+              // Create a composite key: week-year-employeeId (we'll match this later)
+              usedWeekIds.add(`week-${weekMatch[1]}-${employeeId}`);
+            }
+          }
+        });
+      });
+
+      return usedWeekIds;
+    } catch (error) {
+      console.error('Error loading invoiced weeks:', error);
+      return new Set<string>();
+    }
+  };
+
   // Load production weeks when employee is selected
   const handleLoadProductionWeeks = async () => {
     if (!selectedProductionEmployeeId || !user || !selectedCompany) {
@@ -145,6 +183,10 @@ const OutgoingInvoices: React.FC = () => {
     console.log('🔄 Loading production weeks for employee:', selectedProductionEmployeeId);
     setLoadingProduction(true);
     try {
+      // Load invoiced weeks for this employee
+      const invoicedIds = await loadInvoicedWeeks(selectedProductionEmployeeId);
+      setInvoicedWeekIds(invoicedIds);
+
       const q = query(
         collection(db, 'productionWeeks'),
         where('userId', '==', user.uid),
@@ -155,7 +197,7 @@ const OutgoingInvoices: React.FC = () => {
 
       const snap = await getDocs(q);
       console.log('✅ Got snapshots:', snap.size);
-      
+
       const weeks: ProductionWeek[] = [];
 
       snap.docs.forEach(doc => {
@@ -173,9 +215,9 @@ const OutgoingInvoices: React.FC = () => {
 
       console.log('✅ Loaded weeks:', weeks.length);
       setProductionWeeks(weeks);
-      setSelectedProductionWeekId('');
-      setSelectedProductionWeek(null);
-      
+      setSelectedProductionWeekIds([]);
+      setSelectedProductionWeeks([]);
+
       if (weeks.length === 0) {
         showError('Geen data', `Geen productie weken gevonden`);
       } else {
@@ -189,76 +231,107 @@ const OutgoingInvoices: React.FC = () => {
     }
   };
 
-  // Handle week selection
-  const handleWeekSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const weekId = e.target.value;
-    setSelectedProductionWeekId(weekId);
-    
+  // Handle week selection (toggle for multi-select)
+  const handleWeekToggle = (weekId: string) => {
     const week = productionWeeks.find(w => w.id === weekId);
-    if (week) {
-      console.log('✅ Selected week:', { week: week.week, entries: week.entries.length });
-      setSelectedProductionWeek(week);
+    if (!week) return;
+
+    const isSelected = selectedProductionWeekIds.includes(weekId);
+
+    if (isSelected) {
+      // Remove from selection
+      setSelectedProductionWeekIds(prev => prev.filter(id => id !== weekId));
+      setSelectedProductionWeeks(prev => prev.filter(w => w.id !== weekId));
     } else {
-      console.error('❌ Week not found:', weekId);
-      setSelectedProductionWeek(null);
+      // Add to selection
+      setSelectedProductionWeekIds(prev => [...prev, weekId]);
+      setSelectedProductionWeeks(prev => [...prev, week]);
     }
   };
 
-  // Add production week as ONE invoice item
+  // Check if a week is already invoiced
+  const isWeekInvoiced = (week: ProductionWeek): boolean => {
+    const key = `week-${week.week}-${week.employeeId}`;
+    return invoicedWeekIds.has(key);
+  };
+
+  // Select all uninvoiced weeks
+  const selectAllUninvoiced = () => {
+    const uninvoicedWeeks = productionWeeks.filter(w => !isWeekInvoiced(w));
+    setSelectedProductionWeekIds(uninvoicedWeeks.map(w => w.id));
+    setSelectedProductionWeeks(uninvoicedWeeks);
+  };
+
+  // Clear selection
+  const clearWeekSelection = () => {
+    setSelectedProductionWeekIds([]);
+    setSelectedProductionWeeks([]);
+  };
+
+  // Add production weeks as invoice items (one item per week)
   const addAllProductionItems = () => {
     console.log('🚀 Adding production items...');
-    
-    if (!selectedProductionWeek) {
-      console.error('❌ No week selected');
-      showError('Fout', 'Selecteer een week');
+
+    if (selectedProductionWeeks.length === 0) {
+      console.error('❌ No weeks selected');
+      showError('Fout', 'Selecteer minimaal één week');
       return;
     }
-
-    if (!selectedProductionWeek.entries || selectedProductionWeek.entries.length === 0) {
-      console.error('❌ No entries in week');
-      showError('Fout', 'Geen entries in geselecteerde week');
-      return;
-    }
-
-    console.log('✅ Processing week with entries:', selectedProductionWeek.entries.length);
 
     const employee = employees.find(e => e.id === selectedProductionEmployeeId);
-    const employeeName = employee 
+    const employeeName = employee
       ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
       : 'Onbekend';
 
-    // Build description in table format
-    const tableHeader = 'Monteur\tDatum\tUren\tOpdrachtgever\tLocaties';
-    const tableRows = selectedProductionWeek.entries
-      .map(entry => `${entry.monteur}\t${entry.datum}\t${entry.uren}\t${entry.opdrachtgever}\t${entry.locaties}`)
-      .join('\n');
-    
-    const description = `${tableHeader}\n${tableRows}`;
-    const totalUren = selectedProductionWeek.totalHours;
     const rate = 41.31;
-    const amount = totalUren * rate;
+    const newItems: InvoiceItem[] = [];
 
-    const newItem: InvoiceItem = {
-      title: `Week ${selectedProductionWeek.week} ${employeeName}`,
-      description: description,
-      quantity: totalUren,
-      rate: rate,
-      amount: amount
-    };
+    // Create an invoice item for each selected week
+    selectedProductionWeeks.forEach(week => {
+      if (!week.entries || week.entries.length === 0) {
+        console.warn(`⚠️ Week ${week.week} has no entries, skipping`);
+        return;
+      }
 
-    console.log('✅ New item:', { title: newItem.title, quantity: newItem.quantity, rate: newItem.rate, amount: newItem.amount });
+      // Build description in table format
+      const tableHeader = 'Monteur\tDatum\tUren\tOpdrachtgever\tLocaties';
+      const tableRows = week.entries
+        .map(entry => `${entry.monteur}\t${entry.datum}\t${entry.uren}\t${entry.opdrachtgever}\t${entry.locaties}`)
+        .join('\n');
+
+      const description = `${tableHeader}\n${tableRows}`;
+      const totalUren = week.totalHours;
+      const amount = totalUren * rate;
+
+      const newItem: InvoiceItem = {
+        title: `Week ${week.week} ${employeeName}`,
+        description: description,
+        quantity: totalUren,
+        rate: rate,
+        amount: amount
+      };
+
+      console.log('✅ New item:', { title: newItem.title, quantity: newItem.quantity, rate: newItem.rate, amount: newItem.amount });
+      newItems.push(newItem);
+    });
+
+    if (newItems.length === 0) {
+      showError('Fout', 'Geen weken met entries gevonden');
+      return;
+    }
 
     // Remove empty first item if it exists
     const updatedItems = items.filter(i => i.title.trim() !== '');
-    setItems([...updatedItems, newItem]);
-    
-    setSelectedProductionWeek(null);
-    setSelectedProductionWeekId('');
+    setItems([...updatedItems, ...newItems]);
+
+    // Reset selection
+    setSelectedProductionWeeks([]);
+    setSelectedProductionWeekIds([]);
     setProductionWeeks([]);
     setSelectedProductionEmployeeId('');
     setShowProductionImport(false);
-    
-    success('✅ Toegevoegd', `Week ${selectedProductionWeek.week} met ${selectedProductionWeek.entries.length} entries`);
+
+    success('✅ Toegevoegd', `${newItems.length} week(en) toegevoegd aan factuur`);
   };
 
   const handleCreateNew = () => {
@@ -281,9 +354,10 @@ const OutgoingInvoices: React.FC = () => {
     setItems([{ title: '', description: '', quantity: 1, rate: 0, amount: 0 }]);
     setShowProductionImport(false);
     setProductionWeeks([]);
-    setSelectedProductionWeek(null);
+    setSelectedProductionWeeks([]);
     setSelectedProductionEmployeeId('');
-    setSelectedProductionWeekId('');
+    setSelectedProductionWeekIds([]);
+    setInvoicedWeekIds(new Set());
     loadRelations();
     generateNextInvoiceNumber();
     setView('create');
@@ -708,8 +782,9 @@ const OutgoingInvoices: React.FC = () => {
                       onChange={(e) => {
                         setSelectedProductionEmployeeId(e.target.value);
                         setProductionWeeks([]);
-                        setSelectedProductionWeek(null);
-                        setSelectedProductionWeekId('');
+                        setSelectedProductionWeeks([]);
+                        setSelectedProductionWeekIds([]);
+                        setInvoicedWeekIds(new Set());
                       }}
                       className="w-full px-3 py-2 border-2 border-amber-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
                     >
@@ -734,45 +809,103 @@ const OutgoingInvoices: React.FC = () => {
                     </button>
                   )}
 
-                  {/* Step 3: Week Selector */}
+                  {/* Step 3: Week Selector (Multi-select with checkboxes) */}
                   {productionWeeks.length > 0 && (
                     <div>
-                      <label className="block text-xs font-semibold text-amber-900 mb-2">STAP 2: Selecteer week</label>
-                      <select
-                        value={selectedProductionWeekId}
-                        onChange={handleWeekSelect}
-                        className="w-full px-3 py-2 border-2 border-amber-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
-                      >
-                        <option value="">-- Kies week --</option>
-                        {productionWeeks.map((week) => (
-                          <option key={week.id} value={week.id}>
-                            Week {week.week} ({week.year}) - {week.entries.length} entries - {week.totalHours}u
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-semibold text-amber-900">STAP 2: Selecteer weken (meerdere mogelijk)</label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={selectAllUninvoiced}
+                            className="text-xs text-amber-700 hover:text-amber-900 underline"
+                          >
+                            Selecteer alle nieuwe
+                          </button>
+                          {selectedProductionWeekIds.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={clearWeekSelection}
+                              className="text-xs text-red-600 hover:text-red-800 underline"
+                            >
+                              Wis selectie
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto border-2 border-amber-300 rounded bg-white">
+                        {productionWeeks.map((week) => {
+                          const invoiced = isWeekInvoiced(week);
+                          const isSelected = selectedProductionWeekIds.includes(week.id);
+                          return (
+                            <label
+                              key={week.id}
+                              className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-amber-100 last:border-0 transition-colors ${
+                                isSelected ? 'bg-amber-100' : invoiced ? 'bg-gray-100' : 'hover:bg-amber-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleWeekToggle(week.id)}
+                                className="h-4 w-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs font-medium ${invoiced ? 'text-gray-500' : 'text-amber-900'}`}>
+                                    Week {week.week} ({week.year})
+                                  </span>
+                                  {invoiced && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                      ✓ Gefactureerd
+                                    </span>
+                                  )}
+                                </div>
+                                <span className={`text-xs ${invoiced ? 'text-gray-400' : 'text-amber-600'}`}>
+                                  {week.entries.length} entries - {week.totalHours}u
+                                </span>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {selectedProductionWeekIds.length > 0 && (
+                        <div className="mt-2 p-2 bg-amber-100 rounded text-xs text-amber-800">
+                          <strong>{selectedProductionWeekIds.length}</strong> week(en) geselecteerd -
+                          Totaal: <strong>{selectedProductionWeeks.reduce((sum, w) => sum + w.totalHours, 0)}</strong> uren
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* Step 4: Preview */}
-                  {selectedProductionWeek && selectedProductionWeek.entries.length > 0 && (
+                  {/* Step 4: Preview selected weeks */}
+                  {selectedProductionWeeks.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold text-amber-900">STAP 3: Preview entries</p>
-                      <div className="bg-white border-2 border-amber-200 rounded p-2 max-h-32 overflow-y-auto">
-                        <div className="text-xs font-mono text-amber-900 space-y-1">
-                          {selectedProductionWeek.entries.map((entry, idx) => (
-                            <div key={idx} className="pb-1 border-b border-amber-100 last:border-0">
-                              <div className="grid grid-cols-5 gap-1 text-xs">
-                                <div className="truncate">{entry.monteur}</div>
-                                <div>{entry.datum}</div>
-                                <div className="text-right font-semibold">{entry.uren}u</div>
-                                <div className="truncate">{entry.opdrachtgever}</div>
-                                <div className="truncate text-amber-700">{entry.locaties}</div>
-                              </div>
+                      <p className="text-xs font-semibold text-amber-900">STAP 3: Preview geselecteerde weken</p>
+                      <div className="bg-white border-2 border-amber-200 rounded p-2 max-h-48 overflow-y-auto space-y-3">
+                        {selectedProductionWeeks.map((week) => (
+                          <div key={week.id} className="border-b border-amber-200 pb-2 last:border-0 last:pb-0">
+                            <div className="text-xs font-bold text-amber-900 mb-1">
+                              Week {week.week} ({week.year}) - {week.totalHours}u
                             </div>
-                          ))}
-                          <div className="pt-2 border-t-2 border-amber-300 mt-2 font-bold text-amber-900">
-                            Totaal: {selectedProductionWeek.totalHours} uren
+                            <div className="text-xs font-mono text-amber-800 space-y-0.5">
+                              {week.entries.slice(0, 3).map((entry, idx) => (
+                                <div key={idx} className="grid grid-cols-5 gap-1">
+                                  <div className="truncate">{entry.monteur}</div>
+                                  <div>{entry.datum}</div>
+                                  <div className="text-right font-semibold">{entry.uren}u</div>
+                                  <div className="truncate">{entry.opdrachtgever}</div>
+                                  <div className="truncate text-amber-600">{entry.locaties}</div>
+                                </div>
+                              ))}
+                              {week.entries.length > 3 && (
+                                <div className="text-amber-500 italic">... en {week.entries.length - 3} meer</div>
+                              )}
+                            </div>
                           </div>
+                        ))}
+                        <div className="pt-2 border-t-2 border-amber-300 font-bold text-amber-900 text-xs">
+                          Totaal alle weken: {selectedProductionWeeks.reduce((sum, w) => sum + w.totalHours, 0)} uren
                         </div>
                       </div>
 
@@ -782,7 +915,7 @@ const OutgoingInvoices: React.FC = () => {
                         onClick={addAllProductionItems}
                         className="w-full px-3 py-3 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded transition-colors"
                       >
-                        ✅ VOEG ALS FACTUURLIJN TOE
+                        ✅ VOEG {selectedProductionWeeks.length} WEEK(EN) TOE AAN FACTUUR
                       </button>
                     </div>
                   )}
