@@ -30,11 +30,22 @@ const handler: Handler = async (event) => {
     // Decode and parse service account
     const serviceAccount = JSON.parse(Buffer.from(serviceAccountB64, 'base64').toString('utf8'));
 
+    // Fix private key newlines (Google JSON uses literal \n)
+    let privateKey = serviceAccount.private_key;
+    if (privateKey && !privateKey.includes('\n')) {
+      // Key has literal \n strings, replace them
+      privateKey = privateKey.replace(/\\n/g, '\n');
+    }
+    // Ensure proper PEM format
+    privateKey = privateKey
+      .replace(/-----BEGIN PRIVATE KEY-----\s*/, '-----BEGIN PRIVATE KEY-----\n')
+      .replace(/\s*-----END PRIVATE KEY-----/, '\n-----END PRIVATE KEY-----\n');
+
     // Create auth
     const auth = new google.auth.JWT(
       serviceAccount.client_email,
       undefined,
-      serviceAccount.private_key,
+      privateKey,
       ['https://www.googleapis.com/auth/drive.file']
     );
 
