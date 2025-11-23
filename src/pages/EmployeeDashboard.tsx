@@ -1,31 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Calendar, 
-  HeartPulse, 
-  Receipt, 
-  Clock, 
-  TrendingUp, 
+import {
+  Calendar,
+  HeartPulse,
+  Receipt,
+  Clock,
+  TrendingUp,
   User,
   Building2,
   CheckCircle,
-  AlertCircle,
-  Bell,
-  ChevronRight,
   Zap,
   Target,
   Award,
   Briefcase,
-  Loader
 } from 'lucide-react';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { getEmployeeById } from '../services/firebase';
 import { getWeeklyTimesheets, getWeekNumber } from '../services/timesheetService';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const EmployeeDashboard: React.FC = () => {
   const { user, adminUserId, currentEmployeeId } = useAuth();
@@ -46,32 +40,18 @@ const EmployeeDashboard: React.FC = () => {
 
       try {
         setLoading(true);
-        
+
         // Get employee data
         const employee = await getEmployeeById(currentEmployeeId);
         setEmployeeData(employee);
 
-        // Get timesheets for current month (weeks in current month)
-        const allTimesheets: any[] = [];
-        const monthStart = new Date(currentYear, new Date().getMonth(), 1);
-        const monthEnd = new Date(currentYear, new Date().getMonth() + 1, 0);
-        
-        for (let week = 1; week <= 53; week++) {
-          try {
-            const sheets = await getWeeklyTimesheets(
-              adminUserId,
-              currentEmployeeId,
-              currentYear,
-              week
-            );
-            if (sheets.length > 0) {
-              allTimesheets.push(...sheets);
-            }
-          } catch (err) {
-            // Continue if week doesn't exist
-          }
-        }
-        
+        // Get all timesheets for employee in current year (single efficient query)
+        const allTimesheets = await getWeeklyTimesheets(
+          adminUserId,
+          currentEmployeeId,
+          currentYear
+        );
+
         setTimesheets(allTimesheets);
       } catch (error) {
         console.error('Error loading employee data:', error);
