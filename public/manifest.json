@@ -1,11 +1,11 @@
 {
-  "name": "Alloon HR Management",
-  "short_name": "Alloon",
-  "description": "Complete HR Management System voor Alloon",
+  "name": "FLG-Administratie",
+  "short_name": "FLG",
+  "description": "Complete HR & Administratie Management System",
   "start_url": "/login",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "background_color": "#fdf8f3",
+  "theme_color": "#cd853f",
   "orientation": "portrait-primary",
   "icons": [
     {

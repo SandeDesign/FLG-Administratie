@@ -5,12 +5,50 @@ import { Readable } from 'stream';
 // Root folder ID for FLG-Administratie (shared with service account)
 const ROOT_FOLDER_ID = '1EZfv49Cq4HndtSKp_jqd2QCEsw0qVrYr';
 
+// Parse private key from environment - handle various formats
+function parsePrivateKey(key: string | undefined): string {
+  if (!key) return '';
+
+  let parsed = key.trim();
+
+  // Check if it's base64 encoded (doesn't start with -----)
+  // User can optionally store the key as base64 for reliability
+  if (!parsed.startsWith('-----') && parsed.length > 100) {
+    try {
+      parsed = Buffer.from(parsed, 'base64').toString('utf8');
+    } catch (e) {
+      // Not base64, continue with normal parsing
+    }
+  }
+
+  // Handle escaped newlines (\\n -> \n)
+  parsed = parsed.replace(/\\n/g, '\n');
+
+  // Also handle double-escaped newlines (\\\\n -> \n)
+  parsed = parsed.replace(/\\\\n/g, '\n');
+
+  // Trim again after replacements
+  parsed = parsed.trim();
+
+  // Ensure proper PEM format with newlines after BEGIN and before END
+  if (parsed.includes('-----BEGIN') && !parsed.includes('\n-----BEGIN')) {
+    parsed = parsed
+      .replace(/-----BEGIN PRIVATE KEY-----\s*/g, '-----BEGIN PRIVATE KEY-----\n')
+      .replace(/\s*-----END PRIVATE KEY-----/g, '\n-----END PRIVATE KEY-----');
+  }
+
+  console.log('Private key starts with:', parsed.substring(0, 50));
+  console.log('Private key ends with:', parsed.substring(parsed.length - 50));
+
+  return parsed;
+}
+
 // Service Account config - private key comes from environment
 const SERVICE_ACCOUNT = {
   type: 'service_account',
   project_id: 'alloon',
   private_key_id: '6855692f9b9944b75859ea43bb12ad822c7a1518',
-  private_key: (process.env.GOOGLE_DRIVE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+  private_key: parsePrivateKey(process.env.GOOGLE_DRIVE_PRIVATE_KEY),
   client_email: 'firebase-adminsdk-fbsvc@alloon.iam.gserviceaccount.com',
   client_id: '116088092692294770452',
   auth_uri: 'https://accounts.google.com/o/oauth2/auth',
@@ -195,12 +233,21 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
   } catch (error: any) {
     console.error('Upload error:', error);
+    console.error('Error stack:', error.stack);
+
+    // Provide more helpful error messages
+    let errorMessage = error.message;
+    if (errorMessage.includes('DECODER') || errorMessage.includes('unsupported')) {
+      errorMessage = 'Private key format error - please check GOOGLE_DRIVE_PRIVATE_KEY environment variable format';
+    }
+
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Upload failed',
-        message: error.message,
+        message: errorMessage,
+        details: error.code || 'unknown',
       }),
     };
   }
