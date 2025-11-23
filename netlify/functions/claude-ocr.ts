@@ -18,29 +18,14 @@ const handler: Handler = async (event) => {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not set' }) };
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }) };
   }
 
   try {
     const { ocrText } = JSON.parse(event.body || '{}');
     if (!ocrText) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'No ocrText provided' }) };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'No ocrText' }) };
     }
-
-    const prompt = `Je bent een expert in het lezen van Nederlandse facturen. Extraheer deze gegevens uit de OCR tekst.
-
-OCR TEKST:
-${ocrText}
-
-Antwoord ALLEEN met geldige JSON (geen markdown):
-{
-  "supplierName": "bedrijfsnaam",
-  "invoiceNumber": "factuurnummer",
-  "invoiceDate": "YYYY-MM-DD",
-  "totalAmount": 123.45,
-  "subtotalExclVat": 102.02,
-  "vatAmount": 21.43
-}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -50,31 +35,42 @@ Antwoord ALLEEN met geldige JSON (geen markdown):
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-5-20250929',
         max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{
+          role: 'user',
+          content: `Extract invoice data from this OCR text. Return ONLY valid JSON:
+{
+  "supplierName": "company name",
+  "invoiceNumber": "invoice number",
+  "invoiceDate": "YYYY-MM-DD",
+  "totalAmount": 123.45,
+  "subtotalExclVat": 102.02,
+  "vatAmount": 21.43
+}
+
+OCR TEXT:
+${ocrText}`
+        }],
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      console.error('Anthropic error:', err);
-      return { statusCode: response.status, headers, body: JSON.stringify({ error: 'Claude API error', details: err }) };
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Claude API error', details: err }) };
     }
 
     const data = await response.json() as any;
-    let invoiceData;
-    try {
-      const text = data.content[0].text;
-      invoiceData = JSON.parse(text.replace(/```json?\n?|\n?```/g, '').trim());
-    } catch (e) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to parse Claude response' }) };
-    }
+    const text = data.content[0].text;
+
+    // Parse JSON (handle markdown code blocks)
+    const clean = text.replace(/```json?\n?|\n?```/g, '').trim();
+    const invoiceData = JSON.parse(clean);
 
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, invoiceData }) };
-  } catch (error: any) {
-    console.error('Error:', error);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
+  } catch (err: any) {
+    console.error('Error:', err);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
 

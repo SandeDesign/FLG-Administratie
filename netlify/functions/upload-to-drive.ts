@@ -2,7 +2,7 @@ import type { Handler } from '@netlify/functions';
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 
-const ROOT_FOLDER_ID = '1EZfv49Cq4HndtSKp_jqd2QCEsw0qVrYr';
+const FOLDER_ID = '1EZfv49Cq4HndtSKp_jqd2QCEsw0qVrYr';
 
 const handler: Handler = async (event) => {
   const headers = {
@@ -21,77 +21,68 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    // Get and parse private key
-    const rawKey = process.env.GOOGLE_DRIVE_PRIVATE_KEY;
-    if (!rawKey) {
-      return { statusCode: 500, headers, body: JSON.stringify({ error: 'GOOGLE_DRIVE_PRIVATE_KEY not set' }) };
+    // Get service account JSON from env (base64 encoded)
+    const serviceAccountB64 = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    if (!serviceAccountB64) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'GOOGLE_SERVICE_ACCOUNT_JSON not configured' }) };
     }
 
-    // Parse the private key - handle Netlify's encoding
-    let privateKey = rawKey;
+    // Decode and parse service account
+    const serviceAccount = JSON.parse(Buffer.from(serviceAccountB64, 'base64').toString('utf8'));
 
-    // If it looks like it might be base64 (no dashes at start)
-    if (!privateKey.includes('-----BEGIN')) {
-      try {
-        privateKey = Buffer.from(privateKey, 'base64').toString('utf8');
-      } catch (e) {
-        // Not base64
-      }
+    // Fix private key newlines (Google JSON uses literal \n)
+    let privateKey = serviceAccount.private_key;
+    if (privateKey && !privateKey.includes('\n')) {
+      // Key has literal \n strings, replace them
+      privateKey = privateKey.replace(/\\n/g, '\n');
     }
+    // Ensure proper PEM format
+    privateKey = privateKey
+      .replace(/-----BEGIN PRIVATE KEY-----\s*/, '-----BEGIN PRIVATE KEY-----\n')
+      .replace(/\s*-----END PRIVATE KEY-----/, '\n-----END PRIVATE KEY-----\n');
 
-    // Replace literal \n with actual newlines
-    privateKey = privateKey.replace(/\\n/g, '\n');
-
-    // Log for debugging (first/last chars only)
-    console.log('Key starts:', privateKey.substring(0, 30));
-    console.log('Key ends:', privateKey.substring(privateKey.length - 30));
-
-    // Create auth client
-    const auth = new google.auth.JWT({
-      email: 'firebase-adminsdk-fbsvc@alloon.iam.gserviceaccount.com',
-      key: privateKey,
-      scopes: ['https://www.googleapis.com/auth/drive'],
-    });
+    // Create auth
+    const auth = new google.auth.JWT(
+      serviceAccount.client_email,
+      undefined,
+      privateKey,
+      ['https://www.googleapis.com/auth/drive.file']
+    );
 
     const drive = google.drive({ version: 'v3', auth });
 
-    // Parse multipart form data
+    // Parse multipart
     const contentType = event.headers['content-type'] || '';
-    const boundaryMatch = contentType.match(/boundary=(.+)/);
-    if (!boundaryMatch || !event.body) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid multipart data' }) };
+    const boundary = contentType.split('boundary=')[1];
+    if (!boundary || !event.body) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid request' }) };
     }
 
     const body = event.isBase64Encoded
       ? Buffer.from(event.body, 'base64').toString('binary')
       : event.body;
 
-    const { fields, file } = parseMultipart(body, boundaryMatch[1]);
+    const { fields, file } = parseMultipart(body, boundary);
     if (!file) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'No file uploaded' }) };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'No file' }) };
     }
 
-    const companyName = fields.companyName || 'Unknown';
+    // Get or create company folder
+    const companyName = fields.companyName || 'Algemeen';
+    const companyFolderId = await getOrCreateFolder(drive, companyName, FOLDER_ID);
+
+    // Get or create type folder (Inkoop/Verkoop)
     const folderType = fields.folderType || 'Inkoop';
+    const typeFolderId = await getOrCreateFolder(drive, folderType, companyFolderId);
 
-    // Find or create company folder
-    const companyFolderId = await findOrCreateFolder(drive, companyName, ROOT_FOLDER_ID);
-    const typeFolderId = await findOrCreateFolder(drive, folderType, companyFolderId);
+    // Upload
+    const timestamp = Date.now();
+    const fileName = `${timestamp}_${file.name}`;
 
-    // Upload file
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${timestamp}_${file.name}`;
-
-    const uploadResponse = await drive.files.create({
-      requestBody: {
-        name: filename,
-        parents: [typeFolderId],
-      },
-      media: {
-        mimeType: file.type,
-        body: Readable.from(file.data),
-      },
-      fields: 'id, name, webViewLink',
+    const res = await drive.files.create({
+      requestBody: { name: fileName, parents: [typeFolderId] },
+      media: { mimeType: file.type, body: Readable.from(file.data) },
+      fields: 'id,webViewLink',
     });
 
     return {
@@ -99,69 +90,53 @@ const handler: Handler = async (event) => {
       headers,
       body: JSON.stringify({
         success: true,
-        driveFileId: uploadResponse.data.id,
-        driveWebLink: uploadResponse.data.webViewLink,
-        filename: uploadResponse.data.name,
+        driveFileId: res.data.id,
+        driveWebLink: res.data.webViewLink,
       }),
     };
-  } catch (error: any) {
-    console.error('Upload error:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Upload failed', message: error.message }),
-    };
+  } catch (err: any) {
+    console.error('Error:', err);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
 
-async function findOrCreateFolder(drive: any, name: string, parentId: string): Promise<string> {
-  const response = await drive.files.list({
-    q: `name='${name}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-    fields: 'files(id)',
-  });
+async function getOrCreateFolder(drive: any, name: string, parentId: string): Promise<string> {
+  const q = `name='${name}' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const list = await drive.files.list({ q, fields: 'files(id)' });
 
-  if (response.data.files?.length > 0) {
-    return response.data.files[0].id;
+  if (list.data.files?.length) {
+    return list.data.files[0].id;
   }
 
-  const createResponse = await drive.files.create({
-    requestBody: {
-      name,
-      mimeType: 'application/vnd.google-apps.folder',
-      parents: [parentId],
-    },
+  const created = await drive.files.create({
+    requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] },
     fields: 'id',
   });
-
-  return createResponse.data.id!;
+  return created.data.id;
 }
 
 function parseMultipart(body: string, boundary: string) {
   const fields: Record<string, string> = {};
   let file: { name: string; type: string; data: Buffer } | undefined;
 
-  const parts = body.split(`--${boundary}`).filter(p => p.trim() && p.trim() !== '--');
+  body.split('--' + boundary).forEach(part => {
+    if (!part.trim() || part.trim() === '--') return;
 
-  for (const part of parts) {
-    const [headerSection, ...contentParts] = part.split('\r\n\r\n');
-    const content = contentParts.join('\r\n\r\n').replace(/\r\n$/, '');
+    const [head, ...rest] = part.split('\r\n\r\n');
+    const content = rest.join('\r\n\r\n').replace(/\r\n$/, '');
 
-    const nameMatch = headerSection.match(/name="([^"]+)"/);
-    const filenameMatch = headerSection.match(/filename="([^"]+)"/);
-    const contentTypeMatch = headerSection.match(/Content-Type:\s*([^\r\n]+)/i);
+    const nameMatch = head.match(/name="([^"]+)"/);
+    const fileMatch = head.match(/filename="([^"]+)"/);
+    const typeMatch = head.match(/Content-Type:\s*(\S+)/i);
 
     if (nameMatch) {
-      if (filenameMatch) {
-        file = {
-          name: filenameMatch[1],
-          type: contentTypeMatch?.[1] || 'application/octet-stream',
-          data: Buffer.from(content, 'binary'),
-        };
+      if (fileMatch) {
+        file = { name: fileMatch[1], type: typeMatch?.[1] || 'application/octet-stream', data: Buffer.from(content, 'binary') };
       } else {
         fields[nameMatch[1]] = content.trim();
       }
     }
-  }
+  });
 
   return { fields, file };
 }
