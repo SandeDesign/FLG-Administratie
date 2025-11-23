@@ -202,7 +202,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
       items: [
 
-        { name: 'Mijn Uren', href: '/timesheets', icon: Clock, roles: ['employee', 'manager'], companyTypes: ['employer'], color: 'text-amber-600' },
+        { name: 'Mijn Uren', href: '/timesheets', icon: Clock, roles: ['employee', 'manager'], companyTypes: ['employer', 'project'], color: 'text-amber-600' },
 
         { name: 'Mijn Verlof', href: '/leave', icon: Calendar, roles: ['employee'], companyTypes: ['employer'], color: 'text-rose-600' },
 
