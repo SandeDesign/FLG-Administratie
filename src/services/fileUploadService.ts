@@ -1,4 +1,4 @@
-const PROXY_URL = 'https://internedata.nl/proxy.php';
+const PROXY_URL = 'https://internedata.nl/proxy2.php';
 const BASE_FOLDER = 'FLG-Administratie';
 
 export const uploadFile = async (
