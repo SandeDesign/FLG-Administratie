@@ -5,12 +5,36 @@ import { Readable } from 'stream';
 // Root folder ID for FLG-Administratie (shared with service account)
 const ROOT_FOLDER_ID = '1EZfv49Cq4HndtSKp_jqd2QCEsw0qVrYr';
 
+// Parse private key from environment - handle various formats
+function parsePrivateKey(key: string | undefined): string {
+  if (!key) return '';
+
+  // First, handle escaped newlines (\\n -> \n)
+  let parsed = key.replace(/\\n/g, '\n');
+
+  // Also handle double-escaped newlines (\\\\n -> \n)
+  parsed = parsed.replace(/\\\\n/g, '\n');
+
+  // Trim any extra whitespace
+  parsed = parsed.trim();
+
+  // Ensure proper PEM format with newlines
+  if (parsed.includes('-----BEGIN') && !parsed.includes('\n-----BEGIN')) {
+    // Key might be on single line, try to fix it
+    parsed = parsed
+      .replace(/-----BEGIN PRIVATE KEY-----\s*/g, '-----BEGIN PRIVATE KEY-----\n')
+      .replace(/\s*-----END PRIVATE KEY-----/g, '\n-----END PRIVATE KEY-----');
+  }
+
+  return parsed;
+}
+
 // Service Account config - private key comes from environment
 const SERVICE_ACCOUNT = {
   type: 'service_account',
   project_id: 'alloon',
   private_key_id: '6855692f9b9944b75859ea43bb12ad822c7a1518',
-  private_key: (process.env.GOOGLE_DRIVE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+  private_key: parsePrivateKey(process.env.GOOGLE_DRIVE_PRIVATE_KEY),
   client_email: 'firebase-adminsdk-fbsvc@alloon.iam.gserviceaccount.com',
   client_id: '116088092692294770452',
   auth_uri: 'https://accounts.google.com/o/oauth2/auth',
@@ -195,12 +219,21 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
   } catch (error: any) {
     console.error('Upload error:', error);
+    console.error('Error stack:', error.stack);
+
+    // Provide more helpful error messages
+    let errorMessage = error.message;
+    if (errorMessage.includes('DECODER') || errorMessage.includes('unsupported')) {
+      errorMessage = 'Private key format error - please check GOOGLE_DRIVE_PRIVATE_KEY environment variable format';
+    }
+
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Upload failed',
-        message: error.message,
+        message: errorMessage,
+        details: error.code || 'unknown',
       }),
     };
   }
