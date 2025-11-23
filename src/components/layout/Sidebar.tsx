@@ -490,7 +490,7 @@ const Sidebar: React.FC = () => {
 
         {!collapsed && (
 
-          <img src="/Logo-groot.png" alt="FLG-Administratie Logo" className="h-22 w-auto drop-shadow-sm" />
+          <img src="/Logo-groot.png" alt="FLG-Administratie Logo" className="h-32 w-auto drop-shadow-sm" />
 
         )}
 
