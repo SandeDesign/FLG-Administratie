@@ -22,14 +22,19 @@ export const uploadFile = async (
     body: formData,
   });
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ error: 'Upload failed' }));
-    throw new Error(err.error || 'Upload failed');
+  // Get response as text first
+  const responseText = await response.text();
+
+  // Try to parse as JSON
+  let result;
+  try {
+    result = JSON.parse(responseText);
+  } catch {
+    console.error('Invalid JSON from proxy:', responseText);
+    throw new Error('Upload server returned invalid response');
   }
 
-  const result = await response.json();
-
-  if (!result.success) {
+  if (!response.ok || !result.success) {
     throw new Error(result.error || 'Upload failed');
   }
 

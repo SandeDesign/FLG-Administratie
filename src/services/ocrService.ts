@@ -42,9 +42,22 @@ async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
       body: JSON.stringify({ ocrText }),
     });
 
-    if (!res.ok) return null;
+    // Return null on any error - will fallback to basic extraction
+    if (!res.ok) {
+      console.log('Claude OCR not available, using basic extraction');
+      return null;
+    }
 
-    const data = await res.json();
+    // Parse response as text first to avoid JSON parse errors
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error('Invalid JSON from claude-ocr:', text.substring(0, 100));
+      return null;
+    }
+
     if (!data.success) return null;
 
     const d = data.invoiceData;
@@ -59,7 +72,8 @@ async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
       totalInclVat: Number(d.totalAmount) || 0,
       rawText: ocrText,
     };
-  } catch {
+  } catch (err) {
+    console.log('Claude OCR failed, using basic extraction:', err);
     return null;
   }
 }
