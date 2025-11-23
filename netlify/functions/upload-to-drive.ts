@@ -27,8 +27,33 @@ const handler: Handler = async (event) => {
       return { statusCode: 500, headers, body: JSON.stringify({ error: 'GOOGLE_DRIVE_PRIVATE_KEY not configured' }) };
     }
 
-    // Fix newlines - Netlify stores literal \n, need actual newlines
-    const privateKey = rawKey.replace(/\\n/g, '\n');
+    // Debug: log raw key info
+    console.log('Raw key length:', rawKey.length);
+    console.log('Has literal backslash-n:', rawKey.includes('\\n'));
+    console.log('Has actual newlines:', rawKey.includes('\n'));
+
+    // Fix newlines - handle both cases
+    let privateKey = rawKey;
+
+    // Case 1: literal \n strings (from JSON copy-paste)
+    if (privateKey.includes('\\n')) {
+      privateKey = privateKey.replace(/\\n/g, '\n');
+    }
+
+    // Case 2: ensure key has proper structure
+    // Remove any carriage returns
+    privateKey = privateKey.replace(/\r/g, '');
+
+    // Ensure there's a newline after BEGIN and before END
+    if (!privateKey.match(/-----BEGIN PRIVATE KEY-----\n/)) {
+      privateKey = privateKey.replace(/-----BEGIN PRIVATE KEY-----\s*/, '-----BEGIN PRIVATE KEY-----\n');
+    }
+    if (!privateKey.match(/\n-----END PRIVATE KEY-----/)) {
+      privateKey = privateKey.replace(/\s*-----END PRIVATE KEY-----/, '\n-----END PRIVATE KEY-----');
+    }
+
+    console.log('Processed key starts:', privateKey.substring(0, 60));
+    console.log('Processed key has newlines:', (privateKey.match(/\n/g) || []).length);
 
     // Create auth
     const auth = new google.auth.JWT(
