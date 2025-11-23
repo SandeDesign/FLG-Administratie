@@ -136,7 +136,7 @@ const EmployeesNew: React.FC = () => {
       case 'inactive':
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
       case 'on_leave':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+        return 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300';
       case 'sick':
         return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
       default:
@@ -210,8 +210,8 @@ const EmployeesNew: React.FC = () => {
               {/* Header with name and status */}
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div className="flex items-start gap-3 min-w-0 flex-1">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex-shrink-0">
-                    <User className="h-5 w-5 md:h-6 md:w-6 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex-shrink-0">
+                    <User className="h-5 w-5 md:h-6 md:w-6 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white truncate">
@@ -289,7 +289,7 @@ const EmployeesNew: React.FC = () => {
                     variant="outline"
                     onClick={() => handleCreateAccount(employee)}
                     disabled={creatingAccount === employee.id}
-                    className="col-span-2 text-xs md:text-sm bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                    className="col-span-2 text-xs md:text-sm bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/30 text-primary-700 dark:text-primary-300"
                   >
                     <LogIn className="h-4 w-4 mr-1" />
                     {creatingAccount === employee.id ? 'Aanmaken...' : 'Account aanmaken'}

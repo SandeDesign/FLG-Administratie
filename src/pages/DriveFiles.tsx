@@ -233,7 +233,7 @@ const DriveFiles: React.FC = () => {
 
   const getCategoryColor = (category: DriveFile['category']) => {
     switch (category) {
-      case 'invoice': return 'text-blue-600 bg-blue-100';
+      case 'invoice': return 'text-primary-600 bg-primary-100';
       case 'export': return 'text-green-600 bg-green-100';
       case 'document': return 'text-purple-600 bg-purple-100';
       default: return 'text-gray-600 bg-gray-100';
@@ -243,7 +243,7 @@ const DriveFiles: React.FC = () => {
   const getSyncStatusColor = (status: DriveFolder['syncStatus']) => {
     switch (status) {
       case 'synced': return 'text-green-600 bg-green-100';
-      case 'syncing': return 'text-blue-600 bg-blue-100';
+      case 'syncing': return 'text-primary-600 bg-primary-100';
       case 'error': return 'text-red-600 bg-red-100';
       default: return 'text-gray-600 bg-gray-100';
     }
@@ -297,7 +297,7 @@ const DriveFiles: React.FC = () => {
           onClick={() => setActiveTab('files')}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'files'
-              ? 'text-blue-600 border-b-2 border-blue-600'
+              ? 'text-primary-600 border-b-2 border-primary-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
@@ -307,7 +307,7 @@ const DriveFiles: React.FC = () => {
           onClick={() => setActiveTab('archived')}
           className={`px-4 py-2 font-medium transition-colors ${
             activeTab === 'archived'
-              ? 'text-blue-600 border-b-2 border-blue-600'
+              ? 'text-primary-600 border-b-2 border-primary-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
@@ -334,7 +334,7 @@ const DriveFiles: React.FC = () => {
                     <div key={folder.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
-                          <FolderOpen className="h-5 w-5 text-blue-600" />
+                          <FolderOpen className="h-5 w-5 text-primary-600" />
                           <span className="font-medium text-gray-900 truncate">{folder.companyName}</span>
                         </div>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSyncStatusColor(folder.syncStatus)}`}>
@@ -387,7 +387,7 @@ const DriveFiles: React.FC = () => {
                       placeholder="Zoek bestanden..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -396,7 +396,7 @@ const DriveFiles: React.FC = () => {
                   <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
                     <option value="all">Alle categorieën</option>
                     <option value="invoice">Facturen</option>
@@ -408,7 +408,7 @@ const DriveFiles: React.FC = () => {
                   <select
                     value={companyFilter}
                     onChange={(e) => setCompanyFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
                     <option value="all">Alle bedrijven</option>
                     {companies.map(company => (
@@ -516,7 +516,7 @@ const DriveFiles: React.FC = () => {
                       placeholder="Zoek gearchiveerde facturen..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -524,7 +524,7 @@ const DriveFiles: React.FC = () => {
                 <select
                   value={companyFilter}
                   onChange={(e) => setCompanyFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="all">Alle bedrijven</option>
                   {companies.map(company => (
@@ -566,7 +566,7 @@ const DriveFiles: React.FC = () => {
                               Gearchiveerd
                             </span>
                             {invoice.ocrProcessed && (
-                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-primary-100 text-primary-800">
                                 <Scan className="h-3 w-3 mr-1" />
                                 OCR
                               </span>

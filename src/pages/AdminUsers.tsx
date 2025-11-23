@@ -159,7 +159,7 @@ const AdminUsers: React.FC = () => {
   const getRoleColor = (role: UserRole['role']) => {
     switch (role) {
       case 'admin': return 'text-red-600 bg-red-100';
-      case 'manager': return 'text-blue-600 bg-blue-100';
+      case 'manager': return 'text-primary-600 bg-primary-100';
       case 'employee': return 'text-green-600 bg-green-100';
       default: return 'text-gray-600 bg-gray-100';
     }
@@ -235,7 +235,7 @@ const AdminUsers: React.FC = () => {
                   placeholder="Zoek op naam, email of UID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
             </div>
@@ -244,7 +244,7 @@ const AdminUsers: React.FC = () => {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="all">Alle rollen</option>
                 <option value="admin">Administrator</option>
@@ -260,7 +260,7 @@ const AdminUsers: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center">
-            <Users className="h-8 w-8 text-blue-600" />
+            <Users className="h-8 w-8 text-primary-600" />
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-600">Totaal</p>
               <p className="text-xl font-bold text-gray-900">{users.length}</p>

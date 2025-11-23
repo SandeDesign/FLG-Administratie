@@ -130,7 +130,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
         { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'], companyTypes: ['employer'], color: 'text-emerald-600' },
 
-        { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin'], companyTypes: ['employer'], color: 'text-blue-600' },
+        { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin'], companyTypes: ['employer'], color: 'text-primary-600' },
 
         { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin'], companyTypes: ['employer'], color: 'text-rose-600' },
 
@@ -252,7 +252,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
       items: [
 
-        { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer'], color: 'text-blue-600' },
+        { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer'], color: 'text-primary-600' },
 
         { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer'], color: 'text-slate-600' },
 
@@ -334,7 +334,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
             <div className="flex items-center space-x-3">
 
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-md">
 
                 <span className="text-white font-bold text-xl">F</span>
 
@@ -390,7 +390,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
                 }}
 
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
 
               >
 
@@ -434,7 +434,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
                     isActive
 
-                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border border-blue-200'
+                      ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 shadow-sm border border-primary-200'
 
                       : 'text-gray-700 hover:bg-gray-50'
 
@@ -452,7 +452,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
                       isActive
 
-                        ? 'bg-blue-500 shadow-sm'
+                        ? 'bg-primary-500 shadow-sm'
 
                         : 'bg-gray-100 group-hover:bg-gray-200'
 
@@ -536,7 +536,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
                               isActive
 
-                                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border border-blue-200'
+                                ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 shadow-sm border border-primary-200'
 
                                 : 'text-gray-700 hover:bg-gray-50'
 
@@ -554,7 +554,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
                                 isActive
 
-                                  ? 'bg-blue-500 shadow-sm'
+                                  ? 'bg-primary-500 shadow-sm'
 
                                   : 'bg-gray-100'
 

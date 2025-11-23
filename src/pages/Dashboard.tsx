@@ -164,13 +164,13 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Hero Header */}
-        <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 rounded-xl p-6 text-white space-y-2">
+        <div className="bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 rounded-xl p-6 text-white space-y-2">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold">Project Dashboard</h1>
-              <p className="text-blue-100 mt-1">{selectedCompany?.name}</p>
+              <p className="text-primary-100 mt-1">{selectedCompany?.name}</p>
             </div>
-            <Briefcase className="h-12 w-12 text-blue-200 opacity-50" />
+            <Briefcase className="h-12 w-12 text-primary-200 opacity-50" />
           </div>
         </div>
 
@@ -190,14 +190,14 @@ const Dashboard: React.FC = () => {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Uren Wachten */}
-          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <Card className="p-4 bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-blue-700">Uren</p>
-                <p className="text-2xl font-bold text-blue-900 mt-2">{pendingTimesheets.length}</p>
-                <p className="text-xs text-blue-600 mt-2">wachten</p>
+                <p className="text-xs font-medium text-primary-700">Uren</p>
+                <p className="text-2xl font-bold text-primary-900 mt-2">{pendingTimesheets.length}</p>
+                <p className="text-xs text-primary-600 mt-2">wachten</p>
               </div>
-              <Clock className="h-8 w-8 text-blue-300" />
+              <Clock className="h-8 w-8 text-primary-300" />
             </div>
           </Card>
 
@@ -242,13 +242,13 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
             onClick={() => navigate('/project-production')}
-            className="p-5 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all group"
+            className="p-5 rounded-lg border-2 border-primary-200 bg-primary-50 hover:bg-primary-100 transition-all group"
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 bg-blue-200 rounded-lg">
-                <Briefcase className="h-5 w-5 text-blue-700" />
+              <div className="p-2 bg-primary-200 rounded-lg">
+                <Briefcase className="h-5 w-5 text-primary-700" />
               </div>
-              <ChevronRight className="h-5 w-5 text-blue-400 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="h-5 w-5 text-primary-400 group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="font-semibold text-gray-900 text-left">Productie</p>
             <p className="text-xs text-gray-600 mt-1 text-left">Projecten beheren</p>
@@ -360,7 +360,7 @@ const Dashboard: React.FC = () => {
                 <p className="text-xs font-medium text-gray-600">Actieve Medewerkers</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">{stats.activeEmployees}</p>
               </div>
-              <Users className="h-8 w-8 text-blue-400" />
+              <Users className="h-8 w-8 text-primary-400" />
             </div>
           </Card>
 
@@ -430,14 +430,14 @@ const Dashboard: React.FC = () => {
           ].map((action) => {
             const Icon = action.icon;
             const colorClass = {
-              blue: 'bg-blue-50 border-blue-200 hover:bg-blue-100',
+              blue: 'bg-primary-50 border-primary-200 hover:bg-primary-100',
               purple: 'bg-purple-50 border-purple-200 hover:bg-purple-100',
               green: 'bg-green-50 border-green-200 hover:bg-green-100',
               gray: 'bg-gray-50 border-gray-200 hover:bg-gray-100',
             }[action.color] || 'bg-gray-50 border-gray-200';
 
             const iconColor = {
-              blue: 'text-blue-600',
+              blue: 'text-primary-600',
               purple: 'text-purple-600',
               green: 'text-green-600',
               gray: 'text-gray-600',
@@ -534,10 +534,10 @@ const Dashboard: React.FC = () => {
 
         {/* Key Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Card className="p-4 bg-blue-50 border-blue-200">
-            <p className="text-xs font-medium text-blue-700">Uren Deze Week</p>
-            <p className="text-2xl font-bold text-blue-900 mt-2">-</p>
-            <p className="text-xs text-blue-600 mt-1">uren</p>
+          <Card className="p-4 bg-primary-50 border-primary-200">
+            <p className="text-xs font-medium text-primary-700">Uren Deze Week</p>
+            <p className="text-2xl font-bold text-primary-900 mt-2">-</p>
+            <p className="text-xs text-primary-600 mt-1">uren</p>
           </Card>
 
           <Card className="p-4 bg-green-50 border-green-200">
@@ -557,9 +557,9 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => navigate('/employee-dashboard/timesheets')}
-            className="p-4 rounded-lg bg-blue-50 border-2 border-blue-200 hover:bg-blue-100 transition-all text-left group"
+            className="p-4 rounded-lg bg-primary-50 border-2 border-primary-200 hover:bg-primary-100 transition-all text-left group"
           >
-            <Clock className="h-6 w-6 text-blue-600 mb-2" />
+            <Clock className="h-6 w-6 text-primary-600 mb-2" />
             <p className="font-semibold text-gray-900">Uren Invoeren</p>
             <p className="text-xs text-gray-600 mt-1">Jouw uren registreren</p>
           </button>
@@ -594,9 +594,9 @@ const Dashboard: React.FC = () => {
 
         {/* Info Card */}
         <Card>
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="p-4 bg-gradient-to-r from-primary-50 to-indigo-50">
             <div className="flex items-start gap-3">
-              <Target className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Target className="h-5 w-5 text-primary-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-gray-900 text-sm">Tips</p>
                 <p className="text-xs text-gray-600 mt-2">

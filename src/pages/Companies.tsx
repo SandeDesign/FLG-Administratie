@@ -127,8 +127,8 @@ const Companies: React.FC = () => {
               <Card key={company.id} className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-start space-x-4">
-                    <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                      <Building2 className="h-8 w-8 text-blue-600" />
+                    <div className="p-3 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
+                      <Building2 className="h-8 w-8 text-primary-600" />
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white">

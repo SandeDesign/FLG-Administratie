@@ -58,8 +58,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
           </div>
           
-          {/* CENTER: GROTER LOGO */}
-          <img src="/Logo-groot.png" alt="FLG-Administratie Logo" className="h-24 w-auto flex-shrink-0 mx-2" />
+          {/* CENTER: LOGO */}
+          <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-12 w-auto flex-shrink-0 mx-2" />
           
           {/* RIGHT: Company Selector */}
           <div className="flex-1 flex justify-end">
@@ -68,7 +68,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
                 className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <Building2 className="h-5 w-5 text-blue-600" />
+                <Building2 className="h-5 w-5 text-primary-600" />
                 <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -90,12 +90,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           }}
                           className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left ${
                             selectedCompany?.id === company.id
-                              ? 'bg-blue-50 border border-blue-200 text-blue-900'
+                              ? 'bg-primary-50 border border-primary-200 text-primary-900'
                               : 'hover:bg-gray-50 text-gray-700'
                           }`}
                         >
                           <div className={`p-1.5 rounded-lg ${
-                            selectedCompany?.id === company.id ? 'bg-blue-500' : 'bg-gray-400'
+                            selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400'
                           }`}>
                             <Building2 className="h-3 w-3 text-white" />
                           </div>
@@ -118,7 +118,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
               className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <Building2 className="h-5 w-5 text-blue-600" />
+              <Building2 className="h-5 w-5 text-primary-600" />
               <span className="text-sm font-medium text-gray-700">{selectedCompany?.name || 'Selecteer bedrijf'}</span>
               <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -141,12 +141,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         }}
                         className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left ${
                           selectedCompany?.id === company.id
-                            ? 'bg-blue-50 border border-blue-200 text-blue-900'
+                            ? 'bg-primary-50 border border-primary-200 text-primary-900'
                             : 'hover:bg-gray-50 text-gray-700'
                         }`}
                       >
                         <div className={`p-1.5 rounded-lg ${
-                          selectedCompany?.id === company.id ? 'bg-blue-500' : 'bg-gray-400'
+                          selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400'
                         }`}>
                           <Building2 className="h-3 w-3 text-white" />
                         </div>

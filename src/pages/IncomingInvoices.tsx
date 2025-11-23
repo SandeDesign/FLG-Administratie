@@ -171,13 +171,13 @@ const IncomingInvoices: React.FC = () => {
         <Card>
           <div className="p-6">
             <div className="flex items-center space-x-3 mb-3">
-              <Zap className="h-5 w-5 text-blue-600 animate-pulse" />
+              <Zap className="h-5 w-5 text-primary-600 animate-pulse" />
               <h3 className="font-medium text-gray-900">OCR verwerking bezig...</h3>
             </div>
             <p className="text-sm text-gray-600 mb-3">{processingFile}</p>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className="bg-blue-600 h-2 rounded-full transition-all"
+                className="bg-primary-600 h-2 rounded-full transition-all"
                 style={{ width: `${ocrProgress}%` }}
               />
             </div>
@@ -190,17 +190,17 @@ const IncomingInvoices: React.FC = () => {
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
           isDragOver 
-            ? 'border-blue-400 bg-blue-50' 
+            ? 'border-primary-400 bg-primary-50' 
             : 'border-gray-300 hover:border-gray-400'
         }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
       >
-        <HardDrive className="mx-auto h-12 w-12 text-blue-400" />
+        <HardDrive className="mx-auto h-12 w-12 text-primary-400" />
         <p className="mt-2 text-sm text-gray-600">
           Sleep facturen hierheen of{' '}
-          <label className="font-medium text-blue-600 hover:text-blue-500 cursor-pointer">
+          <label className="font-medium text-primary-600 hover:text-primary-500 cursor-pointer">
             selecteer bestanden
             <input
               type="file"
@@ -253,9 +253,9 @@ const IncomingInvoices: React.FC = () => {
                     <p className="text-xs text-gray-600">BTW</p>
                     <p className="text-lg font-bold text-gray-900">€{result.vatAmount.toFixed(2)}</p>
                   </div>
-                  <div className="bg-blue-50 p-3 rounded">
-                    <p className="text-xs text-blue-600">Incl. BTW</p>
-                    <p className="text-lg font-bold text-blue-900">€{result.totalAmount.toFixed(2)}</p>
+                  <div className="bg-primary-50 p-3 rounded">
+                    <p className="text-xs text-primary-600">Incl. BTW</p>
+                    <p className="text-lg font-bold text-primary-900">€{result.totalAmount.toFixed(2)}</p>
                   </div>
                 </div>
 

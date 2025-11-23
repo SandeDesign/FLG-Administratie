@@ -124,9 +124,9 @@ const EmployeeDashboard: React.FC = () => {
       subtitle: 'Aanvragen en saldo',
       icon: Calendar,
       href: '/employee-dashboard/leave',
-      bgGradient: 'from-blue-500 to-blue-600',
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600'
+      bgGradient: 'from-primary-500 to-primary-600',
+      iconBg: 'bg-primary-100',
+      iconColor: 'text-primary-600'
     },
     {
       title: 'Verzuim',
@@ -168,18 +168,18 @@ const EmployeeDashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white shadow-lg">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white shadow-lg">
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-4xl font-bold mb-2">
               {getGreeting()}, {getFirstName()}!
             </h1>
-            <p className="text-blue-100 flex items-center gap-2">
+            <p className="text-primary-100 flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
               {selectedCompany?.name || 'FLG-Administratie'}
             </p>
             {employeeData?.personalInfo?.firstName && (
-              <p className="text-blue-200 text-sm mt-2">
+              <p className="text-primary-200 text-sm mt-2">
                 {getFullName()}
               </p>
             )}
@@ -201,8 +201,8 @@ const EmployeeDashboard: React.FC = () => {
             return (
               <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Icon className="h-4 w-4 text-blue-100" />
-                  <p className="text-xs text-blue-100">{stat.label}</p>
+                  <Icon className="h-4 w-4 text-primary-100" />
+                  <p className="text-xs text-primary-100">{stat.label}</p>
                 </div>
                 <p className="text-2xl font-bold text-white">{stat.value}</p>
               </div>
@@ -248,7 +248,7 @@ const EmployeeDashboard: React.FC = () => {
           <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
+                <TrendingUp className="h-5 w-5 text-primary-600" />
                 Uren overzicht
               </h3>
               <span className="text-xs text-gray-600 bg-gray-100 px-3 py-1 rounded-full">Deze maand</span>
@@ -299,7 +299,7 @@ const EmployeeDashboard: React.FC = () => {
       {/* Status Cards */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <Target className="h-6 w-6 text-blue-600" />
+          <Target className="h-6 w-6 text-primary-600" />
           Huidige Status
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -308,8 +308,8 @@ const EmployeeDashboard: React.FC = () => {
               title: 'Bedrijf',
               description: selectedCompany?.name || 'Geen bedrijf',
               icon: Building2,
-              color: 'from-blue-50 to-blue-100',
-              iconColor: 'text-blue-600'
+              color: 'from-primary-50 to-primary-100',
+              iconColor: 'text-primary-600'
             },
             {
               title: 'Contract uren',

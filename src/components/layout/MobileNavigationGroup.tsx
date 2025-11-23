@@ -58,7 +58,7 @@ export const MobileNavigationGroup: React.FC<MobileNavigationGroupProps> = ({
               className={({ isActive }) =>
                 `flex items-center px-3 py-2 pl-6 text-sm font-medium rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                    ? 'bg-primary-50 text-primary-700 border border-primary-200'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`
               }

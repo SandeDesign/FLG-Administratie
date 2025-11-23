@@ -72,9 +72,9 @@ const TaxReturns: React.FC = () => {
       case 'rejected':
         return <XCircle className="h-5 w-5 text-red-500" />;
       case 'submitted':
-        return <Send className="h-5 w-5 text-blue-500" />;
+        return <Send className="h-5 w-5 text-primary-500" />;
       case 'validated':
-        return <CheckCircle className="h-5 w-5 text-blue-500" />;
+        return <CheckCircle className="h-5 w-5 text-primary-500" />;
       case 'draft':
         return <FileText className="h-5 w-5 text-gray-500" />;
       case 'corrected':
@@ -99,8 +99,8 @@ const TaxReturns: React.FC = () => {
   const getStatusColor = (status: TaxReturn['status']) => {
     const colors: Record<TaxReturn['status'], string> = {
       draft: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-      validated: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-      submitted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
+      validated: 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400',
+      submitted: 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400',
       accepted: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
       rejected: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
       corrected: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
@@ -160,7 +160,7 @@ const TaxReturns: React.FC = () => {
             id="company-select"
             value={selectedCompanyId}
             onChange={(e) => setSelectedCompanyId(e.target.value)}
-            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
           >
             {appCompanies.map((company) => (
               <option key={company.id} value={company.id}>
@@ -191,11 +191,11 @@ const TaxReturns: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ingediend</p>
-                <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
+                <p className="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">
                   {taxReturns.filter(tr => tr.status === 'submitted').length}
                 </p>
               </div>
-              <Send className="h-8 w-8 text-blue-500" />
+              <Send className="h-8 w-8 text-primary-500" />
             </div>
           </div>
         </Card>
@@ -340,7 +340,7 @@ const TaxReturns: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
                           <button
-                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                            className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
                             title="Bekijk"
                             onClick={() => showError('Bekijken', 'Deze functionaliteit wordt nog geïmplementeerd.')}
                           >

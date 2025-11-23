@@ -141,9 +141,9 @@ const AdminAbsenceManagement: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100">
+        <Card className="p-6 bg-gradient-to-br from-primary-50 to-primary-100">
           <div className="flex items-center">
-            <div className="p-3 bg-blue-600 rounded-xl mr-4">
+            <div className="p-3 bg-primary-600 rounded-xl mr-4">
               <Clock className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -253,7 +253,7 @@ const AdminAbsenceManagement: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {sickLeave.poortwachterActive ? (
-                          <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                          <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-primary-100 text-primary-800 rounded-full">
                             <Clock className="h-3 w-3 mr-1" />
                             Actief
                           </span>

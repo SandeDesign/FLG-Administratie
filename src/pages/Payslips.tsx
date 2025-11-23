@@ -220,7 +220,7 @@ export default function Payslips() {
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white shadow-sm"
             >
               <option value="">Selecteer werknemer</option>
               {companyEmployees.map(emp => (
@@ -235,7 +235,7 @@ export default function Payslips() {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white shadow-sm"
             >
               {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -268,8 +268,8 @@ export default function Payslips() {
               <div className="space-y-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 bg-blue-50 rounded-xl">
-                      <FileText className="h-6 w-6 text-blue-600" />
+                    <div className="p-3 bg-primary-50 rounded-xl">
+                      <FileText className="h-6 w-6 text-primary-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">
@@ -333,14 +333,14 @@ export default function Payslips() {
         </div>
       )}
 
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-primary-50 border-primary-200">
         <div className="flex items-start gap-3">
-          <div className="p-3 bg-blue-100 rounded-xl">
-            <FileText className="h-5 w-5 text-blue-600" />
+          <div className="p-3 bg-primary-100 rounded-xl">
+            <FileText className="h-5 w-5 text-primary-600" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-blue-900 mb-2">Bewaartermijn</h3>
-            <p className="text-sm text-blue-800">
+            <h3 className="font-semibold text-primary-900 mb-2">Bewaartermijn</h3>
+            <p className="text-sm text-primary-800">
               Loonstroken worden 7 jaar bewaard conform wettelijke vereisten. Download en bewaar uw loonstroken ook zelf voor uw administratie.
             </p>
           </div>

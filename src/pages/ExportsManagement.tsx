@@ -158,7 +158,7 @@ export default function ExportsManagement() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               />
             </div>
             <div>
@@ -169,7 +169,7 @@ export default function ExportsManagement() {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               />
             </div>
           </div>
@@ -183,8 +183,8 @@ export default function ExportsManagement() {
             <Card key={exportType.type} className="hover:shadow-lg transition-shadow">
               <div className="p-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="p-3 bg-blue-100 rounded-lg dark:bg-blue-900/20">
-                    <Icon className="h-6 w-6 text-blue-600" />
+                  <div className="p-3 bg-primary-100 rounded-lg dark:bg-primary-900/20">
+                    <Icon className="h-6 w-6 text-primary-600" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900 dark:text-white">{exportType.label}</h3>

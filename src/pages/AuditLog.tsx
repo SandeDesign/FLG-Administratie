@@ -123,7 +123,7 @@ const AuditLogPage: React.FC = () => {
 
   const getSeverityColor = (severity: AuditLogEntry['severity']): string => {
     const colors: Record<AuditLogEntry['severity'], string> = {
-      info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
+      info: 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400',
       warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
       critical: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
     };
@@ -340,7 +340,7 @@ const AuditLogPage: React.FC = () => {
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Unieke gebruikers
               </p>
-              <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
+              <p className="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">
                 {new Set(auditLogs.map((log) => log.performedBy.uid)).size}
               </p>
             </div>

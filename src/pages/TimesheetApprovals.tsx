@@ -224,7 +224,7 @@ export default function TimesheetApprovals() {
         </Card>
         <Card className="p-3 bg-white">
           <p className="text-xs font-medium text-gray-600">Medewerkers</p>
-          <p className="text-xl font-bold text-blue-600 mt-1">{employeesWithPending}</p>
+          <p className="text-xl font-bold text-primary-600 mt-1">{employeesWithPending}</p>
         </Card>
         <Card className="p-3 bg-white">
           <p className="text-xs font-medium text-gray-600">Klaar</p>
@@ -264,8 +264,8 @@ export default function TimesheetApprovals() {
                       }}
                       className={`flex-1 flex items-center gap-3 min-w-0 text-left ${summary.hasPending ? 'cursor-pointer' : 'cursor-default'}`}
                     >
-                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center flex-shrink-0">
-                        <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center flex-shrink-0">
+                        <User className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
@@ -279,7 +279,7 @@ export default function TimesheetApprovals() {
                                 <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold whitespace-nowrap">
                                   {summary.pendingTimesheets.length} week{summary.pendingTimesheets.length !== 1 ? 'en' : ''}
                                 </span>
-                                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 font-semibold whitespace-nowrap">
                                   {summary.totalPendingHours}u uren
                                 </span>
                                 {summary.hoursLacking && summary.hoursLacking > 0 && (
@@ -311,7 +311,7 @@ export default function TimesheetApprovals() {
                         onClick={() => {
                           setDashboardEmployeeId(summary.employeeId);
                         }}
-                        className="px-2 py-1 rounded-lg bg-blue-100 text-blue-700 text-xs font-semibold hover:bg-blue-200 active:bg-blue-300 flex items-center gap-1 whitespace-nowrap transition-colors"
+                        className="px-2 py-1 rounded-lg bg-primary-100 text-primary-700 text-xs font-semibold hover:bg-primary-200 active:bg-primary-300 flex items-center gap-1 whitespace-nowrap transition-colors"
                         title="Dashboard met alle weken"
                       >
                         <BarChart3 className="h-3 w-3" />
@@ -424,7 +424,7 @@ export default function TimesheetApprovals() {
                             </div>
 
                             {/* CTA */}
-                            <div className="flex items-center justify-between pt-2 border-t border-orange-100 text-blue-600 text-xs font-medium">
+                            <div className="flex items-center justify-between pt-2 border-t border-orange-100 text-primary-600 text-xs font-medium">
                               <span>Klik voor volledige details</span>
                               <ChevronRight className="h-4 w-4" />
                             </div>
@@ -455,10 +455,10 @@ export default function TimesheetApprovals() {
           return (
             <div className="space-y-4 max-h-[75vh] overflow-y-auto">
               {/* Header Info */}
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <div className="p-4 bg-gradient-to-r from-primary-50 to-indigo-50 rounded-lg border border-primary-200">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                    <User className="h-6 w-6 text-blue-600" />
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                    <User className="h-6 w-6 text-primary-600" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg text-gray-900">{emp.firstName} {emp.lastName}</h3>
@@ -471,7 +471,7 @@ export default function TimesheetApprovals() {
               <div className="grid grid-cols-2 gap-3">
                 <Card className="p-3 bg-white">
                   <p className="text-xs text-gray-600">Totaal weken</p>
-                  <p className="text-2xl font-bold text-blue-600">{emp.allTimesheets.length}</p>
+                  <p className="text-2xl font-bold text-primary-600">{emp.allTimesheets.length}</p>
                 </Card>
                 <Card className="p-3 bg-white">
                   <p className="text-xs text-gray-600">Totaal uren</p>

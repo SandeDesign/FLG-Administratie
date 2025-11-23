@@ -57,7 +57,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       icon: Zap,
       items: [
         { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], color: 'text-purple-600' },
-        { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], color: 'text-blue-600' },
+        { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], color: 'text-primary-600' },
         { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'], color: 'text-green-600' },
       ]
     },
@@ -118,7 +118,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
               <Users className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -146,7 +146,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                   const company = companies.find(c => c.id === e.target.value);
                   if (company) setSelectedCompany(company);
                 }}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               >
                 <option value="">Selecteer bedrijf...</option>
                 {companies.map((company) => (
@@ -170,7 +170,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                   className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-500 rounded-lg">
+                    <div className="p-2 bg-primary-500 rounded-lg">
                       <category.icon className="h-5 w-5 text-white" />
                     </div>
                     <span className="font-semibold text-gray-900">{category.title}</span>
@@ -193,7 +193,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                         className={({ isActive }) =>
                           `flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
                             isActive
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              ? 'bg-primary-50 text-primary-700 border border-primary-200'
                               : 'text-gray-700 hover:bg-white hover:shadow-sm'
                           }`
                         }

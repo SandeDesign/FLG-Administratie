@@ -35,7 +35,7 @@ const GoogleDriveSettings: React.FC = () => {
       <div className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <HardDrive className="h-6 w-6 text-blue-600" />
+            <HardDrive className="h-6 w-6 text-primary-600" />
             <div>
               <h3 className="text-lg font-medium text-gray-900">Google Drive Integratie</h3>
               <p className="mt-1 text-sm text-gray-500">
@@ -62,7 +62,7 @@ const GoogleDriveSettings: React.FC = () => {
           </div>
 
           {/* Folder structure */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 text-sm text-primary-800">
             <strong>Mappenstructuur:</strong>
             <div className="mt-1 text-xs font-mono">
               FLG-Administratie/<br />

@@ -82,7 +82,7 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
           value={selectedWeek}
           onChange={(e) => setSelectedWeek(Number(e.target.value))}
           disabled={loading || showPreview}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
         >
           {weekOptions.map(opt => (
             <option key={opt.week} value={opt.week}>
@@ -141,7 +141,7 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
               ))}
 
               {/* Info */}
-              <div className="flex gap-2 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+              <div className="flex gap-2 p-3 bg-primary-50 border border-primary-200 rounded text-sm text-primary-700">
                 <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                 <div>
                   <strong>Opmerking:</strong> Deze gegevens worden als beschrijving toegevoegd. Pas het dagtarief aan als nodig.

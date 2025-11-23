@@ -546,7 +546,7 @@ const OutgoingInvoices: React.FC = () => {
   const getStatusColor = (status: OutgoingInvoice['status']) => {
     const colors = {
       draft: 'bg-gray-100 text-gray-800 border-gray-200',
-      sent: 'bg-blue-50 text-blue-700 border-blue-200',
+      sent: 'bg-primary-50 text-primary-700 border-primary-200',
       paid: 'bg-green-50 text-green-700 border-green-200',
       overdue: 'bg-red-50 text-red-700 border-red-200',
       cancelled: 'bg-gray-100 text-gray-800 border-gray-200'
@@ -634,8 +634,8 @@ const OutgoingInvoices: React.FC = () => {
           {/* Client Selection */}
           <Card className="p-5 sm:p-6 space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <User className="h-4 w-4 text-blue-600" />
+              <div className="p-2 bg-primary-100 rounded-lg">
+                <User className="h-4 w-4 text-primary-600" />
               </div>
               <h2 className="text-sm font-semibold text-gray-900">Klantgegevens</h2>
             </div>
@@ -663,7 +663,7 @@ const OutgoingInvoices: React.FC = () => {
                           key={rel.id}
                           type="button"
                           onClick={() => handleSelectRelation(rel)}
-                          className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                          className="w-full text-left px-4 py-3 hover:bg-primary-50 border-b border-gray-100 last:border-b-0 transition-colors"
                         >
                           <div className="font-medium text-gray-900 text-sm">{rel.name}</div>
                           <div className="text-xs text-gray-500 mt-0.5">{rel.email}</div>
@@ -683,7 +683,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientName}
                   onChange={e => setFormData({ ...formData, clientName: e.target.value })}
                   placeholder="Bedrijfsnaam"
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
               <div>
@@ -693,7 +693,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientEmail}
                   onChange={e => setFormData({ ...formData, clientEmail: e.target.value })}
                   placeholder="klant@bedrijf.nl"
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
               <div>
@@ -703,7 +703,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientPhone}
                   onChange={e => setFormData({ ...formData, clientPhone: e.target.value })}
                   placeholder="+31 6 12345678"
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
               <div>
@@ -713,7 +713,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientKvk}
                   onChange={e => setFormData({ ...formData, clientKvk: e.target.value })}
                   placeholder="12345678"
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
             </div>
@@ -735,7 +735,7 @@ const OutgoingInvoices: React.FC = () => {
                   type="date"
                   value={formData.invoiceDate}
                   onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
               <div>
@@ -744,7 +744,7 @@ const OutgoingInvoices: React.FC = () => {
                   type="date"
                   value={formData.dueDate}
                   onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
             </div>
@@ -856,7 +856,7 @@ const OutgoingInvoices: React.FC = () => {
                                     Week {week.week} ({week.year})
                                   </span>
                                   {invoiced && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-700">
                                       ✓ Gefactureerd
                                     </span>
                                   )}
@@ -942,7 +942,7 @@ const OutgoingInvoices: React.FC = () => {
               <button
                 type="button"
                 onClick={addItem}
-                className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                className="flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Regel toevoegen
@@ -958,7 +958,7 @@ const OutgoingInvoices: React.FC = () => {
                       placeholder="Bijv: Week 40 Jan Jansen"
                       value={item.title}
                       onChange={e => updateItem(i, 'title', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
 
@@ -969,7 +969,7 @@ const OutgoingInvoices: React.FC = () => {
                       value={item.description}
                       onChange={e => updateItem(i, 'description', e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-mono"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none font-mono"
                     />
                   </div>
 
@@ -982,7 +982,7 @@ const OutgoingInvoices: React.FC = () => {
                         onChange={e => updateItem(i, 'quantity', Number(e.target.value))}
                         min="0.1"
                         step="0.1"
-                        className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
                     <div>
@@ -993,7 +993,7 @@ const OutgoingInvoices: React.FC = () => {
                         onChange={e => updateItem(i, 'rate', Number(e.target.value))}
                         min="0"
                         step="0.01"
-                        className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
                     <div>
@@ -1018,7 +1018,7 @@ const OutgoingInvoices: React.FC = () => {
           </Card>
 
           {/* Totals */}
-          <Card className="p-5 sm:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+          <Card className="p-5 sm:p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-primary-200">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Subtotaal:</span>
@@ -1028,9 +1028,9 @@ const OutgoingInvoices: React.FC = () => {
                 <span className="text-sm text-gray-600">BTW (21%):</span>
                 <span className="text-lg font-semibold text-gray-900">€{vatAmount.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-blue-200">
+              <div className="flex justify-between items-center pt-3 border-t border-primary-200">
                 <span className="text-sm font-semibold text-gray-900">Totaal:</span>
-                <span className="text-2xl font-bold text-blue-600">€{total.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-primary-600">€{total.toFixed(2)}</span>
               </div>
             </div>
           </Card>
@@ -1043,7 +1043,7 @@ const OutgoingInvoices: React.FC = () => {
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
               placeholder="Eventuele opmerkingen op deze factuur..."
-              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none"
+              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors resize-none"
             />
           </Card>
 
@@ -1103,7 +1103,7 @@ const OutgoingInvoices: React.FC = () => {
               placeholder="Zoeken op naam of nummer..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full pl-10 pr-10 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 transition-colors"
             />
             {searchTerm && (
               <button
@@ -1117,7 +1117,7 @@ const OutgoingInvoices: React.FC = () => {
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition-colors bg-white"
+            className="px-3 py-2 text-xs sm:text-sm border-2 border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 transition-colors bg-white"
           >
             <option value="all">Alle statussen</option>
             <option value="draft">Concept</option>
@@ -1159,7 +1159,7 @@ const OutgoingInvoices: React.FC = () => {
                       invoice.status === 'paid'
                         ? 'bg-green-100'
                         : invoice.status === 'sent'
-                        ? 'bg-blue-100'
+                        ? 'bg-primary-100'
                         : invoice.status === 'overdue'
                         ? 'bg-red-100'
                         : 'bg-gray-100'
@@ -1168,7 +1168,7 @@ const OutgoingInvoices: React.FC = () => {
                         invoice.status === 'paid'
                           ? 'text-green-600'
                           : invoice.status === 'sent'
-                          ? 'text-blue-600'
+                          ? 'text-primary-600'
                           : invoice.status === 'overdue'
                           ? 'text-red-600'
                           : 'text-gray-600'
@@ -1225,7 +1225,7 @@ const OutgoingInvoices: React.FC = () => {
                         ))}
                         <div className="border-t border-gray-200 pt-2 mt-3 flex justify-between font-semibold">
                           <span className="text-gray-600">Totaal:</span>
-                          <span className="text-blue-600">€{invoice.totalAmount.toFixed(2)}</span>
+                          <span className="text-primary-600">€{invoice.totalAmount.toFixed(2)}</span>
                         </div>
                       </div>
                     )}
@@ -1304,8 +1304,8 @@ const OutgoingInvoices: React.FC = () => {
                 <p className="text-lg sm:text-xl font-bold text-gray-900 mt-1">{draftCount}</p>
               </div>
               <div>
-                <p className="text-blue-600 font-medium">Verstuurd</p>
-                <p className="text-lg sm:text-xl font-bold text-blue-600 mt-1">{sentCount}</p>
+                <p className="text-primary-600 font-medium">Verstuurd</p>
+                <p className="text-lg sm:text-xl font-bold text-primary-600 mt-1">{sentCount}</p>
               </div>
               <div>
                 <p className="text-green-600 font-medium">Betaald</p>

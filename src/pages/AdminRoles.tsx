@@ -262,7 +262,7 @@ const AdminRoles: React.FC = () => {
 
   const getCategoryColor = (category: Permission['category']) => {
     switch (category) {
-      case 'users': return 'text-blue-600 bg-blue-100';
+      case 'users': return 'text-primary-600 bg-primary-100';
       case 'companies': return 'text-green-600 bg-green-100';
       case 'employees': return 'text-purple-600 bg-purple-100';
       case 'timesheets': return 'text-orange-600 bg-orange-100';
@@ -302,8 +302,8 @@ const AdminRoles: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-6">
           <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Shield className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-primary-100 rounded-lg">
+              <Shield className="h-6 w-6 text-primary-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Totaal Rollen</p>
@@ -348,7 +348,7 @@ const AdminRoles: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <h3 className="text-lg font-medium text-gray-900">{role.name}</h3>
                   {role.isSystem && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-blue-800 bg-blue-100">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-primary-800 bg-primary-100">
                       Systeem
                     </span>
                   )}
@@ -430,7 +430,7 @@ const AdminRoles: React.FC = () => {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="all">Alle categorieën</option>
               {categories.map((category) => (
@@ -544,7 +544,7 @@ const RoleModal: React.FC<{
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
@@ -557,7 +557,7 @@ const RoleModal: React.FC<{
               required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
         </div>
@@ -581,7 +581,7 @@ const RoleModal: React.FC<{
                         id={permission.id}
                         checked={formData.permissions.includes(permission.id)}
                         onChange={() => togglePermission(permission.id)}
-                        className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                       />
                       <div className="flex-1">
                         <label htmlFor={permission.id} className="text-sm font-medium text-gray-900 cursor-pointer">

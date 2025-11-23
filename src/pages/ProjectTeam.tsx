@@ -77,7 +77,7 @@ const ProjectTeam: React.FC = () => {
           </p>
         </div>
         
-        <div className="flex items-center space-x-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
+        <div className="flex items-center space-x-2 px-3 py-1 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium">
           <Target className="h-4 w-4" />
           <span>Project</span>
         </div>
@@ -87,8 +87,8 @@ const ProjectTeam: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">
           <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-primary-100 rounded-lg">
+              <Users className="h-6 w-6 text-primary-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Team Leden</p>

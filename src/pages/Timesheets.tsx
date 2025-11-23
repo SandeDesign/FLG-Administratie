@@ -597,7 +597,7 @@ export default function Timesheets() {
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Selecteer werknemer</option>
               {companyEmployees.map(emp => (
@@ -665,7 +665,7 @@ export default function Timesheets() {
 
       {/* Import Status */}
       {importing && (
-        <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3 text-blue-600 text-sm">
+        <div className="p-3 sm:p-4 bg-primary-50 border border-primary-200 rounded-lg flex items-center gap-3 text-primary-600 text-sm">
           <LoadingSpinner className="h-4 w-4 sm:h-5 sm:w-5" />
           <span>Bezig met ophalen van data...</span>
         </div>
@@ -673,7 +673,7 @@ export default function Timesheets() {
 
       {/* Week Summary */}
       {currentTimesheet && (
-        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 p-4 sm:p-6">
+        <Card className="bg-gradient-to-r from-primary-50 to-indigo-50 border-primary-200 p-4 sm:p-6">
           <div className="space-y-3">
             <h3 className="font-semibold text-gray-900">Week {selectedWeek} Overzicht</h3>
             
@@ -692,7 +692,7 @@ export default function Timesheets() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
                 <p className="text-xs text-gray-600 mb-1">Totaal</p>
-                <p className="text-xl sm:text-2xl font-bold text-blue-600">{currentTimesheet.totalRegularHours}u</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary-600">{currentTimesheet.totalRegularHours}u</p>
               </div>
               <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
                 <p className="text-xs text-gray-600 mb-1">Kilometers</p>
@@ -728,7 +728,7 @@ export default function Timesheets() {
                 disabled={isReadOnly && !hasData}
                 className={`w-full p-3 sm:p-4 rounded-lg border-2 transition-all text-left flex items-center justify-between ${
                   isExpanded 
-                    ? 'border-blue-300 bg-blue-50' 
+                    ? 'border-primary-300 bg-primary-50' 
                     : hasData
                     ? `border-orange-300 bg-orange-50 hover:bg-orange-100`
                     : 'border-gray-200 bg-white hover:bg-gray-50'
@@ -747,7 +747,7 @@ export default function Timesheets() {
                   {/* Quick Summary */}
                   <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
                     {entry.regularHours > 0 && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                      <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded">
                         {entry.regularHours}u
                       </span>
                     )}
@@ -757,7 +757,7 @@ export default function Timesheets() {
                       </span>
                     )}
                     {isImported && (
-                      <Download className="h-4 w-4 text-blue-600" />
+                      <Download className="h-4 w-4 text-primary-600" />
                     )}
                   </div>
                 </div>
@@ -767,7 +767,7 @@ export default function Timesheets() {
 
               {/* Expanded Day Content */}
               {isExpanded && (
-                <Card className={`mt-1 p-3 sm:p-4 space-y-3 sm:space-y-4 ${isImported ? 'bg-blue-50 border-blue-200' : ''}`}>
+                <Card className={`mt-1 p-3 sm:p-4 space-y-3 sm:space-y-4 ${isImported ? 'bg-primary-50 border-primary-200' : ''}`}>
                   {/* Input Fields */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -829,7 +829,7 @@ export default function Timesheets() {
                     </div>
 
                     {(entry.workActivities || []).map((activity, actIdx) => (
-                      <div key={actIdx} className={`p-2 rounded flex gap-2 items-center ${activity.isITKnechtImport ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                      <div key={actIdx} className={`p-2 rounded flex gap-2 items-center ${activity.isITKnechtImport ? 'bg-primary-100' : 'bg-gray-100'}`}>
                         <Input
                           type="number"
                           min="0"

@@ -161,7 +161,7 @@ const AdminDashboard: React.FC = () => {
         
         {/* Row 1: Employees */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-blue-100">
+          <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary-50 to-primary-100">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Werknemers</p>
@@ -170,7 +170,7 @@ const AdminDashboard: React.FC = () => {
                   {stats.employeesWithAccount} met account
                 </p>
               </div>
-              <div className="p-2 sm:p-3 bg-blue-600 rounded-lg">
+              <div className="p-2 sm:p-3 bg-primary-600 rounded-lg">
                 <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
@@ -236,7 +236,7 @@ const AdminDashboard: React.FC = () => {
               </h2>
               <button
                 onClick={() => window.location.href = '/admin/leave-approvals'}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                className="text-xs text-primary-600 hover:text-primary-700 font-medium"
               >
                 Alle →
               </button>
@@ -275,7 +275,7 @@ const AdminDashboard: React.FC = () => {
           <div className="space-y-2">
             <button
               onClick={() => window.location.href = '/employees'}
-              className="w-full flex items-center justify-between px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-lg transition-colors text-sm"
+              className="w-full flex items-center justify-between px-4 py-3 bg-primary-50 hover:bg-primary-100 text-primary-900 rounded-lg transition-colors text-sm"
             >
               <span className="font-medium">Werknemers beheren</span>
               <ArrowRight className="h-4 w-4" />

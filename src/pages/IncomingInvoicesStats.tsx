@@ -109,7 +109,7 @@ const IncomingInvoicesStats: React.FC = () => {
   const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     const statusConfig = {
       pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock, label: 'In behandeling' },
-      approved: { bg: 'bg-blue-100', text: 'text-blue-800', icon: CheckCircle, label: 'Goedgekeurd' },
+      approved: { bg: 'bg-primary-100', text: 'text-primary-800', icon: CheckCircle, label: 'Goedgekeurd' },
       paid: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle, label: 'Betaald' },
       rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle, label: 'Afgewezen' },
     };
@@ -322,7 +322,7 @@ const IncomingInvoicesStats: React.FC = () => {
             amount: statistics.total,
             count: statistics.count,
             icon: TrendingUp,
-            color: 'bg-gradient-to-br from-blue-500 to-blue-600',
+            color: 'bg-gradient-to-br from-primary-500 to-primary-600',
           },
           {
             label: 'In Behandeling',
@@ -336,7 +336,7 @@ const IncomingInvoicesStats: React.FC = () => {
             amount: statistics.approved,
             count: statistics.approvedCount,
             icon: CheckCircle,
-            color: 'bg-gradient-to-br from-blue-500 to-cyan-600',
+            color: 'bg-gradient-to-br from-primary-500 to-cyan-600',
           },
           {
             label: 'Betaald',
@@ -459,9 +459,9 @@ const IncomingInvoicesStats: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => openEdit(invoice)}
-                                className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                                className="p-2 hover:bg-primary-100 dark:hover:bg-primary-900 rounded-lg transition-colors"
                               >
-                                <Edit2 className="w-4 h-4 text-blue-600" />
+                                <Edit2 className="w-4 h-4 text-primary-600" />
                               </button>
                             </>
                           )}
@@ -525,9 +525,9 @@ const IncomingInvoicesStats: React.FC = () => {
                                   {formatCurrency(invoice.vatAmount)}
                                 </p>
                               </div>
-                              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded border border-blue-200 dark:border-blue-700">
-                                <p className="text-xs text-blue-600 dark:text-blue-400">Incl. BTW</p>
-                                <p className="font-bold text-blue-900 dark:text-blue-200">
+                              <div className="bg-primary-50 dark:bg-primary-900/30 p-3 rounded border border-primary-200 dark:border-primary-700">
+                                <p className="text-xs text-primary-600 dark:text-primary-400">Incl. BTW</p>
+                                <p className="font-bold text-primary-900 dark:text-primary-200">
                                   {formatCurrency(invoice.totalAmount)}
                                 </p>
                               </div>
@@ -712,9 +712,9 @@ const IncomingInvoicesStats: React.FC = () => {
                       {formatCurrency(editFormData.vatAmount || 0)}
                     </p>
                   </div>
-                  <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded">
-                    <p className="text-xs text-blue-600 dark:text-blue-400">Incl. BTW</p>
-                    <p className="font-bold text-blue-900 dark:text-blue-200">
+                  <div className="bg-primary-50 dark:bg-primary-900/30 p-3 rounded">
+                    <p className="text-xs text-primary-600 dark:text-primary-400">Incl. BTW</p>
+                    <p className="font-bold text-primary-900 dark:text-primary-200">
                       {formatCurrency(editFormData.totalAmount || 0)}
                     </p>
                   </div>

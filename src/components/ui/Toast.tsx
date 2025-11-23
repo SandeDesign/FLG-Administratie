@@ -25,7 +25,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
       case 'warning':
         return <AlertTriangle className="h-5 w-5 text-orange-600" />;
       case 'info':
-        return <Info className="h-5 w-5 text-blue-600" />;
+        return <Info className="h-5 w-5 text-primary-600" />;
       default:
         return null;
     }
@@ -40,7 +40,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
       case 'warning':
         return 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800';
       case 'info':
-        return 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800';
+        return 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800';
       default:
         return 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700';
     }

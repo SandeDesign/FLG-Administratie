@@ -271,7 +271,7 @@ export default function PayrollProcessing() {
                 {selectedPeriod?.employeeCount || 0}
               </p>
             </div>
-            <Users className="h-8 w-8 text-blue-500" />
+            <Users className="h-8 w-8 text-primary-500" />
           </div>
         </Card>
         <Card>
@@ -324,7 +324,7 @@ export default function PayrollProcessing() {
                   onClick={() => setSelectedPeriod(period)}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
                     selectedPeriod?.id === period.id
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                       : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                   }`}
                 >
@@ -340,7 +340,7 @@ export default function PayrollProcessing() {
                     <div className="text-right">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                         period.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' :
-                        period.status === 'approved' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' :
+                        period.status === 'approved' ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300' :
                         period.status === 'calculated' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300' :
                         'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                       }`}>

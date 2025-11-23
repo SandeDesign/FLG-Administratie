@@ -155,7 +155,7 @@ const ProjectStatistics: React.FC = () => {
       {insights?.summary && computedStats && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-l-4 border-l-blue-600 shadow-lg hover:shadow-xl transition">
+            <Card className="p-6 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 border-l-4 border-l-primary-600 shadow-lg hover:shadow-xl transition">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">Totaal Medewerkers</p>
@@ -165,7 +165,7 @@ const ProjectStatistics: React.FC = () => {
                     <p className="text-sm text-green-700 font-medium">{insights.summary.activeEmployees} actief</p>
                   </div>
                 </div>
-                <Users className="w-16 h-16 text-blue-200 dark:text-blue-700" />
+                <Users className="w-16 h-16 text-primary-200 dark:text-primary-700" />
               </div>
             </Card>
 
@@ -250,7 +250,7 @@ const ProjectStatistics: React.FC = () => {
           <div className="inline-block">
             <div className="relative w-16 h-16">
               <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-blue-500 animate-spin"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary-500 border-r-primary-500 animate-spin"></div>
             </div>
           </div>
           <p className="text-gray-500 dark:text-gray-400 mt-4">Alle analytics laden...</p>

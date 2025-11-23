@@ -70,7 +70,7 @@ const AdminExpenses: React.FC = () => {
       case 'submitted':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
       case 'paid':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+        return 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
@@ -224,7 +224,7 @@ const AdminExpenses: React.FC = () => {
         </Card>
         <Card className="p-4">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Uitbetaald</p>
-          <p className="text-2xl font-bold text-blue-600">
+          <p className="text-2xl font-bold text-primary-600">
             {formatCurrency(totalByStatus.paid)}
           </p>
         </Card>
@@ -372,7 +372,7 @@ const AdminExpenses: React.FC = () => {
                           </div>
                         )}
                         {expense.status === 'paid' && (
-                          <span className="text-blue-600 dark:text-blue-400 text-xs">
+                          <span className="text-primary-600 dark:text-primary-400 text-xs">
                             Uitbetaald
                           </span>
                         )}
@@ -420,7 +420,7 @@ const AdminExpenses: React.FC = () => {
               value={rejectComment}
               onChange={(e) => setRejectComment(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               placeholder="Bijvoorbeeld: Ontbrekende bonnen, verkeerd bedrag, niet zakelijk..."
             />
           </div>

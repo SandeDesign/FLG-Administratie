@@ -160,7 +160,7 @@ const AdminLeaveApprovals: React.FC = () => {
         </Card>
         <Card className="p-4">
           <div className="flex items-center">
-            <User className="h-8 w-8 text-blue-600 mr-3" />
+            <User className="h-8 w-8 text-primary-600 mr-3" />
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Werknemers</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">

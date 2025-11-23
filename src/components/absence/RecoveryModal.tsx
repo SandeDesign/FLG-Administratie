@@ -134,7 +134,7 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
           </label>
           <select
             {...register('status', { required: 'Status is verplicht' })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           >
             <option value="recovered">Volledig hersteld (100%)</option>
             <option value="partially_recovered">Gedeeltelijk hersteld</option>
@@ -151,7 +151,7 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
           <textarea
             {...register('notes')}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             placeholder="Eventuele aanvullende informatie..."
           />
         </div>

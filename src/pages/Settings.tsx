@@ -130,7 +130,7 @@ const Settings: React.FC = () => {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`${
                   activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600'
+                    ? 'border-primary-600 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
               >
@@ -150,8 +150,8 @@ const Settings: React.FC = () => {
                 Weergave
               </h2>
               <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
+                  <p className="text-sm text-primary-800">
                     FLG-Administratie gebruikt een licht, professioneel thema gebaseerd op Material Design principes voor optimale leesbaarheid en gebruiksvriendelijkheid.
                   </p>
                 </div>
@@ -175,7 +175,7 @@ const Settings: React.FC = () => {
                       type="number"
                       step="0.01"
                       defaultValue="0.23"
-                      className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500 shadow-sm"
+                      className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary-500 shadow-sm"
                     />
                     <span className="text-gray-600">per km</span>
                   </div>
@@ -190,7 +190,7 @@ const Settings: React.FC = () => {
                       type="number"
                       step="0.1"
                       defaultValue="8.0"
-                      className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500 shadow-sm"
+                      className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary-500 shadow-sm"
                     />
                     <span className="text-gray-600">%</span>
                   </div>
@@ -205,7 +205,7 @@ const Settings: React.FC = () => {
                       type="number"
                       step="1"
                       defaultValue="40"
-                      className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:ring-2 focus:ring-blue-500 shadow-sm"
+                      className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary-500 shadow-sm"
                     />
                     <span className="text-gray-600">uur</span>
                   </div>
@@ -264,9 +264,9 @@ const Settings: React.FC = () => {
           </Card>
 
           <Card>
-            <div className="p-6 bg-blue-50">
-              <h3 className="font-medium text-blue-900 mb-2">💡 Info</h3>
-              <p className="text-sm text-blue-800">
+            <div className="p-6 bg-primary-50">
+              <h3 className="font-medium text-primary-900 mb-2">💡 Info</h3>
+              <p className="text-sm text-primary-800">
                 Je kunt ook handmatig een bedrijf selecteren in de sidebar. Dit wijzigt je voorkeur echter niet.
               </p>
             </div>
@@ -280,7 +280,7 @@ const Settings: React.FC = () => {
             <div className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <HardDrive className="h-6 w-6 text-blue-600" />
+                  <HardDrive className="h-6 w-6 text-primary-600" />
                   <div>
                     <h3 className="text-lg font-medium text-gray-900">Google Drive Integratie</h3>
                     <p className="mt-1 text-sm text-gray-500">
@@ -291,7 +291,7 @@ const Settings: React.FC = () => {
               </div>
 
               <div className="mt-6 space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 text-sm text-primary-800">
                   <strong>Mappenstructuur:</strong>
                   <div className="mt-2 text-xs font-mono">
                     FLG-Administratie/<br />
@@ -366,7 +366,7 @@ const Settings: React.FC = () => {
                           )
                         }
                         className={`${
-                          preferences?.email.enabled ? 'bg-blue-600' : 'bg-gray-200'
+                          preferences?.email.enabled ? 'bg-primary-600' : 'bg-gray-200'
                         } relative inline-flex h-6 w-11 items-center rounded-full transition-colors`}
                       >
                         <span
@@ -405,7 +405,7 @@ const Settings: React.FC = () => {
                                     : null
                                 )
                               }
-                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                             />
                             <span className="text-sm text-gray-900 dark:text-white">{label}</span>
                           </label>
@@ -443,7 +443,7 @@ const Settings: React.FC = () => {
                           )
                         }
                         className={`${
-                          preferences?.inApp.showBadge ? 'bg-blue-600' : 'bg-gray-200'
+                          preferences?.inApp.showBadge ? 'bg-primary-600' : 'bg-gray-200'
                         } relative inline-flex h-6 w-11 items-center rounded-full transition-colors`}
                       >
                         <span
@@ -566,7 +566,7 @@ const Settings: React.FC = () => {
                       Maak elke dag automatisch een back-up
                     </p>
                   </div>
-                  <button className="bg-blue-600 relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                  <button className="bg-primary-600 relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
                     <span className="translate-x-6 inline-block h-4 w-4 transform rounded-full bg-white transition-transform" />
                   </button>
                 </div>

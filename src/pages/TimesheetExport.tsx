@@ -195,7 +195,7 @@ const TimesheetExport: React.FC = () => {
     switch (status) {
       case 'pending': return 'text-orange-600 bg-orange-100';
       case 'exported': return 'text-green-600 bg-green-100';
-      case 'processed': return 'text-blue-600 bg-blue-100';
+      case 'processed': return 'text-primary-600 bg-primary-100';
       default: return 'text-gray-600 bg-gray-100';
     }
   };
@@ -247,7 +247,7 @@ const TimesheetExport: React.FC = () => {
                 type="date"
                 value={selectedPeriod.startDate}
                 onChange={(e) => setSelectedPeriod(prev => ({...prev, startDate: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             
@@ -259,7 +259,7 @@ const TimesheetExport: React.FC = () => {
                 type="date"
                 value={selectedPeriod.endDate}
                 onChange={(e) => setSelectedPeriod(prev => ({...prev, endDate: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             
@@ -270,7 +270,7 @@ const TimesheetExport: React.FC = () => {
               <select
                 value={exportFormat}
                 onChange={(e) => setExportFormat(e.target.value as 'csv' | 'excel')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="excel">Excel (.xlsx)</option>
                 <option value="csv">CSV (.csv)</option>
@@ -289,9 +289,9 @@ const TimesheetExport: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Export bevat:</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
+          <div className="mt-4 p-4 bg-primary-50 rounded-lg">
+            <h3 className="text-sm font-medium text-primary-900 mb-2">Export bevat:</h3>
+            <ul className="text-sm text-primary-800 space-y-1">
               <li>• Werknemersgegevens (naam, BSN, personeelsnummer)</li>
               <li>• Urenregistraties per dag (regulier, overwerk, onregelmatig)</li>
               <li>• Werkmaatschappij toewijzing per uur</li>

@@ -93,7 +93,7 @@ export const NotificationCenter: React.FC = () => {
       case 'high':
         return <AlertCircle className="h-5 w-5 text-orange-500" />;
       case 'medium':
-        return <Info className="h-5 w-5 text-blue-500" />;
+        return <Info className="h-5 w-5 text-primary-500" />;
       default:
         return <Info className="h-5 w-5 text-gray-500" />;
     }
@@ -106,7 +106,7 @@ export const NotificationCenter: React.FC = () => {
       case 'high':
         return 'border-l-4 border-orange-500';
       case 'medium':
-        return 'border-l-4 border-blue-500';
+        return 'border-l-4 border-primary-500';
       default:
         return 'border-l-4 border-gray-300';
     }
@@ -153,7 +153,7 @@ export const NotificationCenter: React.FC = () => {
                 onClick={() => setFilter('all')}
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                   filter === 'all'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
@@ -163,7 +163,7 @@ export const NotificationCenter: React.FC = () => {
                 onClick={() => setFilter('unread')}
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                   filter === 'unread'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
@@ -214,7 +214,7 @@ export const NotificationCenter: React.FC = () => {
                             {notification.title}
                           </h4>
                           {(notification.status === 'pending' || notification.status === 'sent') && (
-                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                            <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
                           )}
                         </div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -228,7 +228,7 @@ export const NotificationCenter: React.FC = () => {
                           {notification.actionUrl && (
                             <a
                               href={notification.actionUrl}
-                              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
+                              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
                               onClick={() => setIsOpen(false)}
                             >
                               {notification.actionLabel || 'Bekijk'}

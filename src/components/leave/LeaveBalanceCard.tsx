@@ -29,8 +29,8 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({ balance, onRequestL
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-            <Calendar className="h-6 w-6 text-blue-600" />
+          <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
+            <Calendar className="h-6 w-6 text-primary-600" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -44,7 +44,7 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({ balance, onRequestL
         {onRequestLeave && (
           <button
             onClick={onRequestLeave}
-            className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
           >
             Aanvragen
           </button>
@@ -77,7 +77,7 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({ balance, onRequestL
           </div>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all"
+              className="bg-primary-600 h-2 rounded-full transition-all"
               style={{ width: `${Math.min(holidayPercentage, 100)}%` }}
             />
           </div>
@@ -130,7 +130,7 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({ balance, onRequestL
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Totaal Resterend
             </span>
-            <span className="text-2xl font-bold text-blue-600">
+            <span className="text-2xl font-bold text-primary-600">
               {totalRemaining}
             </span>
           </div>

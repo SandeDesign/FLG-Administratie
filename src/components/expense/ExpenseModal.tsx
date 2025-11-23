@@ -140,14 +140,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
     <Modal isOpen={isOpen} onClose={handleClose} title="Nieuwe Declaratie" size="md">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {currentEmployee && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
             <div className="flex items-start">
-              <User className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3" />
+              <User className="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5 mr-3" />
               <div>
-                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                <h4 className="text-sm font-medium text-primary-900 dark:text-primary-100">
                   {currentEmployee.personalInfo.firstName} {currentEmployee.personalInfo.lastName}
                 </h4>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                <p className="text-sm text-primary-700 dark:text-primary-300 mt-1">
                   {currentEmployee.contractInfo.position}
                 </p>
               </div>
@@ -168,7 +168,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
             </label>
             <select
               {...register('type', { required: 'Type is verplicht' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             >
               <option value="travel">Reiskosten</option>
               <option value="meal">Maaltijd</option>
@@ -228,7 +228,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
           <textarea
             {...register('description', { required: 'Beschrijving is verplicht' })}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             placeholder="Geef een korte toelichting..."
           />
           {errors.description && (

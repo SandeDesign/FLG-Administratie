@@ -565,7 +565,7 @@ const ProjectProduction: React.FC = () => {
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
             >
               <option value="">Selecteer medewerker...</option>
               {linkedEmployees.map((emp) => (
@@ -601,13 +601,13 @@ const ProjectProduction: React.FC = () => {
 
       {/* Selected Employee Info */}
       {selectedEmployee && (
-        <Card className="bg-blue-50 border-blue-200 p-3 sm:p-4">
+        <Card className="bg-primary-50 border-primary-200 p-3 sm:p-4">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-100 rounded-full p-2">
-              <UserIcon className="h-5 w-5 text-blue-600" />
+            <div className="bg-primary-100 rounded-full p-2">
+              <UserIcon className="h-5 w-5 text-primary-600" />
             </div>
             <div>
-              <p className="text-xs text-blue-600 font-medium">Geselecteerde medewerker</p>
+              <p className="text-xs text-primary-600 font-medium">Geselecteerde medewerker</p>
               <p className="font-semibold text-gray-900">
                 {selectedEmployee.personalInfo.firstName} {selectedEmployee.personalInfo.lastName}
               </p>
@@ -631,7 +631,7 @@ const ProjectProduction: React.FC = () => {
               </div>
               <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
                 <p className="text-xs text-gray-600 mb-1">Entries</p>
-                <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                <p className="text-xl sm:text-2xl font-bold text-primary-600">
                   {productionData.totalEntries}
                 </p>
               </div>

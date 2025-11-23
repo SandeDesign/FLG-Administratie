@@ -72,7 +72,7 @@ const Leave: React.FC = () => {
       case 'cancelled':
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
       default:
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+        return 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300';
     }
   };
 

@@ -251,7 +251,7 @@ const InvoiceRelations: React.FC = () => {
               placeholder="Zoek op naam of email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
         </div>
@@ -300,7 +300,7 @@ const InvoiceRelations: React.FC = () => {
                   {relation.email && (
                     <div className="flex items-center text-gray-600">
                       <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
-                      <a href={`mailto:${relation.email}`} className="hover:text-blue-600">
+                      <a href={`mailto:${relation.email}`} className="hover:text-primary-600">
                         {relation.email}
                       </a>
                     </div>
@@ -308,7 +308,7 @@ const InvoiceRelations: React.FC = () => {
                   {relation.phone && (
                     <div className="flex items-center text-gray-600">
                       <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
-                      <a href={`tel:${relation.phone}`} className="hover:text-blue-600">
+                      <a href={`tel:${relation.phone}`} className="hover:text-primary-600">
                         {relation.phone}
                       </a>
                     </div>
@@ -367,7 +367,7 @@ const InvoiceRelations: React.FC = () => {
                       required
                       value={formData.name || ''}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="Bedrijfsnaam"
                     />
                   </div>
@@ -380,7 +380,7 @@ const InvoiceRelations: React.FC = () => {
                       required
                       value={formData.email || ''}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="email@bedrijf.nl"
                     />
                   </div>
@@ -396,7 +396,7 @@ const InvoiceRelations: React.FC = () => {
                       type="tel"
                       value={formData.phone || ''}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="+31 6 12345678"
                     />
                   </div>
@@ -408,7 +408,7 @@ const InvoiceRelations: React.FC = () => {
                       type="url"
                       value={formData.website || ''}
                       onChange={(e) => setFormData({...formData, website: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="https://example.com"
                     />
                   </div>
@@ -424,7 +424,7 @@ const InvoiceRelations: React.FC = () => {
                       type="text"
                       value={formData.kvk || ''}
                       onChange={(e) => setFormData({...formData, kvk: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="12345678"
                     />
                   </div>
@@ -436,7 +436,7 @@ const InvoiceRelations: React.FC = () => {
                       type="text"
                       value={formData.taxNumber || ''}
                       onChange={(e) => setFormData({...formData, taxNumber: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="NL123456789B01"
                     />
                   </div>
@@ -457,7 +457,7 @@ const InvoiceRelations: React.FC = () => {
                           ...formData,
                           address: {...formData.address, street: e.target.value}
                         })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         placeholder="Straat en huisnummer"
                       />
                     </div>
@@ -473,7 +473,7 @@ const InvoiceRelations: React.FC = () => {
                             ...formData,
                             address: {...formData.address, zipCode: e.target.value}
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                           placeholder="1234 AB"
                         />
                       </div>
@@ -488,7 +488,7 @@ const InvoiceRelations: React.FC = () => {
                             ...formData,
                             address: {...formData.address, city: e.target.value}
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                           placeholder="Amsterdam"
                         />
                       </div>
@@ -503,7 +503,7 @@ const InvoiceRelations: React.FC = () => {
                             ...formData,
                             address: {...formData.address, country: e.target.value}
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                           placeholder="Nederland"
                         />
                       </div>
@@ -520,7 +520,7 @@ const InvoiceRelations: React.FC = () => {
                     value={formData.notes || ''}
                     onChange={(e) => setFormData({...formData, notes: e.target.value})}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     placeholder="Interne notities..."
                   />
                 </div>

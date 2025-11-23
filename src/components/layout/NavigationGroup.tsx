@@ -60,7 +60,7 @@ export const NavigationGroup: React.FC<NavigationGroupProps> = ({
               className={({ isActive }) =>
                 `group flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200 shadow-sm'
+                    ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 border border-primary-200 shadow-sm'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }

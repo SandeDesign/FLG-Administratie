@@ -34,11 +34,11 @@ const ResetPassword: React.FC = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
             <div className="flex justify-center">
-              <Calculator className="h-12 w-12 text-blue-600" />
+              <Calculator className="h-12 w-12 text-primary-600" />
             </div>
             <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
               E-mail Verzonden!
@@ -69,11 +69,11 @@ const ResetPassword: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <Calculator className="h-12 w-12 text-blue-600" />
+            <Calculator className="h-12 w-12 text-primary-600" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
             Wachtwoord Vergeten?
@@ -97,7 +97,7 @@ const ResetPassword: React.FC = () => {
                 })}
                 type="email"
                 placeholder="E-mailadres"
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                   errors.email ? 'border-red-300' : 'border-gray-300'
                 }`}
               />
@@ -120,7 +120,7 @@ const ResetPassword: React.FC = () => {
           <div className="mt-6 text-center">
             <Link
               to="/login"
-              className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 flex items-center justify-center"
+              className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400 flex items-center justify-center"
             >
               <ArrowLeft className="mr-1 h-4 w-4" />
               Terug naar Inloggen

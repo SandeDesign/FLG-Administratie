@@ -27,7 +27,7 @@ export const CompanySelector: React.FC = () => {
         <select
           value={selectedCompany?.id || ''}
           onChange={handleCompanyChange}
-          className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+          className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none"
         >
           <option value="">Selecteer bedrijf...</option>
           {companies.map((company) => (
@@ -50,7 +50,7 @@ export const CompanySelector: React.FC = () => {
               <span className="bg-green-100 text-green-800 px-1 rounded">Loon</span>
             )}
             {selectedCompany.companyType === 'work_company' && (
-              <span className="bg-blue-100 text-blue-800 px-1 rounded">Werk</span>
+              <span className="bg-primary-100 text-primary-800 px-1 rounded">Werk</span>
             )}
           </div>
         </div>

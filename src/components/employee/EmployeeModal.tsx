@@ -372,7 +372,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
                   key={projectCompany.id}
                   className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
                     selectedProjectCompanies.includes(projectCompany.id)
-                      ? 'bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600'
+                      ? 'bg-primary-50 border-primary-300 dark:bg-primary-900/20 dark:border-primary-600'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -395,7 +395,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
             </div>
             
             {selectedProjectCompanies.length > 0 && (
-              <div className="text-sm text-blue-600 dark:text-blue-400">
+              <div className="text-sm text-primary-600 dark:text-primary-400">
                 ✓ {selectedProjectCompanies.length} projectbedri{selectedProjectCompanies.length === 1 ? 'jf' : 'jven'} geselecteerd
               </div>
             )}
@@ -525,7 +525,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
+            className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium transition-colors"
           >
             {submitting ? 'Bezig met opslaan...' : (employee ? 'Bijwerken' : 'Aanmaken')}
           </button>

@@ -145,10 +145,10 @@ const ManagerDashboard: React.FC = () => {
                 </div>
               </button>
               <button onClick={() => navigate('/incoming-invoices')} className="group">
-                <div className="relative overflow-hidden rounded-xl p-6 h-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95">
+                <div className="relative overflow-hidden rounded-xl p-6 h-full bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center h-full justify-center">
-                    <div className="inline-flex p-4 bg-blue-100 rounded-xl mb-3 group-hover:scale-110 transition-transform duration-200">
-                      <Upload className="h-6 w-6 text-blue-600" />
+                    <div className="inline-flex p-4 bg-primary-100 rounded-xl mb-3 group-hover:scale-110 transition-transform duration-200">
+                      <Upload className="h-6 w-6 text-primary-600" />
                     </div>
                     <h3 className="font-bold text-sm mb-1">Inkoop</h3>
                     <p className="text-xs text-white/80">Facturen</p>
@@ -160,10 +160,10 @@ const ManagerDashboard: React.FC = () => {
             // Employer Company Manager Actions
             <>
               <button onClick={() => navigate('/timesheet-approvals')} className="group">
-                <div className="relative overflow-hidden rounded-xl p-6 h-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95">
+                <div className="relative overflow-hidden rounded-xl p-6 h-full bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center h-full justify-center">
-                    <div className="inline-flex p-4 bg-blue-100 rounded-xl mb-3 group-hover:scale-110 transition-transform duration-200">
-                      <Clock className="h-6 w-6 text-blue-600" />
+                    <div className="inline-flex p-4 bg-primary-100 rounded-xl mb-3 group-hover:scale-110 transition-transform duration-200">
+                      <Clock className="h-6 w-6 text-primary-600" />
                     </div>
                     <h3 className="font-bold text-sm mb-1">Uren</h3>
                     <p className="text-xs text-white/80">Goedkeuren</p>

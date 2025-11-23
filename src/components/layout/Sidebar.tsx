@@ -184,7 +184,7 @@ const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean }> = ({ item,
 
         isActive
 
-          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 shadow-sm border border-blue-200'
+          ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 shadow-sm border border-primary-200'
 
           : 'text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50 hover:text-gray-900'
 
@@ -204,7 +204,7 @@ const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean }> = ({ item,
 
           isActive
 
-            ? 'bg-blue-500 shadow-sm'
+            ? 'bg-primary-500 shadow-sm'
 
             : 'bg-gray-100 group-hover:bg-gray-200'
 
@@ -486,19 +486,19 @@ const Sidebar: React.FC = () => {
 
       {/* Header - Logo */}
 
-      <div className="flex h-24 items-center justify-center border-b border-gray-100 px-4 bg-gradient-to-r from-slate-50 to-gray-50 relative">
+      <div className="flex h-20 items-center justify-center border-b border-gray-100 px-4 bg-gradient-to-r from-slate-50 to-gray-50 relative">
 
         {!collapsed && (
 
-          <img src="/Logo-groot.png" alt="FLG-Administratie Logo" className="h-32 w-auto drop-shadow-sm" />
+          <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-16 w-auto drop-shadow-sm" />
 
         )}
 
         {collapsed && (
 
-          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-lg">
 
-            <span className="text-white font-bold text-2xl">F</span>
+            <span className="text-white font-bold text-lg">F</span>
 
           </div>
 
