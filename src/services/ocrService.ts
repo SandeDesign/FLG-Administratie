@@ -33,10 +33,10 @@ async function getWorker() {
   return worker;
 }
 
-// Extract with Claude via Netlify function
+// Extract with Claude via PHP proxy on internedata.nl
 async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
   try {
-    const res = await fetch('/api/claude-ocr', {
+    const res = await fetch('https://internedata.nl/claude-ocr.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ocrText }),
