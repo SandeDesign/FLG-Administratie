@@ -155,8 +155,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               setQueryUserId(companyOwnerUserId);
 
               try {
-                employeesData = await getEmployees(companyOwnerUserId, company.id);
-                branchesData = await getBranches(companyOwnerUserId, company.id);
+                // ✅ FIX: Voor project companies, laad ALLE employees van de admin
+                // Employees zijn gekoppeld aan Buddy (employer) maar werken voor project companies via workCompanies[]
+                // De filtering op workCompanies.includes(companyId) gebeurt client-side in de pagina's
+                // Note: companyType kan 'project' of 'work_company' zijn (legacy inconsistentie)
+                const isProjectCompany = company.companyType === 'project' || company.companyType === 'work_company';
+
+                if (isProjectCompany) {
+                  // Load ALL employees - they'll be filtered by workCompanies/projectCompanies in the pages
+                  employeesData = await getEmployees(companyOwnerUserId);
+                  branchesData = await getBranches(companyOwnerUserId);
+                  console.log('Loaded ALL employees for project company manager:', employeesData.length);
+                } else {
+                  // For employer/payroll companies, filter by companyId as before
+                  employeesData = await getEmployees(companyOwnerUserId, company.id);
+                  branchesData = await getBranches(companyOwnerUserId, company.id);
+                }
                 console.log('Loaded employees for manager:', employeesData.length);
                 console.log('Loaded branches for manager:', branchesData.length);
               } catch (error) {
