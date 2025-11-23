@@ -1,8 +1,6 @@
-import type { Handler, HandlerEvent } from '@netlify/functions';
+import type { Handler } from '@netlify/functions';
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
-export const handler: Handler = async (event: HandlerEvent) => {
+const handler: Handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -15,118 +13,69 @@ export const handler: Handler = async (event: HandlerEvent) => {
   }
 
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
+    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not set' }) };
   }
 
   try {
-    if (!ANTHROPIC_API_KEY) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }),
-      };
-    }
-
     const { ocrText } = JSON.parse(event.body || '{}');
-
     if (!ocrText) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'No OCR text provided' }),
-      };
+      return { statusCode: 400, headers, body: JSON.stringify({ error: 'No ocrText provided' }) };
     }
 
-    const prompt = `Je bent een expert in het lezen van Nederlandse facturen en bonnen. Extraheer de volgende gegevens uit deze OCR tekst.
+    const prompt = `Je bent een expert in het lezen van Nederlandse facturen. Extraheer deze gegevens uit de OCR tekst.
 
 OCR TEKST:
 ${ocrText}
 
-EXTRACT DEZE VELDEN (reageer ALLEEN met geldige JSON, geen markdown):
+Antwoord ALLEEN met geldige JSON (geen markdown):
 {
-  "supplierName": "bedrijfsnaam of leverancier",
-  "invoiceNumber": "factuurnummer of bonnummer",
-  "invoiceDate": "datum in YYYY-MM-DD formaat",
-  "totalAmount": "TOTAAL bedrag inclusief BTW (hoogste bedrag)",
-  "subtotalExclVat": "bedrag exclusief BTW indien beschikbaar",
-  "vatAmount": "BTW bedrag indien zichtbaar"
-}
-
-Regels:
-- Bedragen: converteer 85,92 of €85.92 naar 85.92
-- Datum: elk formaat is OK, converteer naar YYYY-MM-DD
-- TOTAAL/TOTAL/Te betalen = eindtotaal
-- Als onduidelijk, maak beste schatting
-- Antwoord MOET geldige JSON zijn`;
+  "supplierName": "bedrijfsnaam",
+  "invoiceNumber": "factuurnummer",
+  "invoiceDate": "YYYY-MM-DD",
+  "totalAmount": 123.45,
+  "subtotalExclVat": 102.02,
+  "vatAmount": 21.43
+}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 500,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Anthropic API error:', errorText);
-      return {
-        statusCode: response.status,
-        headers,
-        body: JSON.stringify({ error: `Anthropic API error: ${response.status}` }),
-      };
+      const err = await response.text();
+      console.error('Anthropic error:', err);
+      return { statusCode: response.status, headers, body: JSON.stringify({ error: 'Claude API error', details: err }) };
     }
 
     const data = await response.json() as any;
-    const responseText = data.content[0].text;
-
-    // Parse JSON from response
     let invoiceData;
     try {
-      invoiceData = JSON.parse(responseText);
+      const text = data.content[0].text;
+      invoiceData = JSON.parse(text.replace(/```json?\n?|\n?```/g, '').trim());
     } catch (e) {
-      // Try to extract JSON from markdown code block
-      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        invoiceData = JSON.parse(jsonMatch[1]);
-      } else {
-        throw new Error('Could not parse Claude response as JSON');
-      }
+      return { statusCode: 500, headers, body: JSON.stringify({ error: 'Failed to parse Claude response' }) };
     }
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        success: true,
-        invoiceData,
-      }),
-    };
-
+    return { statusCode: 200, headers, body: JSON.stringify({ success: true, invoiceData }) };
   } catch (error: any) {
-    console.error('Claude OCR error:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        error: 'Claude OCR failed',
-        message: error.message,
-      }),
-    };
+    console.error('Error:', error);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
+
+export { handler };
