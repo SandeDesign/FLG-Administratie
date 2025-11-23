@@ -1,5 +1,6 @@
 import { db } from '../lib/firebase';
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
+import { uploadFile } from './fileUploadService';
 
 export const uploadInvoiceToDrive = async (
   file: File,
@@ -16,23 +17,8 @@ export const uploadInvoiceToDrive = async (
   },
   ocrData?: any
 ): Promise<{ invoiceId: string; driveFileId: string; driveWebLink: string }> => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('companyId', companyId);
-  formData.append('companyName', companyName);
-  formData.append('folderType', 'Inkoop');
-
-  const response = await fetch('/api/upload-to-drive', {
-    method: 'POST',
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || 'Upload failed');
-  }
-
-  const result = await response.json();
+  // Upload to internedata.nl
+  const uploadResult = await uploadFile(file, companyName, 'Inkoop');
 
   // Save to Firestore
   const now = new Date();
@@ -47,8 +33,7 @@ export const uploadInvoiceToDrive = async (
     invoiceDate: Timestamp.fromDate(ocrData?.invoiceDate || now),
     dueDate: Timestamp.fromDate(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)),
     status: 'pending',
-    driveFileId: result.driveFileId,
-    driveWebLink: result.driveWebLink,
+    fileUrl: uploadResult.fileUrl,
     ocrData: ocrData || null,
     createdAt: Timestamp.fromDate(now),
     updatedAt: Timestamp.fromDate(now),
@@ -56,22 +41,17 @@ export const uploadInvoiceToDrive = async (
 
   return {
     invoiceId: docRef.id,
-    driveFileId: result.driveFileId,
-    driveWebLink: result.driveWebLink,
+    driveFileId: 'external',
+    driveWebLink: uploadResult.fileUrl,
   };
 };
 
 export const checkDriveConnection = async (): Promise<{ connected: boolean; message: string }> => {
-  try {
-    const res = await fetch('/api/upload-to-drive', { method: 'OPTIONS' });
-    return { connected: res.ok, message: res.ok ? 'Verbonden' : 'Niet verbonden' };
-  } catch {
-    return { connected: false, message: 'Fout bij verbinden' };
-  }
+  return { connected: true, message: 'Verbonden met internedata.nl' };
 };
 
-// Legacy exports for backwards compatibility
-export const requestGoogleDriveToken = async () => 'service-account';
+// Legacy exports
+export const requestGoogleDriveToken = async () => 'not-needed';
 export const saveGoogleDriveToken = async () => {};
-export const getGoogleDriveToken = async () => 'service-account';
-export const silentRefreshGoogleToken = async () => 'service-account';
+export const getGoogleDriveToken = async () => 'not-needed';
+export const silentRefreshGoogleToken = async () => 'not-needed';
