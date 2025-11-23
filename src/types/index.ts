@@ -4,11 +4,14 @@ export interface Company {
   name: string;
   kvk: string;
   taxNumber: string;
-  
+
   // ✅ AANGEPAST: Loonmaatschappij vs Werkmaatschappij structuur
   companyType: 'payroll_company' | 'work_company';
   payrollCompanyId?: string; // Voor work companies - verwijst naar loonmaatschappij
-  
+
+  // ✅ NIEUW: Toegangsbeheer - managers/gebruikers die toegang hebben tot dit bedrijf
+  allowedUsers?: string[]; // Array van user UIDs die toegang hebben tot dit bedrijf
+
   address: {
     street: string;
     city: string;

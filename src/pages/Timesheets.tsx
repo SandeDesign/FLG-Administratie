@@ -21,8 +21,8 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 
 export default function Timesheets() {
-  const { user, adminUserId, userRole } = useAuth();
-  const { currentEmployeeId, selectedCompany, employees } = useApp();
+  const { user, userRole } = useAuth();
+  const { currentEmployeeId, selectedCompany, employees, queryUserId } = useApp(); // ✅ Gebruik queryUserId
   const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -37,11 +37,12 @@ export default function Timesheets() {
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!user || !adminUserId || !selectedCompany) {
+    if (!user || !queryUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
 
+    // Voor admin: selecteerbare employee, voor manager/employee: eigen currentEmployeeId
     const effectiveEmployeeId = userRole === 'admin' ? selectedEmployeeId : currentEmployeeId;
 
     if (!effectiveEmployeeId) {
@@ -60,7 +61,7 @@ export default function Timesheets() {
       setEmployeeData(employee);
 
       const sheets = await getWeeklyTimesheets(
-        adminUserId,
+        queryUserId,
         effectiveEmployeeId,
         selectedYear,
         selectedWeek
@@ -73,7 +74,7 @@ export default function Timesheets() {
       } else {
         const weekDates = getWeekDates(selectedYear, selectedWeek);
         const emptyEntries: TimesheetEntry[] = weekDates.map(date => ({
-          userId: adminUserId,
+          userId: queryUserId,
           employeeId: effectiveEmployeeId,
           companyId: selectedCompany.id,
           branchId: employee.branchId,
@@ -90,7 +91,7 @@ export default function Timesheets() {
         }));
 
         const newTimesheet: WeeklyTimesheet = {
-          userId: adminUserId,
+          userId: queryUserId,
           employeeId: effectiveEmployeeId,
           companyId: selectedCompany.id,
           branchId: employee.branchId,
@@ -116,7 +117,7 @@ export default function Timesheets() {
     } finally {
       setLoading(false);
     }
-  }, [user, adminUserId, userRole, currentEmployeeId, selectedEmployeeId, selectedCompany, selectedYear, selectedWeek, showError]);
+  }, [user, queryUserId, userRole, currentEmployeeId, selectedEmployeeId, selectedCompany, selectedYear, selectedWeek, showError]);
 
   const handleImportFromITKnecht = async () => {
     if (!selectedCompany || !employeeData) {
@@ -234,9 +235,9 @@ export default function Timesheets() {
     setCurrentTimesheet(updatedTimesheet);
 
     if (updatedTimesheet.id) {
-      await updateWeeklyTimesheet(updatedTimesheet.id, adminUserId!, updatedTimesheet);
+      await updateWeeklyTimesheet(updatedTimesheet.id, queryUserId!, updatedTimesheet);
     } else {
-      const id = await createWeeklyTimesheet(adminUserId!, updatedTimesheet);
+      const id = await createWeeklyTimesheet(queryUserId!, updatedTimesheet);
       setCurrentTimesheet({ ...updatedTimesheet, id });
     }
   };
@@ -371,20 +372,20 @@ export default function Timesheets() {
   };
 
   const handleSave = async () => {
-    if (!currentTimesheet || !user || !adminUserId || !employeeData) return;
+    if (!currentTimesheet || !user || !queryUserId || !employeeData) return;
 
     setSaving(true);
     try {
       if (currentTimesheet.id) {
         await updateWeeklyTimesheet(
           currentTimesheet.id,
-          adminUserId,
+          queryUserId,
           currentTimesheet
         );
         success('Uren opgeslagen', 'Urenregistratie succesvol opgeslagen');
       } else {
         const id = await createWeeklyTimesheet(
-          adminUserId,
+          queryUserId,
           currentTimesheet
         );
         setCurrentTimesheet({ ...currentTimesheet, id });
@@ -399,7 +400,7 @@ export default function Timesheets() {
   };
 
   const handleSubmit = async () => {
-    if (!currentTimesheet || !currentTimesheet.id || !user || !adminUserId || !employeeData) return;
+    if (!currentTimesheet || !currentTimesheet.id || !user || !queryUserId || !employeeData) return;
 
     if (currentTimesheet.totalRegularHours === 0 && currentTimesheet.totalTravelKilometers === 0) {
       showError('Geen uren ingevoerd', 'Voer minimaal één uur of kilometer in om in te dienen');
@@ -443,7 +444,7 @@ export default function Timesheets() {
       setCurrentTimesheet(updatedTimesheet);
       
       try {
-        await updateWeeklyTimesheet(updatedTimesheet.id, adminUserId, updatedTimesheet);
+        await updateWeeklyTimesheet(updatedTimesheet.id, queryUserId, updatedTimesheet);
       } catch (error) {
         console.error('Error saving explanation:', error);
         showError('Fout bij opslaan', 'Kon verklaring niet opslaan');
@@ -455,7 +456,7 @@ export default function Timesheets() {
     try {
       await submitWeeklyTimesheet(
         currentTimesheet.id,
-        adminUserId,
+        queryUserId,
         user.displayName || user.email || 'Werknemer'
       );
       success('Uren ingediend', 'Urenregistratie succesvol ingediend voor goedkeuring');

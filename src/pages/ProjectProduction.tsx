@@ -53,8 +53,8 @@ export interface ProductionWeek {
 }
 
 const ProjectProduction: React.FC = () => {
-  const { user, adminUserId } = useAuth();
-  const { selectedCompany, employees } = useApp();
+  const { user } = useAuth();
+  const { selectedCompany, employees, queryUserId } = useApp(); // ✅ Gebruik queryUserId ipv adminUserId
   const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -70,7 +70,7 @@ const ProjectProduction: React.FC = () => {
 
   // 🔥 Load production data
   const loadProductionData = useCallback(async () => {
-    if (!user || !adminUserId || !selectedCompany) {
+    if (!user || !queryUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -97,7 +97,7 @@ const ProjectProduction: React.FC = () => {
       if (empId) {
         const q = query(
           collection(db, 'productionWeeks'),
-          where('userId', '==', adminUserId),
+          where('userId', '==', queryUserId),
           where('week', '==', selectedWeek),
           where('year', '==', selectedYear),
           where('companyId', '==', selectedCompany.id),
@@ -137,7 +137,7 @@ const ProjectProduction: React.FC = () => {
         year: selectedYear,
         companyId: selectedCompany.id,
         employeeId: empId,
-        userId: adminUserId,
+        userId: queryUserId,
         entries: [],
         status: 'draft',
         totalHours: 0,
@@ -154,7 +154,7 @@ const ProjectProduction: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, adminUserId, selectedCompany, selectedEmployeeId, employees, selectedWeek, selectedYear, showError]);
+  }, [user, queryUserId, selectedCompany, selectedEmployeeId, employees, selectedWeek, selectedYear, showError]);
 
   // 🔥 Import from Make webhook
   const handleImportFromMake = async () => {
@@ -302,7 +302,7 @@ const ProjectProduction: React.FC = () => {
       year: selectedYear,
       companyId: selectedCompany!.id,
       employeeId: employeeId,
-      userId: adminUserId!,
+      userId: queryUserId!,
       createdAt: new Date(),
       updatedAt: new Date()
     }));
@@ -314,7 +314,7 @@ const ProjectProduction: React.FC = () => {
       year: selectedYear,
       companyId: selectedCompany!.id,
       employeeId: employeeId,
-      userId: adminUserId!,
+      userId: queryUserId!,
       entries: updatedEntries,
       status: 'draft',
       totalHours: totalHours,
@@ -360,7 +360,7 @@ const ProjectProduction: React.FC = () => {
       year: selectedYear,
       companyId: selectedCompany!.id,
       employeeId: selectedEmployeeId,
-      userId: adminUserId!,
+      userId: queryUserId!,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -396,7 +396,7 @@ const ProjectProduction: React.FC = () => {
 
   // 🔥 FIREBASE: Save or update production week
   const handleSave = async () => {
-    if (!productionData || !user || !adminUserId || entries.length === 0) {
+    if (!productionData || !user || !queryUserId || entries.length === 0) {
       showError('Fout', 'Voeg minstens 1 entry toe voordat je opslaat');
       return;
     }
@@ -408,7 +408,7 @@ const ProjectProduction: React.FC = () => {
         year: productionData.year,
         companyId: productionData.companyId,
         employeeId: productionData.employeeId,
-        userId: adminUserId,
+        userId: queryUserId,
         entries: entries.map(entry => ({
           monteur: entry.monteur,
           datum: entry.datum,

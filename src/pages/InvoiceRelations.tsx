@@ -45,7 +45,7 @@ const COLLECTION_NAME = 'invoiceRelations';
 
 const InvoiceRelations: React.FC = () => {
   const { user } = useAuth();
-  const { selectedCompany } = useApp();
+  const { selectedCompany, queryUserId } = useApp(); // ✅ Gebruik queryUserId voor queries
   const { success, error: showError } = useToast();
   const [relations, setRelations] = useState<InvoiceRelation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +71,7 @@ const InvoiceRelations: React.FC = () => {
 
   // Load relations
   const loadRelations = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !selectedCompany || !queryUserId) {
       setLoading(false);
       return;
     }
@@ -80,7 +80,7 @@ const InvoiceRelations: React.FC = () => {
       setLoading(true);
       const q = query(
         collection(db, COLLECTION_NAME),
-        where('userId', '==', user.uid),
+        where('userId', '==', queryUserId),
         where('companyId', '==', selectedCompany.id)
       );
 
@@ -102,7 +102,7 @@ const InvoiceRelations: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, showError]);
+  }, [user, selectedCompany, queryUserId, showError]);
 
   useEffect(() => {
     loadRelations();
@@ -137,7 +137,7 @@ const InvoiceRelations: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user || !selectedCompany) {
+    if (!user || !selectedCompany || !queryUserId) {
       showError('Fout', 'Geen gebruiker of bedrijf geselecteerd');
       return;
     }
@@ -151,7 +151,7 @@ const InvoiceRelations: React.FC = () => {
     try {
       const now = new Date();
       const relationData = {
-        userId: user.uid,
+        userId: queryUserId,
         companyId: selectedCompany.id,
         name: formData.name.trim(),
         email: formData.email.trim(),

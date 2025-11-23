@@ -50,7 +50,7 @@ interface ProductionWeek {
 
 const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
-  const { selectedCompany, employees } = useApp();
+  const { selectedCompany, employees, queryUserId } = useApp(); // ✅ Gebruik queryUserId voor queries
   const { success, error: showError } = useToast();
 
   const [invoices, setInvoices] = useState<OutgoingInvoice[]>([]);
@@ -95,53 +95,53 @@ const OutgoingInvoices: React.FC = () => {
   const [items, setItems] = useState<InvoiceItem[]>([{ title: '', description: '', quantity: 1, rate: 0, amount: 0 }]);
 
   const loadInvoices = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !selectedCompany || !queryUserId) {
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      const data = await outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id);
+      const data = await outgoingInvoiceService.getInvoices(queryUserId, selectedCompany.id);
       setInvoices(data);
     } catch (e) {
       showError('Fout', 'Kon facturen niet laden');
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, showError]);
+  }, [user, selectedCompany, queryUserId, showError]);
 
   useEffect(() => {
     loadInvoices();
   }, [loadInvoices]);
 
   const loadRelations = useCallback(async () => {
-    if (!user || !selectedCompany) return;
+    if (!user || !selectedCompany || !queryUserId) return;
     try {
-      const q = query(collection(db, 'invoiceRelations'), where('userId', '==', user.uid), where('companyId', '==', selectedCompany.id));
+      const q = query(collection(db, 'invoiceRelations'), where('userId', '==', queryUserId), where('companyId', '==', selectedCompany.id));
       const snap = await getDocs(q);
       setRelations(snap.docs.map(d => ({ id: d.id, ...d.data() } as InvoiceRelation)));
     } catch (e) {
       console.error(e);
     }
-  }, [user, selectedCompany]);
+  }, [user, selectedCompany, queryUserId]);
 
   const generateNextInvoiceNumber = useCallback(async () => {
-    if (!user || !selectedCompany) return;
+    if (!user || !selectedCompany || !queryUserId) return;
     try {
-      const num = await outgoingInvoiceService.getNextInvoiceNumber(user.uid, selectedCompany.id);
+      const num = await outgoingInvoiceService.getNextInvoiceNumber(queryUserId, selectedCompany.id);
       setInvoiceNumber(num);
     } catch (e) {
       console.error(e);
     }
-  }, [user, selectedCompany]);
+  }, [user, selectedCompany, queryUserId]);
 
   // Load which weeks have already been invoiced for an employee
   const loadInvoicedWeeks = async (employeeId: string) => {
-    if (!user || !selectedCompany) return new Set<string>();
+    if (!user || !selectedCompany || !queryUserId) return new Set<string>();
 
     try {
       // Get all invoices for this company
-      const invoiceData = await outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id);
+      const invoiceData = await outgoingInvoiceService.getInvoices(queryUserId, selectedCompany.id);
 
       // Find the employee name
       const employee = employees.find(e => e.id === employeeId);
@@ -174,8 +174,8 @@ const OutgoingInvoices: React.FC = () => {
 
   // Load production weeks when employee is selected
   const handleLoadProductionWeeks = async () => {
-    if (!selectedProductionEmployeeId || !user || !selectedCompany) {
-      console.error('❌ Missing data:', { selectedProductionEmployeeId, user: !!user, selectedCompany: !!selectedCompany });
+    if (!selectedProductionEmployeeId || !user || !selectedCompany || !queryUserId) {
+      console.error('❌ Missing data:', { selectedProductionEmployeeId, user: !!user, selectedCompany: !!selectedCompany, queryUserId: !!queryUserId });
       showError('Fout', 'Selecteer een medewerker');
       return;
     }
@@ -189,7 +189,7 @@ const OutgoingInvoices: React.FC = () => {
 
       const q = query(
         collection(db, 'productionWeeks'),
-        where('userId', '==', user.uid),
+        where('userId', '==', queryUserId),
         where('companyId', '==', selectedCompany.id),
         where('employeeId', '==', selectedProductionEmployeeId),
         orderBy('week', 'desc')
@@ -438,7 +438,7 @@ const OutgoingInvoices: React.FC = () => {
     setFormLoading(true);
     try {
       const data: Omit<OutgoingInvoice, 'id' | 'createdAt' | 'updatedAt'> = {
-        userId: user.uid,
+        userId: queryUserId!,
         companyId: selectedCompany.id,
         invoiceNumber,
         clientId: formData.clientId,

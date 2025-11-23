@@ -14,6 +14,7 @@ interface AppContextType {
   dashboardStats: DashboardStats;
   loading: boolean;
   currentEmployeeId: string | null;
+  queryUserId: string | null; // ✅ NIEUW: userId voor data queries (voor managers = company owner, voor admins = eigen uid)
   setSelectedCompany: (company: Company | null) => void;
   refreshDashboardStats: () => Promise<void>;
 }
@@ -27,6 +28,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
+  const [queryUserId, setQueryUserId] = useState<string | null>(null); // ✅ NIEUW: userId voor data queries
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     activeEmployees: 0,
     totalGrossThisMonth: 0,
@@ -135,7 +137,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try {
           const roleData = await getUserRole(user.uid);
           console.log('Manager role data:', roleData);
-          
+
           if (roleData?.assignedCompanyId) {
             // Use getCompanyById instead of getCompany for managers
             // Managers access companies assigned to them, not owned by their userId
@@ -143,6 +145,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (company) {
               companiesData = [company];
               console.log('Loaded manager assigned company:', company);
+
+              // ✅ FIX: Use the company owner's userId for loading employees/branches
+              // Data is stored with the admin's userId, not the manager's userId
+              const companyOwnerUserId = company.userId;
+              console.log('Using company owner userId for queries:', companyOwnerUserId);
+
+              // ✅ NIEUW: Set queryUserId for managers to use in other pages
+              setQueryUserId(companyOwnerUserId);
+
+              try {
+                employeesData = await getEmployees(companyOwnerUserId, company.id);
+                branchesData = await getBranches(companyOwnerUserId, company.id);
+                console.log('Loaded employees for manager:', employeesData.length);
+                console.log('Loaded branches for manager:', branchesData.length);
+              } catch (error) {
+                console.error('Error loading manager data:', error);
+              }
             }
           } else {
             console.warn('Manager has no assigned company!');
@@ -151,16 +170,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (error) {
           console.error('Error loading manager company:', error);
           companiesData = [];
-        }
-
-        // Managers get employees from their assigned company
-        if (companiesData.length > 0) {
-          try {
-            employeesData = await getEmployees(adminUserId, companiesData[0].id);
-            branchesData = await getBranches(adminUserId, companiesData[0].id);
-          } catch (error) {
-            console.error('Error loading manager data:', error);
-          }
         }
       } else {
         // ✅ ADMIN/EMPLOYEE: Load all companies
@@ -173,6 +182,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         companiesData = companies;
         employeesData = employees;
         branchesData = branches;
+
+        // ✅ NIEUW: Set queryUserId for admins/employees
+        setQueryUserId(adminUserId);
       }
 
       console.log('Loaded companies:', companiesData.length);
@@ -266,6 +278,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dashboardStats,
         loading,
         currentEmployeeId,
+        queryUserId, // ✅ NIEUW: userId voor data queries
         setSelectedCompany,
         refreshDashboardStats,
       }}
