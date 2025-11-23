@@ -9,22 +9,36 @@ const ROOT_FOLDER_ID = '1EZfv49Cq4HndtSKp_jqd2QCEsw0qVrYr';
 function parsePrivateKey(key: string | undefined): string {
   if (!key) return '';
 
-  // First, handle escaped newlines (\\n -> \n)
-  let parsed = key.replace(/\\n/g, '\n');
+  let parsed = key.trim();
+
+  // Check if it's base64 encoded (doesn't start with -----)
+  // User can optionally store the key as base64 for reliability
+  if (!parsed.startsWith('-----') && parsed.length > 100) {
+    try {
+      parsed = Buffer.from(parsed, 'base64').toString('utf8');
+    } catch (e) {
+      // Not base64, continue with normal parsing
+    }
+  }
+
+  // Handle escaped newlines (\\n -> \n)
+  parsed = parsed.replace(/\\n/g, '\n');
 
   // Also handle double-escaped newlines (\\\\n -> \n)
   parsed = parsed.replace(/\\\\n/g, '\n');
 
-  // Trim any extra whitespace
+  // Trim again after replacements
   parsed = parsed.trim();
 
-  // Ensure proper PEM format with newlines
+  // Ensure proper PEM format with newlines after BEGIN and before END
   if (parsed.includes('-----BEGIN') && !parsed.includes('\n-----BEGIN')) {
-    // Key might be on single line, try to fix it
     parsed = parsed
       .replace(/-----BEGIN PRIVATE KEY-----\s*/g, '-----BEGIN PRIVATE KEY-----\n')
       .replace(/\s*-----END PRIVATE KEY-----/g, '\n-----END PRIVATE KEY-----');
   }
+
+  console.log('Private key starts with:', parsed.substring(0, 50));
+  console.log('Private key ends with:', parsed.substring(parsed.length - 50));
 
   return parsed;
 }
