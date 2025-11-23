@@ -42,23 +42,27 @@ async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
       body: JSON.stringify({ ocrText }),
     });
 
-    // Return null on any error - will fallback to basic extraction
+    // Any non-OK response -> fallback to basic
     if (!res.ok) {
-      console.log('Claude OCR not available, using basic extraction');
+      console.log('Claude OCR returned non-OK status, using basic extraction');
       return null;
     }
 
-    // Parse response as text first to avoid JSON parse errors
-    const text = await res.text();
+    // Get response as text first to safely parse
+    const responseText = await res.text();
+
     let data;
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(responseText);
     } catch {
-      console.error('Invalid JSON from claude-ocr:', text.substring(0, 100));
+      console.log('Claude OCR returned non-JSON, using basic extraction');
       return null;
     }
 
-    if (!data.success) return null;
+    if (!data.success || !data.invoiceData) {
+      console.log('Claude OCR returned error, using basic extraction');
+      return null;
+    }
 
     const d = data.invoiceData;
     return {
@@ -78,7 +82,7 @@ async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
   }
 }
 
-// Basic extraction fallback
+// Basic extraction fallback (always works, no external calls)
 function extractBasic(text: string): InvoiceData {
   const lines = text.split('\n').filter(l => l.trim());
 
@@ -89,6 +93,13 @@ function extractBasic(text: string): InvoiceData {
       supplierName = line.trim();
       break;
     }
+  }
+
+  // Find invoice number
+  let invoiceNumber = `INV-${Date.now()}`;
+  const invMatch = text.match(/(?:factuurnummer|invoice|inv\.?|factuur)[\s:]*([A-Z0-9-]+)/i);
+  if (invMatch) {
+    invoiceNumber = invMatch[1];
   }
 
   // Find date
@@ -112,7 +123,7 @@ function extractBasic(text: string): InvoiceData {
 
   return {
     supplierName,
-    invoiceNumber: `INV-${Date.now()}`,
+    invoiceNumber,
     invoiceDate,
     amount: totalInclVat,
     subtotal,
@@ -126,10 +137,8 @@ function extractBasic(text: string): InvoiceData {
 // OCR image
 async function ocrImage(file: File, onProgress?: (n: number) => void): Promise<OCRResult> {
   onProgress?.(10);
-
   const w = await getWorker();
   onProgress?.(30);
-
   const result = await w.recognize(file);
   onProgress?.(100);
 
@@ -191,7 +200,7 @@ export async function processInvoiceFile(
     ocrResult = await ocrImage(file, onProgress);
   }
 
-  // Try Claude, fallback to basic
+  // Try Claude first, fallback to basic extraction
   const invoiceData = (await extractWithClaude(ocrResult.text)) || extractBasic(ocrResult.text);
 
   return { ...ocrResult, invoiceData };
