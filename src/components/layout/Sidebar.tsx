@@ -138,7 +138,7 @@ export const navigation: NavigationItem[] = [
 
   // EMPLOYEE - Mijn zaken
 
-  { name: 'Mijn Uren', href: '/timesheets', icon: Clock, roles: ['employee', 'manager'], companyTypes: ['employer'] },
+  { name: 'Mijn Uren', href: '/timesheets', icon: Clock, roles: ['employee', 'manager'], companyTypes: ['employer', 'project'] },
 
   { name: 'Mijn Verlof', href: '/leave', icon: Calendar, roles: ['employee'], companyTypes: ['employer'] },
 

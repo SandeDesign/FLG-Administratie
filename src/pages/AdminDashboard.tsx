@@ -36,9 +36,9 @@ interface DashboardStats {
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { companies, employees } = useApp();
+  const { companies, employees, selectedCompany } = useApp();
   const { error: showError } = useToast();
-  
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,16 +54,33 @@ const AdminDashboard: React.FC = () => {
       const allEmployees = await getEmployees(user.uid);
       const employeesWithAccount = allEmployees.filter(e => e.hasAccount).length;
 
-      // Get pending leave requests
+      // Get pending leave requests - filter by selected company if available
       const leaveRequests = await getLeaveRequests(user.uid);
-      const pendingLeaves = leaveRequests.filter(r => r.status === 'pending');
+      const pendingLeavesList = leaveRequests.filter(r => {
+        const isPending = r.status === 'pending';
+        // If a company is selected, only show leaves from that company
+        if (selectedCompany && r.companyId) {
+          return isPending && r.companyId === selectedCompany.id;
+        }
+        return isPending;
+      });
 
-      // Get pending timesheets
-      const timesheetsQuery = query(
-        collection(db, 'weeklyTimesheets'),
-        where('userId', '==', user.uid),
-        where('status', '==', 'submitted')
-      );
+      // Get pending timesheets - filter by selected company if available
+      let timesheetsQuery;
+      if (selectedCompany) {
+        timesheetsQuery = query(
+          collection(db, 'weeklyTimesheets'),
+          where('userId', '==', user.uid),
+          where('companyId', '==', selectedCompany.id),
+          where('status', '==', 'submitted')
+        );
+      } else {
+        timesheetsQuery = query(
+          collection(db, 'weeklyTimesheets'),
+          where('userId', '==', user.uid),
+          where('status', '==', 'submitted')
+        );
+      }
       const timesheetsSnapshot = await getDocs(timesheetsQuery);
 
       // Get recent audit logs for activity
@@ -83,11 +100,11 @@ const AdminDashboard: React.FC = () => {
         totalEmployees: allEmployees.length,
         employeesWithAccount,
         totalCompanies: companies.length,
-        pendingLeaveRequests: pendingLeaves.length,
+        pendingLeaveRequests: pendingLeavesList.length,
         pendingTimesheets: timesheetsSnapshot.size
       });
 
-      setPendingLeaves(pendingLeaves.slice(0, 3));
+      setPendingLeaves(pendingLeavesList.slice(0, 3));
       setRecentActivities(activities);
 
     } catch (error) {
@@ -96,7 +113,19 @@ const AdminDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, companies.length, showError]);
+  }, [user, companies.length, selectedCompany?.id, showError]);
+
+  // Refresh data when page becomes visible (user returns to dashboard)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadDashboardData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [loadDashboardData]);
 
   useEffect(() => {
     loadDashboardData();

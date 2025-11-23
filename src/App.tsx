@@ -144,6 +144,7 @@ function App() {
                           {/* Manager kan facturatie beheren */}
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
+                          <Route path="incoming-invoices" element={<IncomingInvoices />} />
 
                           {/* Manager kan exporteren */}
                           <Route path="timesheet-export" element={<TimesheetExport />} />

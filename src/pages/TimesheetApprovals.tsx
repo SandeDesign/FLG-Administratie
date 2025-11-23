@@ -8,7 +8,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import Modal from '../components/ui/Modal';
 import { WeeklyTimesheet } from '../types/timesheet';
 import {
-  getPendingTimesheets,
+  getAllPendingTimesheets,
   approveWeeklyTimesheet,
   rejectWeeklyTimesheet
 } from '../services/timesheetService';
@@ -78,20 +78,21 @@ export default function TimesheetApprovals() {
   }, []);
 
   const loadData = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      
-      // Get pending timesheets
-      const pendingTimesheets = await getPendingTimesheets(user.uid, selectedCompany.id);
+
+      // Get ALL pending timesheets (not filtered by company - admin sees everything)
+      const pendingTimesheets = await getAllPendingTimesheets(user.uid);
       setTimesheets(pendingTimesheets);
 
-      // Get ALL timesheets
-      const allTimesheetsData = await loadAllTimesheets(user.uid, selectedCompany.id);
+      // Get ALL timesheets - use first company or skip if none
+      const companyIdForAll = selectedCompany?.id || '';
+      const allTimesheetsData = companyIdForAll ? await loadAllTimesheets(user.uid, companyIdForAll) : [];
       setAllTimesheets(allTimesheetsData);
 
       const summaries: EmployeeTimesheetSummary[] = [];
@@ -134,7 +135,7 @@ export default function TimesheetApprovals() {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, employees, showError, loadAllTimesheets]);
+  }, [user, selectedCompany?.id, employees, showError, loadAllTimesheets]);
 
   useEffect(() => {
     loadData();
@@ -199,20 +200,7 @@ export default function TimesheetApprovals() {
     );
   }
 
-  if (!selectedCompany) {
-    return (
-      <div className="space-y-6 px-4 sm:px-0">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Uren goedkeuren</h1>
-        </div>
-        <EmptyState
-          icon={Building2}
-          title="Geen bedrijf geselecteerd"
-          description="Selecteer een bedrijf uit de dropdown in de zijbalk om urenregistraties goed te keuren."
-        />
-      </div>
-    );
-  }
+  // No longer require company selection - admin sees all pending timesheets
 
   const pendingCount = employeeSummaries.reduce((sum, e) => sum + e.pendingTimesheets.length, 0);
   const employeesWithPending = employeeSummaries.filter(e => e.hasPending).length;

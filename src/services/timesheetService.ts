@@ -240,6 +240,31 @@ export const getPendingTimesheets = async (adminUserId: string, companyId: strin
   return timesheets;
 };
 
+// Get ALL pending timesheets without company filter (for admin approval overview)
+export const getAllPendingTimesheets = async (adminUserId: string): Promise<WeeklyTimesheet[]> => {
+  console.log('getAllPendingTimesheets: Querying for adminUserId:', adminUserId);
+
+  const q = query(
+    collection(db, 'weeklyTimesheets'),
+    where('userId', '==', adminUserId),
+    where('status', '==', 'submitted'),
+    orderBy('submittedAt', 'asc')
+  );
+
+  const querySnapshot = await getDocs(q);
+  console.log('getAllPendingTimesheets: Found', querySnapshot.docs.length, 'pending timesheets');
+
+  const timesheets = querySnapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...convertTimestamps(data)
+    } as WeeklyTimesheet;
+  });
+
+  return timesheets;
+};
+
 export const calculateWeekTotals = (entries: TimesheetEntry[]) => {
   return entries.reduce(
     (totals, entry) => ({
