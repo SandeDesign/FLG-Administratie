@@ -43,7 +43,8 @@ let workerInstance: any = null;
 
 const getWorker = async () => {
   if (!workerInstance) {
-    workerInstance = await createWorker('eng', 1, {
+    // Use Dutch + English for best results on Dutch invoices
+    workerInstance = await createWorker('nld+eng', 1, {
       logger: () => {},
     });
   }
@@ -51,81 +52,36 @@ const getWorker = async () => {
 };
 
 /**
- * ✅ CLAUDE EXTRACTION - Works with ANY invoice format!
+ * ✅ CLAUDE EXTRACTION via Netlify Function (no CORS issues!)
  */
-const extractWithClaude = async (ocrText: string, apiKey?: string): Promise<InvoiceData> => {
-  if (!apiKey) {
-    console.warn('No Claude API key provided, using basic extraction');
-    return extractInvoiceDataBasic(ocrText);
-  }
-
+const extractWithClaude = async (ocrText: string): Promise<InvoiceData> => {
   try {
-    const prompt = `You are an invoice parsing expert. Extract the following data from this OCR text.
+    console.log('🤖 Calling Claude via Netlify function...');
 
-OCR TEXT:
-${ocrText}
-
-EXTRACT THESE FIELDS (respond ONLY with valid JSON, no markdown, no code blocks):
-{
-  "supplierName": "company name or 'Unknown'",
-  "invoiceNumber": "invoice/receipt number",
-  "invoiceDate": "date in YYYY-MM-DD format",
-  "totalAmount": "the TOTAL amount including VAT (highest number)",
-  "subtotalExclVat": "amount before VAT if available",
-  "vatAmount": "VAT amount if visible"
-}
-
-Rules:
-- Amounts: convert 85,92 or 85.92 to 85.92
-- Date: any format is OK
-- TOTAAL/TOTAL/Amount = final amount
-- If unclear, make best guess
-- Response MUST be valid JSON`;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('/api/claude-ocr', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 500,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      }),
+      body: JSON.stringify({ ocrText }),
     });
 
     if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `API error: ${response.status}`);
     }
 
-    const data = (await response.json()) as any;
-    const responseText = data.content[0].text;
+    const data = await response.json();
 
-    console.log('Claude response:', responseText);
-
-    let jsonData;
-    try {
-      jsonData = JSON.parse(responseText);
-    } catch (e) {
-      const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        jsonData = JSON.parse(jsonMatch[1]);
-      } else {
-        throw new Error('Could not parse Claude response');
-      }
+    if (!data.success || !data.invoiceData) {
+      throw new Error('Invalid response from Claude');
     }
 
+    const jsonData = data.invoiceData;
     const invoiceDate = parseDate(jsonData.invoiceDate);
     const totalAmount = parseAmount(jsonData.totalAmount);
-    const subtotal = parseAmount(jsonData.subtotalExclVat) || totalAmount;
-    const vatAmount = parseAmount(jsonData.vatAmount) || Math.round((subtotal * 0.21) * 100) / 100;
+    const subtotal = parseAmount(jsonData.subtotalExclVat) || totalAmount / 1.21;
+    const vatAmount = parseAmount(jsonData.vatAmount) || totalAmount - subtotal;
 
     console.log('\n========== 📄 INVOICE EXTRACTED (Claude) ==========');
     console.log('Supplier:        ', jsonData.supplierName);
@@ -137,7 +93,7 @@ Rules:
     console.log('====================================================\n');
 
     return {
-      supplierName: jsonData.supplierName || 'Unknown',
+      supplierName: jsonData.supplierName || 'Onbekend',
       invoiceNumber: jsonData.invoiceNumber || `INV-${Date.now()}`,
       invoiceDate,
       amount: totalAmount,
@@ -642,11 +598,10 @@ function extractInvoiceDataBasic(ocrText: string): InvoiceData {
 }
 
 /**
- * MAIN FUNCTION - with Claude integration
+ * MAIN FUNCTION - Always uses Claude via Netlify function
  */
 export const processInvoiceFile = async (
   file: File,
-  claudeApiKey?: string,
   onProgress?: (progress: number) => void
 ): Promise<OCRResult & { invoiceData: InvoiceData }> => {
   try {
@@ -668,9 +623,8 @@ export const processInvoiceFile = async (
     console.log(ocrResult.text);
     console.log('=== END RAW TEXT ===');
 
-    const invoiceData = claudeApiKey
-      ? await extractWithClaude(ocrResult.text, claudeApiKey)
-      : extractInvoiceDataBasic(ocrResult.text);
+    // Always try Claude first (via Netlify function), fallback to basic
+    const invoiceData = await extractWithClaude(ocrResult.text);
 
     return {
       ...ocrResult,
