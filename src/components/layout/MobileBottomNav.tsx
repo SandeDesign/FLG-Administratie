@@ -36,7 +36,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
           { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-blue-500 to-blue-600' },
           { href: '/project-production', icon: Cpu, label: 'Productie', gradient: 'from-purple-500 to-purple-600' },
           { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-green-500 to-green-600' },
-          { href: '/invoice-relations', icon: Users, label: 'Relaties', gradient: 'from-indigo-500 to-indigo-600' },
+          { href: '/timesheets', icon: Clock, label: 'Uren', gradient: 'from-cyan-500 to-cyan-600' },
         ];
       }
       // Employee in project company
