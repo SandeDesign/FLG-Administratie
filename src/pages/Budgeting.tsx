@@ -913,7 +913,7 @@ const Budgeting: React.FC = () => {
 
       {/* Costs Tab */}
       {activeTab === 'costs' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {costItems.length === 0 ? (
             <EmptyState
               icon={TrendingDown}
@@ -923,52 +923,84 @@ const Budgeting: React.FC = () => {
               onAction={() => handleOpenModal(undefined, 'cost')}
             />
           ) : (
-            costItems.map((item) => {
-              const config = COST_CATEGORY_CONFIG[item.category as BudgetCostCategory] || COST_CATEGORY_CONFIG.other;
+            // Group items by category
+            Object.entries(
+              costItems.reduce((groups, item) => {
+                const category = item.category as BudgetCostCategory;
+                if (!groups[category]) groups[category] = [];
+                groups[category].push(item);
+                return groups;
+              }, {} as Record<BudgetCostCategory, BudgetItem[]>)
+            ).map(([category, items]) => {
+              const config = COST_CATEGORY_CONFIG[category as BudgetCostCategory] || COST_CATEGORY_CONFIG.other;
               const Icon = config.icon;
+              const categoryTotal = items.reduce((sum, item) => sum + (item.isActive ? getMonthlyAmount(item) : 0), 0);
 
               return (
-                <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                        {!item.isActive && (
-                          <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                            Inactief
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                        <span>{config.label}</span>
-                        {item.supplier && <span>• {item.supplier}</span>}
-                      </div>
+                <div key={category} className="space-y-2">
+                  {/* Category Header */}
+                  <div className={`flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor}`}>
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-5 w-5 ${config.textColor}`} />
+                      <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
+                      <span className="text-xs text-gray-500">({items.length})</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-red-600">
-                        -{formatCurrencyDetailed(item.amount)}
+                      <p className={`text-sm font-bold ${config.textColor}`}>
+                        {formatCurrency(categoryTotal)}/mnd
                       </p>
-                      <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleOpenModal(item)}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </div>
                   </div>
-                </Card>
+
+                  {/* Items in this category */}
+                  <div className="space-y-2 pl-2">
+                    {items.map((item) => (
+                      <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
+                        <div className="flex items-center gap-4">
+                          <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                              {!item.isActive && (
+                                <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                                  Inactief
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                              {item.supplier && <span>{item.supplier}</span>}
+                              {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-red-600">
+                              -{formatCurrencyDetailed(item.amount)}
+                            </p>
+                            <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleOpenModal(item)}
+                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                              title="Bewerken"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item)}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Verwijderen"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               );
             })
           )}
@@ -977,7 +1009,7 @@ const Budgeting: React.FC = () => {
 
       {/* Income Tab */}
       {activeTab === 'income' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {incomeItems.length === 0 ? (
             <EmptyState
               icon={TrendingUp}
@@ -987,61 +1019,104 @@ const Budgeting: React.FC = () => {
               onAction={() => handleOpenModal(undefined, 'income')}
             />
           ) : (
-            incomeItems.map((item) => {
-              const config = INCOME_CATEGORY_CONFIG[item.category as BudgetIncomeCategory] || INCOME_CATEGORY_CONFIG.other;
-              const confConfig = CONFIDENCE_CONFIG[item.confidence || 'confirmed'];
+            // Group items by category
+            Object.entries(
+              incomeItems.reduce((groups, item) => {
+                const category = item.category as BudgetIncomeCategory;
+                if (!groups[category]) groups[category] = [];
+                groups[category].push(item);
+                return groups;
+              }, {} as Record<BudgetIncomeCategory, BudgetItem[]>)
+            ).map(([category, items]) => {
+              const config = INCOME_CATEGORY_CONFIG[category as BudgetIncomeCategory] || INCOME_CATEGORY_CONFIG.other;
               const Icon = config.icon;
-              const ConfIcon = confConfig.icon;
+              const categoryTotal = items.reduce((sum, item) => sum + (item.isActive ? getMonthlyAmount(item) : 0), 0);
+              const weightedTotal = items.reduce((sum, item) => {
+                if (!item.isActive) return sum;
+                const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
+                return sum + (getMonthlyAmount(item) * weight);
+              }, 0);
 
               return (
-                <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                        <span className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${confConfig.bgColor} ${confConfig.color}`}>
-                          <ConfIcon className="h-3 w-3" />
-                          {confConfig.label}
-                        </span>
-                        {!item.isActive && (
-                          <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                            Inactief
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                        <span>{config.label}</span>
-                        {item.supplier && <span>• {item.supplier}</span>}
-                        {item.growthRate && item.growthRate > 0 && (
-                          <span className="text-emerald-600">• +{item.growthRate}%/jaar</span>
-                        )}
-                      </div>
+                <div key={category} className="space-y-2">
+                  {/* Category Header */}
+                  <div className={`flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor}`}>
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-5 w-5 ${config.textColor}`} />
+                      <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
+                      <span className="text-xs text-gray-500">({items.length})</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-emerald-600">
-                        +{formatCurrencyDetailed(item.amount)}
+                      <p className={`text-sm font-bold ${config.textColor}`}>
+                        {formatCurrency(categoryTotal)}/mnd
                       </p>
-                      <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleOpenModal(item)}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <p className="text-xs text-gray-500">
+                        Gewogen: {formatCurrency(weightedTotal)}/mnd
+                      </p>
                     </div>
                   </div>
-                </Card>
+
+                  {/* Items in this category */}
+                  <div className="space-y-2 pl-2">
+                    {items.map((item) => {
+                      const confConfig = CONFIDENCE_CONFIG[item.confidence || 'confirmed'];
+                      const ConfIcon = confConfig.icon;
+
+                      return (
+                        <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
+                          <div className="flex items-center gap-4">
+                            <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                                <span className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${confConfig.bgColor} ${confConfig.color}`}>
+                                  <ConfIcon className="h-3 w-3" />
+                                  {confConfig.label}
+                                </span>
+                                {!item.isActive && (
+                                  <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                                    Inactief
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                                {item.supplier && <span>{item.supplier}</span>}
+                                {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
+                                {item.growthRate && item.growthRate > 0 && (
+                                  <span className="text-emerald-600">• +{item.growthRate}%/jaar</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-emerald-600">
+                                +{formatCurrencyDetailed(item.amount)}
+                              </p>
+                              <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleOpenModal(item)}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Bewerken"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(item)}
+                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Verwijderen"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })
           )}
