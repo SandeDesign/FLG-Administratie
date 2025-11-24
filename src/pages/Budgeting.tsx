@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Wallet,
   Plus,
@@ -18,12 +18,27 @@ import {
   PieChart,
   ArrowUpRight,
   ArrowDownRight,
-  Clock,
+  Download,
+  Users,
+  Briefcase,
+  Package,
+  Lightbulb,
+  Handshake,
+  Award,
+  Target,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  Megaphone,
+  Home,
+  BarChart3,
   FileText,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { BudgetItem, BudgetCategory, BudgetFrequency } from '../types';
+import { BudgetItem, BudgetCategory, BudgetFrequency, BudgetType, BudgetCostCategory, BudgetIncomeCategory, ProjectionConfidence } from '../types';
 import {
   getBudgetItems,
   createBudgetItem,
@@ -31,16 +46,17 @@ import {
   deleteBudgetItem,
   calculateMonthlyBudget,
   calculateYearlyBudget,
-  getBudgetItemsByCategory,
 } from '../services/firebase';
+import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
+import { incomingInvoiceService } from '../services/incomingInvoiceService';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
 
-// Category configuration with icons, labels and colors
-const CATEGORY_CONFIG: Record<BudgetCategory, {
+// Cost category configuration
+const COST_CATEGORY_CONFIG: Record<BudgetCostCategory, {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   bgColor: string;
@@ -48,12 +64,46 @@ const CATEGORY_CONFIG: Record<BudgetCategory, {
   borderColor: string;
 }> = {
   telecom: { icon: Phone, label: 'Telecom', bgColor: 'bg-blue-50', textColor: 'text-blue-600', borderColor: 'border-blue-200' },
-  software: { icon: Monitor, label: 'Software & Licenties', bgColor: 'bg-purple-50', textColor: 'text-purple-600', borderColor: 'border-purple-200' },
+  software: { icon: Monitor, label: 'Software', bgColor: 'bg-purple-50', textColor: 'text-purple-600', borderColor: 'border-purple-200' },
   vehicle: { icon: Car, label: 'Voertuigen', bgColor: 'bg-emerald-50', textColor: 'text-emerald-600', borderColor: 'border-emerald-200' },
   insurance: { icon: Shield, label: 'Verzekeringen', bgColor: 'bg-orange-50', textColor: 'text-orange-600', borderColor: 'border-orange-200' },
   utilities: { icon: Zap, label: 'Nutsvoorzieningen', bgColor: 'bg-yellow-50', textColor: 'text-yellow-600', borderColor: 'border-yellow-200' },
   subscriptions: { icon: CreditCard, label: 'Abonnementen', bgColor: 'bg-pink-50', textColor: 'text-pink-600', borderColor: 'border-pink-200' },
+  personnel: { icon: Users, label: 'Personeel', bgColor: 'bg-indigo-50', textColor: 'text-indigo-600', borderColor: 'border-indigo-200' },
+  marketing: { icon: Megaphone, label: 'Marketing', bgColor: 'bg-rose-50', textColor: 'text-rose-600', borderColor: 'border-rose-200' },
+  office: { icon: Home, label: 'Kantoor', bgColor: 'bg-teal-50', textColor: 'text-teal-600', borderColor: 'border-teal-200' },
   other: { icon: MoreHorizontal, label: 'Overig', bgColor: 'bg-gray-50', textColor: 'text-gray-600', borderColor: 'border-gray-200' },
+};
+
+// Income category configuration
+const INCOME_CATEGORY_CONFIG: Record<BudgetIncomeCategory, {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+}> = {
+  services: { icon: Briefcase, label: 'Diensten', bgColor: 'bg-emerald-50', textColor: 'text-emerald-600', borderColor: 'border-emerald-200' },
+  products: { icon: Package, label: 'Producten', bgColor: 'bg-blue-50', textColor: 'text-blue-600', borderColor: 'border-blue-200' },
+  subscriptions: { icon: CreditCard, label: 'SaaS/Abonnementen', bgColor: 'bg-purple-50', textColor: 'text-purple-600', borderColor: 'border-purple-200' },
+  consulting: { icon: Lightbulb, label: 'Consultancy', bgColor: 'bg-amber-50', textColor: 'text-amber-600', borderColor: 'border-amber-200' },
+  licensing: { icon: Award, label: 'Licenties', bgColor: 'bg-indigo-50', textColor: 'text-indigo-600', borderColor: 'border-indigo-200' },
+  partnerships: { icon: Handshake, label: 'Partnerships', bgColor: 'bg-pink-50', textColor: 'text-pink-600', borderColor: 'border-pink-200' },
+  grants: { icon: Target, label: 'Subsidies', bgColor: 'bg-teal-50', textColor: 'text-teal-600', borderColor: 'border-teal-200' },
+  other: { icon: MoreHorizontal, label: 'Overig', bgColor: 'bg-gray-50', textColor: 'text-gray-600', borderColor: 'border-gray-200' },
+};
+
+const CONFIDENCE_CONFIG: Record<ProjectionConfidence, {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  color: string;
+  bgColor: string;
+  weight: number;
+}> = {
+  confirmed: { icon: CheckCircle2, label: 'Bevestigd', color: 'text-emerald-600', bgColor: 'bg-emerald-100', weight: 1.0 },
+  likely: { icon: TrendingUp, label: 'Waarschijnlijk', color: 'text-blue-600', bgColor: 'bg-blue-100', weight: 0.75 },
+  potential: { icon: AlertCircle, label: 'Potentieel', color: 'text-amber-600', bgColor: 'bg-amber-100', weight: 0.5 },
+  speculative: { icon: HelpCircle, label: 'Speculatief', color: 'text-gray-500', bgColor: 'bg-gray-100', weight: 0.25 },
 };
 
 const FREQUENCY_LABELS: Record<BudgetFrequency, string> = {
@@ -62,7 +112,10 @@ const FREQUENCY_LABELS: Record<BudgetFrequency, string> = {
   yearly: 'per jaar',
 };
 
+type ViewTab = 'overview' | 'costs' | 'income' | 'projections';
+
 interface BudgetFormData {
+  type: BudgetType;
   name: string;
   category: BudgetCategory;
   amount: string;
@@ -73,9 +126,12 @@ interface BudgetFormData {
   contractNumber: string;
   notes: string;
   isActive: boolean;
+  confidence: ProjectionConfidence;
+  growthRate: string;
 }
 
 const initialFormData: BudgetFormData = {
+  type: 'cost',
   name: '',
   category: 'software',
   amount: '',
@@ -86,21 +142,27 @@ const initialFormData: BudgetFormData = {
   contractNumber: '',
   notes: '',
   isActive: true,
+  confidence: 'confirmed',
+  growthRate: '0',
 };
 
 const Budgeting: React.FC = () => {
   const { user } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
+  const [outgoingInvoices, setOutgoingInvoices] = useState<OutgoingInvoice[]>([]);
+  const [incomingInvoices, setIncomingInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [formData, setFormData] = useState<BudgetFormData>(initialFormData);
   const [saving, setSaving] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<BudgetCategory | 'all'>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'category'>('category');
+  const [activeTab, setActiveTab] = useState<ViewTab>('overview');
+  const [showActualData, setShowActualData] = useState(true);
+  const [projectionYears, setProjectionYears] = useState(3);
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
@@ -110,11 +172,22 @@ const Budgeting: React.FC = () => {
 
     try {
       setLoading(true);
+
+      // Load budget items
       const items = await getBudgetItems(user.uid, selectedCompany.id);
       setBudgetItems(items);
+
+      // Load actual invoice data for comparison
+      const [outgoing, incoming] = await Promise.all([
+        outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id),
+        incomingInvoiceService.getInvoices(user.uid, selectedCompany.id),
+      ]);
+
+      setOutgoingInvoices(outgoing);
+      setIncomingInvoices(incoming);
     } catch (error) {
-      console.error('Error loading budget items:', error);
-      showError('Fout bij laden', 'Kon begrotingsitems niet laden');
+      console.error('Error loading data:', error);
+      showError('Fout bij laden', 'Kon gegevens niet laden');
     } finally {
       setLoading(false);
     }
@@ -124,10 +197,65 @@ const Budgeting: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  const handleOpenModal = (item?: BudgetItem) => {
+  // Calculate monthly amount from any frequency
+  const getMonthlyAmount = (item: BudgetItem) => {
+    switch (item.frequency) {
+      case 'monthly': return item.amount;
+      case 'quarterly': return item.amount / 3;
+      case 'yearly': return item.amount / 12;
+      default: return item.amount;
+    }
+  };
+
+  // Filter items by type
+  const costItems = budgetItems.filter(i => i.type === 'cost' || !i.type); // backwards compatible
+  const incomeItems = budgetItems.filter(i => i.type === 'income');
+  const activeCostItems = costItems.filter(i => i.isActive);
+  const activeIncomeItems = incomeItems.filter(i => i.isActive);
+
+  // Calculate totals
+  const monthlyCosts = activeCostItems.reduce((sum, item) => sum + getMonthlyAmount(item), 0);
+  const monthlyIncome = activeIncomeItems.reduce((sum, item) => sum + getMonthlyAmount(item), 0);
+  const monthlyProfit = monthlyIncome - monthlyCosts;
+  const yearlyCosts = monthlyCosts * 12;
+  const yearlyIncome = monthlyIncome * 12;
+  const yearlyProfit = yearlyIncome - yearlyCosts;
+
+  // Calculate weighted projections (based on confidence)
+  const weightedMonthlyIncome = activeIncomeItems.reduce((sum, item) => {
+    const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
+    return sum + (getMonthlyAmount(item) * weight);
+  }, 0);
+
+  // Calculate actual data from invoices (current year)
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
+
+  const actualYTDIncome = outgoingInvoices
+    .filter(inv => {
+      const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+      return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
+    })
+    .reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
+
+  const actualYTDCosts = incomingInvoices
+    .filter(inv => {
+      const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+      return invDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+
+  // Projected vs Actual comparison
+  const projectedYTDIncome = monthlyIncome * (currentMonth + 1);
+  const projectedYTDCosts = monthlyCosts * (currentMonth + 1);
+  const incomeVariance = actualYTDIncome - projectedYTDIncome;
+  const costVariance = actualYTDCosts - projectedYTDCosts;
+
+  const handleOpenModal = (item?: BudgetItem, type?: BudgetType) => {
     if (item) {
       setEditingItem(item);
       setFormData({
+        type: item.type || 'cost',
         name: item.name,
         category: item.category,
         amount: item.amount.toString(),
@@ -144,10 +272,16 @@ const Budgeting: React.FC = () => {
         contractNumber: item.contractNumber || '',
         notes: item.notes || '',
         isActive: item.isActive,
+        confidence: item.confidence || 'confirmed',
+        growthRate: (item.growthRate || 0).toString(),
       });
     } else {
       setEditingItem(null);
-      setFormData(initialFormData);
+      setFormData({
+        ...initialFormData,
+        type: type || 'cost',
+        category: type === 'income' ? 'services' : 'software',
+      });
     }
     setIsModalOpen(true);
   };
@@ -175,6 +309,7 @@ const Budgeting: React.FC = () => {
     setSaving(true);
     try {
       const itemData = {
+        type: formData.type,
         name: formData.name.trim(),
         category: formData.category,
         amount: parseFloat(formData.amount),
@@ -185,22 +320,24 @@ const Budgeting: React.FC = () => {
         contractNumber: formData.contractNumber.trim() || undefined,
         notes: formData.notes.trim() || undefined,
         isActive: formData.isActive,
+        confidence: formData.confidence,
+        growthRate: parseFloat(formData.growthRate) || 0,
         companyId: selectedCompany.id,
       };
 
       if (editingItem) {
         await updateBudgetItem(editingItem.id, itemData, user.uid);
-        success('Bijgewerkt', 'Begrotingsitem is bijgewerkt');
+        success('Bijgewerkt', 'Item is bijgewerkt');
       } else {
         await createBudgetItem(itemData, user.uid);
-        success('Toegevoegd', 'Begrotingsitem is toegevoegd');
+        success('Toegevoegd', 'Item is toegevoegd');
       }
 
       handleCloseModal();
       await loadData();
     } catch (error) {
-      console.error('Error saving budget item:', error);
-      showError('Fout bij opslaan', 'Kon begrotingsitem niet opslaan');
+      console.error('Error saving:', error);
+      showError('Fout bij opslaan', 'Kon item niet opslaan');
     } finally {
       setSaving(false);
     }
@@ -212,11 +349,11 @@ const Budgeting: React.FC = () => {
     if (window.confirm(`Weet je zeker dat je "${item.name}" wilt verwijderen?`)) {
       try {
         await deleteBudgetItem(item.id, user.uid);
-        success('Verwijderd', 'Begrotingsitem is verwijderd');
+        success('Verwijderd', 'Item is verwijderd');
         await loadData();
       } catch (error) {
-        console.error('Error deleting budget item:', error);
-        showError('Fout bij verwijderen', 'Kon begrotingsitem niet verwijderen');
+        console.error('Error deleting:', error);
+        showError('Fout bij verwijderen', 'Kon item niet verwijderen');
       }
     }
   };
@@ -237,31 +374,260 @@ const Budgeting: React.FC = () => {
     }).format(amount);
   };
 
-  const getMonthlyAmount = (item: BudgetItem) => {
-    switch (item.frequency) {
-      case 'monthly': return item.amount;
-      case 'quarterly': return item.amount / 3;
-      case 'yearly': return item.amount / 12;
-      default: return item.amount;
+  // Generate projection data for charts
+  const generateProjections = () => {
+    const projections = [];
+    const now = new Date();
+
+    for (let year = 0; year < projectionYears; year++) {
+      const projYear = now.getFullYear() + year;
+      let yearIncome = 0;
+      let yearCosts = 0;
+
+      activeIncomeItems.forEach(item => {
+        const baseMonthly = getMonthlyAmount(item);
+        const growth = item.growthRate || 0;
+        const yearlyAmount = baseMonthly * 12 * Math.pow(1 + growth / 100, year);
+        const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
+        yearIncome += yearlyAmount * weight;
+      });
+
+      activeCostItems.forEach(item => {
+        const baseMonthly = getMonthlyAmount(item);
+        const growth = item.growthRate || 0;
+        yearCosts += baseMonthly * 12 * Math.pow(1 + growth / 100, year);
+      });
+
+      projections.push({
+        year: projYear,
+        income: yearIncome,
+        costs: yearCosts,
+        profit: yearIncome - yearCosts,
+      });
     }
+
+    return projections;
   };
 
-  // Calculate totals
-  const monthlyTotal = calculateMonthlyBudget(budgetItems);
-  const yearlyTotal = calculateYearlyBudget(budgetItems);
-  const itemsByCategory = getBudgetItemsByCategory(budgetItems);
-  const activeItems = budgetItems.filter(i => i.isActive);
+  // Export to PDF (simple HTML-based)
+  const handleExport = async () => {
+    const projections = generateProjections();
 
-  // Calculate category totals (monthly)
-  const categoryTotals = Object.entries(itemsByCategory).map(([cat, items]) => {
-    const monthlySum = items.filter(i => i.isActive).reduce((sum, item) => sum + getMonthlyAmount(item), 0);
-    return { category: cat as BudgetCategory, items, monthlySum };
-  }).sort((a, b) => b.monthlySum - a.monthlySum);
+    const exportWindow = window.open('', '_blank');
+    if (!exportWindow) {
+      showError('Export mislukt', 'Pop-up werd geblokkeerd');
+      return;
+    }
 
-  // Filter items
-  const filteredItems = filterCategory === 'all'
-    ? budgetItems
-    : budgetItems.filter(item => item.category === filterCategory);
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Financiële Projectie - ${selectedCompany?.name}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 40px;
+      color: #1a1a1a;
+      background: white;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      border-bottom: 3px solid #4f46e5;
+      padding-bottom: 20px;
+    }
+    .header h1 { font-size: 32px; color: #4f46e5; margin-bottom: 8px; }
+    .header p { color: #666; font-size: 14px; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .summary-card {
+      padding: 24px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .summary-card.income { background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
+    .summary-card.costs { background: linear-gradient(135deg, #fef2f2, #fecaca); }
+    .summary-card.profit { background: linear-gradient(135deg, #eef2ff, #c7d2fe); }
+    .summary-card h3 { font-size: 14px; color: #666; margin-bottom: 8px; }
+    .summary-card .amount { font-size: 28px; font-weight: 700; }
+    .summary-card.income .amount { color: #059669; }
+    .summary-card.costs .amount { color: #dc2626; }
+    .summary-card.profit .amount { color: #4f46e5; }
+    .section { margin-bottom: 40px; }
+    .section h2 {
+      font-size: 20px;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f9fafb; font-weight: 600; color: #374151; }
+    .projection-row { background: #f9fafb; }
+    .positive { color: #059669; }
+    .negative { color: #dc2626; }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+    @media print {
+      body { padding: 20px; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${selectedCompany?.name}</h1>
+    <p>Financiële Projectie & Begroting | Gegenereerd op ${new Date().toLocaleDateString('nl-NL')}</p>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card income">
+      <h3>Jaarlijkse Inkomsten (Gewogen)</h3>
+      <div class="amount">${formatCurrency(weightedMonthlyIncome * 12)}</div>
+    </div>
+    <div class="summary-card costs">
+      <h3>Jaarlijkse Kosten</h3>
+      <div class="amount">${formatCurrency(yearlyCosts)}</div>
+    </div>
+    <div class="summary-card profit">
+      <h3>Verwachte Winst</h3>
+      <div class="amount">${formatCurrency(weightedMonthlyIncome * 12 - yearlyCosts)}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Meerjarenprojectie</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Jaar</th>
+          <th>Inkomsten</th>
+          <th>Kosten</th>
+          <th>Resultaat</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${projections.map(p => `
+          <tr class="projection-row">
+            <td><strong>${p.year}</strong></td>
+            <td class="positive">${formatCurrency(p.income)}</td>
+            <td class="negative">${formatCurrency(p.costs)}</td>
+            <td class="${p.profit >= 0 ? 'positive' : 'negative'}">${formatCurrency(p.profit)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Inkomstenbronnen (${activeIncomeItems.length})</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Bron</th>
+          <th>Categorie</th>
+          <th>Bedrag/mnd</th>
+          <th>Zekerheid</th>
+          <th>Groei/jaar</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${activeIncomeItems.map(item => `
+          <tr>
+            <td><strong>${item.name}</strong>${item.supplier ? `<br><small style="color:#666">${item.supplier}</small>` : ''}</td>
+            <td>${INCOME_CATEGORY_CONFIG[item.category as BudgetIncomeCategory]?.label || item.category}</td>
+            <td class="positive">${formatCurrency(getMonthlyAmount(item))}</td>
+            <td>${CONFIDENCE_CONFIG[item.confidence || 'confirmed'].label}</td>
+            <td>${item.growthRate || 0}%</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Kostenstructuur (${activeCostItems.length})</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Kostenpost</th>
+          <th>Categorie</th>
+          <th>Bedrag/mnd</th>
+          <th>Leverancier</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${activeCostItems.map(item => `
+          <tr>
+            <td><strong>${item.name}</strong></td>
+            <td>${COST_CATEGORY_CONFIG[item.category as BudgetCostCategory]?.label || item.category}</td>
+            <td class="negative">${formatCurrency(getMonthlyAmount(item))}</td>
+            <td>${item.supplier || '-'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  ${showActualData && (actualYTDIncome > 0 || actualYTDCosts > 0) ? `
+  <div class="section">
+    <h2>YTD Realiteit vs Projectie (${currentYear})</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Geprojecteerd YTD</th>
+          <th>Werkelijk YTD</th>
+          <th>Verschil</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Inkomsten</td>
+          <td>${formatCurrency(projectedYTDIncome)}</td>
+          <td>${formatCurrency(actualYTDIncome)}</td>
+          <td class="${incomeVariance >= 0 ? 'positive' : 'negative'}">${incomeVariance >= 0 ? '+' : ''}${formatCurrency(incomeVariance)}</td>
+        </tr>
+        <tr>
+          <td>Kosten</td>
+          <td>${formatCurrency(projectedYTDCosts)}</td>
+          <td>${formatCurrency(actualYTDCosts)}</td>
+          <td class="${costVariance <= 0 ? 'positive' : 'negative'}">${costVariance <= 0 ? '' : '+'}${formatCurrency(costVariance)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  ` : ''}
+
+  <div class="footer">
+    <p>Dit document is automatisch gegenereerd en bevat financiële projecties gebaseerd op ingevoerde begrotingsdata.</p>
+    <p>Gewogen inkomsten zijn gecorrigeerd voor zekerheid: Bevestigd (100%), Waarschijnlijk (75%), Potentieel (50%), Speculatief (25%)</p>
+  </div>
+
+  <script>
+    window.onload = function() { window.print(); }
+  </script>
+</body>
+</html>
+    `;
+
+    exportWindow.document.write(html);
+    exportWindow.document.close();
+    success('Export gereed', 'Print dialoog wordt geopend');
+  };
 
   if (!selectedCompany) {
     return (
@@ -277,317 +643,461 @@ const Budgeting: React.FC = () => {
     return <LoadingSpinner />;
   }
 
+  const projections = generateProjections();
+
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20" ref={exportRef}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Begroting</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Begroting & Projecties</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Terugkerende kosten voor {selectedCompany.name}
+            Financieel overzicht voor {selectedCompany.name}
           </p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nieuwe Kost
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Exporteer
+          </Button>
+          <Button onClick={() => handleOpenModal(undefined, activeTab === 'income' ? 'income' : 'cost')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nieuw Item
+          </Button>
+        </div>
       </div>
 
-      {/* Main Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Monthly Card */}
-        <Card className="p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-primary-200">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-primary-600">Maandelijkse Kosten</p>
-              <p className="text-3xl font-bold text-primary-900 mt-1">
-                {formatCurrency(monthlyTotal)}
-              </p>
-              <p className="text-xs text-primary-600 mt-2">
-                {activeItems.length} actieve items
-              </p>
-            </div>
-            <div className="p-3 bg-primary-100 rounded-xl">
-              <Calendar className="h-6 w-6 text-primary-600" />
-            </div>
-          </div>
-        </Card>
-
-        {/* Yearly Card */}
-        <Card className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-emerald-600">Jaarlijkse Kosten</p>
-              <p className="text-3xl font-bold text-emerald-900 mt-1">
-                {formatCurrency(yearlyTotal)}
-              </p>
-              <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                12x maandelijks
-              </p>
-            </div>
-            <div className="p-3 bg-emerald-100 rounded-xl">
-              <TrendingUp className="h-6 w-6 text-emerald-600" />
-            </div>
-          </div>
-        </Card>
-
-        {/* Categories Card */}
-        <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-600">Categorieën</p>
-              <p className="text-3xl font-bold text-purple-900 mt-1">
-                {categoryTotals.filter(c => c.items.length > 0).length}
-              </p>
-              <p className="text-xs text-purple-600 mt-2">
-                {budgetItems.length} totaal items
-              </p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-xl">
-              <PieChart className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-        </Card>
+      {/* Tab Navigation */}
+      <div className="flex gap-2 border-b border-gray-200 pb-2 overflow-x-auto">
+        {[
+          { id: 'overview' as ViewTab, label: 'Overzicht', icon: PieChart },
+          { id: 'costs' as ViewTab, label: `Kosten (${costItems.length})`, icon: TrendingDown },
+          { id: 'income' as ViewTab, label: `Inkomsten (${incomeItems.length})`, icon: TrendingUp },
+          { id: 'projections' as ViewTab, label: 'Projecties', icon: BarChart3 },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'bg-primary-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <tab.icon className="h-4 w-4" />
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Category Breakdown */}
-      {categoryTotals.length > 0 && (
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Verdeling per Categorie</h2>
-          <div className="space-y-3">
-            {categoryTotals.filter(c => c.items.length > 0).map(({ category, items, monthlySum }) => {
-              const config = CATEGORY_CONFIG[category];
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Main Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-emerald-600">Maandelijkse Inkomsten</p>
+                  <p className="text-3xl font-bold text-emerald-900 mt-1">
+                    {formatCurrency(monthlyIncome)}
+                  </p>
+                  <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    {activeIncomeItems.length} bronnen
+                  </p>
+                </div>
+                <div className="p-3 bg-emerald-100 rounded-xl">
+                  <ArrowUpRight className="h-6 w-6 text-emerald-600" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6 bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-red-600">Maandelijkse Kosten</p>
+                  <p className="text-3xl font-bold text-red-900 mt-1">
+                    {formatCurrency(monthlyCosts)}
+                  </p>
+                  <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                    <TrendingDown className="h-3 w-3" />
+                    {activeCostItems.length} posten
+                  </p>
+                </div>
+                <div className="p-3 bg-red-100 rounded-xl">
+                  <ArrowDownRight className="h-6 w-6 text-red-600" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className={`p-6 ${monthlyProfit >= 0
+              ? 'bg-gradient-to-br from-primary-50 to-indigo-50 border-primary-200'
+              : 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200'}`}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className={`text-sm font-medium ${monthlyProfit >= 0 ? 'text-primary-600' : 'text-orange-600'}`}>
+                    Maandelijks Resultaat
+                  </p>
+                  <p className={`text-3xl font-bold mt-1 ${monthlyProfit >= 0 ? 'text-primary-900' : 'text-orange-900'}`}>
+                    {monthlyProfit >= 0 ? '+' : ''}{formatCurrency(monthlyProfit)}
+                  </p>
+                  <p className={`text-xs mt-2 ${monthlyProfit >= 0 ? 'text-primary-600' : 'text-orange-600'}`}>
+                    {formatCurrency(yearlyProfit)}/jaar
+                  </p>
+                </div>
+                <div className={`p-3 rounded-xl ${monthlyProfit >= 0 ? 'bg-primary-100' : 'bg-orange-100'}`}>
+                  <Wallet className={`h-6 w-6 ${monthlyProfit >= 0 ? 'text-primary-600' : 'text-orange-600'}`} />
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Reality Check Section */}
+          {showActualData && (actualYTDIncome > 0 || actualYTDCosts > 0) && (
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Realiteit vs Projectie ({currentYear} YTD)
+                </h2>
+                <button
+                  onClick={() => setShowActualData(!showActualData)}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                >
+                  {showActualData ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Income Comparison */}
+                <div className="p-4 bg-emerald-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-emerald-700">Inkomsten</span>
+                    <span className={`text-sm font-bold ${incomeVariance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {incomeVariance >= 0 ? '+' : ''}{formatCurrency(incomeVariance)}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Geprojecteerd</span>
+                      <span className="font-medium">{formatCurrency(projectedYTDIncome)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Werkelijk (facturen)</span>
+                      <span className="font-medium text-emerald-700">{formatCurrency(actualYTDIncome)}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 h-2 bg-emerald-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full"
+                      style={{ width: `${Math.min((actualYTDIncome / projectedYTDIncome) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Costs Comparison */}
+                <div className="p-4 bg-red-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-red-700">Kosten</span>
+                    <span className={`text-sm font-bold ${costVariance <= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {costVariance >= 0 ? '+' : ''}{formatCurrency(costVariance)}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Geprojecteerd</span>
+                      <span className="font-medium">{formatCurrency(projectedYTDCosts)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">Werkelijk (facturen)</span>
+                      <span className="font-medium text-red-700">{formatCurrency(actualYTDCosts)}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 h-2 bg-red-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-red-500 rounded-full"
+                      style={{ width: `${Math.min((actualYTDCosts / projectedYTDCosts) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => handleOpenModal(undefined, 'income')}
+              className="p-4 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl hover:bg-emerald-100 transition-colors"
+            >
+              <Plus className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
+              <p className="text-sm font-medium text-emerald-700">Inkomstenbron Toevoegen</p>
+            </button>
+            <button
+              onClick={() => handleOpenModal(undefined, 'cost')}
+              className="p-4 bg-red-50 border-2 border-dashed border-red-300 rounded-xl hover:bg-red-100 transition-colors"
+            >
+              <Plus className="h-6 w-6 text-red-600 mx-auto mb-2" />
+              <p className="text-sm font-medium text-red-700">Kostenpost Toevoegen</p>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Costs Tab */}
+      {activeTab === 'costs' && (
+        <div className="space-y-4">
+          {costItems.length === 0 ? (
+            <EmptyState
+              icon={TrendingDown}
+              title="Geen kosten"
+              description="Voeg terugkerende kosten toe"
+              actionLabel="Eerste Kost Toevoegen"
+              onAction={() => handleOpenModal(undefined, 'cost')}
+            />
+          ) : (
+            costItems.map((item) => {
+              const config = COST_CATEGORY_CONFIG[item.category as BudgetCostCategory] || COST_CATEGORY_CONFIG.other;
               const Icon = config.icon;
-              const percentage = monthlyTotal > 0 ? (monthlySum / monthlyTotal) * 100 : 0;
-              const activeCount = items.filter(i => i.isActive).length;
 
               return (
-                <div
-                  key={category}
-                  className={`p-4 rounded-xl border ${config.borderColor} ${config.bgColor} cursor-pointer hover:shadow-md transition-shadow`}
-                  onClick={() => setFilterCategory(filterCategory === category ? 'all' : category)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg bg-white ${config.textColor}`}>
-                        <Icon className="h-5 w-5" />
+                <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                        {!item.isActive && (
+                          <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                            Inactief
+                          </span>
+                        )}
                       </div>
-                      <div>
-                        <p className={`font-semibold ${config.textColor}`}>{config.label}</p>
-                        <p className="text-xs text-gray-500">{activeCount} item{activeCount !== 1 ? 's' : ''}</p>
+                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                        <span>{config.label}</span>
+                        {item.supplier && <span>• {item.supplier}</span>}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-lg font-bold ${config.textColor}`}>
-                        {formatCurrency(monthlySum)}
+                      <p className="text-lg font-bold text-red-600">
+                        -{formatCurrencyDetailed(item.amount)}
                       </p>
-                      <p className="text-xs text-gray-500">/maand</p>
+                      <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleOpenModal(item)}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                  {/* Progress bar */}
-                  <div className="h-2 bg-white rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${config.textColor.replace('text-', 'bg-')}`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1 text-right">{percentage.toFixed(1)}% van totaal</p>
-                </div>
+                </Card>
               );
-            })}
-          </div>
-        </Card>
+            })
+          )}
+        </div>
       )}
 
-      {/* View Toggle & Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setViewMode('category')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              viewMode === 'category'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <PieChart className="h-4 w-4 inline mr-2" />
-            Per Categorie
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              viewMode === 'list'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <FileText className="h-4 w-4 inline mr-2" />
-            Lijst
-          </button>
-        </div>
+      {/* Income Tab */}
+      {activeTab === 'income' && (
+        <div className="space-y-4">
+          {incomeItems.length === 0 ? (
+            <EmptyState
+              icon={TrendingUp}
+              title="Geen inkomsten"
+              description="Voeg verwachte inkomsten toe voor projecties"
+              actionLabel="Eerste Inkomst Toevoegen"
+              onAction={() => handleOpenModal(undefined, 'income')}
+            />
+          ) : (
+            incomeItems.map((item) => {
+              const config = INCOME_CATEGORY_CONFIG[item.category as BudgetIncomeCategory] || INCOME_CATEGORY_CONFIG.other;
+              const confConfig = CONFIDENCE_CONFIG[item.confidence || 'confirmed'];
+              const Icon = config.icon;
+              const ConfIcon = confConfig.icon;
 
-        {viewMode === 'list' && (
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setFilterCategory('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                filterCategory === 'all'
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Alle ({budgetItems.length})
-            </button>
-            {(Object.keys(CATEGORY_CONFIG) as BudgetCategory[]).map((cat) => {
-              const count = itemsByCategory[cat]?.length || 0;
-              if (count === 0) return null;
               return (
-                <button
-                  key={cat}
-                  onClick={() => setFilterCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    filterCategory === cat
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {CATEGORY_CONFIG[cat].label} ({count})
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Items Display */}
-      {budgetItems.length === 0 ? (
-        <EmptyState
-          icon={Wallet}
-          title="Geen begrotingsitems"
-          description="Voeg terugkerende kosten toe zoals telefoonabonnementen, software licenties of autokosten"
-          actionLabel="Eerste Item Toevoegen"
-          onAction={() => handleOpenModal()}
-        />
-      ) : viewMode === 'category' ? (
-        // Category View
-        <div className="space-y-6">
-          {categoryTotals.filter(c => c.items.length > 0).map(({ category, items }) => {
-            const config = CATEGORY_CONFIG[category];
-            const Icon = config.icon;
-
-            return (
-              <div key={category}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Icon className={`h-5 w-5 ${config.textColor}`} />
-                  <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
-                  <span className="text-xs text-gray-400">({items.length})</span>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {items.map((item) => (
-                    <Card
-                      key={item.id}
-                      className={`p-4 border-l-4 ${config.borderColor} hover:shadow-md transition-shadow ${!item.isActive ? 'opacity-60' : ''}`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                          {item.supplier && (
-                            <p className="text-xs text-gray-500 truncate">{item.supplier}</p>
-                          )}
-                        </div>
-                        <div className="flex gap-1 ml-2">
-                          <button
-                            onClick={() => handleOpenModal(item)}
-                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex items-end justify-between">
-                        <div>
-                          <p className="text-lg font-bold text-gray-900">
-                            {formatCurrencyDetailed(item.amount)}
-                          </p>
-                          <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
-                        </div>
-                        {item.frequency !== 'monthly' && (
-                          <p className="text-xs text-gray-400">
-                            {formatCurrency(getMonthlyAmount(item))}/mnd
-                          </p>
+                <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                        <span className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${confConfig.bgColor} ${confConfig.color}`}>
+                          <ConfIcon className="h-3 w-3" />
+                          {confConfig.label}
+                        </span>
+                        {!item.isActive && (
+                          <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                            Inactief
+                          </span>
                         )}
                       </div>
-                      {!item.isActive && (
-                        <span className="inline-block mt-2 px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                          Inactief
-                        </span>
-                      )}
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                        <span>{config.label}</span>
+                        {item.supplier && <span>• {item.supplier}</span>}
+                        {item.growthRate && item.growthRate > 0 && (
+                          <span className="text-emerald-600">• +{item.growthRate}%/jaar</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-emerald-600">
+                        +{formatCurrencyDetailed(item.amount)}
+                      </p>
+                      <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleOpenModal(item)}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })
+          )}
         </div>
-      ) : (
-        // List View
-        <div className="space-y-3">
-          {filteredItems.map((item) => {
-            const config = CATEGORY_CONFIG[item.category];
-            const Icon = config.icon;
+      )}
 
-            return (
-              <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
-                <div className="flex items-center gap-4">
-                  <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                      {!item.isActive && (
-                        <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                          Inactief
+      {/* Projections Tab */}
+      {activeTab === 'projections' && (
+        <div className="space-y-6">
+          {/* Projection Controls */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-gray-900">Projectie Instellingen</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">Jaren:</span>
+                {[1, 3, 5].map(years => (
+                  <button
+                    key={years}
+                    onClick={() => setProjectionYears(years)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                      projectionYears === years
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {years}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          {/* Weighted Income Note */}
+          <Card className="p-4 bg-amber-50 border-amber-200">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-amber-800">Gewogen Projectie</h4>
+                <p className="text-sm text-amber-700 mt-1">
+                  Inkomsten worden gewogen op zekerheid: Bevestigd (100%), Waarschijnlijk (75%),
+                  Potentieel (50%), Speculatief (25%). Dit geeft een realistischer beeld voor investeerders.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Projection Table */}
+          <Card className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Jaar</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Inkomsten</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Kosten</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Resultaat</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Marge</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {projections.map((proj, idx) => (
+                    <tr key={proj.year} className={idx === 0 ? 'bg-primary-50' : ''}>
+                      <td className="px-4 py-4">
+                        <span className="font-semibold text-gray-900">{proj.year}</span>
+                        {idx === 0 && (
+                          <span className="ml-2 px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded">
+                            Huidig
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <span className="font-medium text-emerald-600">{formatCurrency(proj.income)}</span>
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <span className="font-medium text-red-600">{formatCurrency(proj.costs)}</span>
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <span className={`font-bold ${proj.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {proj.profit >= 0 ? '+' : ''}{formatCurrency(proj.profit)}
                         </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                      <span>{config.label}</span>
-                      {item.supplier && <span>• {item.supplier}</span>}
-                      {item.contractNumber && <span>• {item.contractNumber}</span>}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900">
-                      {formatCurrencyDetailed(item.amount)}
-                    </p>
-                    <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => handleOpenModal(item)}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
+                      </td>
+                      <td className="px-4 py-4 text-right">
+                        <span className={`font-medium ${proj.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {proj.income > 0 ? ((proj.profit / proj.income) * 100).toFixed(1) : 0}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* Key Metrics for Investors */}
+          <Card className="p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Kerngetallen voor Investeerders</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(weightedMonthlyIncome * 12)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">ARR (Gewogen)</p>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(monthlyIncome)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">MRR (Max)</p>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <p className={`text-2xl font-bold ${yearlyProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {yearlyIncome > 0 ? ((yearlyProfit / yearlyIncome) * 100).toFixed(1) : 0}%
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Winstmarge</p>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <p className="text-2xl font-bold text-gray-900">
+                  {activeIncomeItems.length}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Inkomstenbronnen</p>
+              </div>
+            </div>
+          </Card>
         </div>
       )}
 
@@ -596,12 +1106,43 @@ const Budgeting: React.FC = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="fixed inset-0 bg-black/50" onClick={handleCloseModal} />
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
               <h2 className="text-xl font-bold text-gray-900 mb-6">
-                {editingItem ? 'Begrotingsitem Bewerken' : 'Nieuw Begrotingsitem'}
+                {editingItem ? 'Item Bewerken' : `Nieuw ${formData.type === 'income' ? 'Inkomst' : 'Kost'}`}
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Type Toggle */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, type: 'cost', category: 'software' })}
+                      className={`p-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                        formData.type === 'cost'
+                          ? 'border-red-500 bg-red-50 text-red-700'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      <TrendingDown className="h-4 w-4" />
+                      Kost
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, type: 'income', category: 'services' })}
+                      className={`p-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                        formData.type === 'income'
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                      Inkomst
+                    </button>
+                  </div>
+                </div>
+
                 {/* Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -612,19 +1153,22 @@ const Budgeting: React.FC = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="bijv. Microsoft 365 Business"
+                    placeholder={formData.type === 'income' ? 'bijv. Enterprise Klant A' : 'bijv. Microsoft 365'}
                     required
                   />
                 </div>
 
                 {/* Category */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Categorie
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Categorie</label>
                   <div className="grid grid-cols-4 gap-2">
-                    {(Object.keys(CATEGORY_CONFIG) as BudgetCategory[]).map((cat) => {
-                      const config = CATEGORY_CONFIG[cat];
+                    {(formData.type === 'cost'
+                      ? Object.keys(COST_CATEGORY_CONFIG) as BudgetCostCategory[]
+                      : Object.keys(INCOME_CATEGORY_CONFIG) as BudgetIncomeCategory[]
+                    ).map((cat) => {
+                      const config = formData.type === 'cost'
+                        ? COST_CATEGORY_CONFIG[cat as BudgetCostCategory]
+                        : INCOME_CATEGORY_CONFIG[cat as BudgetIncomeCategory];
                       const Icon = config.icon;
                       const isSelected = formData.category === cat;
                       return (
@@ -638,8 +1182,8 @@ const Budgeting: React.FC = () => {
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <Icon className={`h-5 w-5 ${isSelected ? config.textColor : 'text-gray-400'}`} />
-                          <span className={`text-xs ${isSelected ? config.textColor : 'text-gray-500'}`}>
+                          <Icon className={`h-4 w-4 ${isSelected ? config.textColor : 'text-gray-400'}`} />
+                          <span className={`text-xs truncate w-full text-center ${isSelected ? config.textColor : 'text-gray-500'}`}>
                             {config.label.split(' ')[0]}
                           </span>
                         </button>
@@ -651,9 +1195,7 @@ const Budgeting: React.FC = () => {
                 {/* Amount & Frequency */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bedrag *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bedrag *</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
                       <input
@@ -662,20 +1204,18 @@ const Budgeting: React.FC = () => {
                         min="0"
                         value={formData.amount}
                         onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                         placeholder="0.00"
                         required
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Frequentie
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Frequentie</label>
                     <select
                       value={formData.frequency}
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value as BudgetFrequency })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="monthly">Maandelijks</option>
                       <option value="quarterly">Per kwartaal</option>
@@ -684,70 +1224,75 @@ const Budgeting: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Supplier & Contract Number */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Leverancier
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.supplier}
-                      onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="bijv. Microsoft"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Contractnummer
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.contractNumber}
-                      onChange={(e) => setFormData({ ...formData, contractNumber: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="bijv. MS-12345"
-                    />
-                  </div>
-                </div>
+                {/* Income-specific: Confidence & Growth */}
+                {formData.type === 'income' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Zekerheid</label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {(Object.keys(CONFIDENCE_CONFIG) as ProjectionConfidence[]).map((conf) => {
+                          const config = CONFIDENCE_CONFIG[conf];
+                          const Icon = config.icon;
+                          const isSelected = formData.confidence === conf;
+                          return (
+                            <button
+                              key={conf}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, confidence: conf })}
+                              className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1 ${
+                                isSelected
+                                  ? `border-gray-800 ${config.bgColor}`
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <Icon className={`h-4 w-4 ${isSelected ? config.color : 'text-gray-400'}`} />
+                              <span className={`text-xs ${isSelected ? config.color : 'text-gray-500'}`}>
+                                {config.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                {/* Start Date & End Date */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Startdatum
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Einddatum (optioneel)
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Verwachte Groei per Jaar (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="1"
+                        value={formData.growthRate}
+                        onChange={(e) => setFormData({ ...formData, growthRate: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="0"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Supplier/Client */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {formData.type === 'income' ? 'Klant' : 'Leverancier'}
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.supplier}
+                    onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    placeholder={formData.type === 'income' ? 'bijv. ACME Corp' : 'bijv. Microsoft'}
+                  />
                 </div>
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notities
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notities</label>
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="Eventuele opmerkingen..."
                   />
                 </div>

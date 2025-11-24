@@ -390,24 +390,34 @@ export interface UserSettings {
   updatedAt: Date;
 }
 
-// ✅ NIEUW: Budget/Begroting voor terugkerende kosten
-export type BudgetCategory = 'telecom' | 'software' | 'vehicle' | 'insurance' | 'utilities' | 'subscriptions' | 'other';
+// ✅ NIEUW: Budget/Begroting voor terugkerende kosten EN inkomsten
+export type BudgetType = 'cost' | 'income';
+export type BudgetCostCategory = 'telecom' | 'software' | 'vehicle' | 'insurance' | 'utilities' | 'subscriptions' | 'personnel' | 'marketing' | 'office' | 'other';
+export type BudgetIncomeCategory = 'services' | 'products' | 'subscriptions' | 'consulting' | 'licensing' | 'partnerships' | 'grants' | 'other';
+export type BudgetCategory = BudgetCostCategory | BudgetIncomeCategory;
 export type BudgetFrequency = 'monthly' | 'quarterly' | 'yearly';
+
+// Confidence level voor projecties (investeerder presentaties)
+export type ProjectionConfidence = 'confirmed' | 'likely' | 'potential' | 'speculative';
 
 export interface BudgetItem {
   id: string;
   userId: string;
   companyId: string;
-  name: string;                    // "KPN Telefoon", "Microsoft 365", etc.
+  type: BudgetType;                // 'cost' of 'income'
+  name: string;                    // "KPN Telefoon", "Microsoft 365", "SaaS Klant A", etc.
   category: BudgetCategory;
   amount: number;                  // Bedrag per periode
   frequency: BudgetFrequency;
   startDate: Date;
-  endDate?: Date;                  // Optioneel, voor tijdelijke kosten
-  supplier?: string;               // Leverancier
+  endDate?: Date;                  // Optioneel, voor tijdelijke kosten/inkomsten
+  supplier?: string;               // Leverancier (voor kosten) of Klant (voor inkomsten)
   contractNumber?: string;
   notes?: string;
   isActive: boolean;
+  // Projectie velden voor investeerder presentaties
+  confidence?: ProjectionConfidence;  // Zekerheid van de inkomst/kost
+  growthRate?: number;             // Verwachte groei % per jaar
   createdAt: Date;
   updatedAt: Date;
 }
