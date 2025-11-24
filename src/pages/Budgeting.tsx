@@ -12,8 +12,14 @@ import {
   CreditCard,
   MoreHorizontal,
   TrendingUp,
+  TrendingDown,
   Calendar,
   Building2,
+  PieChart,
+  ArrowUpRight,
+  ArrowDownRight,
+  Clock,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -33,21 +39,27 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
 
-// Category configuration with icons and labels
-const CATEGORY_CONFIG: Record<BudgetCategory, { icon: React.ComponentType<{ className?: string }>; label: string; color: string }> = {
-  telecom: { icon: Phone, label: 'Telecom', color: 'bg-blue-100 text-blue-600' },
-  software: { icon: Monitor, label: 'Software & Licenties', color: 'bg-purple-100 text-purple-600' },
-  vehicle: { icon: Car, label: 'Voertuigen', color: 'bg-green-100 text-green-600' },
-  insurance: { icon: Shield, label: 'Verzekeringen', color: 'bg-orange-100 text-orange-600' },
-  utilities: { icon: Zap, label: 'Nutsvoorzieningen', color: 'bg-yellow-100 text-yellow-600' },
-  subscriptions: { icon: CreditCard, label: 'Abonnementen', color: 'bg-pink-100 text-pink-600' },
-  other: { icon: MoreHorizontal, label: 'Overig', color: 'bg-gray-100 text-gray-600' },
+// Category configuration with icons, labels and colors
+const CATEGORY_CONFIG: Record<BudgetCategory, {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+}> = {
+  telecom: { icon: Phone, label: 'Telecom', bgColor: 'bg-blue-50', textColor: 'text-blue-600', borderColor: 'border-blue-200' },
+  software: { icon: Monitor, label: 'Software & Licenties', bgColor: 'bg-purple-50', textColor: 'text-purple-600', borderColor: 'border-purple-200' },
+  vehicle: { icon: Car, label: 'Voertuigen', bgColor: 'bg-emerald-50', textColor: 'text-emerald-600', borderColor: 'border-emerald-200' },
+  insurance: { icon: Shield, label: 'Verzekeringen', bgColor: 'bg-orange-50', textColor: 'text-orange-600', borderColor: 'border-orange-200' },
+  utilities: { icon: Zap, label: 'Nutsvoorzieningen', bgColor: 'bg-yellow-50', textColor: 'text-yellow-600', borderColor: 'border-yellow-200' },
+  subscriptions: { icon: CreditCard, label: 'Abonnementen', bgColor: 'bg-pink-50', textColor: 'text-pink-600', borderColor: 'border-pink-200' },
+  other: { icon: MoreHorizontal, label: 'Overig', bgColor: 'bg-gray-50', textColor: 'text-gray-600', borderColor: 'border-gray-200' },
 };
 
 const FREQUENCY_LABELS: Record<BudgetFrequency, string> = {
-  monthly: 'Maandelijks',
-  quarterly: 'Per kwartaal',
-  yearly: 'Jaarlijks',
+  monthly: 'per maand',
+  quarterly: 'per kwartaal',
+  yearly: 'per jaar',
 };
 
 interface BudgetFormData {
@@ -65,7 +77,7 @@ interface BudgetFormData {
 
 const initialFormData: BudgetFormData = {
   name: '',
-  category: 'other',
+  category: 'software',
   amount: '',
   frequency: 'monthly',
   startDate: new Date().toISOString().split('T')[0],
@@ -88,6 +100,7 @@ const Budgeting: React.FC = () => {
   const [formData, setFormData] = useState<BudgetFormData>(initialFormData);
   const [saving, setSaving] = useState(false);
   const [filterCategory, setFilterCategory] = useState<BudgetCategory | 'all'>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'category'>('category');
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
@@ -212,31 +225,43 @@ const Budgeting: React.FC = () => {
     return new Intl.NumberFormat('nl-NL', {
       style: 'currency',
       currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatCurrencyDetailed = (amount: number) => {
+    return new Intl.NumberFormat('nl-NL', {
+      style: 'currency',
+      currency: 'EUR',
     }).format(amount);
   };
 
   const getMonthlyAmount = (item: BudgetItem) => {
     switch (item.frequency) {
-      case 'monthly':
-        return item.amount;
-      case 'quarterly':
-        return item.amount / 3;
-      case 'yearly':
-        return item.amount / 12;
-      default:
-        return item.amount;
+      case 'monthly': return item.amount;
+      case 'quarterly': return item.amount / 3;
+      case 'yearly': return item.amount / 12;
+      default: return item.amount;
     }
   };
-
-  // Filter items
-  const filteredItems = filterCategory === 'all'
-    ? budgetItems
-    : budgetItems.filter(item => item.category === filterCategory);
 
   // Calculate totals
   const monthlyTotal = calculateMonthlyBudget(budgetItems);
   const yearlyTotal = calculateYearlyBudget(budgetItems);
   const itemsByCategory = getBudgetItemsByCategory(budgetItems);
+  const activeItems = budgetItems.filter(i => i.isActive);
+
+  // Calculate category totals (monthly)
+  const categoryTotals = Object.entries(itemsByCategory).map(([cat, items]) => {
+    const monthlySum = items.filter(i => i.isActive).reduce((sum, item) => sum + getMonthlyAmount(item), 0);
+    return { category: cat as BudgetCategory, items, monthlySum };
+  }).sort((a, b) => b.monthlySum - a.monthlySum);
+
+  // Filter items
+  const filteredItems = filterCategory === 'all'
+    ? budgetItems
+    : budgetItems.filter(item => item.category === filterCategory);
 
   if (!selectedCompany) {
     return (
@@ -253,12 +278,12 @@ const Budgeting: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Begroting</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-gray-900">Begroting</h1>
+          <p className="mt-1 text-sm text-gray-500">
             Terugkerende kosten voor {selectedCompany.name}
           </p>
         </div>
@@ -268,84 +293,174 @@ const Budgeting: React.FC = () => {
         </Button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-primary-100 dark:bg-primary-900/20 rounded-lg">
-              <Calendar className="h-6 w-6 text-primary-600" />
-            </div>
+      {/* Main Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Monthly Card */}
+        <Card className="p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-primary-200">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Maandelijks</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-sm font-medium text-primary-600">Maandelijkse Kosten</p>
+              <p className="text-3xl font-bold text-primary-900 mt-1">
                 {formatCurrency(monthlyTotal)}
               </p>
+              <p className="text-xs text-primary-600 mt-2">
+                {activeItems.length} actieve items
+              </p>
+            </div>
+            <div className="p-3 bg-primary-100 rounded-xl">
+              <Calendar className="h-6 w-6 text-primary-600" />
             </div>
           </div>
         </Card>
 
-        <Card className="p-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-green-600" />
-            </div>
+        {/* Yearly Card */}
+        <Card className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Jaarlijks</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              <p className="text-sm font-medium text-emerald-600">Jaarlijkse Kosten</p>
+              <p className="text-3xl font-bold text-emerald-900 mt-1">
                 {formatCurrency(yearlyTotal)}
               </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center space-x-3">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-              <Wallet className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Actieve Items</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {budgetItems.filter(i => i.isActive).length}
+              <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                12x maandelijks
               </p>
             </div>
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <TrendingUp className="h-6 w-6 text-emerald-600" />
+            </div>
+          </div>
+        </Card>
+
+        {/* Categories Card */}
+        <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm font-medium text-purple-600">Categorieën</p>
+              <p className="text-3xl font-bold text-purple-900 mt-1">
+                {categoryTotals.filter(c => c.items.length > 0).length}
+              </p>
+              <p className="text-xs text-purple-600 mt-2">
+                {budgetItems.length} totaal items
+              </p>
+            </div>
+            <div className="p-3 bg-purple-100 rounded-xl">
+              <PieChart className="h-6 w-6 text-purple-600" />
+            </div>
           </div>
         </Card>
       </div>
 
-      {/* Category Filter */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setFilterCategory('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filterCategory === 'all'
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
-          }`}
-        >
-          Alle ({budgetItems.length})
-        </button>
-        {(Object.keys(CATEGORY_CONFIG) as BudgetCategory[]).map((cat) => {
-          const count = itemsByCategory[cat]?.length || 0;
-          if (count === 0) return null;
-          const config = CATEGORY_CONFIG[cat];
-          return (
+      {/* Category Breakdown */}
+      {categoryTotals.length > 0 && (
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Verdeling per Categorie</h2>
+          <div className="space-y-3">
+            {categoryTotals.filter(c => c.items.length > 0).map(({ category, items, monthlySum }) => {
+              const config = CATEGORY_CONFIG[category];
+              const Icon = config.icon;
+              const percentage = monthlyTotal > 0 ? (monthlySum / monthlyTotal) * 100 : 0;
+              const activeCount = items.filter(i => i.isActive).length;
+
+              return (
+                <div
+                  key={category}
+                  className={`p-4 rounded-xl border ${config.borderColor} ${config.bgColor} cursor-pointer hover:shadow-md transition-shadow`}
+                  onClick={() => setFilterCategory(filterCategory === category ? 'all' : category)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg bg-white ${config.textColor}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className={`font-semibold ${config.textColor}`}>{config.label}</p>
+                        <p className="text-xs text-gray-500">{activeCount} item{activeCount !== 1 ? 's' : ''}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-lg font-bold ${config.textColor}`}>
+                        {formatCurrency(monthlySum)}
+                      </p>
+                      <p className="text-xs text-gray-500">/maand</p>
+                    </div>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="h-2 bg-white rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${config.textColor.replace('text-', 'bg-')}`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 text-right">{percentage.toFixed(1)}% van totaal</p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* View Toggle & Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setViewMode('category')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              viewMode === 'category'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <PieChart className="h-4 w-4 inline mr-2" />
+            Per Categorie
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              viewMode === 'list'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <FileText className="h-4 w-4 inline mr-2" />
+            Lijst
+          </button>
+        </div>
+
+        {viewMode === 'list' && (
+          <div className="flex flex-wrap gap-2">
             <button
-              key={cat}
-              onClick={() => setFilterCategory(cat)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filterCategory === cat
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
+              onClick={() => setFilterCategory('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                filterCategory === 'all'
+                  ? 'bg-gray-800 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {config.label} ({count})
+              Alle ({budgetItems.length})
             </button>
-          );
-        })}
+            {(Object.keys(CATEGORY_CONFIG) as BudgetCategory[]).map((cat) => {
+              const count = itemsByCategory[cat]?.length || 0;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setFilterCategory(cat)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    filterCategory === cat
+                      ? 'bg-gray-800 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {CATEGORY_CONFIG[cat].label} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Budget Items List */}
+      {/* Items Display */}
       {budgetItems.length === 0 ? (
         <EmptyState
           icon={Wallet}
@@ -354,78 +469,120 @@ const Budgeting: React.FC = () => {
           actionLabel="Eerste Item Toevoegen"
           onAction={() => handleOpenModal()}
         />
-      ) : filteredItems.length === 0 ? (
-        <Card className="p-8 text-center">
-          <p className="text-gray-500">Geen items gevonden in deze categorie</p>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filteredItems.map((item) => {
-            const categoryConfig = CATEGORY_CONFIG[item.category];
-            const CategoryIcon = categoryConfig.icon;
+      ) : viewMode === 'category' ? (
+        // Category View
+        <div className="space-y-6">
+          {categoryTotals.filter(c => c.items.length > 0).map(({ category, items }) => {
+            const config = CATEGORY_CONFIG[category];
+            const Icon = config.icon;
 
             return (
-              <Card key={item.id} className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4">
-                    <div className={`p-3 rounded-lg ${categoryConfig.color}`}>
-                      <CategoryIcon className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {item.name}
-                        </h3>
-                        {!item.isActive && (
-                          <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">
-                            Inactief
-                          </span>
+              <div key={category}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon className={`h-5 w-5 ${config.textColor}`} />
+                  <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
+                  <span className="text-xs text-gray-400">({items.length})</span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {items.map((item) => (
+                    <Card
+                      key={item.id}
+                      className={`p-4 border-l-4 ${config.borderColor} hover:shadow-md transition-shadow ${!item.isActive ? 'opacity-60' : ''}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                          {item.supplier && (
+                            <p className="text-xs text-gray-500 truncate">{item.supplier}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-1 ml-2">
+                          <button
+                            onClick={() => handleOpenModal(item)}
+                            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="text-lg font-bold text-gray-900">
+                            {formatCurrencyDetailed(item.amount)}
+                          </p>
+                          <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                        </div>
+                        {item.frequency !== 'monthly' && (
+                          <p className="text-xs text-gray-400">
+                            {formatCurrency(getMonthlyAmount(item))}/mnd
+                          </p>
                         )}
                       </div>
-                      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-                        <span>{categoryConfig.label}</span>
-                        <span>{FREQUENCY_LABELS[item.frequency]}</span>
-                        {item.supplier && <span>Leverancier: {item.supplier}</span>}
-                        {item.contractNumber && <span>Contract: {item.contractNumber}</span>}
-                      </div>
-                      {item.notes && (
-                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{item.notes}</p>
+                      {!item.isActive && (
+                        <span className="inline-block mt-2 px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                          Inactief
+                        </span>
                       )}
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        // List View
+        <div className="space-y-3">
+          {filteredItems.map((item) => {
+            const config = CATEGORY_CONFIG[item.category];
+            const Icon = config.icon;
+
+            return (
+              <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
+                <div className="flex items-center gap-4">
+                  <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                      {!item.isActive && (
+                        <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                          Inactief
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                      <span>{config.label}</span>
+                      {item.supplier && <span>• {item.supplier}</span>}
+                      {item.contractNumber && <span>• {item.contractNumber}</span>}
                     </div>
                   </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-gray-900 dark:text-white">
-                        {formatCurrency(item.amount)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {FREQUENCY_LABELS[item.frequency].toLowerCase()}
-                      </p>
-                      {item.frequency !== 'monthly' && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          ({formatCurrency(getMonthlyAmount(item))}/maand)
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleOpenModal(item)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(item)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-gray-900">
+                      {formatCurrencyDetailed(item.amount)}
+                    </p>
+                    <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleOpenModal(item)}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               </Card>
@@ -439,49 +596,62 @@ const Budgeting: React.FC = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="fixed inset-0 bg-black/50" onClick={handleCloseModal} />
-            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">
                 {editingItem ? 'Begrotingsitem Bewerken' : 'Nieuw Begrotingsitem'}
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Naam *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    placeholder="bijv. KPN Telefoonabonnement"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="bijv. Microsoft 365 Business"
                     required
                   />
                 </div>
 
                 {/* Category */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Categorie
                   </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value as BudgetCategory })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    {(Object.keys(CATEGORY_CONFIG) as BudgetCategory[]).map((cat) => (
-                      <option key={cat} value={cat}>
-                        {CATEGORY_CONFIG[cat].label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(Object.keys(CATEGORY_CONFIG) as BudgetCategory[]).map((cat) => {
+                      const config = CATEGORY_CONFIG[cat];
+                      const Icon = config.icon;
+                      const isSelected = formData.category === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, category: cat })}
+                          className={`p-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1 ${
+                            isSelected
+                              ? `${config.borderColor} ${config.bgColor}`
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <Icon className={`h-5 w-5 ${isSelected ? config.textColor : 'text-gray-400'}`} />
+                          <span className={`text-xs ${isSelected ? config.textColor : 'text-gray-500'}`}>
+                            {config.label.split(' ')[0]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Amount & Frequency */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Bedrag *
                     </label>
                     <div className="relative">
@@ -492,95 +662,92 @@ const Budgeting: React.FC = () => {
                         min="0"
                         value={formData.amount}
                         onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         placeholder="0.00"
                         required
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Frequentie
                     </label>
                     <select
                       value={formData.frequency}
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value as BudgetFrequency })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     >
-                      {(Object.keys(FREQUENCY_LABELS) as BudgetFrequency[]).map((freq) => (
-                        <option key={freq} value={freq}>
-                          {FREQUENCY_LABELS[freq]}
-                        </option>
-                      ))}
+                      <option value="monthly">Maandelijks</option>
+                      <option value="quarterly">Per kwartaal</option>
+                      <option value="yearly">Jaarlijks</option>
                     </select>
-                  </div>
-                </div>
-
-                {/* Start Date & End Date */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Startdatum *
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Einddatum
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                    />
                   </div>
                 </div>
 
                 {/* Supplier & Contract Number */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Leverancier
                     </label>
                     <input
                       type="text"
                       value={formData.supplier}
                       onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="bijv. KPN"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="bijv. Microsoft"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Contractnummer
                     </label>
                     <input
                       type="text"
                       value={formData.contractNumber}
                       onChange={(e) => setFormData({ ...formData, contractNumber: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                      placeholder="bijv. KPN-12345"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="bijv. MS-12345"
+                    />
+                  </div>
+                </div>
+
+                {/* Start Date & End Date */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Startdatum
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Einddatum (optioneel)
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Notities
                   </label>
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     placeholder="Eventuele opmerkingen..."
                   />
                 </div>
@@ -594,13 +761,13 @@ const Budgeting: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                     className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                   />
-                  <label htmlFor="isActive" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                  <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">
                     Actief (meerekenen in totalen)
                   </label>
                 </div>
 
                 {/* Buttons */}
-                <div className="flex justify-end space-x-3 pt-4">
+                <div className="flex justify-end space-x-3 pt-4 border-t">
                   <Button type="button" variant="secondary" onClick={handleCloseModal}>
                     Annuleren
                   </Button>

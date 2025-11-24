@@ -119,7 +119,7 @@ export const getNavigationSections = (
         title: 'Facturatie',
         icon: Receipt,
         defaultOpen: false,
-        items: filtered.filter(i => ['Relaties', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)),
+        items: filtered.filter(i => ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)),
       },
     ].filter(section => section.items.length > 0);
   }
@@ -188,7 +188,7 @@ export const getMobileBottomNavItems = (
     manager: [
       { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
       { href: '/employees', icon: Users, label: 'Team' },
-      { href: '/timesheets', icon: Clock, label: 'Uren' },
+      { href: '/incoming-invoices', icon: Upload, label: 'Inkoop' },
       { href: '/timesheet-approvals', icon: Calendar, label: 'Goedkeuren' },
     ],
     admin: [
