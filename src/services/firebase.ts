@@ -14,7 +14,7 @@ import {
 import { db } from '../lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { Company, Branch, Employee, TimeEntry, UserRole, LeaveRequest, LeaveBalance, SickLeave, AbsenceStatistics, Expense, EmployeeWithCompanies, CompanyWithEmployees, UserSettings } from '../types';
+import { Company, Branch, Employee, TimeEntry, UserRole, LeaveRequest, LeaveBalance, SickLeave, AbsenceStatistics, Expense, EmployeeWithCompanies, CompanyWithEmployees, UserSettings, BudgetItem } from '../types';
 import { generatePoortwachterMilestones, shouldActivatePoortwachter } from '../utils/poortwachterTracking';
 
 // Helper function to remove undefined values from objects (Firebase doesn't accept undefined)
@@ -1332,15 +1332,15 @@ export interface CompanySelectData {
 }
 
 export const getCompanySelectData = async (
-  userId: string, 
+  userId: string,
   employeeId?: string
 ): Promise<CompanySelectData> => {
   const companies = await getCompanies(userId);
   const employerCompanies = companies.filter(c => c.companyType === 'employer');
   const projectCompanies = companies.filter(c => c.companyType === 'project');
-  
+
   let employeeCanWorkFor: Company[] = employerCompanies; // Default to all employers
-  
+
   if (employeeId) {
     const employee = await getEmployee(employeeId, userId);
     if (employee) {
@@ -1348,10 +1348,199 @@ export const getCompanySelectData = async (
       employeeCanWorkFor = companies.filter(c => allowedCompanyIds.includes(c.id));
     }
   }
-  
+
   return {
     employerCompanies,
     projectCompanies,
     employeeCanWorkFor
   };
+};
+
+// =============================================================================
+// BUDGET ITEMS (Begroting - Terugkerende kosten)
+// =============================================================================
+
+export const getBudgetItems = async (userId: string, companyId?: string): Promise<BudgetItem[]> => {
+  try {
+    let q;
+    if (companyId) {
+      q = query(
+        collection(db, 'budgetItems'),
+        where('userId', '==', userId),
+        where('companyId', '==', companyId),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      q = query(
+        collection(db, 'budgetItems'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+    }
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...convertTimestamps(doc.data())
+    })) as BudgetItem[];
+  } catch (error) {
+    console.error('Error fetching budget items:', error);
+    throw error;
+  }
+};
+
+export const getBudgetItem = async (budgetItemId: string, userId: string): Promise<BudgetItem | null> => {
+  try {
+    const docRef = doc(db, 'budgetItems', budgetItemId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return null;
+    }
+
+    const data = docSnap.data();
+    if (data.userId !== userId) {
+      throw new Error('Unauthorized access to budget item');
+    }
+
+    return {
+      id: docSnap.id,
+      ...convertTimestamps(data)
+    } as BudgetItem;
+  } catch (error) {
+    console.error('Error fetching budget item:', error);
+    throw error;
+  }
+};
+
+export const createBudgetItem = async (
+  budgetItem: Omit<BudgetItem, 'id' | 'createdAt' | 'updatedAt'>,
+  userId: string
+): Promise<BudgetItem> => {
+  try {
+    const now = Timestamp.now();
+    const dataToSave = removeUndefinedValues({
+      ...budgetItem,
+      userId,
+      startDate: budgetItem.startDate instanceof Date
+        ? Timestamp.fromDate(budgetItem.startDate)
+        : budgetItem.startDate,
+      endDate: budgetItem.endDate instanceof Date
+        ? Timestamp.fromDate(budgetItem.endDate)
+        : budgetItem.endDate,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const docRef = await addDoc(collection(db, 'budgetItems'), dataToSave);
+
+    return {
+      id: docRef.id,
+      ...budgetItem,
+      userId,
+      createdAt: now.toDate(),
+      updatedAt: now.toDate(),
+    } as BudgetItem;
+  } catch (error) {
+    console.error('Error creating budget item:', error);
+    throw error;
+  }
+};
+
+export const updateBudgetItem = async (
+  budgetItemId: string,
+  updates: Partial<BudgetItem>,
+  userId: string
+): Promise<void> => {
+  try {
+    // Verify ownership
+    const existing = await getBudgetItem(budgetItemId, userId);
+    if (!existing) {
+      throw new Error('Budget item not found or unauthorized');
+    }
+
+    const dataToUpdate = removeUndefinedValues({
+      ...updates,
+      startDate: updates.startDate instanceof Date
+        ? Timestamp.fromDate(updates.startDate)
+        : updates.startDate,
+      endDate: updates.endDate instanceof Date
+        ? Timestamp.fromDate(updates.endDate)
+        : updates.endDate,
+      updatedAt: Timestamp.now(),
+    });
+
+    // Remove id and userId from updates
+    delete dataToUpdate.id;
+    delete dataToUpdate.userId;
+
+    const docRef = doc(db, 'budgetItems', budgetItemId);
+    await updateDoc(docRef, dataToUpdate);
+  } catch (error) {
+    console.error('Error updating budget item:', error);
+    throw error;
+  }
+};
+
+export const deleteBudgetItem = async (budgetItemId: string, userId: string): Promise<void> => {
+  try {
+    // Verify ownership
+    const existing = await getBudgetItem(budgetItemId, userId);
+    if (!existing) {
+      throw new Error('Budget item not found or unauthorized');
+    }
+
+    const docRef = doc(db, 'budgetItems', budgetItemId);
+    await deleteDoc(docRef);
+  } catch (error) {
+    console.error('Error deleting budget item:', error);
+    throw error;
+  }
+};
+
+// Helper: Calculate monthly budget total for a company
+export const calculateMonthlyBudget = (budgetItems: BudgetItem[]): number => {
+  return budgetItems
+    .filter(item => item.isActive)
+    .reduce((total, item) => {
+      switch (item.frequency) {
+        case 'monthly':
+          return total + item.amount;
+        case 'quarterly':
+          return total + (item.amount / 3);
+        case 'yearly':
+          return total + (item.amount / 12);
+        default:
+          return total;
+      }
+    }, 0);
+};
+
+// Helper: Calculate yearly budget total for a company
+export const calculateYearlyBudget = (budgetItems: BudgetItem[]): number => {
+  return budgetItems
+    .filter(item => item.isActive)
+    .reduce((total, item) => {
+      switch (item.frequency) {
+        case 'monthly':
+          return total + (item.amount * 12);
+        case 'quarterly':
+          return total + (item.amount * 4);
+        case 'yearly':
+          return total + item.amount;
+        default:
+          return total;
+      }
+    }, 0);
+};
+
+// Helper: Get budget items by category
+export const getBudgetItemsByCategory = (budgetItems: BudgetItem[]): Record<string, BudgetItem[]> => {
+  return budgetItems.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {} as Record<string, BudgetItem[]>);
 };

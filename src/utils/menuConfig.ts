@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Factory,
   BarChart3,
+  Wallet,
 } from 'lucide-react';
 
 export type CompanyType = 'employer' | 'project';
@@ -55,6 +56,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
 
   // FACTURATIE SECTION (both)
   { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project'] },
+  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project'] },
   { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project'] },
@@ -137,7 +139,7 @@ export const getNavigationSections = (
       icon: Receipt,
       defaultOpen: false,
       items: filtered.filter(i =>
-        ['Relaties', 'Declaraties', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)
+        ['Relaties', 'Begroting', 'Declaraties', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)
       ),
     },
     {

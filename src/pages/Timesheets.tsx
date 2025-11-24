@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Save, Send, Download, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { Calendar, Clock, Save, Send, Download, ChevronLeft, ChevronRight, User, Palmtree, HeartPulse } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -7,6 +7,7 @@ import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { WeeklyTimesheet, TimesheetEntry } from '../types/timesheet';
+import { LeaveRequest, SickLeave } from '../types';
 import {
   getWeeklyTimesheets,
   createWeeklyTimesheet,
@@ -16,7 +17,7 @@ import {
   getWeekDates,
   calculateWeekTotals
 } from '../services/timesheetService';
-import { getEmployeeById } from '../services/firebase';
+import { getEmployeeById, getLeaveRequests, getSickLeaveRecords } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 
@@ -35,6 +36,9 @@ export default function Timesheets() {
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
+  // Verlof & Ziekte state
+  const [weekLeaveRequests, setWeekLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [weekSickLeaves, setWeekSickLeaves] = useState<SickLeave[]>([]);
 
   const loadData = useCallback(async () => {
     if (!user || !queryUserId || !selectedCompany) {
@@ -68,6 +72,39 @@ export default function Timesheets() {
       );
 
       setTimesheets(sheets);
+
+      // Haal verlof en ziekte data op voor deze werknemer
+      const weekDates = getWeekDates(selectedYear, selectedWeek);
+      const weekStart = weekDates[0];
+      const weekEnd = weekDates[6];
+
+      // Verlofaanvragen ophalen en filteren op deze week
+      const allLeaveRequests = await getLeaveRequests(queryUserId, effectiveEmployeeId);
+      const weekLeave = allLeaveRequests.filter(leave => {
+        if (leave.status !== 'approved') return false;
+        const leaveStart = leave.startDate instanceof Date ? leave.startDate : new Date(leave.startDate);
+        const leaveEnd = leave.endDate instanceof Date ? leave.endDate : new Date(leave.endDate);
+        // Check of verlof overlapt met de geselecteerde week
+        return leaveStart <= weekEnd && leaveEnd >= weekStart;
+      });
+      setWeekLeaveRequests(weekLeave);
+
+      // Ziekmeldingen ophalen en filteren op deze week
+      const allSickLeaves = await getSickLeaveRecords(queryUserId, effectiveEmployeeId);
+      const weekSick = allSickLeaves.filter(sick => {
+        if (sick.status === 'recovered') {
+          // Check of hersteld binnen de week
+          const recoveryDate = sick.actualReturnDate || sick.endDate;
+          if (!recoveryDate) return false;
+          const recovery = recoveryDate instanceof Date ? recoveryDate : new Date(recoveryDate);
+          return recovery >= weekStart;
+        }
+        // Actieve ziekmelding die begon voor of in deze week
+        const sickStart = sick.startDate instanceof Date ? sick.startDate : new Date(sick.startDate);
+        const sickEnd = sick.endDate ? (sick.endDate instanceof Date ? sick.endDate : new Date(sick.endDate)) : weekEnd;
+        return sickStart <= weekEnd && sickEnd >= weekStart;
+      });
+      setWeekSickLeaves(weekSick);
 
       if (sheets.length > 0) {
         setCurrentTimesheet(sheets[0]);
@@ -494,6 +531,87 @@ export default function Timesheets() {
     return days[date.getDay()];
   };
 
+  // Helper: Check of een dag verlof heeft
+  const getDayLeave = (date: Date): LeaveRequest | undefined => {
+    return weekLeaveRequests.find(leave => {
+      const leaveStart = leave.startDate instanceof Date ? leave.startDate : new Date(leave.startDate);
+      const leaveEnd = leave.endDate instanceof Date ? leave.endDate : new Date(leave.endDate);
+      const checkDate = new Date(date);
+      checkDate.setHours(0, 0, 0, 0);
+      leaveStart.setHours(0, 0, 0, 0);
+      leaveEnd.setHours(0, 0, 0, 0);
+      return checkDate >= leaveStart && checkDate <= leaveEnd;
+    });
+  };
+
+  // Helper: Check of een dag ziek is
+  const getDaySick = (date: Date): SickLeave | undefined => {
+    return weekSickLeaves.find(sick => {
+      const sickStart = sick.startDate instanceof Date ? sick.startDate : new Date(sick.startDate);
+      const sickEnd = sick.endDate
+        ? (sick.endDate instanceof Date ? sick.endDate : new Date(sick.endDate))
+        : new Date(); // Als geen einddatum, dan tot vandaag
+      const checkDate = new Date(date);
+      checkDate.setHours(0, 0, 0, 0);
+      sickStart.setHours(0, 0, 0, 0);
+      sickEnd.setHours(0, 0, 0, 0);
+      return checkDate >= sickStart && checkDate <= sickEnd;
+    });
+  };
+
+  // Helper: Bereken verlof uren voor deze week
+  const calculateWeekLeaveHours = (): number => {
+    if (!currentTimesheet) return 0;
+    const contractHoursPerDay = (employeeData?.contractInfo?.hoursPerWeek || 40) / 5;
+    let leaveHours = 0;
+    currentTimesheet.entries.forEach(entry => {
+      const dayLeave = getDayLeave(entry.date);
+      if (dayLeave) {
+        // Alleen werkdagen tellen (ma-vr)
+        const dayOfWeek = entry.date.getDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+          leaveHours += contractHoursPerDay;
+        }
+      }
+    });
+    return leaveHours;
+  };
+
+  // Helper: Bereken ziekte uren voor deze week
+  const calculateWeekSickHours = (): number => {
+    if (!currentTimesheet) return 0;
+    const contractHoursPerDay = (employeeData?.contractInfo?.hoursPerWeek || 40) / 5;
+    let sickHours = 0;
+    currentTimesheet.entries.forEach(entry => {
+      const daySick = getDaySick(entry.date);
+      if (daySick && !getDayLeave(entry.date)) { // Geen dubbeltelling met verlof
+        // Alleen werkdagen tellen (ma-vr)
+        const dayOfWeek = entry.date.getDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+          // Reken met werkpercentage
+          const workPercentage = daySick.workCapacityPercentage || 0;
+          sickHours += contractHoursPerDay * ((100 - workPercentage) / 100);
+        }
+      }
+    });
+    return sickHours;
+  };
+
+  // Helper: Get leave type label
+  const getLeaveTypeLabel = (type: string): string => {
+    const labels: Record<string, string> = {
+      holiday: 'Vakantie',
+      sick: 'Ziek',
+      special: 'Bijzonder verlof',
+      unpaid: 'Onbetaald verlof',
+      parental: 'Ouderschapsverlof',
+      care: 'Zorgverlof',
+      short_leave: 'Kort verzuim',
+      adv: 'ADV',
+    };
+    return labels[type] || type;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -676,7 +794,7 @@ export default function Timesheets() {
         <Card className="bg-gradient-to-r from-primary-50 to-indigo-50 border-primary-200 p-4 sm:p-6">
           <div className="space-y-3">
             <h3 className="font-semibold text-gray-900">Week {selectedWeek} Overzicht</h3>
-            
+
             {isUnderContract && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700 flex gap-2">
                 <span>⚠️</span>
@@ -709,6 +827,41 @@ export default function Timesheets() {
                 </p>
               </div>
             </div>
+
+            {/* Verlof & Ziekte Overzicht */}
+            {(weekLeaveRequests.length > 0 || weekSickLeaves.length > 0) && (
+              <div className="border-t border-primary-200 pt-3 mt-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Verlof & Verzuim deze week</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {calculateWeekLeaveHours() > 0 && (
+                    <div className="flex items-center gap-2 p-2 bg-emerald-50 rounded-lg">
+                      <Palmtree className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-emerald-700">
+                          {calculateWeekLeaveHours().toFixed(1)}u verlof
+                        </p>
+                        <p className="text-xs text-emerald-600 truncate">
+                          {weekLeaveRequests.map(l => getLeaveTypeLabel(l.type)).join(', ')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {calculateWeekSickHours() > 0 && (
+                    <div className="flex items-center gap-2 p-2 bg-red-50 rounded-lg">
+                      <HeartPulse className="h-4 w-4 text-red-600 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-red-700">
+                          {calculateWeekSickHours().toFixed(1)}u ziek
+                        </p>
+                        <p className="text-xs text-red-600">
+                          {weekSickLeaves.length} ziekmelding(en) actief
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </Card>
       )}
@@ -719,16 +872,23 @@ export default function Timesheets() {
           const isExpanded = expandedDay === index;
           const hasData = entry.regularHours > 0 || entry.travelKilometers > 0 || (entry.workActivities?.length || 0) > 0;
           const isImported = entry.notes?.includes('import');
+          const dayLeave = getDayLeave(entry.date);
+          const daySick = getDaySick(entry.date);
+          const hasLeaveOrSick = dayLeave || daySick;
 
           return (
             <div key={index}>
               {/* Day Card - Collapsible Header */}
               <button
                 onClick={() => setExpandedDay(isExpanded ? null : index)}
-                disabled={isReadOnly && !hasData}
+                disabled={isReadOnly && !hasData && !hasLeaveOrSick}
                 className={`w-full p-3 sm:p-4 rounded-lg border-2 transition-all text-left flex items-center justify-between ${
-                  isExpanded 
-                    ? 'border-primary-300 bg-primary-50' 
+                  isExpanded
+                    ? 'border-primary-300 bg-primary-50'
+                    : daySick
+                    ? 'border-red-300 bg-red-50 hover:bg-red-100'
+                    : dayLeave
+                    ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100'
                     : hasData
                     ? `border-orange-300 bg-orange-50 hover:bg-orange-100`
                     : 'border-gray-200 bg-white hover:bg-gray-50'
@@ -745,7 +905,19 @@ export default function Timesheets() {
                   </div>
 
                   {/* Quick Summary */}
-                  <div className="flex items-center gap-2 text-xs sm:text-sm font-medium">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-medium flex-wrap justify-end">
+                    {dayLeave && (
+                      <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded flex items-center gap-1">
+                        <Palmtree className="h-3 w-3" />
+                        {getLeaveTypeLabel(dayLeave.type)}
+                      </span>
+                    )}
+                    {daySick && (
+                      <span className="px-2 py-1 bg-red-100 text-red-700 rounded flex items-center gap-1">
+                        <HeartPulse className="h-3 w-3" />
+                        Ziek {daySick.workCapacityPercentage > 0 ? `(${daySick.workCapacityPercentage}%)` : ''}
+                      </span>
+                    )}
                     {entry.regularHours > 0 && (
                       <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded">
                         {entry.regularHours}u
@@ -767,7 +939,44 @@ export default function Timesheets() {
 
               {/* Expanded Day Content */}
               {isExpanded && (
-                <Card className={`mt-1 p-3 sm:p-4 space-y-3 sm:space-y-4 ${isImported ? 'bg-primary-50 border-primary-200' : ''}`}>
+                <Card className={`mt-1 p-3 sm:p-4 space-y-3 sm:space-y-4 ${isImported ? 'bg-primary-50 border-primary-200' : daySick ? 'bg-red-50 border-red-200' : dayLeave ? 'bg-emerald-50 border-emerald-200' : ''}`}>
+                  {/* Verlof/Ziekte Details */}
+                  {(dayLeave || daySick) && (
+                    <div className={`p-3 rounded-lg ${daySick ? 'bg-red-100 border border-red-200' : 'bg-emerald-100 border border-emerald-200'}`}>
+                      {dayLeave && (
+                        <div className="flex items-start gap-2">
+                          <Palmtree className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-emerald-800">{getLeaveTypeLabel(dayLeave.type)}</p>
+                            <p className="text-sm text-emerald-600">
+                              {new Date(dayLeave.startDate).toLocaleDateString('nl-NL')} - {new Date(dayLeave.endDate).toLocaleDateString('nl-NL')}
+                            </p>
+                            {dayLeave.reason && (
+                              <p className="text-sm text-emerald-700 mt-1">{dayLeave.reason}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {daySick && (
+                        <div className="flex items-start gap-2">
+                          <HeartPulse className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-red-800">
+                              Ziekmelding {daySick.workCapacityPercentage > 0 ? `(${daySick.workCapacityPercentage}% werkzaam)` : '(volledig ziek)'}
+                            </p>
+                            <p className="text-sm text-red-600">
+                              Sinds {new Date(daySick.startDate).toLocaleDateString('nl-NL')}
+                              {daySick.endDate && ` - ${new Date(daySick.endDate).toLocaleDateString('nl-NL')}`}
+                            </p>
+                            {daySick.status === 'long_term' && (
+                              <p className="text-xs text-red-700 mt-1 font-medium">Langdurig verzuim - Poortwachter actief</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Input Fields */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>

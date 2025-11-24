@@ -36,6 +36,8 @@ import OutgoingInvoices from './pages/OutgoingInvoices';
 import IncomingInvoices from './pages/IncomingInvoices';
 // ✅ INCOMING INVOICES STATS - NIEUW!
 import IncomingInvoicesStats from './pages/IncomingInvoicesStats';
+// ✅ BUDGETING - NIEUW!
+import Budgeting from './pages/Budgeting';
 import TimesheetExport from './pages/TimesheetExport';
 import DriveFiles from './pages/DriveFiles';
 import { AppProvider } from './contexts/AppContext';
@@ -98,6 +100,7 @@ function App() {
                           
                           {/* ✅ FACTURATIE - MET RELATIES EN STATISTIEKEN! */}
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
+                          <Route path="budgeting" element={<Budgeting />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
                           <Route path="incoming-invoices" element={<IncomingInvoices />} />
                           {/* ✅ NEW ROUTE - Incoming Invoices Stats Dashboard */}
@@ -143,6 +146,7 @@ function App() {
 
                           {/* Manager kan facturatie beheren */}
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
+                          <Route path="budgeting" element={<Budgeting />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
                           <Route path="incoming-invoices" element={<IncomingInvoices />} />
 

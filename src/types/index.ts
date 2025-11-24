@@ -390,6 +390,28 @@ export interface UserSettings {
   updatedAt: Date;
 }
 
+// ✅ NIEUW: Budget/Begroting voor terugkerende kosten
+export type BudgetCategory = 'telecom' | 'software' | 'vehicle' | 'insurance' | 'utilities' | 'subscriptions' | 'other';
+export type BudgetFrequency = 'monthly' | 'quarterly' | 'yearly';
+
+export interface BudgetItem {
+  id: string;
+  userId: string;
+  companyId: string;
+  name: string;                    // "KPN Telefoon", "Microsoft 365", etc.
+  category: BudgetCategory;
+  amount: number;                  // Bedrag per periode
+  frequency: BudgetFrequency;
+  startDate: Date;
+  endDate?: Date;                  // Optioneel, voor tijdelijke kosten
+  supplier?: string;               // Leverancier
+  contractNumber?: string;
+  notes?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Alle overige interfaces blijven hetzelfde...
 export interface AuditLog {
   id: string;
