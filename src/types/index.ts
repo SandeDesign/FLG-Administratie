@@ -387,6 +387,8 @@ export interface UserSettings {
   id?: string;
   userId: string;
   defaultCompanyId?: string;  // Default bedrijf dat wordt geladen
+  coAdminEmails?: string[];  // List of co-admins who have access to this user's companies
+  email?: string;  // User's email address
   createdAt: Date;
   updatedAt: Date;
 }

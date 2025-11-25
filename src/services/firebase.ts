@@ -1298,6 +1298,33 @@ export const saveUserSettings = async (userId: string, settings: Partial<UserSet
   }
 };
 
+/**
+ * Checks if the given user email is a co-admin for any primary admin
+ * Returns the primary admin's userId if found, null otherwise
+ */
+export const getPrimaryAdminForCoAdmin = async (coAdminEmail: string): Promise<string | null> => {
+  try {
+    // Query all userSettings documents where coAdminEmails array contains this email
+    const q = query(
+      collection(db, 'userSettings'),
+      where('coAdminEmails', 'array-contains', coAdminEmail)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return null;
+    }
+
+    // Return the first primary admin's userId
+    const primaryAdminSettings = querySnapshot.docs[0].data();
+    return primaryAdminSettings.userId || null;
+  } catch (error) {
+    console.error('Error checking co-admin status:', error);
+    return null;
+  }
+};
+
 // Helper function to check if user can manage a company
 export const canUserManageCompany = async (userId: string, companyId: string): Promise<boolean> => {
   try {
