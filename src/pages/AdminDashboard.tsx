@@ -28,8 +28,7 @@ import {
   limit
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { getEmployees, getCompanies, getLeaveRequests } from '../services/firebase';
-import { getBudgetItems } from '../services/budgetService';
+import { getEmployees, getCompanies, getLeaveRequests, getBudgetItems } from '../services/firebase';
 import * as outgoingInvoiceService from '../services/outgoingInvoiceService';
 import * as incomingInvoiceService from '../services/incomingInvoiceService';
 
