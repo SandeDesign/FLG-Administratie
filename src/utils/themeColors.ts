@@ -137,10 +137,54 @@ export const getThemeColorPreset = (colorId?: string): ThemeColorPreset => {
 
 export const applyThemeColor = (colorId?: string) => {
   const preset = getThemeColorPreset(colorId);
-  const root = document.documentElement;
 
-  // Apply CSS variables
-  root.style.setProperty('--color-primary', preset.primaryHex);
-  root.style.setProperty('--color-primary-dark', preset.darkHex);
-  root.style.setProperty('--color-primary-light', preset.lightHex);
+  // Remove existing theme style if present
+  const existingStyle = document.getElementById('dynamic-theme');
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+
+  // Create new style element with overrides for all primary-* classes
+  const style = document.createElement('style');
+  style.id = 'dynamic-theme';
+  style.textContent = `
+    /* Override Tailwind primary colors */
+    .bg-primary-50 { background-color: ${preset.lightHex} !important; }
+    .bg-primary-100 { background-color: ${preset.lightHex} !important; }
+    .bg-primary-500 { background-color: ${preset.primaryHex} !important; }
+    .bg-primary-600 { background-color: ${preset.primaryHex} !important; }
+    .bg-primary-700 { background-color: ${preset.darkHex} !important; }
+
+    .text-primary-50 { color: ${preset.lightHex} !important; }
+    .text-primary-100 { color: ${preset.lightHex} !important; }
+    .text-primary-500 { color: ${preset.primaryHex} !important; }
+    .text-primary-600 { color: ${preset.primaryHex} !important; }
+    .text-primary-700 { color: ${preset.darkHex} !important; }
+    .text-primary-800 { color: ${preset.darkHex} !important; }
+    .text-primary-900 { color: ${preset.darkHex} !important; }
+
+    .border-primary-200 { border-color: ${preset.lightHex} !important; }
+    .border-primary-500 { border-color: ${preset.primaryHex} !important; }
+    .border-primary-600 { border-color: ${preset.primaryHex} !important; }
+
+    .ring-primary-500 { --tw-ring-color: ${preset.primaryHex} !important; }
+
+    .from-primary-50 { --tw-gradient-from: ${preset.lightHex} !important; }
+    .from-primary-500 { --tw-gradient-from: ${preset.primaryHex} !important; }
+    .from-primary-600 { --tw-gradient-from: ${preset.primaryHex} !important; }
+    .to-primary-100 { --tw-gradient-to: ${preset.lightHex} !important; }
+    .to-primary-500 { --tw-gradient-to: ${preset.primaryHex} !important; }
+    .to-primary-700 { --tw-gradient-to: ${preset.darkHex} !important; }
+    .via-primary-500 { --tw-gradient-via: ${preset.primaryHex} !important; }
+
+    .hover\\:bg-primary-700:hover { background-color: ${preset.darkHex} !important; }
+    .hover\\:bg-primary-50:hover { background-color: ${preset.lightHex} !important; }
+    .hover\\:text-gray-700:hover { color: #374151 !important; }
+    .hover\\:border-gray-300:hover { border-color: #d1d5db !important; }
+
+    .focus\\:ring-primary-500:focus { --tw-ring-color: ${preset.primaryHex} !important; }
+    .focus\\:border-primary-500:focus { border-color: ${preset.primaryHex} !important; }
+  `;
+
+  document.head.appendChild(style);
 };
