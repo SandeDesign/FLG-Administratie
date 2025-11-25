@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useToast } from '../hooks/useToast';
-import { getUserRole, getEmployeeById, getPrimaryAdminForCoAdmin } from '../services/firebase';
+import { getUserRole, getEmployeeById } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -45,11 +45,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCurrentEmployeeId(roleData?.employeeId || null);
 
           if (roleData?.role === 'admin') {
-  // Check if this admin is a co-admin for another user
-  const primaryAdminUserId = await getPrimaryAdminForCoAdmin(user.email!);
-  if (primaryAdminUserId) {
-    console.log('Co-admin detected, using primary admin UID:', primaryAdminUserId);
-    setAdminUserId(primaryAdminUserId);
+  // Check if this admin is a co-admin for someone else
+  if (user.email) {
+    const primaryAdminUserId = await getPrimaryAdminForCoAdmin(user.email);
+    if (primaryAdminUserId) {
+      console.log('[AuthContext] Co-admin detected, using primary admin UID:', primaryAdminUserId);
+      setAdminUserId(primaryAdminUserId);
+    } else {
+      console.log('[AuthContext] Primary admin, using own UID');
+      setAdminUserId(user.uid);
+    }
   } else {
     setAdminUserId(user.uid);
   }

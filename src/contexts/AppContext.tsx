@@ -188,7 +188,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } else {
         // ✅ ADMIN/EMPLOYEE: Load all companies
-        // Note: For co-admins, adminUserId is already set to primary admin's UID in AuthContext
         const [companies, employees, branches] = await Promise.all([
           getCompanies(adminUserId),
           getEmployees(adminUserId),
@@ -216,7 +215,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (userRole === 'admin') {
         try {
-          // Note: adminUserId is already the primary admin's UID for co-admins
           const userSettings = await getUserSettings(adminUserId);
           defaultCompanyId = userSettings?.defaultCompanyId || null;
         } catch (error) {
