@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { createCompany, updateCompany, getCompanies } from '../../services/firebase';
 import { Company } from '../../types';
+import { THEME_COLOR_PRESETS } from '../../utils/themeColors';
 
 interface CompanyFormData {
   name: string;
@@ -25,10 +26,11 @@ interface CompanyFormData {
   standardWorkWeek: number;
   holidayAllowancePercentage: number;
   pensionContributionPercentage: number;
-  
+
   // ✅ NIEUW: Bedrijfstype fields
   companyType: 'employer' | 'project';
   primaryEmployerId?: string;
+  themeColor?: string; // Theme color for this company
 }
 
 interface CompanyModalProps {
@@ -99,10 +101,11 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         standardWorkWeek: company.settings.standardWorkWeek,
         holidayAllowancePercentage: company.settings.holidayAllowancePercentage,
         pensionContributionPercentage: company.settings.pensionContributionPercentage,
-        
+
         // ✅ NIEUW: Set company type fields
         companyType: company.companyType || 'employer',
         primaryEmployerId: company.primaryEmployerId,
+        themeColor: company.themeColor || 'blue',
       });
     } else {
       reset({
@@ -113,6 +116,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         holidayAllowancePercentage: 8,
         pensionContributionPercentage: 6,
         companyType: 'employer',
+        themeColor: 'blue',
       });
     }
   }, [company, reset]);
@@ -135,6 +139,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         taxNumber: data.taxNumber,
         bankAccount: data.bankAccount, // ✅ NIEUW: Save bankAccount
         companyType: data.companyType,
+        themeColor: data.themeColor || 'blue', // ✅ NIEUW: Save theme color
         address: {
           street: data.street,
           city: data.city,
@@ -395,6 +400,59 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
             </div>
           </div>
         )}
+
+        {/* Theme Color Selector */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Kleurthema
+          </label>
+          <div className="grid grid-cols-5 gap-3">
+            {THEME_COLOR_PRESETS.map((preset) => {
+              const isSelected = watch('themeColor') === preset.id;
+              return (
+                <label
+                  key={preset.id}
+                  className={`relative cursor-pointer group`}
+                  title={preset.name}
+                >
+                  <input
+                    type="radio"
+                    value={preset.id}
+                    {...register('themeColor')}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-full h-12 rounded-lg transition-all ${
+                      isSelected
+                        ? 'ring-2 ring-offset-2 ring-gray-900 scale-110'
+                        : 'hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: preset.primaryHex }}
+                  >
+                    {isSelected && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3 text-gray-900"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-center mt-1 text-gray-600">{preset.name}</p>
+                </label>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="flex gap-4">
           <Button type="button" variant="outline" onClick={handleClose} isFullWidth>

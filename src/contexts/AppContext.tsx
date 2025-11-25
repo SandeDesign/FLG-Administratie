@@ -5,6 +5,7 @@ import { getCompanies, getEmployees, getBranches, getPendingLeaveApprovals, getU
 import { getPendingExpenses } from '../services/firebase';
 import { getPayrollCalculations } from '../services/payrollService';
 import { getPendingTimesheets } from '../services/timesheetService';
+import { applyThemeColor } from '../utils/themeColors';
 
 interface AppContextType {
   companies: Company[];
@@ -281,6 +282,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await calculateDashboardStats(companies, employees, branches, adminUserId);
     }
   }, [userRole, companies, employees, branches, adminUserId, calculateDashboardStats]);
+
+  // Apply theme color when selected company changes
+  useEffect(() => {
+    if (selectedCompany?.themeColor) {
+      applyThemeColor(selectedCompany.themeColor);
+    } else {
+      applyThemeColor('blue'); // Default theme
+    }
+  }, [selectedCompany?.id, selectedCompany?.themeColor]);
 
   return (
     <AppContext.Provider

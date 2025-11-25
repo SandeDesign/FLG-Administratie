@@ -31,6 +31,7 @@ export interface Company {
     pensionContributionPercentage: number;
   };
   logoUrl?: string;
+  themeColor?: string; // Primary color for this company (e.g., 'blue', 'green', 'purple')
   createdAt: Date;
   updatedAt: Date;
   mainBranchId?: string;
