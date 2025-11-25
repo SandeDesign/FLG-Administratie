@@ -35,6 +35,10 @@ import {
   FileText,
   Eye,
   EyeOff,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -163,6 +167,8 @@ const Budgeting: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ViewTab>('overview');
   const [showActualData, setShowActualData] = useState(true);
   const [projectionYears, setProjectionYears] = useState(3);
+  const [refreshing, setRefreshing] = useState(false);
+  const [drillDownCategory, setDrillDownCategory] = useState<{ type: 'cost' | 'income', category: string } | null>(null);
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
@@ -196,6 +202,56 @@ const Budgeting: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Refresh functie
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setTimeout(() => setRefreshing(false), 500);
+    success('Ververst', 'Gegevens zijn bijgewerkt');
+  };
+
+  // Map budget categories to invoice categories for matching
+  const matchInvoiceToCategory = (invoice: OutgoingInvoice | any, type: 'income' | 'cost'): BudgetCategory | null => {
+    // Voor nu een eenvoudige matching - kan later uitgebreid worden
+    const description = invoice.description?.toLowerCase() || invoice.notes?.toLowerCase() || '';
+
+    if (type === 'income') {
+      if (description.includes('consultancy') || description.includes('advies')) return 'consulting';
+      if (description.includes('product')) return 'products';
+      if (description.includes('subscription') || description.includes('abonnement')) return 'subscriptions';
+      if (description.includes('licentie') || description.includes('license')) return 'licensing';
+      return 'services';
+    } else {
+      if (description.includes('telefoon') || description.includes('mobiel')) return 'telecom';
+      if (description.includes('software') || description.includes('saas')) return 'software';
+      if (description.includes('auto') || description.includes('lease') || description.includes('benzine')) return 'vehicle';
+      if (description.includes('verzekering') || description.includes('insurance')) return 'insurance';
+      if (description.includes('elektra') || description.includes('gas') || description.includes('water')) return 'utilities';
+      if (description.includes('personeel') || description.includes('salaris')) return 'personnel';
+      if (description.includes('marketing') || description.includes('advertentie')) return 'marketing';
+      if (description.includes('kantoor') || description.includes('huur')) return 'office';
+      return 'other';
+    }
+  };
+
+  // Get invoices for a specific category
+  const getInvoicesForCategory = (category: string, type: 'income' | 'cost') => {
+    if (type === 'income') {
+      return outgoingInvoices.filter(inv => {
+        const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+        return invDate.getFullYear() === currentYear &&
+               inv.status !== 'cancelled' &&
+               matchInvoiceToCategory(inv, 'income') === category;
+      });
+    } else {
+      return incomingInvoices.filter(inv => {
+        const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+        return invDate.getFullYear() === currentYear &&
+               matchInvoiceToCategory(inv, 'cost') === category;
+      });
+    }
+  };
 
   // Calculate monthly amount from any frequency
   const getMonthlyAmount = (item: BudgetItem) => {
@@ -739,6 +795,15 @@ const Budgeting: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            size="sm"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Ververs
+          </Button>
           <Button variant="secondary" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Exporteer
@@ -776,6 +841,32 @@ const Budgeting: React.FC = () => {
       {/* Overview Tab */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Variance Alerts */}
+          {(Math.abs(incomeVariance / projectedYTDIncome) > 0.15 || Math.abs(costVariance / projectedYTDCosts) > 0.15) && (
+            <Card className="p-4 bg-amber-50 border-amber-200">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-amber-900">Significante Afwijkingen Gedetecteerd</h3>
+                  <div className="mt-2 space-y-1 text-sm text-amber-800">
+                    {Math.abs(incomeVariance / projectedYTDIncome) > 0.15 && (
+                      <p>
+                        • Inkomsten wijken {((incomeVariance / projectedYTDIncome) * 100).toFixed(1)}% af van projectie
+                        {incomeVariance > 0 ? ' (hoger dan verwacht ✓)' : ' (lager dan verwacht ⚠️)'}
+                      </p>
+                    )}
+                    {Math.abs(costVariance / projectedYTDCosts) > 0.15 && (
+                      <p>
+                        • Kosten wijken {((costVariance / projectedYTDCosts) * 100).toFixed(1)}% af van projectie
+                        {costVariance < 0 ? ' (lager dan verwacht ✓)' : ' (hoger dan verwacht ⚠️)'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Main Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
@@ -952,21 +1043,72 @@ const Budgeting: React.FC = () => {
               const Icon = config.icon;
               const categoryTotal = items.reduce((sum, item) => sum + (item.isActive ? getMonthlyAmount(item) : 0), 0);
 
+              const categoryInvoices = getInvoicesForCategory(category, 'cost');
+              const isExpanded = drillDownCategory?.type === 'cost' && drillDownCategory?.category === category;
+
               return (
                 <div key={category} className="space-y-2">
-                  {/* Category Header */}
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor}`}>
+                  {/* Category Header - Clickable */}
+                  <button
+                    onClick={() => setDrillDownCategory(isExpanded ? null : { type: 'cost', category })}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor} transition-all hover:shadow-md`}
+                  >
                     <div className="flex items-center gap-2">
                       <Icon className={`h-5 w-5 ${config.textColor}`} />
                       <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
                       <span className="text-xs text-gray-500">({items.length})</span>
+                      {categoryInvoices.length > 0 && (
+                        <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
+                          {categoryInvoices.length} facturen
+                        </span>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-bold ${config.textColor}`}>
-                        {formatCurrency(categoryTotal)}/mnd
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${config.textColor}`}>
+                          {formatCurrency(categoryTotal)}/mnd
+                        </p>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
+                      ) : (
+                        <ChevronDown className={`h-4 w-4 ${config.textColor}`} />
+                      )}
                     </div>
-                  </div>
+                  </button>
+
+                  {/* Drill-down: Show Invoices */}
+                  {isExpanded && categoryInvoices.length > 0 && (
+                    <Card className="ml-4 p-4 bg-gray-50">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                        Facturen in deze categorie ({currentYear})
+                      </h4>
+                      <div className="space-y-2">
+                        {categoryInvoices.map((inv: any) => {
+                          const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                          return (
+                            <div key={inv.id} className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 text-sm">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">{inv.supplier || inv.description || 'Onbekend'}</p>
+                                <p className="text-xs text-gray-500">
+                                  {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
+                                </p>
+                              </div>
+                              <p className="font-bold text-red-600">
+                                {formatCurrency(inv.amount || 0)}
+                              </p>
+                            </div>
+                          );
+                        })}
+                        <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
+                          <span>Totaal YTD</span>
+                          <span className="text-red-600">
+                            {formatCurrency(categoryInvoices.reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0))}
+                          </span>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
 
                   {/* Items in this category */}
                   <div className="space-y-2 pl-2">
@@ -1053,24 +1195,88 @@ const Budgeting: React.FC = () => {
                 return sum + (getMonthlyAmount(item) * weight);
               }, 0);
 
+              const categoryInvoices = getInvoicesForCategory(category, 'income');
+              const isExpanded = drillDownCategory?.type === 'income' && drillDownCategory?.category === category;
+
               return (
                 <div key={category} className="space-y-2">
-                  {/* Category Header */}
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor}`}>
+                  {/* Category Header - Clickable */}
+                  <button
+                    onClick={() => setDrillDownCategory(isExpanded ? null : { type: 'income', category })}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor} transition-all hover:shadow-md`}
+                  >
                     <div className="flex items-center gap-2">
                       <Icon className={`h-5 w-5 ${config.textColor}`} />
                       <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
                       <span className="text-xs text-gray-500">({items.length})</span>
+                      {categoryInvoices.length > 0 && (
+                        <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
+                          {categoryInvoices.length} facturen
+                        </span>
+                      )}
                     </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-bold ${config.textColor}`}>
-                        {formatCurrency(categoryTotal)}/mnd
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Gewogen: {formatCurrency(weightedTotal)}/mnd
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${config.textColor}`}>
+                          {formatCurrency(categoryTotal)}/mnd
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Gewogen: {formatCurrency(weightedTotal)}/mnd
+                        </p>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
+                      ) : (
+                        <ChevronDown className={`h-4 w-4 ${config.textColor}`} />
+                      )}
                     </div>
-                  </div>
+                  </button>
+
+                  {/* Drill-down: Show Invoices */}
+                  {isExpanded && categoryInvoices.length > 0 && (
+                    <Card className="ml-4 p-4 bg-gray-50">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                        Facturen in deze categorie ({currentYear})
+                      </h4>
+                      <div className="space-y-2">
+                        {categoryInvoices.map((inv: any) => {
+                          const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                          return (
+                            <div key={inv.id} className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 text-sm">
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">{inv.clientName || inv.description || 'Onbekend'}</p>
+                                <p className="text-xs text-gray-500">
+                                  {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-emerald-600">
+                                  {formatCurrency(inv.totalAmount || inv.amount || 0)}
+                                </p>
+                                {inv.status && (
+                                  <span className={`text-xs ${
+                                    inv.status === 'paid' ? 'text-green-600' :
+                                    inv.status === 'sent' ? 'text-blue-600' :
+                                    'text-gray-600'
+                                  }`}>
+                                    {inv.status === 'paid' ? 'Betaald' :
+                                     inv.status === 'sent' ? 'Verzonden' :
+                                     inv.status === 'draft' ? 'Concept' : inv.status}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
+                          <span>Totaal YTD</span>
+                          <span className="text-emerald-600">
+                            {formatCurrency(categoryInvoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || inv.amount || 0), 0))}
+                          </span>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
 
                   {/* Items in this category */}
                   <div className="space-y-2 pl-2">
