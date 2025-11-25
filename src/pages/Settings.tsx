@@ -15,7 +15,7 @@ import { useApp } from '../contexts/AppContext';
 import { getUserSettings, saveUserSettings } from '../services/firebase';
 import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { createFirebaseUser } from '../utils/firebaseAuth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -103,15 +103,24 @@ const Settings: React.FC = () => {
           try {
             console.log('Creating Firestore user document for UID:', result.uid);
 
-            // Create user settings document
+            // Create user role document in 'users' collection (required for getUserRole)
+            await addDoc(collection(db, 'users'), {
+              uid: result.uid,
+              role: 'admin',
+              email: coAdminEmail,
+              createdAt: Timestamp.now(),
+              updatedAt: Timestamp.now(),
+            });
+
+            console.log('User role document created in users collection');
+
+            // Also create user settings document
             await saveUserSettings(result.uid, {
               email: coAdminEmail,
-              role: 'admin',
-              createdAt: new Date(),
               defaultCompanyId: companies.length > 0 ? companies[0].id : undefined,
             });
 
-            console.log('Firestore user document created successfully');
+            console.log('Firestore user documents created successfully');
           } catch (firestoreError) {
             console.error('Error creating Firestore document:', firestoreError);
             showError('Waarschuwing', 'Account aangemaakt maar kon gebruikersprofiel niet initialiseren');
