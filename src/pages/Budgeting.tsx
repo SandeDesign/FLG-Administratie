@@ -251,6 +251,28 @@ const Budgeting: React.FC = () => {
   const incomeVariance = actualYTDIncome - projectedYTDIncome;
   const costVariance = actualYTDCosts - projectedYTDCosts;
 
+  // Helper to safely convert date to ISO string
+  const toDateString = (date: any): string => {
+    if (!date) return new Date().toISOString().split('T')[0];
+
+    // If it's already a Date object
+    if (date instanceof Date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    // If it's a Firebase Timestamp with toDate method
+    if (date.toDate && typeof date.toDate === 'function') {
+      return date.toDate().toISOString().split('T')[0];
+    }
+
+    // Try to parse as string/number
+    try {
+      return new Date(date).toISOString().split('T')[0];
+    } catch {
+      return new Date().toISOString().split('T')[0];
+    }
+  };
+
   const handleOpenModal = (item?: BudgetItem, type?: BudgetType) => {
     if (item) {
       setEditingItem(item);
@@ -260,14 +282,8 @@ const Budgeting: React.FC = () => {
         category: item.category,
         amount: item.amount.toString(),
         frequency: item.frequency,
-        startDate: item.startDate instanceof Date
-          ? item.startDate.toISOString().split('T')[0]
-          : new Date(item.startDate).toISOString().split('T')[0],
-        endDate: item.endDate
-          ? (item.endDate instanceof Date
-              ? item.endDate.toISOString().split('T')[0]
-              : new Date(item.endDate).toISOString().split('T')[0])
-          : '',
+        startDate: toDateString(item.startDate),
+        endDate: item.endDate ? toDateString(item.endDate) : '',
         supplier: item.supplier || '',
         contractNumber: item.contractNumber || '',
         notes: item.notes || '',
