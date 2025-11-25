@@ -2,39 +2,39 @@ import React, { useState, useEffect } from 'react';
 import {
   Settings as SettingsIcon,
   Building2,
-  Users,
-  Bell,
-  Shield,
-  Database,
-  Download,
-  HardDrive,
+  User,
+  Mail,
+  Lock,
+  Camera,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { NotificationService } from '../services/notificationService';
 import { getUserSettings, saveUserSettings } from '../services/firebase';
-import { NotificationPreferences } from '../types';
+import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 
-
 const Settings: React.FC = () => {
-  const { user, userRole, adminUserId } = useAuth();
+  const { user, userRole } = useAuth();
   const { companies } = useApp();
   const { success, error: showError } = useToast();
-  const [activeTab, setActiveTab] = useState<'general' | 'company' | 'notifications' | 'security' | 'data' | 'drive'>('general');
+  const [activeTab, setActiveTab] = useState<'account' | 'company'>('account');
   const [loading, setLoading] = useState(false);
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [selectedDefaultCompanyId, setSelectedDefaultCompanyId] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (user && activeTab === 'notifications') {
-      loadPreferences();
-    }
-  }, [user, activeTab]);
+  // Account settings state
+  const [newEmail, setNewEmail] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [profilePhotoBase64, setProfilePhotoBase64] = useState<string>('');
+  const [photoPreview, setPhotoPreview] = useState<string>('');
 
   useEffect(() => {
     if (user && userRole === 'admin' && activeTab === 'company') {
@@ -42,53 +42,156 @@ const Settings: React.FC = () => {
     }
   }, [user, userRole, activeTab]);
 
-  const loadPreferences = async () => {
+  useEffect(() => {
+    if (user) {
+      setNewEmail(user.email || '');
+      loadProfilePhoto();
+    }
+  }, [user]);
+
+  const loadDefaultCompany = async () => {
     if (!user) return;
 
     try {
-      setLoading(true);
-      const prefs = await NotificationService.getPreferences(user.uid);
-      setPreferences(prefs);
-    } catch (error) {
-      console.error('Error loading preferences:', error);
-      showError('Fout bij laden', 'Kon voorkeuren niet laden');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDefaultCompany = async () => {
-    if (!adminUserId) return;
-    
-    try {
-      const settings = await getUserSettings(adminUserId);
+      const settings = await getUserSettings(user.uid);
       setSelectedDefaultCompanyId(settings?.defaultCompanyId || '');
     } catch (error) {
       console.error('Error loading default company:', error);
     }
   };
 
-  const handleSaveNotificationPreferences = async () => {
-    if (!user || !preferences) return;
+  const loadProfilePhoto = async () => {
+    if (!user) return;
 
     try {
-      setLoading(true);
-      await NotificationService.updatePreferences(user.uid, preferences);
-      success('Meldingsvoorkeuren opgeslagen', 'Je voorkeuren zijn succesvol opgeslagen');
+      const settings = await getUserSettings(user.uid);
+      if (settings?.profilePhoto) {
+        setProfilePhotoBase64(settings.profilePhoto);
+        setPhotoPreview(settings.profilePhoto);
+      }
     } catch (error) {
-      console.error('Error saving preferences:', error);
-      showError('Fout bij opslaan', 'Kon voorkeuren niet opslaan');
+      console.error('Error loading profile photo:', error);
+    }
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showError('Bestand te groot', 'Kies een afbeelding kleiner dan 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setProfilePhotoBase64(base64);
+      setPhotoPreview(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveProfilePhoto = async () => {
+    if (!user || !profilePhotoBase64) return;
+
+    try {
+      setSaving(true);
+      await saveUserSettings(user.uid, { profilePhoto: profilePhotoBase64 });
+      success('Profielfoto opgeslagen', 'Je profielfoto is bijgewerkt');
+    } catch (error) {
+      console.error('Error saving profile photo:', error);
+      showError('Fout bij opslaan', 'Kon profielfoto niet opslaan');
     } finally {
-      setLoading(false);
+      setSaving(false);
+    }
+  };
+
+  const handleChangeEmail = async () => {
+    if (!user || !newEmail || !currentPassword) {
+      showError('Validatiefout', 'Vul alle velden in');
+      return;
+    }
+
+    if (newEmail === user.email) {
+      showError('Geen wijziging', 'Dit is al je huidige e-mailadres');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      // Re-authenticate
+      const credential = EmailAuthProvider.credential(user.email!, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+
+      // Update email
+      await updateEmail(user, newEmail);
+
+      success('E-mail bijgewerkt', 'Je e-mailadres is succesvol gewijzigd');
+      setCurrentPassword('');
+    } catch (error: any) {
+      console.error('Error changing email:', error);
+      if (error.code === 'auth/wrong-password') {
+        showError('Verkeerd wachtwoord', 'Het huidige wachtwoord is onjuist');
+      } else if (error.code === 'auth/email-already-in-use') {
+        showError('E-mail in gebruik', 'Dit e-mailadres is al gekoppeld aan een ander account');
+      } else {
+        showError('Fout bij wijzigen', error.message || 'Kon e-mail niet wijzigen');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!user || !currentPassword || !newPassword || !confirmPassword) {
+      showError('Validatiefout', 'Vul alle velden in');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      showError('Wachtwoorden komen niet overeen', 'Controleer je nieuwe wachtwoord');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      showError('Wachtwoord te kort', 'Gebruik minimaal 6 tekens');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      // Re-authenticate
+      const credential = EmailAuthProvider.credential(user.email!, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+
+      // Update password
+      await updatePassword(user, newPassword);
+
+      success('Wachtwoord bijgewerkt', 'Je wachtwoord is succesvol gewijzigd');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      if (error.code === 'auth/wrong-password') {
+        showError('Verkeerd wachtwoord', 'Het huidige wachtwoord is onjuist');
+      } else {
+        showError('Fout bij wijzigen', error.message || 'Kon wachtwoord niet wijzigen');
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleSaveDefaultCompany = async () => {
-    if (!adminUserId) return;
-    
+    if (!user) return;
+
     try {
       setSaving(true);
-      await saveUserSettings(adminUserId, {
+      await saveUserSettings(user.uid, {
         defaultCompanyId: selectedDefaultCompanyId || undefined
       });
       success('Bedrijf opgeslagen', 'Je standaard bedrijf is ingesteld');
@@ -101,26 +204,22 @@ const Settings: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'general', name: 'Algemeen', icon: SettingsIcon },
-    { id: 'company', name: 'Bedrijfsinstellingen', icon: Building2 },
-    { id: 'drive', name: 'Google Drive', icon: HardDrive },
-    { id: 'notifications', name: 'Meldingen', icon: Bell },
-    { id: 'security', name: 'Beveiliging', icon: Shield },
-    { id: 'data', name: 'Data & Privacy', icon: Database },
+    { id: 'account', name: 'Account', icon: User },
+    ...(userRole === 'admin' ? [{ id: 'company', name: 'Bedrijf', icon: Building2 }] : []),
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Instellingen</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Beheer uw applicatie-instellingen en voorkeuren
+            Beheer je account en voorkeuren
           </p>
         </div>
       </div>
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -142,80 +241,173 @@ const Settings: React.FC = () => {
         </nav>
       </div>
 
-      {activeTab === 'general' && (
+      {activeTab === 'account' && (
         <div className="space-y-6">
+          {/* Profile Photo */}
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Weergave
+                Profielfoto
               </h2>
-              <div className="space-y-4">
-                <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
-                  <p className="text-sm text-primary-800">
-                    FLG-Administratie gebruikt een licht, professioneel thema gebaseerd op Material Design principes voor optimale leesbaarheid en gebruiksvriendelijkheid.
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  {photoPreview ? (
+                    <img
+                      src={photoPreview}
+                      alt="Profile"
+                      className="h-24 w-24 rounded-full object-cover border-4 border-gray-200"
+                    />
+                  ) : (
+                    <div className="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center border-4 border-gray-200">
+                      <User className="h-12 w-12 text-primary-600" />
+                    </div>
+                  )}
+                  <label
+                    htmlFor="photo-upload"
+                    className="absolute bottom-0 right-0 bg-primary-600 rounded-full p-2 cursor-pointer hover:bg-primary-700 transition-colors shadow-lg"
+                  >
+                    <Camera className="h-4 w-4 text-white" />
+                    <input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                    />
+                  </label>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600 mb-3">
+                    Upload een profielfoto (max 2MB)
                   </p>
+                  {profilePhotoBase64 && profilePhotoBase64 !== photoPreview && (
+                    <Button
+                      onClick={handleSaveProfilePhoto}
+                      disabled={saving}
+                      size="sm"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Opslaan
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
           </Card>
 
+          {/* Change Email */}
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Bedrijfsinstellingen
+                E-mailadres wijzigen
               </h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Standaard reiskostenvergoeding
+                    Nieuw e-mailadres
                   </label>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-600">€</span>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
-                      type="number"
-                      step="0.01"
-                      defaultValue="0.23"
-                      className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary-500 shadow-sm"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="nieuw@email.com"
                     />
-                    <span className="text-gray-600">per km</span>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Standaard vakantietoeslag
+                    Huidig wachtwoord (ter bevestiging)
                   </label>
-                  <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
-                      type="number"
-                      step="0.1"
-                      defaultValue="8.0"
-                      className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary-500 shadow-sm"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="••••••••"
                     />
-                    <span className="text-gray-600">%</span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleChangeEmail}
+                  disabled={saving || !newEmail || !currentPassword}
+                  loading={saving}
+                >
+                  E-mail wijzigen
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* Change Password */}
+          <Card>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Wachtwoord wijzigen
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Huidig wachtwoord
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="••••••••"
+                    />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Standaard werkweek
+                    Nieuw wachtwoord
                   </label>
-                  <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                     <input
-                      type="number"
-                      step="1"
-                      defaultValue="40"
-                      className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:ring-2 focus:ring-primary-500 shadow-sm"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="••••••••"
                     />
-                    <span className="text-gray-600">uur</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">Minimaal 6 tekens</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bevestig nieuw wachtwoord
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="••••••••"
+                    />
                   </div>
                 </div>
 
-                <div className="pt-4">
-                  <Button variant="primary">
-                    Instellingen opslaan
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={saving || !currentPassword || !newPassword || !confirmPassword}
+                  loading={saving}
+                >
+                  Wachtwoord wijzigen
+                </Button>
               </div>
             </div>
           </Card>
@@ -233,15 +425,15 @@ const Settings: React.FC = () => {
                 <p className="text-sm text-gray-600 mb-4">
                   Kies welk bedrijf standaard wordt geselecteerd wanneer je inlogt
                 </p>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Selecteer bedrijf *
+                    Selecteer bedrijf
                   </label>
                   <select
                     value={selectedDefaultCompanyId}
                     onChange={(e) => setSelectedDefaultCompanyId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg border-gray-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">Geen standaard (eerste bedrijf)</option>
                     {companies.map((company) => (
@@ -252,327 +444,14 @@ const Settings: React.FC = () => {
                   </select>
                 </div>
 
-                <Button 
+                <Button
                   variant="primary"
                   onClick={handleSaveDefaultCompany}
                   disabled={saving}
+                  loading={saving}
                 >
-                  {saving ? 'Opslaan...' : 'Standaard bedrijf opslaan'}
+                  Standaard bedrijf opslaan
                 </Button>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="p-6 bg-primary-50">
-              <h3 className="font-medium text-primary-900 mb-2">💡 Info</h3>
-              <p className="text-sm text-primary-800">
-                Je kunt ook handmatig een bedrijf selecteren in de sidebar. Dit wijzigt je voorkeur echter niet.
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'drive' && (
-        <div className="space-y-6">
-          <Card>
-            <div className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <HardDrive className="h-6 w-6 text-primary-600" />
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">Google Drive Integratie</h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Verbind Google Drive om facturen automatisch op te slaan.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-4">
-                <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 text-sm text-primary-800">
-                  <strong>Mappenstructuur:</strong>
-                  <div className="mt-2 text-xs font-mono">
-                    FLG-Administratie/<br />
-                    └── Bedrijfsnaam/<br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;├── Inkomende Facturen<br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;├── Uitgaande Facturen<br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;└── Exports
-                  </div>
-                </div>
-
-                <Button
-                  onClick={async () => {
-                    if (!user) return;
-                    try {
-                      setSaving(true);
-                      const { requestGoogleDriveToken, saveGoogleDriveToken } = await import('../services/googleDriveService');
-                      const token = await requestGoogleDriveToken();
-                      await saveGoogleDriveToken(user.uid, token);
-                      success('Verbonden!', 'Google Drive is succesvol gekoppeld');
-                      // Refresh page to update status
-                      setTimeout(() => window.location.reload(), 1000);
-                    } catch (error) {
-                      showError('Verbinding mislukt', error instanceof Error ? error.message : 'Kon Google Drive niet verbinden');
-                    } finally {
-                      setSaving(false);
-                    }
-                  }}
-                  disabled={saving}
-                  icon={HardDrive}
-                  variant="primary"
-                >
-                  {saving ? 'Bezig met verbinden...' : 'Verbind Google Drive'}
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'notifications' && (
-        <div className="space-y-6">
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner />
-            </div>
-          ) : (
-            <>
-              <Card>
-                <div className="p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    E-mail meldingen
-                  </h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-sm font-medium text-gray-900 dark:text-white">
-                          E-mail meldingen inschakelen
-                        </label>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Ontvang updates per e-mail
-                        </p>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setPreferences(
-                            preferences
-                              ? {
-                                  ...preferences,
-                                  email: { ...preferences.email, enabled: !preferences.email.enabled },
-                                }
-                              : null
-                          )
-                        }
-                        className={`${
-                          preferences?.email.enabled ? 'bg-primary-600' : 'bg-gray-200'
-                        } relative inline-flex h-6 w-11 items-center rounded-full transition-colors`}
-                      >
-                        <span
-                          className={`${
-                            preferences?.email.enabled ? 'translate-x-6' : 'translate-x-1'
-                          } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                        />
-                      </button>
-                    </div>
-
-                    {preferences?.email.enabled && (
-                      <div className="ml-4 space-y-3 border-l-2 border-gray-200 dark:border-gray-700 pl-4">
-                        {Object.entries({
-                          payrollNotifications: 'Loonverwerkingen',
-                          taxReturnNotifications: 'Belastingaangiftes',
-                          contractNotifications: 'Contracten',
-                          leaveNotifications: 'Verlofaanvragen',
-                          expenseNotifications: 'Declaraties',
-                          complianceAlerts: 'Compliance waarschuwingen',
-                          systemUpdates: 'Systeemupdates',
-                        }).map(([key, label]) => (
-                          <label key={key} className="flex items-center space-x-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={preferences.email[key as keyof typeof preferences.email] as boolean}
-                              onChange={(e) =>
-                                setPreferences(
-                                  preferences
-                                    ? {
-                                        ...preferences,
-                                        email: {
-                                          ...preferences.email,
-                                          [key]: e.target.checked,
-                                        },
-                                      }
-                                    : null
-                                )
-                              }
-                              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            />
-                            <span className="text-sm text-gray-900 dark:text-white">{label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-
-              <Card>
-                <div className="p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    In-app meldingen
-                  </h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-sm font-medium text-gray-900 dark:text-white">
-                          Badge weergeven
-                        </label>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Toon aantal ongelezen meldingen
-                        </p>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setPreferences(
-                            preferences
-                              ? {
-                                  ...preferences,
-                                  inApp: { ...preferences.inApp, showBadge: !preferences.inApp.showBadge },
-                                }
-                              : null
-                          )
-                        }
-                        className={`${
-                          preferences?.inApp.showBadge ? 'bg-primary-600' : 'bg-gray-200'
-                        } relative inline-flex h-6 w-11 items-center rounded-full transition-colors`}
-                      >
-                        <span
-                          className={`${
-                            preferences?.inApp.showBadge ? 'translate-x-6' : 'translate-x-1'
-                          } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              <div className="flex justify-end">
-                <Button variant="primary" onClick={handleSaveNotificationPreferences}>
-                  Voorkeuren opslaan
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'security' && (
-        <Card>
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Beveiliging
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Gebruikersrollen en machtigingen
-                </label>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Beheer wie toegang heeft tot verschillende delen van de applicatie
-                </p>
-                <Button variant="outline">
-                  <Users className="h-4 w-4 mr-2" />
-                  Rollen beheren
-                </Button>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Audit log
-                </label>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Bekijk alle acties die zijn uitgevoerd in het systeem
-                </p>
-                <Button variant="outline">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Audit log bekijken
-                </Button>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {activeTab === 'data' && (
-        <div className="space-y-6">
-          <Card>
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Data retentie
-              </h2>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Volgens de Nederlandse wetgeving moeten loongegevens minimaal 7 jaar bewaard blijven.
-                </p>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Automatisch archiveren na
-                  </label>
-                  <select className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white">
-                    <option value="7">7 jaar (wettelijk minimum)</option>
-                    <option value="10">10 jaar</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Data export
-              </h2>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Download al uw gegevens voor archivering of externe verwerking
-                </p>
-                <div className="flex space-x-3">
-                  <Button variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export naar Excel
-                  </Button>
-                  <Button variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export naar PDF
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Automatische back-ups
-              </h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-sm font-medium text-gray-900 dark:text-white">
-                      Dagelijkse back-ups
-                    </label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Maak elke dag automatisch een back-up
-                    </p>
-                  </div>
-                  <button className="bg-primary-600 relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
-                    <span className="translate-x-6 inline-block h-4 w-4 transform rounded-full bg-white transition-transform" />
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-500">
-                  Laatste back-up: Vandaag om 03:00
-                </p>
               </div>
             </div>
           </Card>
