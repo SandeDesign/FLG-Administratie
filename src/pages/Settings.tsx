@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { getUserSettings, saveUserSettings } from '../services/firebase';
 import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { createFirebaseUser, checkUserExists } from '../utils/firebaseAuth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import Card from '../components/ui/Card';
@@ -82,6 +83,28 @@ const Settings: React.FC = () => {
 
     try {
       setSaving(true);
+
+      // First, create Firebase Authentication account if it doesn't exist
+      try {
+        const userExists = await checkUserExists(coAdminEmail);
+
+        if (!userExists) {
+          // Create new Firebase Auth account with default password
+          await createFirebaseUser(coAdminEmail, 'DeInstallatie1234!!');
+          toast.success('Account aangemaakt', `Er is een account aangemaakt voor ${coAdminEmail} met wachtwoord: DeInstallatie1234!!`);
+        } else {
+          toast.info('Account bestaat al', `${coAdminEmail} heeft al een account`);
+        }
+      } catch (authError: any) {
+        if (authError.message === 'ACCOUNT_EXISTS_DIFFERENT_PASSWORD') {
+          toast.info('Account bestaat al', `${coAdminEmail} heeft al een account met een ander wachtwoord`);
+        } else {
+          console.warn('Auth account creation warning:', authError);
+          // Continue anyway, maybe account exists
+        }
+      }
+
+      // Add to co-admin list
       const newCoAdmins = [...coAdmins, coAdminEmail];
       await saveUserSettings(user.uid, { coAdminEmails: newCoAdmins });
       setCoAdmins(newCoAdmins);

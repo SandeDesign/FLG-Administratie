@@ -600,6 +600,14 @@ const Budgeting: React.FC = () => {
     <p>Financiële Projectie & Begroting | Gegenereerd op ${dateStr}</p>
   </div>
 
+  <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 16px; border-radius: 12px; margin-bottom: 24px; border-left: 4px solid #f59e0b;">
+    <h3 style="font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 8px;">⚠️ Gewogen Projectie</h3>
+    <p style="font-size: 14px; color: #78350f; line-height: 1.5;">
+      Inkomsten worden gewogen op zekerheid: <strong>Bevestigd (100%)</strong>, <strong>Waarschijnlijk (75%)</strong>,
+      <strong>Potentieel (50%)</strong>, <strong>Speculatief (25%)</strong>. Dit geeft een realistischer beeld voor investeerders.
+    </p>
+  </div>
+
   <div class="summary-grid">
     <div class="summary-card income">
       <h3>Jaarlijkse Inkomsten (Gewogen)</h3>
@@ -720,12 +728,21 @@ const Budgeting: React.FC = () => {
   ${showActualData && (actualYTDIncome > 0 || actualYTDCosts > 0) ? `
   <div class="section">
     <h2>YTD Realiteit vs Projectie (${currentYear})</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
+      <em>Gebaseerd op ${outgoingInvoices.filter(inv => {
+        const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+        return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
+      }).length} uitgaande facturen en ${incomingInvoices.filter(inv => {
+        const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+        return invDate.getFullYear() === currentYear;
+      }).length} inkomende facturen in ${currentYear}</em>
+    </p>
     <table>
       <thead>
         <tr>
           <th>Metric</th>
           <th>Geprojecteerd YTD</th>
-          <th>Werkelijk YTD</th>
+          <th>Werkelijk YTD (Facturen)</th>
           <th>Verschil</th>
         </tr>
       </thead>
@@ -733,17 +750,25 @@ const Budgeting: React.FC = () => {
         <tr>
           <td>Inkomsten</td>
           <td>${formatCurrency(projectedYTDIncome)}</td>
-          <td>${formatCurrency(actualYTDIncome)}</td>
+          <td class="positive">${formatCurrency(actualYTDIncome)}</td>
           <td class="${incomeVariance >= 0 ? 'positive' : 'negative'}">${incomeVariance >= 0 ? '+' : ''}${formatCurrency(incomeVariance)}</td>
         </tr>
         <tr>
           <td>Kosten</td>
           <td>${formatCurrency(projectedYTDCosts)}</td>
-          <td>${formatCurrency(actualYTDCosts)}</td>
-          <td class="${costVariance <= 0 ? 'positive' : 'negative'}">${costVariance <= 0 ? '' : '+'}${formatCurrency(costVariance)}</td>
+          <td class="negative">${actualYTDCosts > 0 ? formatCurrency(actualYTDCosts) : '<span style="color: #9ca3af;">Geen facturen</span>'}</td>
+          <td class="${costVariance <= 0 ? 'positive' : 'negative'}">${actualYTDCosts > 0 ? (costVariance <= 0 ? '' : '+') + formatCurrency(costVariance) : '<span style="color: #9ca3af;">-</span>'}</td>
         </tr>
       </tbody>
     </table>
+    ${actualYTDCosts === 0 ? `
+    <div style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin-top: 12px;">
+      <p style="font-size: 13px; color: #6b7280; margin: 0;">
+        <strong>Let op:</strong> Er zijn nog geen inkomende facturen geregistreerd in ${currentYear}.
+        Upload facturen via "Inkoop Upload" om een realistisch beeld te krijgen van de werkelijke kosten.
+      </p>
+    </div>
+    ` : ''}
   </div>
   ` : ''}
 

@@ -1,30 +1,37 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Users, 
-  Building2, 
+import {
+  Users,
+  Building2,
   Clock,
-  AlertTriangle, 
+  AlertTriangle,
   TrendingUp,
   FileText,
   CheckCircle,
   Calendar,
-  ArrowRight
+  ArrowRight,
+  Euro,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
-import { 
-  collection, 
-  query, 
-  where, 
+import {
+  collection,
+  query,
+  where,
   getDocs,
   orderBy,
   limit
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { getEmployees, getCompanies, getLeaveRequests } from '../services/firebase';
+import { getBudgetItems } from '../services/budgetService';
+import * as outgoingInvoiceService from '../services/outgoingInvoiceService';
+import * as incomingInvoiceService from '../services/incomingInvoiceService';
 
 interface DashboardStats {
   totalEmployees: number;
@@ -32,6 +39,11 @@ interface DashboardStats {
   totalCompanies: number;
   pendingLeaveRequests: number;
   pendingTimesheets: number;
+  monthlyIncome: number;
+  monthlyCosts: number;
+  yearlyProfit: number;
+  actualYTDIncome: number;
+  actualYTDCosts: number;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -96,12 +108,71 @@ const AdminDashboard: React.FC = () => {
         ...doc.data()
       }));
 
+      // Load financial data if company is selected
+      let monthlyIncome = 0;
+      let monthlyCosts = 0;
+      let yearlyProfit = 0;
+      let actualYTDIncome = 0;
+      let actualYTDCosts = 0;
+
+      if (selectedCompany) {
+        try {
+          // Load budget items
+          const budgetItems = await getBudgetItems(user.uid, selectedCompany.id);
+          const activeItems = budgetItems.filter(item => item.isActive !== false);
+
+          // Calculate monthly income and costs
+          activeItems.forEach(item => {
+            const monthlyAmount = item.frequency === 'monthly' ? item.amount :
+                                item.frequency === 'yearly' ? item.amount / 12 :
+                                item.frequency === 'quarterly' ? item.amount / 3 :
+                                item.amount;
+
+            if (item.type === 'income') {
+              monthlyIncome += monthlyAmount;
+            } else {
+              monthlyCosts += monthlyAmount;
+            }
+          });
+
+          yearlyProfit = (monthlyIncome * 12) - (monthlyCosts * 12);
+
+          // Load actual invoice data for YTD
+          const currentYear = new Date().getFullYear();
+          const [outgoingInvoices, incomingInvoices] = await Promise.all([
+            outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id),
+            incomingInvoiceService.getInvoices(user.uid, selectedCompany.id),
+          ]);
+
+          actualYTDIncome = outgoingInvoices
+            .filter(inv => {
+              const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+              return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
+            })
+            .reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
+
+          actualYTDCosts = incomingInvoices
+            .filter(inv => {
+              const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+              return invDate.getFullYear() === currentYear;
+            })
+            .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+        } catch (error) {
+          console.warn('Could not load financial data:', error);
+        }
+      }
+
       setStats({
         totalEmployees: allEmployees.length,
         employeesWithAccount,
         totalCompanies: companies.length,
         pendingLeaveRequests: pendingLeavesList.length,
-        pendingTimesheets: timesheetsSnapshot.size
+        pendingTimesheets: timesheetsSnapshot.size,
+        monthlyIncome,
+        monthlyCosts,
+        yearlyProfit,
+        actualYTDIncome,
+        actualYTDCosts
       });
 
       setPendingLeaves(pendingLeavesList.slice(0, 3));
@@ -224,6 +295,64 @@ const AdminDashboard: React.FC = () => {
             </div>
           </Card>
         </div>
+
+        {/* Row 3: Financial Data (only if company selected) */}
+        {selectedCompany && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Card className="p-4 sm:p-6 bg-gradient-to-br from-emerald-50 to-emerald-100">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Maandelijkse Inkomsten</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-700">
+                    €{stats.monthlyIncome.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <ArrowUpRight className="h-3 w-3 text-emerald-600" />
+                    YTD: €{stats.actualYTDIncome.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                </div>
+                <div className="p-2 sm:p-3 bg-emerald-600 rounded-lg">
+                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4 sm:p-6 bg-gradient-to-br from-red-50 to-red-100">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Maandelijkse Kosten</p>
+                  <p className="text-xl sm:text-2xl font-bold text-red-700">
+                    €{stats.monthlyCosts.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    <ArrowDownRight className="h-3 w-3 text-red-600" />
+                    YTD: €{stats.actualYTDCosts.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                </div>
+                <div className="p-2 sm:p-3 bg-red-600 rounded-lg">
+                  <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-blue-100">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Verwachte Jaarwinst</p>
+                  <p className={`text-xl sm:text-2xl font-bold ${stats.yearlyProfit >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                    {stats.yearlyProfit >= 0 ? '+' : ''}€{stats.yearlyProfit.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Op basis van begroting
+                  </p>
+                </div>
+                <div className={`p-2 sm:p-3 ${stats.yearlyProfit >= 0 ? 'bg-blue-600' : 'bg-red-600'} rounded-lg`}>
+                  <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Pending Leave Requests - Mobile Card */}
@@ -297,13 +426,15 @@ const AdminDashboard: React.FC = () => {
               <ArrowRight className="h-4 w-4" />
             </button>
 
-            <button
-              onClick={() => window.location.href = '/admin/users'}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 text-gray-900 rounded-lg transition-colors text-sm"
-            >
-              <span className="font-medium">Gebruikers beheren</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
+            {selectedCompany && (
+              <button
+                onClick={() => window.location.href = '/budgeting'}
+                className="w-full flex items-center justify-between px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 rounded-lg transition-colors text-sm"
+              >
+                <span className="font-medium">Financiële Begroting</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </Card>
       </div>
