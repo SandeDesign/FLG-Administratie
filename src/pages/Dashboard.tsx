@@ -73,7 +73,7 @@ const Dashboard: React.FC = () => {
 
   // ========== LOAD INVOICE STATS (All Companies) ==========
   const loadInvoiceStats = useCallback(async () => {
-    if (!user || !selectedCompany) return;
+    if (!user || !adminUserId || !selectedCompany) return;
 
     try {
       const { collection, query, where, getDocs } = await import('firebase/firestore');
@@ -159,7 +159,7 @@ const Dashboard: React.FC = () => {
 
   // ========== LOAD HOLDING DATA ==========
   const loadHoldingData = useCallback(async () => {
-    if (!user || !selectedCompany || userRole !== 'admin') return;
+    if (!user || !adminUserId || !selectedCompany || userRole !== 'admin') return;
     if (selectedCompany.companyType !== 'holding') return;
 
     setDashLoading(true);
@@ -233,21 +233,21 @@ const Dashboard: React.FC = () => {
 
   // ========== LOAD ADMIN DATA ==========
   const loadAdminData = useCallback(async () => {
-    if (!user || !selectedCompany || userRole !== 'admin') return;
+    if (!user || !adminUserId || !selectedCompany || userRole !== 'admin') return;
 
     setDashLoading(true);
     try {
       // Pending timesheets
-      const timesheets = await getPendingTimesheets(user.uid, selectedCompany.id);
+      const timesheets = await getPendingTimesheets(adminUserId, selectedCompany.id);
       setPendingTimesheets(timesheets.slice(0, 5));
 
       // Pending leave
-      const leave = await getPendingLeaveApprovals(selectedCompany.id, user.uid);
+      const leave = await getPendingLeaveApprovals(selectedCompany.id, adminUserId);
       setPendingLeave(leave.slice(0, 5));
 
       // Pending expenses
       try {
-        const expenses = await getPendingExpenses(selectedCompany.id, user.uid);
+        const expenses = await getPendingExpenses(selectedCompany.id, adminUserId);
         setPendingExpenses(expenses.slice(0, 5));
         setStats((prev) => ({
           ...prev,
@@ -276,14 +276,14 @@ const Dashboard: React.FC = () => {
 
   // ========== LOAD MANAGER DATA ==========
   const loadManagerData = useCallback(async () => {
-    if (!user || !selectedCompany || userRole !== 'manager') return;
+    if (!user || !adminUserId || !selectedCompany || userRole !== 'manager') return;
 
     setDashLoading(true);
     try {
-      const timesheets = await getPendingTimesheets(user.uid, selectedCompany.id);
+      const timesheets = await getPendingTimesheets(adminUserId, selectedCompany.id);
       setPendingTimesheets(timesheets.slice(0, 5));
 
-      const leave = await getPendingLeaveApprovals(selectedCompany.id, user.uid);
+      const leave = await getPendingLeaveApprovals(selectedCompany.id, adminUserId);
       setPendingLeave(leave.slice(0, 5));
 
       setStats((prev) => ({
@@ -302,12 +302,12 @@ const Dashboard: React.FC = () => {
 
   // ========== LOAD EMPLOYEE DATA ==========
   const loadEmployeeData = useCallback(async () => {
-    if (!user || !currentEmployeeId) return;
+    if (!user || !adminUserId || !currentEmployeeId) return;
 
     setDashLoading(true);
     try {
       // Get payroll for this employee
-      const payroll = await getPayrollCalculations(user.uid, currentEmployeeId);
+      const payroll = await getPayrollCalculations(adminUserId, currentEmployeeId);
       // Use payroll data if needed
     } catch (error) {
       console.error('Error loading employee data:', error);
@@ -319,7 +319,7 @@ const Dashboard: React.FC = () => {
   // ========== LOAD PROJECT DATA ==========
   useEffect(() => {
     const loadProjectStats = async () => {
-      if (!user || !selectedCompany || selectedCompany.companyType !== 'project') {
+      if (!user || !adminUserId || !selectedCompany || selectedCompany.companyType !== 'project') {
         console.log('🏭 Not a project company, skipping project stats');
         setLoadingProjectStats(false);
         return;
@@ -401,9 +401,9 @@ const Dashboard: React.FC = () => {
   // ========== LOAD EMPLOYEE STATS ==========
   useEffect(() => {
     const loadEmployeeStatsData = async () => {
-      if (!user || !currentEmployeeId || userRole !== 'employee') return;
+      if (!user || !adminUserId || !currentEmployeeId || userRole !== 'employee') return;
       try {
-        const payroll = await getPayrollCalculations(user.uid, currentEmployeeId);
+        const payroll = await getPayrollCalculations(adminUserId, currentEmployeeId);
         if (payroll.length > 0) {
           setEmployeeStats((prev) => ({
             ...prev,

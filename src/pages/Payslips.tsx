@@ -26,7 +26,7 @@ export default function Payslips() {
   const [generating, setGenerating] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -48,7 +48,7 @@ export default function Payslips() {
       }
       setEmployeeData(employee);
 
-      const allPayslips = await getPayslips(user.uid, effectiveEmployeeId);
+      const allPayslips = await getPayslips(adminUserId, effectiveEmployeeId);
       const filtered = allPayslips.filter(
         p => p.periodStartDate.getFullYear() === selectedYear
       );
@@ -83,7 +83,7 @@ export default function Payslips() {
     setGenerating(payslip.id);
 
     try {
-      const company = await getCompany(selectedCompany.id, user.uid);
+      const company = await getCompany(selectedCompany.id, adminUserId);
       if (!company) {
         throw new Error('Bedrijf niet gevonden');
       }
@@ -94,7 +94,7 @@ export default function Payslips() {
       console.log(`Searching for payroll calculation for employee ${payslip.employeeId}, month: ${month}, year: ${year}`);
 
       const calculations = await getPayrollCalculations(
-        user.uid,
+        adminUserId,
         payslip.employeeId,
         month,
         year
@@ -111,7 +111,7 @@ export default function Payslips() {
 
       await regeneratePayslipPdf(
         payslip.id,
-        user.uid,
+        adminUserId,
         employeeData,
         company,
         calculation
@@ -157,7 +157,7 @@ export default function Payslips() {
       window.URL.revokeObjectURL(url);
 
       if (payslip.id) {
-        await markPayslipAsDownloaded(payslip.id, user.uid);
+        await markPayslipAsDownloaded(payslip.id, adminUserId);
       }
 
       success('Loonstrook gedownload', 'Loonstrook succesvol gedownload');

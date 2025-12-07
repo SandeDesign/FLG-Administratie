@@ -28,7 +28,7 @@ import { doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const IncomingInvoicesStats: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
 
@@ -45,7 +45,7 @@ const IncomingInvoicesStats: React.FC = () => {
 
   // Load Invoices from Firestore
   const loadInvoices = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -53,7 +53,7 @@ const IncomingInvoicesStats: React.FC = () => {
     try {
       setLoading(true);
       const data = await incomingInvoiceService.getInvoices(
-        user.uid,
+        adminUserId,
         selectedCompany.id
       );
       setInvoices(data);
@@ -127,7 +127,7 @@ const IncomingInvoicesStats: React.FC = () => {
 
   // Handle Approve
   const handleApprove = async (invoice: IncomingInvoice) => {
-    if (!user) return;
+    if (!user || !adminUserId || !adminUserId) return;
 
     try {
       setIsSaving(true);
@@ -135,7 +135,7 @@ const IncomingInvoicesStats: React.FC = () => {
       await updateDoc(invoiceRef, {
         status: 'approved',
         approvedAt: Timestamp.fromDate(new Date()),
-        approvedBy: user.uid,
+        approvedBy: adminUserId,
         updatedAt: Timestamp.fromDate(new Date()),
       });
 
@@ -146,7 +146,7 @@ const IncomingInvoicesStats: React.FC = () => {
               ...inv,
               status: 'approved',
               approvedAt: new Date(),
-              approvedBy: user.uid,
+              approvedBy: adminUserId,
               updatedAt: new Date(),
             }
             : inv
@@ -163,7 +163,7 @@ const IncomingInvoicesStats: React.FC = () => {
 
   // Handle Mark as Paid
   const handleMarkPaid = async (invoice: IncomingInvoice) => {
-    if (!user) return;
+    if (!user || !adminUserId || !adminUserId) return;
 
     try {
       setIsSaving(true);

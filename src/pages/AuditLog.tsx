@@ -29,7 +29,7 @@ interface AuditLogEntry { // Renamed to avoid conflict with AuditLog type from t
 }
 
 const AuditLogPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp(); // Get selected company from AppContext
   const { success, error: showError } = useToast();
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -51,14 +51,14 @@ const AuditLogPage: React.FC = () => {
   }, [selectedCompany]);
 
   const loadAuditLogs = useCallback(async () => {
-    if (!user) {
+    if (!user || !adminUserId || !adminUserId) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const logs = await AuditService.getAuditLogs(user.uid, {
+      const logs = await AuditService.getAuditLogs(adminUserId, {
         ...filters,
         limit: 100, // Limit for performance
       });
@@ -76,13 +76,13 @@ const AuditLogPage: React.FC = () => {
   }, [loadAuditLogs]);
 
   const handleExport = async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       showError('Fout', 'Geen gebruiker of bedrijf geselecteerd voor export.');
       return;
     }
 
     try {
-      const exportId = await AuditService.exportAuditLogs(user.uid, selectedCompany.id, 'excel', filters);
+      const exportId = await AuditService.exportAuditLogs(adminUserId, selectedCompany.id, 'excel', filters);
       success('Export gestart', 'U ontvangt binnenkort een download link.');
     } catch (error) {
       console.error('Error exporting audit logs:', error);

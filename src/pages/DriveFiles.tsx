@@ -80,7 +80,7 @@ interface ArchivedInvoice {
 }
 
 const DriveFiles: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany, companies } = useApp();
   const { success, error: showError } = useToast();
   const [files, setFiles] = useState<DriveFile[]>([]);
@@ -95,7 +95,7 @@ const DriveFiles: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const loadDriveData = useCallback(async () => {
-    if (!user) {
+    if (!user || !adminUserId || !adminUserId) {
       setLoading(false);
       return;
     }
@@ -164,7 +164,7 @@ const DriveFiles: React.FC = () => {
       if (selectedCompany?.id) {
         try {
           const archived = await incomingInvoiceService.getArchivedInvoices(
-            user.uid,
+            adminUserId,
             selectedCompany.id
           );
           setArchivedInvoices(archived);
@@ -185,7 +185,7 @@ const DriveFiles: React.FC = () => {
   }, [loadDriveData]);
 
   const syncDrive = useCallback(async (folderId?: string) => {
-    if (!user) return;
+    if (!user || !adminUserId || !adminUserId) return;
 
     setSyncing(true);
     try {

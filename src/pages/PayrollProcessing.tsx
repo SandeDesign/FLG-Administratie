@@ -24,7 +24,7 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 
 export default function PayrollProcessing() {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
 
@@ -35,20 +35,20 @@ export default function PayrollProcessing() {
   const [calculations, setCalculations] = useState<PayrollCalculation[]>([]);
 
   const loadData = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const periods = await getPayrollPeriods(user.uid, selectedCompany.id);
+      const periods = await getPayrollPeriods(adminUserId, selectedCompany.id);
       setPayrollPeriods(periods);
 
       if (periods.length > 0) {
         const latestPeriod = periods[0];
         setSelectedPeriod(latestPeriod);
-        const calcs = await getPayrollCalculations(user.uid);
+        const calcs = await getPayrollCalculations(adminUserId);
         setCalculations(calcs);
       } else {
         setSelectedPeriod(null);
@@ -67,7 +67,7 @@ export default function PayrollProcessing() {
   }, [loadData]);
 
   const handleCreatePeriod = async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       showError('Fout', 'Gebruiker of bedrijf niet geselecteerd.');
       return;
     }
@@ -79,8 +79,8 @@ export default function PayrollProcessing() {
 
     try {
       setProcessing(true);
-      const periodId = await createPayrollPeriod(user.uid, {
-        userId: user.uid,
+      const periodId = await createPayrollPeriod(adminUserId, {
+        userId: adminUserId,
         companyId: selectedCompany.id,
         periodType: 'monthly',
         startDate: startOfMonth,
@@ -104,7 +104,7 @@ export default function PayrollProcessing() {
   };
 
   const handleCalculatePayroll = async () => {
-    if (!user || !selectedCompany || !selectedPeriod) {
+    if (!user || !adminUserId || !selectedCompany || !selectedPeriod) {
       showError('Fout', 'Geen gebruiker, bedrijf of geselecteerde periode.');
       return;
     }
@@ -116,8 +116,8 @@ export default function PayrollProcessing() {
 
     setProcessing(true);
     try {
-      const employees = await getEmployees(user.uid, selectedCompany.id);
-      const hourlyRates = await getHourlyRates(user.uid, selectedCompany.id);
+      const employees = await getEmployees(adminUserId, selectedCompany.id);
+      const hourlyRates = await getHourlyRates(adminUserId, selectedCompany.id);
       const defaultRate = hourlyRates.length > 0 ? hourlyRates : {
         baseRate: 15, // Default if no rates are set
         overtimeMultiplier: 150,
@@ -133,18 +133,18 @@ export default function PayrollProcessing() {
       let processedEmployeeCount = 0;
 
       // Clear previous calculations for this period before recalculating
-      const existingCalculations = await getPayrollCalculations(user.uid);
+      const existingCalculations = await getPayrollCalculations(adminUserId);
       // In a real app, you might want to delete these or mark them as superseded
       // For simplicity, we'll just overwrite/recreate
 
-      const company = await getCompany(selectedCompany.id, user.uid);
+      const company = await getCompany(selectedCompany.id, adminUserId);
       if (!company) {
         throw new Error('Company not found');
       }
 
       for (const employee of employees) {
         // Fetch timesheets for the specific employee within the payroll period
-        const employeeTimesheets = await getWeeklyTimesheets(user.uid, employee.id);
+        const employeeTimesheets = await getWeeklyTimesheets(adminUserId, employee.id);
         const approvedTimesheetsInPeriod = employeeTimesheets.filter(
           ts => ts.status === 'approved' &&
           ts.entries.some(entry => entry.date >= selectedPeriod.startDate && entry.date <= selectedPeriod.endDate)
@@ -173,16 +173,16 @@ export default function PayrollProcessing() {
         const existingCalc = existingCalculations.find(c => c.employeeId === employee.id);
         if (existingCalc) {
           // Update existing calculation
-          await updatePayrollPeriod(existingCalc.id!, user.uid, calculation); // Reusing updatePayrollPeriod for calculation update
+          await updatePayrollPeriod(existingCalc.id!, adminUserId, calculation); // Reusing updatePayrollPeriod for calculation update
           calculationId = existingCalc.id!;
         } else {
           // Create new calculation
-          calculationId = await createPayrollCalculation(user.uid, calculation);
+          calculationId = await createPayrollCalculation(adminUserId, calculation);
         }
 
         // Create payslip for this calculation
         calculation.id = calculationId;
-        await createPayslipFromCalculation(user.uid, calculation, employee, company);
+        await createPayslipFromCalculation(adminUserId, calculation, employee, company);
 
         totalGross += calculation.grossPay;
         totalNet += calculation.netPay;
@@ -191,7 +191,7 @@ export default function PayrollProcessing() {
       }
 
       // Update the payroll period summary
-      await updatePayrollPeriod(selectedPeriod.id!, user.uid, {
+      await updatePayrollPeriod(selectedPeriod.id!, adminUserId, {
         employeeCount: processedEmployeeCount,
         totalGross: totalGross,
         totalNet: totalNet,

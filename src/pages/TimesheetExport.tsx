@@ -67,7 +67,7 @@ interface ExportData {
 }
 
 const TimesheetExport: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [exportPeriods, setExportPeriods] = useState<ExportPeriod[]>([]);
@@ -80,7 +80,7 @@ const TimesheetExport: React.FC = () => {
   const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('excel');
 
   const loadExportPeriods = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -88,14 +88,14 @@ const TimesheetExport: React.FC = () => {
     try {
       setLoading(true);
       // TODO: Implement firebase service call
-      // const periodsData = await getExportPeriods(user.uid, selectedCompany.id);
+      // const periodsData = await getExportPeriods(adminUserId, selectedCompany.id);
       // setExportPeriods(periodsData);
       
       // Mock data for now
       const mockPeriods: ExportPeriod[] = [
         {
           id: '1',
-          userId: user.uid,
+          userId: adminUserId,
           companyId: selectedCompany.id,
           startDate: new Date('2024-01-01'),
           endDate: new Date('2024-01-31'),
@@ -104,7 +104,7 @@ const TimesheetExport: React.FC = () => {
           totalHours: 1920,
           totalAmount: 48000,
           exportedAt: new Date('2024-02-01'),
-          exportedBy: user.uid,
+          exportedBy: adminUserId,
           fileName: 'uren-export-januari-2024.xlsx',
           fileUrl: '/exports/uren-export-januari-2024.xlsx',
           notes: 'Export voor loonadministratie januari 2024',

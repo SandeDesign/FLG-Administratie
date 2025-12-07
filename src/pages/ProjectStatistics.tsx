@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 
 const ProjectStatistics: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

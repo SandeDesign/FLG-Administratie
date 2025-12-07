@@ -28,7 +28,7 @@ const getTaxReturns = async (userId: string, companyId: string): Promise<TaxRetu
 };
 
 const TaxReturns: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { companies: appCompanies, selectedCompany: appSelectedCompany } = useApp(); // Get companies from AppContext
   const { success, error: showError } = useToast();
   const [taxReturns, setTaxReturns] = useState<TaxReturn[]>([]);
@@ -36,7 +36,7 @@ const TaxReturns: React.FC = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   const loadData = useCallback(async () => {
-    if (!user) {
+    if (!user || !adminUserId || !adminUserId) {
       setLoading(false);
       return;
     }
@@ -48,7 +48,7 @@ const TaxReturns: React.FC = () => {
         const companyToSelect = appSelectedCompany || appCompanies;
         setSelectedCompanyId(companyToSelect.id);
         // Fetch tax returns for the selected company
-        const returns = await getTaxReturns(user.uid, companyToSelect.id);
+        const returns = await getTaxReturns(adminUserId, companyToSelect.id);
         setTaxReturns(returns);
       } else {
         setTaxReturns([]);
