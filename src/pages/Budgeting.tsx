@@ -116,7 +116,48 @@ const FREQUENCY_LABELS: Record<BudgetFrequency, string> = {
   yearly: 'per jaar',
 };
 
-type ViewTab = 'overview' | 'costs' | 'income' | 'projections';
+type ViewTab = 'overview' | 'costs' | 'income' | 'projections' | 'investment';
+
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  bio: string;
+}
+
+interface UseOfFundsItem {
+  id: string;
+  category: string;
+  amount: number;
+  description: string;
+}
+
+interface RiskItem {
+  id: string;
+  risk: string;
+  mitigation: string;
+}
+
+interface InvestmentPitch {
+  companyId: string;
+  problemStatement: string;
+  solutionStatement: string;
+  elevatorPitch: string;
+  differentiator: string;
+  whyNow: string;
+  targetMarket: string;
+  tam: number;
+  sam: number;
+  som: number;
+  team: TeamMember[];
+  useOfFunds: UseOfFundsItem[];
+  askingAmount: number;
+  askingCurrency: string;
+  runway: number;
+  risks: RiskItem[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 interface BudgetFormData {
   type: BudgetType;
@@ -169,6 +210,26 @@ const Budgeting: React.FC = () => {
   const [projectionYears, setProjectionYears] = useState(3);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  // Investment Pitch State
+  const [investmentPitch, setInvestmentPitch] = useState<InvestmentPitch>({
+    companyId: selectedCompany?.id || '',
+    problemStatement: '',
+    solutionStatement: '',
+    elevatorPitch: '',
+    differentiator: '',
+    whyNow: '',
+    targetMarket: '',
+    tam: 0,
+    sam: 0,
+    som: 0,
+    team: [],
+    useOfFunds: [],
+    askingAmount: 0,
+    askingCurrency: 'EUR',
+    runway: 12,
+    risks: [],
+  });
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
