@@ -1273,15 +1273,23 @@ export const getUserSettings = async (userId: string): Promise<UserSettings | nu
 
 export const saveUserSettings = async (userId: string, settings: Partial<UserSettings>): Promise<void> => {
   const existingSettings = await getUserSettings(userId);
-  
-  const settingsData = convertToTimestamps({
+
+  // Merge met bestaande settings om nested objects correct te behouden
+  const mergedSettings = existingSettings ? {
+    ...existingSettings,
+    ...settings,
+  } : {
     userId,
     ...settings,
+  };
+
+  const settingsData = convertToTimestamps({
+    ...mergedSettings,
     updatedAt: new Date()
   });
-  
+
   const cleanedData = removeUndefinedValues(settingsData);
-  
+
   if (existingSettings) {
     // Update
     const docRef = doc(db, 'userSettings', existingSettings.id);

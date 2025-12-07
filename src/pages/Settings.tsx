@@ -66,13 +66,16 @@ const Settings: React.FC = () => {
 
     try {
       const settings = await getUserSettings(user.uid);
+      console.log('Loading settings:', settings);
       setSelectedDefaultCompanyId(settings?.defaultCompanyId || '');
       setCoAdmins(settings?.coAdminEmails || []);
 
       // Load favorites voor het geselecteerde bedrijf
       if (selectedCompany?.id && settings?.favoritePages) {
+        console.log(`Loading favorites for company ${selectedCompany.name} (${selectedCompany.id}):`, settings.favoritePages[selectedCompany.id]);
         setFavoritePages(settings.favoritePages[selectedCompany.id] || []);
       } else {
+        console.log('No company selected or no favorites found, resetting to empty');
         setFavoritePages([]);
       }
     } catch (error) {
@@ -324,21 +327,32 @@ const Settings: React.FC = () => {
   };
 
   const handleSaveFavorites = async () => {
-    if (!user || !selectedCompany) return;
+    if (!user || !selectedCompany) {
+      console.log('Cannot save: missing user or company', { user: !!user, selectedCompany: !!selectedCompany });
+      return;
+    }
 
     try {
       setSaving(true);
+      console.log('Saving favorites for company:', selectedCompany.name, selectedCompany.id);
+      console.log('Current favorite pages:', favoritePages);
 
       // Haal huidige settings op
       const currentSettings = await getUserSettings(user.uid);
+      console.log('Current settings from DB:', currentSettings);
+
       const allFavorites = currentSettings?.favoritePages || {};
+      console.log('All existing favorites:', allFavorites);
 
       // Update favorieten voor dit specifieke bedrijf
       allFavorites[selectedCompany.id] = favoritePages;
+      console.log('Updated favorites object:', allFavorites);
 
       await saveUserSettings(user.uid, {
         favoritePages: allFavorites
       });
+
+      console.log('Favorites saved successfully!');
       success('Favorieten opgeslagen', `Favorieten voor ${selectedCompany.name} zijn bijgewerkt`);
     } catch (error) {
       console.error('Error saving favorites:', error);
@@ -702,7 +716,7 @@ const Settings: React.FC = () => {
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-                  {ALL_NAVIGATION_ITEMS
+                  {selectedCompany && ALL_NAVIGATION_ITEMS
                     .filter(item => item.roles.includes('admin') && item.name !== 'Dashboard')
                     .map((item) => {
                       const Icon = item.icon;
@@ -753,7 +767,7 @@ const Settings: React.FC = () => {
                 <Button
                   variant="primary"
                   onClick={handleSaveFavorites}
-                  disabled={saving}
+                  disabled={saving || !selectedCompany}
                   loading={saving}
                 >
                   <Star className="h-4 w-4 mr-2" />
