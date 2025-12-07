@@ -450,8 +450,8 @@ const Budgeting: React.FC = () => {
     }).format(amount);
   };
 
-  // Generate projection data based on actual invoices
-  const generateProjections = () => {
+  // Generate REALITY projections based on actual invoices only
+  const generateRealityProjections = () => {
     const projections = [];
     const now = new Date();
 
@@ -464,57 +464,53 @@ const Budgeting: React.FC = () => {
         return invDate.getFullYear() === projYear && inv.status !== 'cancelled';
       });
 
-      const yearCosts = incomingInvoices.filter(inv => {
+      const yearCostsInvoices = incomingInvoices.filter(inv => {
         const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
         return invDate.getFullYear() === projYear;
       });
 
-      // For current year and future, use actual data or budget
-      let yearIncome: number;
-      let yearCostAmount: number;
-
-      if (projYear === currentYear && yearInvoices.length > 0) {
-        // Current year: actual data + projection for remaining months
-        const actualIncome = yearInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-        const months = yearInvoices[0].invoiceDate instanceof Date 
-          ? yearInvoices[0].invoiceDate.getMonth() + 1
-          : new Date(yearInvoices[0].invoiceDate).getMonth() + 1;
-        yearIncome = actualIncome + (monthlyIncome * (12 - months));
-      } else if (projYear === currentYear) {
-        // Current year no invoices yet
-        yearIncome = monthlyIncome * 12;
-      } else {
-        // Future years: use budget with growth
-        yearIncome = activeIncomeItems.reduce((sum, item) => {
-          const baseMonthly = getMonthlyAmount(item);
-          const growth = item.growthRate || 0;
-          const yearlyAmount = baseMonthly * 12 * Math.pow(1 + growth / 100, year);
-          const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
-          return sum + (yearlyAmount * weight);
-        }, 0);
-      }
-
-      if (projYear === currentYear && yearCosts.length > 0) {
-        const actualCosts = yearCosts.reduce((sum, inv) => sum + (inv.amount || 0), 0);
-        const months = yearCosts[0].invoiceDate instanceof Date 
-          ? yearCosts[0].invoiceDate.getMonth() + 1
-          : new Date(yearCosts[0].invoiceDate).getMonth() + 1;
-        yearCostAmount = actualCosts + (monthlyCosts * (12 - months));
-      } else if (projYear === currentYear) {
-        yearCostAmount = monthlyCosts * 12;
-      } else {
-        yearCostAmount = activeCostItems.reduce((sum, item) => {
-          const baseMonthly = getMonthlyAmount(item);
-          const growth = item.growthRate || 0;
-          return sum + (baseMonthly * 12 * Math.pow(1 + growth / 100, year));
-        }, 0);
-      }
+      const yearIncome = yearInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+      const yearCosts = yearCostsInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
       projections.push({
         year: projYear,
         income: yearIncome,
-        costs: yearCostAmount,
-        profit: yearIncome - yearCostAmount,
+        costs: yearCosts,
+        profit: yearIncome - yearCosts,
+      });
+    }
+
+    return projections;
+  };
+
+  // Generate BUDGET projections based on budget items only
+  const generateBudgetProjections = () => {
+    const projections = [];
+    const now = new Date();
+
+    for (let year = 0; year < projectionYears; year++) {
+      const projYear = now.getFullYear() + year;
+      
+      // Budget-based calculations
+      let yearIncome = activeIncomeItems.reduce((sum, item) => {
+        const baseMonthly = getMonthlyAmount(item);
+        const growth = item.growthRate || 0;
+        const yearlyAmount = baseMonthly * 12 * Math.pow(1 + growth / 100, year);
+        const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
+        return sum + (yearlyAmount * weight);
+      }, 0);
+
+      let yearCosts = activeCostItems.reduce((sum, item) => {
+        const baseMonthly = getMonthlyAmount(item);
+        const growth = item.growthRate || 0;
+        return sum + (baseMonthly * 12 * Math.pow(1 + growth / 100, year));
+      }, 0);
+
+      projections.push({
+        year: projYear,
+        income: yearIncome,
+        costs: yearCosts,
+        profit: yearIncome - yearCosts,
       });
     }
 
@@ -523,7 +519,8 @@ const Budgeting: React.FC = () => {
 
   // Export to HTML file (downloadable)
   const handleExport = () => {
-    const projections = generateProjections();
+    const realityProjections = generateRealityProjections();
+    const budgetProjections = generateBudgetProjections();
     const companyName = selectedCompany?.name || 'Bedrijf';
     const dateStr = new Date().toLocaleDateString('nl-NL');
     const fileName = `Financiele-Projectie-${companyName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.html`;
@@ -641,9 +638,10 @@ const Budgeting: React.FC = () => {
   </div>
 
   <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 16px; border-radius: 12px; margin-bottom: 24px; border-left: 4px solid #f59e0b;">
-    <h3 style="font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 8px;">📊 Invoice-gebaseerde Projectie</h3>
+    <h3 style="font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 8px;">📊 Realiteit vs Prognose</h3>
     <p style="font-size: 14px; color: #78350f; line-height: 1.5;">
-      Gebaseerd op werkelijke in- en uitgaande facturen. Inkomsten = uitgaande facturen. Kosten = inkomende facturen.
+      <strong>REALITEIT:</strong> Gebaseerd op werkelijke in- en uitgaande facturen (Inkomsten = uitgaande facturen, Kosten = inkomende facturen).<br>
+      <strong>PROGNOSE:</strong> Gebaseerd op budget items met gewogen zekerheid en groeipercentages.
     </p>
   </div>
 
@@ -685,7 +683,8 @@ const Budgeting: React.FC = () => {
   </div>
 
   <div class="section">
-    <h2>Meerjarenprojectie</h2>
+    <h2>📊 Realiteit - Meerjarenprojectie (Werkelijke Facturen)</h2>
+    <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Gebaseerd op werkelijke in- en uitgaande facturen</p>
     <table>
       <thead>
         <tr>
@@ -697,7 +696,34 @@ const Budgeting: React.FC = () => {
         </tr>
       </thead>
       <tbody>
-        ${projections.map(p => `
+        ${realityProjections.map(p => `
+          <tr class="projection-row">
+            <td><strong>${p.year}</strong></td>
+            <td class="positive">${formatCurrency(p.income)}</td>
+            <td class="negative">${formatCurrency(p.costs)}</td>
+            <td class="${p.profit >= 0 ? 'positive' : 'negative'}">${formatCurrency(p.profit)}</td>
+            <td class="${p.profit >= 0 ? 'positive' : 'negative'}">${p.income > 0 ? ((p.profit / p.income) * 100).toFixed(1) : 0}%</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>📈 Prognose - Meerjarenprojectie (Budget Items)</h2>
+    <p style="font-size: 13px; color: #666; margin-bottom: 12px;">Gebaseerd op budget items met gewogen zekerheid en groeipercentages</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Jaar</th>
+          <th>Inkomsten</th>
+          <th>Kosten</th>
+          <th>Resultaat</th>
+          <th>Marge</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${budgetProjections.map(p => `
           <tr class="projection-row">
             <td><strong>${p.year}</strong></td>
             <td class="positive">${formatCurrency(p.income)}</td>
@@ -1332,95 +1358,164 @@ const Budgeting: React.FC = () => {
             </div>
           </Card>
 
-          {/* Invoice-based Note */}
+          {/* Split view note */}
           <Card className="p-4 bg-blue-50 border-blue-200">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-blue-800">Gebaseerd op Werkelijke Facturen</h4>
+                <h4 className="font-medium text-blue-800">Realiteit vs Prognose</h4>
                 <p className="text-sm text-blue-700 mt-1">
-                  <strong>Inkomsten</strong> = Uitgaande facturen (facturen naar klanten).
-                  <strong className="ml-2">Kosten</strong> = Inkomende facturen (facturen van leveranciers).
-                  Dit geeft een realistisch beeld van je werkelijke cash flow.
+                  <strong>REALITEIT:</strong> Werkelijke facturen (Inkomsten = uitgaande, Kosten = inkomende)<br/>
+                  <strong>PROGNOSE:</strong> Budget items met zekerheid en groeipercentages
                 </p>
               </div>
             </div>
           </Card>
 
-          {/* Projection Table */}
-          <Card className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Jaar</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Inkomsten</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Kosten</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Resultaat</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Marge</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {projections.map((proj, idx) => (
-                    <tr key={proj.year} className={idx === 0 ? 'bg-primary-50' : ''}>
-                      <td className="px-4 py-4">
-                        <span className="font-semibold text-gray-900">{proj.year}</span>
-                        {idx === 0 && (
-                          <span className="ml-2 px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded">
-                            Huidig
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        <span className="font-medium text-emerald-600">{formatCurrency(proj.income)}</span>
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        <span className="font-medium text-red-600">{formatCurrency(proj.costs)}</span>
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        <span className={`font-bold ${proj.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                          {proj.profit >= 0 ? '+' : ''}{formatCurrency(proj.profit)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-right">
-                        <span className={`font-medium ${proj.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                          {proj.income > 0 ? ((proj.profit / proj.income) * 100).toFixed(1) : 0}%
-                        </span>
-                      </td>
+          {/* REALITY PROJECTIONS */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Realiteit - Meerjarenprojectie</h3>
+            <Card className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-emerald-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-emerald-700 uppercase">Jaar</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-emerald-700 uppercase">Inkomsten</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-red-700 uppercase">Kosten</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-primary-700 uppercase">Resultaat</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Marge</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {generateRealityProjections().map((proj, idx) => (
+                      <tr key={proj.year} className={idx === 0 ? 'bg-emerald-50' : ''}>
+                        <td className="px-4 py-4">
+                          <span className="font-semibold text-gray-900">{proj.year}</span>
+                          {idx === 0 && (
+                            <span className="ml-2 px-2 py-0.5 text-xs bg-emerald-100 text-emerald-700 rounded">
+                              Actueel
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <span className="font-medium text-emerald-600">{formatCurrency(proj.income)}</span>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <span className="font-medium text-red-600">{formatCurrency(proj.costs)}</span>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <span className={`font-bold ${proj.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {proj.profit >= 0 ? '+' : ''}{formatCurrency(proj.profit)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <span className={`font-medium ${proj.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {proj.income > 0 ? ((proj.profit / proj.income) * 100).toFixed(1) : 0}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+            <p className="text-xs text-gray-500 mt-2">Gebaseerd op werkelijke uitgaande facturen (inkomsten) en inkomende facturen (kosten)</p>
+          </div>
 
-          {/* Key Metrics for Investors */}
-          <Card className="p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Kerngetallen</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(yearlyIncome)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">ARR (Inkomsten)</p>
+          {/* BUDGET PROJECTIONS */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Prognose - Meerjarenprojectie</h3>
+            <Card className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-primary-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-primary-700 uppercase">Jaar</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-emerald-700 uppercase">Inkomsten</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-red-700 uppercase">Kosten</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-primary-700 uppercase">Resultaat</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Marge</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {generateBudgetProjections().map((proj, idx) => (
+                      <tr key={proj.year} className={idx === 0 ? 'bg-primary-50' : ''}>
+                        <td className="px-4 py-4">
+                          <span className="font-semibold text-gray-900">{proj.year}</span>
+                          {idx === 0 && (
+                            <span className="ml-2 px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded">
+                              Huidig
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <span className="font-medium text-emerald-600">{formatCurrency(proj.income)}</span>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <span className="font-medium text-red-600">{formatCurrency(proj.costs)}</span>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <span className={`font-bold ${proj.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {proj.profit >= 0 ? '+' : ''}{formatCurrency(proj.profit)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <span className={`font-medium ${proj.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {proj.income > 0 ? ((proj.profit / proj.income) * 100).toFixed(1) : 0}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(monthlyIncome)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">MRR</p>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className={`text-2xl font-bold ${yearlyProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {yearlyIncome > 0 ? ((yearlyProfit / yearlyIncome) * 100).toFixed(1) : 0}%
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Winstmarge</p>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">
-                  {outgoingInvoices.length}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Uitgaande Facturen</p>
+            </Card>
+            <p className="text-xs text-gray-500 mt-2">Gebaseerd op budget items met gewogen zekerheid en groeipercentages</p>
+          </div>
+
+          {/* Comparison Table */}
+          <Card className="p-6 bg-gray-50">
+            <h3 className="font-semibold text-gray-900 mb-4">Vergelijking Huidige Jaar</h3>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Reality */}
+                <div className="p-4 border-2 border-emerald-200 rounded-lg bg-emerald-50">
+                  <h4 className="font-semibold text-emerald-900 mb-3">📊 Realiteit</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Inkomsten:</span>
+                      <span className="font-bold text-emerald-600">{formatCurrency(generateRealityProjections()[0]?.income || 0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Kosten:</span>
+                      <span className="font-bold text-red-600">{formatCurrency(generateRealityProjections()[0]?.costs || 0)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-emerald-200">
+                      <span className="text-gray-600 font-medium">Resultaat:</span>
+                      <span className="font-bold text-emerald-600">{formatCurrency(generateRealityProjections()[0]?.profit || 0)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Budget */}
+                <div className="p-4 border-2 border-primary-200 rounded-lg bg-primary-50">
+                  <h4 className="font-semibold text-primary-900 mb-3">📈 Prognose</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Inkomsten:</span>
+                      <span className="font-bold text-emerald-600">{formatCurrency(generateBudgetProjections()[0]?.income || 0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Kosten:</span>
+                      <span className="font-bold text-red-600">{formatCurrency(generateBudgetProjections()[0]?.costs || 0)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-primary-200">
+                      <span className="text-gray-600 font-medium">Resultaat:</span>
+                      <span className="font-bold text-primary-600">{formatCurrency(generateBudgetProjections()[0]?.profit || 0)}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
