@@ -14,6 +14,7 @@ import AdminLeaveApprovals from './pages/AdminLeaveApprovals';
 import AdminAbsenceManagement from './pages/AdminAbsenceManagement';
 import InvestmentPitch from './pages/InvestmentPitch';
 import ProjectProduction from './pages/ProjectProduction';
+import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibilitySettings';
 import ProjectStatistics from './pages/ProjectStatistics';
 // ✅ NEW ADMIN PAGES
 import AdminDashboard from './pages/AdminDashboard';
