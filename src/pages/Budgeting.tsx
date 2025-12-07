@@ -769,8 +769,6 @@ const Budgeting: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  const projections = generateProjections();
-
   return (
     <div className="space-y-6 pb-20" ref={exportRef}>
       {/* Header */}
