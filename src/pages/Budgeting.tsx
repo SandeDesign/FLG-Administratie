@@ -116,7 +116,7 @@ const FREQUENCY_LABELS: Record<BudgetFrequency, string> = {
   yearly: 'per jaar',
 };
 
-type ViewTab = 'overview' | 'costs' | 'income' | 'projections' | 'investment';
+type ViewTab = 'overview' | 'costs' | 'income' | 'projections';
 
 interface TeamMember {
   id: string;
@@ -212,24 +212,6 @@ const Budgeting: React.FC = () => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Investment Pitch State
-  const [investmentPitch, setInvestmentPitch] = useState<InvestmentPitch>({
-    companyId: selectedCompany?.id || '',
-    problemStatement: '',
-    solutionStatement: '',
-    elevatorPitch: '',
-    differentiator: '',
-    whyNow: '',
-    targetMarket: '',
-    tam: 0,
-    sam: 0,
-    som: 0,
-    team: [],
-    useOfFunds: [],
-    askingAmount: 0,
-    askingCurrency: 'EUR',
-    runway: 12,
-    risks: [],
-  });
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
@@ -513,99 +495,6 @@ const Budgeting: React.FC = () => {
 
   // Generate REALITY projections based on actual invoices only
   // Generate Investment PDF
-  const generateInvestmentPDF = () => {
-    const totalUoF = investmentPitch.useOfFunds.reduce((sum, item) => sum + item.amount, 0);
-    
-    const html = `<!DOCTYPE html>
-<html lang="nl">
-<head>
-  <meta charset="UTF-8">
-  <title>Investment Pitch - ${selectedCompany?.name}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1f2937; }
-    .page { page-break-after: always; padding: 40px; background: #f9fafb; }
-    .cover { background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%); color: white; padding: 60px 40px; min-height: 100vh; }
-    .cover h1 { font-size: 48px; margin-bottom: 16px; }
-    .cover p { font-size: 18px; color: #e0e7ff; margin-bottom: 60px; }
-    .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; }
-    .metric-value { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
-    .metric-label { font-size: 14px; color: #c7d2fe; }
-    section { margin-bottom: 48px; }
-    h2 { font-size: 28px; font-weight: 700; margin-bottom: 24px; color: #1e3a8a; border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; }
-    .box { background: white; padding: 24px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #e5e7eb; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-    th { background: #f3f4f6; font-weight: 600; }
-    .footer { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
-  </style>
-</head>
-<body>
-<div class="cover">
-  <h1>${selectedCompany?.name}</h1>
-  <p>${investmentPitch.elevatorPitch}</p>
-  <div class="metrics">
-    <div><div class="metric-value">${formatCurrency(yearlyIncome)}</div><div class="metric-label">Huidige ARR</div></div>
-    <div><div class="metric-value">${((yearlyProfit / yearlyIncome) * 100).toFixed(1)}%</div><div class="metric-label">Marge</div></div>
-    <div><div class="metric-value">${formatCurrency(investmentPitch.askingAmount)}</div><div class="metric-label">We zoeken</div></div>
-    <div><div class="metric-value">${investmentPitch.runway}</div><div class="metric-label">Maanden</div></div>
-  </div>
-  <div class="footer" style="margin-top: 120px;">${new Date().toLocaleDateString('nl-NL')}</div>
-</div>
-
-<div class="page">
-  <section>
-    <h2>🎯 Het Probleem</h2>
-    <div class="box">${investmentPitch.problemStatement}</div>
-  </section>
-  <section>
-    <h2>💡 De Oplossing</h2>
-    <div class="box">${investmentPitch.solutionStatement}</div>
-    <h3>Differentiator</h3>
-    <div class="box">${investmentPitch.differentiator}</div>
-  </section>
-</div>
-
-<div class="page">
-  <section>
-    <h2>📊 Traction & Financials</h2>
-    <table>
-      <tr><th>Metriek</th><th>Waarde</th></tr>
-      <tr><td>ARR</td><td>${formatCurrency(yearlyIncome)}</td></tr>
-      <tr><td>MRR</td><td>${formatCurrency(yearlyIncome / 12)}</td></tr>
-      <tr><td>Marge</td><td>${((yearlyProfit / yearlyIncome) * 100).toFixed(1)}%</td></tr>
-    </table>
-  </section>
-  <section>
-    <h2>💸 Use of Funds</h2>
-    <table>
-      <tr><th>Categorie</th><th>Bedrag</th><th>%</th></tr>
-      ${investmentPitch.useOfFunds.map(item => `<tr><td>${item.category}</td><td>${formatCurrency(item.amount)}</td><td>${((item.amount / totalUoF) * 100).toFixed(1)}%</td></tr>`).join('')}
-    </table>
-  </section>
-</div>
-
-<div class="page">
-  <section>
-    <h2>👥 Team</h2>
-    ${investmentPitch.team.map(m => `<div class="box"><strong>${m.name}</strong><br/><em>${m.role}</em><br/>${m.bio}</div>`).join('')}
-  </section>
-  <section>
-    <h2>⚠️ Risks & Mitigations</h2>
-    ${investmentPitch.risks.map(r => `<div class="box"><strong>Risk:</strong> ${r.risk}<br/><strong>Mitigation:</strong> ${r.mitigation}</div>`).join('')}
-  </section>
-</div>
-</body>
-</html>`;
-
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Pitch-${selectedCompany?.name?.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.html`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
 
   const generateRealityProjections = () => {
     const projections = [];
@@ -935,7 +824,9 @@ const Budgeting: React.FC = () => {
             Financieel overzicht voor {selectedCompany.name}
           </p>
         </div>
-        <div className="flex gap-2">
+
+        {/* Desktop Buttons (md and up) */}
+        <div className="hidden md:flex gap-2">
           <Button
             variant="secondary"
             onClick={handleRefresh}
@@ -945,14 +836,59 @@ const Budgeting: React.FC = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             Ververs
           </Button>
-          <Button variant="secondary" onClick={handleExport}>
+          <Button
+            variant="secondary"
+            onClick={() => window.location.href = '/investment-pitch'}
+            size="sm"
+            className="text-blue-600 hover:bg-blue-50"
+          >
+            <Briefcase className="h-4 w-4 mr-2" />
+            Pitch Deck
+          </Button>
+          <Button variant="secondary" onClick={handleExport} size="sm">
             <Download className="h-4 w-4 mr-2" />
             Exporteer
           </Button>
-          <Button onClick={() => handleOpenModal(undefined, activeTab === 'income' ? 'income' : 'cost')}>
+          <Button 
+            onClick={() => handleOpenModal(undefined, activeTab === 'income' ? 'income' : 'cost')}
+            size="sm"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Nieuw Item
           </Button>
+        </div>
+
+        {/* Mobile Buttons (below md) - Icons only */}
+        <div className="flex md:hidden gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            title="Ververs"
+          >
+            <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => window.location.href = '/investment-pitch'}
+            className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Pitch Deck"
+          >
+            <Briefcase className="h-5 w-5 text-blue-600" />
+          </button>
+          <button
+            onClick={handleExport}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Exporteer"
+          >
+            <Download className="h-5 w-5 text-gray-600" />
+          </button>
+          <button
+            onClick={() => handleOpenModal(undefined, activeTab === 'income' ? 'income' : 'cost')}
+            className="p-2 hover:bg-primary-50 rounded-lg transition-colors"
+            title="Nieuw Item"
+          >
+            <Plus className="h-5 w-5 text-primary-600" />
+          </button>
         </div>
       </div>
 
@@ -963,7 +899,6 @@ const Budgeting: React.FC = () => {
           { id: 'costs' as ViewTab, label: `Kosten (${costItems.length})`, icon: TrendingDown },
           { id: 'income' as ViewTab, label: `Inkomsten (${incomeItems.length})`, icon: TrendingUp },
           { id: 'projections' as ViewTab, label: 'Projecties', icon: BarChart3 },
-          { id: 'investment' as ViewTab, label: '💼 Pitch Deck', icon: Briefcase },
         ].map(tab => (
           <button
             key={tab.id}
@@ -1678,412 +1613,6 @@ const Budgeting: React.FC = () => {
       )}
 
       {/* Investment Pitch Tab */}
-      {activeTab === 'investment' && (
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">💼 Investment Pitch Deck</h2>
-              <p className="text-sm text-gray-600 mt-1">Maak een professionele pitchdeck voor investeerders</p>
-            </div>
-            <Button onClick={() => generateInvestmentPDF()} className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              PDF Download
-            </Button>
-          </div>
-
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* LEFT: Input Form */}
-            <div className="space-y-6">
-              {/* Problem & Solution */}
-              <Card className="p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">🎯 Problem & Solution</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Problem Statement *</label>
-                    <textarea
-                      value={investmentPitch.problemStatement}
-                      onChange={(e) => setInvestmentPitch({ ...investmentPitch, problemStatement: e.target.value })}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                      placeholder="Wat is het probleem dat je oplost? Bv: 'Nederlandse HR teams verliezen uren aan handmatige verwerking van..'"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Solution Statement *</label>
-                    <textarea
-                      value={investmentPitch.solutionStatement}
-                      onChange={(e) => setInvestmentPitch({ ...investmentPitch, solutionStatement: e.target.value })}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                      placeholder="Hoe los je het op? Wat maakt je uniek?"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Differentiator</label>
-                    <textarea
-                      value={investmentPitch.differentiator}
-                      onChange={(e) => setInvestmentPitch({ ...investmentPitch, differentiator: e.target.value })}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                      placeholder="Waarom nu en niet de concurrent? Wat zijn jouw unique selling points?"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Why Now?</label>
-                    <textarea
-                      value={investmentPitch.whyNow}
-                      onChange={(e) => setInvestmentPitch({ ...investmentPitch, whyNow: e.target.value })}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                      placeholder="Waarom is dit het perfecte moment? Markt trends? Regulatory changes?"
-                    />
-                  </div>
-                </div>
-              </Card>
-
-              {/* Elevator Pitch */}
-              <Card className="p-6 bg-blue-50 border-blue-200">
-                <h3 className="font-semibold text-gray-900 mb-4">⚡ Elevator Pitch (30 sec)</h3>
-                <textarea
-                  value={investmentPitch.elevatorPitch}
-                  onChange={(e) => setInvestmentPitch({ ...investmentPitch, elevatorPitch: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                  placeholder="[Bedrijf] helpt [target] met [problem] door [solution]. We hebben al [proof]."
-                  maxLength={280}
-                />
-                <p className="text-xs text-gray-600 mt-2">{investmentPitch.elevatorPitch.length}/280 karakters</p>
-              </Card>
-
-              {/* Market Opportunity */}
-              <Card className="p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">🌍 Market Opportunity</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Target Market</label>
-                    <input
-                      type="text"
-                      value={investmentPitch.targetMarket}
-                      onChange={(e) => setInvestmentPitch({ ...investmentPitch, targetMarket: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                      placeholder="Bv: Nederlandse HR teams in production bedrijven"
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">TAM (€)</label>
-                      <input
-                        type="number"
-                        value={investmentPitch.tam}
-                        onChange={(e) => setInvestmentPitch({ ...investmentPitch, tam: Number(e.target.value) })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                        placeholder="0"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Total Addressable</p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">SAM (€)</label>
-                      <input
-                        type="number"
-                        value={investmentPitch.sam}
-                        onChange={(e) => setInvestmentPitch({ ...investmentPitch, sam: Number(e.target.value) })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                        placeholder="0"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Serviceable</p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">SOM (€)</label>
-                      <input
-                        type="number"
-                        value={investmentPitch.som}
-                        onChange={(e) => setInvestmentPitch({ ...investmentPitch, som: Number(e.target.value) })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                        placeholder="0"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Obtainable</p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Use of Funds */}
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">💸 Use of Funds</h3>
-                  <button
-                    onClick={() => setInvestmentPitch({
-                      ...investmentPitch,
-                      useOfFunds: [...investmentPitch.useOfFunds, { id: Date.now().toString(), category: '', amount: 0, description: '' }]
-                    })}
-                    className="text-xs text-primary-600 hover:text-primary-700"
-                  >
-                    + Toevoegen
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {investmentPitch.useOfFunds.map((item, idx) => (
-                    <div key={item.id} className="flex gap-2">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={item.category}
-                          onChange={(e) => {
-                            const updated = [...investmentPitch.useOfFunds];
-                            updated[idx].category = e.target.value;
-                            setInvestmentPitch({ ...investmentPitch, useOfFunds: updated });
-                          }}
-                          placeholder="Bv: Sales & partnerships"
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                        />
-                      </div>
-                      <input
-                        type="number"
-                        value={item.amount}
-                        onChange={(e) => {
-                          const updated = [...investmentPitch.useOfFunds];
-                          updated[idx].amount = Number(e.target.value);
-                          setInvestmentPitch({ ...investmentPitch, useOfFunds: updated });
-                        }}
-                        placeholder="€"
-                        className="w-20 px-2 py-1 text-xs border border-gray-300 rounded"
-                      />
-                      <button
-                        onClick={() => {
-                          const updated = investmentPitch.useOfFunds.filter((_, i) => i !== idx);
-                          setInvestmentPitch({ ...investmentPitch, useOfFunds: updated });
-                        }}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                {investmentPitch.useOfFunds.length === 0 && (
-                  <p className="text-xs text-gray-500 italic">Geen items. Klik "+ Toevoegen" om te beginnen.</p>
-                )}
-              </Card>
-
-              {/* Investment Ask */}
-              <Card className="p-6 bg-green-50 border-green-200">
-                <h3 className="font-semibold text-gray-900 mb-4">🎯 Investment Ask</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
-                      <input
-                        type="number"
-                        value={investmentPitch.askingAmount}
-                        onChange={(e) => setInvestmentPitch({ ...investmentPitch, askingAmount: Number(e.target.value) })}
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Runway (months)</label>
-                    <input
-                      type="number"
-                      value={investmentPitch.runway}
-                      onChange={(e) => setInvestmentPitch({ ...investmentPitch, runway: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                      placeholder="12"
-                    />
-                  </div>
-                </div>
-              </Card>
-
-              {/* Team */}
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">👥 Team</h3>
-                  <button
-                    onClick={() => setInvestmentPitch({
-                      ...investmentPitch,
-                      team: [...investmentPitch.team, { id: Date.now().toString(), name: '', role: '', bio: '' }]
-                    })}
-                    className="text-xs text-primary-600 hover:text-primary-700"
-                  >
-                    + Persoon
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {investmentPitch.team.map((member, idx) => (
-                    <div key={member.id} className="p-3 bg-gray-50 rounded-lg space-y-2">
-                      <div className="flex gap-2 items-start">
-                        <div className="flex-1">
-                          <input
-                            type="text"
-                            value={member.name}
-                            onChange={(e) => {
-                              const updated = [...investmentPitch.team];
-                              updated[idx].name = e.target.value;
-                              setInvestmentPitch({ ...investmentPitch, team: updated });
-                            }}
-                            placeholder="Naam"
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                          />
-                        </div>
-                        <input
-                          type="text"
-                          value={member.role}
-                          onChange={(e) => {
-                            const updated = [...investmentPitch.team];
-                            updated[idx].role = e.target.value;
-                            setInvestmentPitch({ ...investmentPitch, team: updated });
-                          }}
-                          placeholder="Rol"
-                          className="w-32 px-2 py-1 text-xs border border-gray-300 rounded"
-                        />
-                        <button
-                          onClick={() => {
-                            const updated = investmentPitch.team.filter((_, i) => i !== idx);
-                            setInvestmentPitch({ ...investmentPitch, team: updated });
-                          }}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <textarea
-                        value={member.bio}
-                        onChange={(e) => {
-                          const updated = [...investmentPitch.team];
-                          updated[idx].bio = e.target.value;
-                          setInvestmentPitch({ ...investmentPitch, team: updated });
-                        }}
-                        placeholder="Bio (10 sec pitch)"
-                        rows={2}
-                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              {/* Risks */}
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">⚠️ Risks & Mitigations</h3>
-                  <button
-                    onClick={() => setInvestmentPitch({
-                      ...investmentPitch,
-                      risks: [...investmentPitch.risks, { id: Date.now().toString(), risk: '', mitigation: '' }]
-                    })}
-                    className="text-xs text-primary-600 hover:text-primary-700"
-                  >
-                    + Risk
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {investmentPitch.risks.map((item, idx) => (
-                    <div key={item.id} className="space-y-1 p-2 bg-red-50 rounded">
-                      <input
-                        type="text"
-                        value={item.risk}
-                        onChange={(e) => {
-                          const updated = [...investmentPitch.risks];
-                          updated[idx].risk = e.target.value;
-                          setInvestmentPitch({ ...investmentPitch, risks: updated });
-                        }}
-                        placeholder="Wat kan misgaan?"
-                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                      />
-                      <input
-                        type="text"
-                        value={item.mitigation}
-                        onChange={(e) => {
-                          const updated = [...investmentPitch.risks];
-                          updated[idx].mitigation = e.target.value;
-                          setInvestmentPitch({ ...investmentPitch, risks: updated });
-                        }}
-                        placeholder="Hoe gaan we dit voorkomen?"
-                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
-                      />
-                      <button
-                        onClick={() => {
-                          const updated = investmentPitch.risks.filter((_, i) => i !== idx);
-                          setInvestmentPitch({ ...investmentPitch, risks: updated });
-                        }}
-                        className="text-xs text-red-600 hover:text-red-700"
-                      >
-                        Verwijderen
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-
-            {/* RIGHT: Preview */}
-            <div className="sticky top-20 h-fit">
-              <Card className="p-8 bg-gradient-to-br from-primary-900 to-indigo-900 text-white rounded-lg overflow-hidden">
-                <div className="space-y-6">
-                  <div>
-                    <p className="text-xs uppercase tracking-widest text-primary-200 mb-2">Executive Summary</p>
-                    <h1 className="text-3xl font-bold mb-2">{selectedCompany?.name}</h1>
-                    <p className="text-sm text-primary-200">{investmentPitch.elevatorPitch}</p>
-                  </div>
-
-                  <div className="border-t border-primary-700 pt-4">
-                    <p className="text-xs uppercase tracking-widest text-primary-200 mb-3">Current Traction</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <p className="text-2xl font-bold">{formatCurrency(yearlyIncome)}</p>
-                        <p className="text-xs text-primary-200">ARR</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">{((yearlyProfit / yearlyIncome) * 100).toFixed(1)}%</p>
-                        <p className="text-xs text-primary-200">Marge</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-primary-700 pt-4">
-                    <p className="text-xs uppercase tracking-widest text-primary-200 mb-3">The Ask</p>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-4xl font-bold">{formatCurrency(investmentPitch.askingAmount)}</p>
-                      <p className="text-xs text-primary-200">({investmentPitch.runway} maanden runway)</p>
-                    </div>
-                  </div>
-
-                  {investmentPitch.useOfFunds.length > 0 && (
-                    <div className="border-t border-primary-700 pt-4">
-                      <p className="text-xs uppercase tracking-widest text-primary-200 mb-3">Use of Funds</p>
-                      <div className="space-y-1">
-                        {investmentPitch.useOfFunds.map((item) => (
-                          <div key={item.id} className="flex justify-between text-xs">
-                            <span>{item.category}</span>
-                            <span className="font-semibold">{((item.amount / investmentPitch.askingAmount) * 100).toFixed(0)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {investmentPitch.team.length > 0 && (
-                    <div className="border-t border-primary-700 pt-4">
-                      <p className="text-xs uppercase tracking-widest text-primary-200 mb-3">Team ({investmentPitch.team.length})</p>
-                      <div className="space-y-2">
-                        {investmentPitch.team.slice(0, 2).map((member) => (
-                          <div key={member.id}>
-                            <p className="text-sm font-semibold">{member.name}</p>
-                            <p className="text-xs text-primary-200">{member.role}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      )}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
