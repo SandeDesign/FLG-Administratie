@@ -57,13 +57,20 @@ const AdminDashboard: React.FC = () => {
   const [budgetChartData, setBudgetChartData] = useState<any[]>([]);
 
   const loadDashboardData = useCallback(async () => {
-    if (!user || !selectedCompany) return;
+    if (!user || !selectedCompany) {
+      console.log('❌ No user or company selected');
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('📊 Loading dashboard for company:', selectedCompany.name);
 
       const companyEmployees = await getEmployees(user.uid);
+      console.log('👥 Employees loaded:', companyEmployees.length);
+
       const activeEmployees = companyEmployees.filter(e => e.status === 'active' && e.companyId === selectedCompany.id);
+      console.log('✅ Active employees:', activeEmployees.length);
 
       const [pendingTimesheets, pendingLeave, pendingExpenses, budgetItems] = await Promise.all([
         getPendingTimesheets(user.uid, selectedCompany.id),
@@ -71,6 +78,11 @@ const AdminDashboard: React.FC = () => {
         getPendingExpenses(selectedCompany.id, user.uid).catch(() => []),
         getBudgetItems(user.uid, selectedCompany.id).catch(() => []),
       ]);
+
+      console.log('⏱️ Pending timesheets:', pendingTimesheets.length);
+      console.log('📅 Pending leave:', pendingLeave.length);
+      console.log('💰 Pending expenses:', pendingExpenses.length);
+      console.log('📊 Budget items:', budgetItems.length);
 
       const totalPendingExpenseAmount = pendingExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
@@ -91,6 +103,9 @@ const AdminDashboard: React.FC = () => {
         }
       });
 
+      console.log('💵 Monthly income:', monthlyIncome);
+      console.log('💸 Monthly costs:', monthlyCosts);
+
       const newStats: DashboardStats = {
         totalEmployees: companyEmployees.filter(e => e.companyId === selectedCompany.id).length,
         activeEmployees: activeEmployees.length,
@@ -106,19 +121,27 @@ const AdminDashboard: React.FC = () => {
 
       setStats(newStats);
 
-      setChartData([
+      const chartDataArray = [
         { name: 'Uren', value: pendingTimesheets.length, color: COLORS[0] },
         { name: 'Verlof', value: pendingLeave.length, color: COLORS[1] },
         { name: 'Onkosten', value: pendingExpenses.length, color: COLORS[2] },
-      ]);
+      ];
 
-      setBudgetChartData([
+      console.log('📈 Chart data:', chartDataArray);
+      setChartData(chartDataArray);
+
+      const budgetDataArray = [
         { name: 'Inkomsten', value: monthlyIncome, fill: '#10b981' },
         { name: 'Kosten', value: monthlyCosts, fill: '#ef4444' },
-      ]);
+      ];
+
+      console.log('💰 Budget chart data:', budgetDataArray);
+      setBudgetChartData(budgetDataArray);
+
+      console.log('✅ Dashboard loaded successfully');
 
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      console.error('❌ Error loading dashboard:', error);
       showError('Fout', 'Kon dashboard data niet laden');
     } finally {
       setLoading(false);
@@ -272,25 +295,27 @@ const AdminDashboard: React.FC = () => {
             Pending Items Overzicht
           </h2>
           {totalPending > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: 250 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
               <CheckCircle className="h-16 w-16 mb-3" />
@@ -304,15 +329,28 @@ const AdminDashboard: React.FC = () => {
             <Wallet className="h-5 w-5 text-green-600" />
             Maandelijkse Begroting
           </h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={budgetChartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(value: number) => `€${value.toLocaleString('nl-NL')}`} />
-              <Bar dataKey="value" fill="#8884d8" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {stats.monthlyBudgetIncome > 0 || stats.monthlyBudgetCosts > 0 ? (
+            <div style={{ width: '100%', height: 250 }}>
+              <ResponsiveContainer>
+                <BarChart data={budgetChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(value: number) => `€${value.toLocaleString('nl-NL')}`} />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                    {budgetChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+              <Wallet className="h-16 w-16 mb-3" />
+              <p className="text-sm font-medium">Geen begroting ingesteld</p>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div className="text-center">
               <p className="text-xs text-gray-600">Inkomsten</p>

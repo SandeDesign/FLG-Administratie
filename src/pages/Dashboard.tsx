@@ -50,6 +50,13 @@ const Dashboard: React.FC = () => {
     pendingActions: 0,
     totalExpenses: 0,
   });
+  const [projectStats, setProjectStats] = useState<any>(null);
+  const [loadingProjectStats, setLoadingProjectStats] = useState(true);
+  const [employeeStats, setEmployeeStats] = useState({
+    pendingTimesheets: 0,
+    approvedThisMonth: 0,
+    nextPayday: null as Date | null,
+  });
 
   // ========== LOAD ADMIN DATA ==========
   const loadAdminData = useCallback(async () => {
@@ -130,6 +137,104 @@ const Dashboard: React.FC = () => {
     }
   }, [user, currentEmployeeId]);
 
+  // ========== LOAD PROJECT DATA ==========
+  useEffect(() => {
+    const loadProjectStats = async () => {
+      if (!user || !selectedCompany || selectedCompany.companyType !== 'project') {
+        console.log('🏭 Not a project company, skipping project stats');
+        setLoadingProjectStats(false);
+        return;
+      }
+
+      try {
+        setLoadingProjectStats(true);
+        console.log('🏭 Loading project stats for:', selectedCompany.name);
+
+        const { collection, query, where, getDocs } = await import('firebase/firestore');
+        const { db } = await import('../lib/firebase');
+
+        console.log('⏱️ Querying timeEntries for workCompanyId:', selectedCompany.id);
+        const timeEntriesQuery = query(
+          collection(db, 'timeEntries'),
+          where('workCompanyId', '==', selectedCompany.id)
+        );
+        const timeEntriesSnap = await getDocs(timeEntriesQuery);
+        console.log('⏱️ TimeEntries found:', timeEntriesSnap.size);
+
+        let totalHours = 0;
+        let totalOvertimeHours = 0;
+        let totalWeekendHours = 0;
+        const employeeIds = new Set();
+
+        timeEntriesSnap.forEach(doc => {
+          const data = doc.data();
+          totalHours += data.regularHours || 0;
+          totalOvertimeHours += data.overtimeHours || 0;
+          totalWeekendHours += data.weekendHours || 0;
+          if (data.employeeId) employeeIds.add(data.employeeId);
+        });
+
+        console.log('📊 Total hours:', totalHours);
+        console.log('👥 Unique employees:', employeeIds.size);
+
+        console.log('💰 Querying invoices for companyId:', selectedCompany.id);
+        const invoicesQuery = query(
+          collection(db, 'outgoingInvoices'),
+          where('companyId', '==', selectedCompany.id)
+        );
+        const invoicesSnap = await getDocs(invoicesQuery);
+        console.log('💰 Invoices found:', invoicesSnap.size);
+
+        let totalRevenue = 0;
+        invoicesSnap.forEach(doc => {
+          const data = doc.data();
+          if (data.status !== 'cancelled') {
+            totalRevenue += data.totalAmount || data.amount || 0;
+          }
+        });
+
+        console.log('💵 Total revenue:', totalRevenue);
+
+        const stats = {
+          totalHours,
+          totalOvertimeHours,
+          totalWeekendHours,
+          totalRevenue,
+          activeEmployees: employeeIds.size,
+          revenuePerHour: totalHours > 0 ? totalRevenue / totalHours : 0,
+        };
+
+        console.log('✅ Project stats:', stats);
+        setProjectStats(stats);
+      } catch (error) {
+        console.error('❌ Error loading project stats:', error);
+      } finally {
+        setLoadingProjectStats(false);
+      }
+    };
+
+    loadProjectStats();
+  }, [user, selectedCompany?.id, selectedCompany?.companyType]);
+
+  // ========== LOAD EMPLOYEE STATS ==========
+  useEffect(() => {
+    const loadEmployeeStatsData = async () => {
+      if (!user || !currentEmployeeId || userRole !== 'employee') return;
+      try {
+        const payroll = await getPayrollCalculations(user.uid, currentEmployeeId);
+        if (payroll.length > 0) {
+          setEmployeeStats((prev) => ({
+            ...prev,
+            approvedThisMonth: payroll.filter((p: any) => p.status === 'approved').length,
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading employee stats:', error);
+      }
+    };
+    loadEmployeeStatsData();
+  }, [user, currentEmployeeId, userRole]);
+
   useEffect(() => {
     if (userRole === 'admin') loadAdminData();
     if (userRole === 'manager') loadManagerData();
@@ -161,69 +266,6 @@ const Dashboard: React.FC = () => {
 
   // ========== PROJECT COMPANY DASHBOARD ==========
   if (isProjectCompany && (userRole === 'admin' || userRole === 'manager')) {
-    const [projectStats, setProjectStats] = useState<any>(null);
-    const [loadingProjectStats, setLoadingProjectStats] = useState(true);
-
-    useEffect(() => {
-      const loadProjectStats = async () => {
-        if (!user || !selectedCompany) return;
-
-        try {
-          setLoadingProjectStats(true);
-          const { collection, query, where, getDocs } = await import('firebase/firestore');
-          const { db } = await import('../lib/firebase');
-
-          const timeEntriesQuery = query(
-            collection(db, 'timeEntries'),
-            where('workCompanyId', '==', selectedCompany.id)
-          );
-          const timeEntriesSnap = await getDocs(timeEntriesQuery);
-
-          let totalHours = 0;
-          let totalOvertimeHours = 0;
-          let totalWeekendHours = 0;
-          const employeeIds = new Set();
-
-          timeEntriesSnap.forEach(doc => {
-            const data = doc.data();
-            totalHours += data.regularHours || 0;
-            totalOvertimeHours += data.overtimeHours || 0;
-            totalWeekendHours += data.weekendHours || 0;
-            if (data.employeeId) employeeIds.add(data.employeeId);
-          });
-
-          const invoicesQuery = query(
-            collection(db, 'outgoingInvoices'),
-            where('companyId', '==', selectedCompany.id)
-          );
-          const invoicesSnap = await getDocs(invoicesQuery);
-
-          let totalRevenue = 0;
-          invoicesSnap.forEach(doc => {
-            const data = doc.data();
-            if (data.status !== 'cancelled') {
-              totalRevenue += data.totalAmount || data.amount || 0;
-            }
-          });
-
-          setProjectStats({
-            totalHours,
-            totalOvertimeHours,
-            totalWeekendHours,
-            totalRevenue,
-            activeEmployees: employeeIds.size,
-            revenuePerHour: totalHours > 0 ? totalRevenue / totalHours : 0,
-          });
-        } catch (error) {
-          console.error('Error loading project stats:', error);
-        } finally {
-          setLoadingProjectStats(false);
-        }
-      };
-
-      loadProjectStats();
-    }, [user, selectedCompany?.id]);
-
     if (loadingProjectStats) {
       return <LoadingSpinner />;
     }
@@ -611,29 +653,6 @@ const Dashboard: React.FC = () => {
 
   // ========== EMPLOYEE DASHBOARD ==========
   if (userRole === 'employee') {
-    const [employeeStats, setEmployeeStats] = useState({
-      pendingTimesheets: 0,
-      approvedThisMonth: 0,
-      nextPayday: null as Date | null,
-    });
-
-    useEffect(() => {
-      const loadEmployeeStats = async () => {
-        if (!user || !currentEmployeeId) return;
-        try {
-          const payroll = await getPayrollCalculations(user.uid, currentEmployeeId);
-          if (payroll.length > 0) {
-            setEmployeeStats((prev) => ({
-              ...prev,
-              approvedThisMonth: payroll.filter((p: any) => p.status === 'approved').length,
-            }));
-          }
-        } catch (error) {
-          console.error('Error:', error);
-        }
-      };
-      loadEmployeeStats();
-    }, [user, currentEmployeeId]);
 
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
