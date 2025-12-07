@@ -27,9 +27,11 @@ import {
   ClipboardList,
   Receipt,
   CreditCard,
+  Star,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { getUserSettings } from '../../services/firebase';
 
 export interface NavigationItem {
   name: string;
@@ -163,10 +165,11 @@ const SectionHeader: React.FC<{
 };
 
 const Sidebar: React.FC = () => {
-  const { signOut, userRole } = useAuth();
+  const { signOut, userRole, user } = useAuth();
   const { selectedCompany } = useApp();
   const [collapsed, setCollapsed] = useState(true);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [favoritePages, setFavoritePages] = useState<string[]>([]);
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -180,6 +183,22 @@ const Sidebar: React.FC = () => {
       setExpandedSections(JSON.parse(savedExpanded));
     }
   }, []);
+
+  // Load favorite pages from user settings
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (user && userRole === 'admin') {
+        try {
+          const settings = await getUserSettings(user.uid);
+          setFavoritePages(settings?.favoritePages || []);
+        } catch (error) {
+          console.error('Error loading favorites:', error);
+        }
+      }
+    };
+
+    loadFavorites();
+  }, [user, userRole]);
 
   const handleToggleCollapsed = () => {
     const newState = !collapsed;
@@ -206,6 +225,11 @@ const Sidebar: React.FC = () => {
 
   // Dashboard item (no section)
   const dashboardItem = filteredNavigation.find(i => i.name === 'Dashboard');
+
+  // Favorite items (only for admin)
+  const favoriteItems = userRole === 'admin' && favoritePages.length > 0
+    ? filteredNavigation.filter(i => favoritePages.includes(i.href) && i.name !== 'Dashboard')
+    : [];
 
   // Sections with distinct colors
   const sections: Section[] = [
@@ -288,6 +312,27 @@ const Sidebar: React.FC = () => {
         {dashboardItem && (
           <div className="pb-3 mb-2 border-b border-gray-100">
             <NavItem item={dashboardItem} collapsed={collapsed} />
+          </div>
+        )}
+
+        {/* Favorites Section - Only for admin */}
+        {favoriteItems.length > 0 && (
+          <div className="pb-3 mb-2">
+            <SectionHeader
+              title="Favorieten"
+              icon={Star}
+              collapsed={collapsed}
+              isExpanded={expandedSections.includes('Favorieten')}
+              onToggle={() => toggleSection('Favorieten')}
+              color="bg-amber-500"
+            />
+            {(collapsed || expandedSections.includes('Favorieten')) && (
+              <div className={`space-y-0.5 ${collapsed ? '' : 'ml-2 pl-3 border-l border-gray-100 mt-1'}`}>
+                {favoriteItems.map((item) => (
+                  <NavItem key={item.name} item={item} collapsed={collapsed} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 

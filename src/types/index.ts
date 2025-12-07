@@ -387,6 +387,7 @@ export interface UserSettings {
   id?: string;
   userId: string;
   defaultCompanyId?: string;  // Default bedrijf dat wordt geladen
+  favoritePages?: string[];  // Array van route paths die favoriet zijn
   createdAt: Date;
   updatedAt: Date;
 }

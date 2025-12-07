@@ -9,6 +9,7 @@ import {
   Check,
   UserPlus,
   X as XIcon,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -21,6 +22,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
+import { ALL_NAVIGATION_ITEMS, NavigationItem } from '../utils/menuConfig';
 
 const Settings: React.FC = () => {
   const { user, userRole } = useAuth();
@@ -43,6 +45,9 @@ const Settings: React.FC = () => {
   const [coAdminEmail, setCoAdminEmail] = useState('');
   const [coAdmins, setCoAdmins] = useState<string[]>([]);
 
+  // Favorites state
+  const [favoritePages, setFavoritePages] = useState<string[]>([]);
+
   useEffect(() => {
     if (user && userRole === 'admin' && activeTab === 'company') {
       loadDefaultCompany();
@@ -63,6 +68,7 @@ const Settings: React.FC = () => {
       const settings = await getUserSettings(user.uid);
       setSelectedDefaultCompanyId(settings?.defaultCompanyId || '');
       setCoAdmins(settings?.coAdminEmails || []);
+      setFavoritePages(settings?.favoritePages || []);
     } catch (error) {
       console.error('Error loading default company:', error);
     }
@@ -298,6 +304,31 @@ const Settings: React.FC = () => {
     } catch (error) {
       console.error('Error saving default company:', error);
       showError('Fout bij opslaan', 'Kon standaard bedrijf niet opslaan');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleFavorite = (href: string) => {
+    setFavoritePages(prev =>
+      prev.includes(href)
+        ? prev.filter(p => p !== href)
+        : [...prev, href]
+    );
+  };
+
+  const handleSaveFavorites = async () => {
+    if (!user) return;
+
+    try {
+      setSaving(true);
+      await saveUserSettings(user.uid, {
+        favoritePages: favoritePages
+      });
+      success('Favorieten opgeslagen', 'Je favoriete pagina\'s zijn bijgewerkt');
+    } catch (error) {
+      console.error('Error saving favorites:', error);
+      showError('Fout bij opslaan', 'Kon favorieten niet opslaan');
     } finally {
       setSaving(false);
     }
@@ -627,6 +658,79 @@ const Settings: React.FC = () => {
                     <strong>Let op:</strong> Co-admins krijgen volledige toegang tot al je bedrijven, werknemers en financiële gegevens. Voeg alleen vertrouwde personen toe.
                   </p>
                 </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Star className="h-5 w-5 text-amber-500" />
+                Favoriete Pagina's
+              </h2>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Selecteer je favoriete pagina's om ze bovenaan het menu weer te geven voor snelle toegang.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                  {ALL_NAVIGATION_ITEMS
+                    .filter(item => item.roles.includes('admin') && item.name !== 'Dashboard')
+                    .map((item) => {
+                      const Icon = item.icon;
+                      const isFavorite = favoritePages.includes(item.href);
+                      return (
+                        <button
+                          key={item.href}
+                          onClick={() => handleToggleFavorite(item.href)}
+                          className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                            isFavorite
+                              ? 'border-amber-400 bg-amber-50 hover:bg-amber-100'
+                              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className={`p-2 rounded-lg ${
+                            isFavorite ? 'bg-amber-100' : 'bg-gray-100'
+                          }`}>
+                            <Icon className={`h-4 w-4 ${
+                              isFavorite ? 'text-amber-600' : 'text-gray-600'
+                            }`} />
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-sm font-medium ${
+                              isFavorite ? 'text-amber-900' : 'text-gray-900'
+                            }`}>
+                              {item.name}
+                            </p>
+                            {item.section && (
+                              <p className="text-xs text-gray-500">{item.section}</p>
+                            )}
+                          </div>
+                          {isFavorite && (
+                            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                          )}
+                        </button>
+                      );
+                    })}
+                </div>
+
+                {favoritePages.length > 0 && (
+                  <div className="mt-4 p-3 bg-amber-50 rounded-lg">
+                    <p className="text-sm text-amber-800">
+                      ✓ {favoritePages.length} favoriete pagina{favoritePages.length !== 1 ? "'s" : ''} geselecteerd
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  variant="primary"
+                  onClick={handleSaveFavorites}
+                  disabled={saving}
+                  loading={saving}
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Favorieten opslaan
+                </Button>
               </div>
             </div>
           </Card>
