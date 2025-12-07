@@ -3,7 +3,7 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { Save, Download, Trash2, Plus, Edit2, ChevronDown, ChevronUp, TrendingUp, DollarSign, Target, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { db } from '../config/firebase';
+import { db } from '../lib/firebase';
 import { collection, doc, setDoc, getDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
 
 // Types
