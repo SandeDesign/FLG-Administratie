@@ -1,181 +1,121 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users,
-  Building2,
   Clock,
-  AlertTriangle,
-  TrendingUp,
-  FileText,
-  CheckCircle,
   Calendar,
-  ArrowRight,
   Euro,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  CheckCircle,
+  ArrowRight,
   Wallet,
-  ArrowUpRight,
-  ArrowDownRight
+  Receipt,
+  FileText,
+  BarChart3,
+  Activity,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
+import { useNavigate } from 'react-router-dom';
 import {
-  collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  limit
-} from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { getEmployees, getCompanies, getLeaveRequests, getBudgetItems } from '../services/firebase';
-import * as outgoingInvoiceService from '../services/outgoingInvoiceService';
-import * as incomingInvoiceService from '../services/incomingInvoiceService';
+  getEmployees,
+  getBudgetItems,
+  getPendingExpenses,
+  getPendingLeaveApprovals,
+} from '../services/firebase';
+import { getPendingTimesheets } from '../services/timesheetService';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface DashboardStats {
   totalEmployees: number;
-  employeesWithAccount: number;
-  totalCompanies: number;
-  pendingLeaveRequests: number;
+  activeEmployees: number;
   pendingTimesheets: number;
-  monthlyIncome: number;
-  monthlyCosts: number;
-  yearlyProfit: number;
-  actualYTDIncome: number;
-  actualYTDCosts: number;
+  pendingLeaveRequests: number;
+  pendingExpenses: number;
+  totalPendingExpenseAmount: number;
+  monthlyBudgetIncome: number;
+  monthlyBudgetCosts: number;
+  monthlyBudgetProfit: number;
+  overtimeHoursThisWeek: number;
 }
+
+const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { companies, employees, selectedCompany } = useApp();
+  const { employees, selectedCompany } = useApp();
   const { error: showError } = useToast();
+  const navigate = useNavigate();
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pendingLeaves, setPendingLeaves] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [budgetChartData, setBudgetChartData] = useState<any[]>([]);
 
   const loadDashboardData = useCallback(async () => {
-    if (!user) return;
+    if (!user || !selectedCompany) return;
 
     try {
       setLoading(true);
 
-      // Get employees with account status
-      const allEmployees = await getEmployees(user.uid);
-      const employeesWithAccount = allEmployees.filter(e => e.hasAccount).length;
+      const companyEmployees = await getEmployees(user.uid);
+      const activeEmployees = companyEmployees.filter(e => e.status === 'active' && e.companyId === selectedCompany.id);
 
-      // Get pending leave requests - filter by selected company if available
-      const leaveRequests = await getLeaveRequests(user.uid);
-      const pendingLeavesList = leaveRequests.filter(r => {
-        const isPending = r.status === 'pending';
-        // If a company is selected, only show leaves from that company
-        if (selectedCompany && r.companyId) {
-          return isPending && r.companyId === selectedCompany.id;
-        }
-        return isPending;
-      });
+      const [pendingTimesheets, pendingLeave, pendingExpenses, budgetItems] = await Promise.all([
+        getPendingTimesheets(user.uid, selectedCompany.id),
+        getPendingLeaveApprovals(selectedCompany.id, user.uid),
+        getPendingExpenses(selectedCompany.id, user.uid).catch(() => []),
+        getBudgetItems(user.uid, selectedCompany.id).catch(() => []),
+      ]);
 
-      // Get pending timesheets - filter by selected company if available
-      let timesheetsQuery;
-      if (selectedCompany) {
-        timesheetsQuery = query(
-          collection(db, 'weeklyTimesheets'),
-          where('userId', '==', user.uid),
-          where('companyId', '==', selectedCompany.id),
-          where('status', '==', 'submitted')
-        );
-      } else {
-        timesheetsQuery = query(
-          collection(db, 'weeklyTimesheets'),
-          where('userId', '==', user.uid),
-          where('status', '==', 'submitted')
-        );
-      }
-      const timesheetsSnapshot = await getDocs(timesheetsQuery);
+      const totalPendingExpenseAmount = pendingExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
-      // Get recent audit logs for activity
-      const auditQuery = query(
-        collection(db, 'auditLogs'),
-        where('userId', '==', user.uid),
-        orderBy('createdAt', 'desc'),
-        limit(5)
-      );
-      const auditSnapshot = await getDocs(auditQuery);
-      const activities = auditSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      // Load financial data if company is selected
       let monthlyIncome = 0;
       let monthlyCosts = 0;
-      let yearlyProfit = 0;
-      let actualYTDIncome = 0;
-      let actualYTDCosts = 0;
+      const activeBudgetItems = budgetItems.filter(item => item.isActive !== false);
 
-      if (selectedCompany) {
-        try {
-          // Load budget items
-          const budgetItems = await getBudgetItems(user.uid, selectedCompany.id);
-          const activeItems = budgetItems.filter(item => item.isActive !== false);
+      activeBudgetItems.forEach(item => {
+        const monthlyAmount = item.frequency === 'monthly' ? item.amount :
+                            item.frequency === 'yearly' ? item.amount / 12 :
+                            item.frequency === 'quarterly' ? item.amount / 3 :
+                            item.amount;
 
-          // Calculate monthly income and costs
-          activeItems.forEach(item => {
-            const monthlyAmount = item.frequency === 'monthly' ? item.amount :
-                                item.frequency === 'yearly' ? item.amount / 12 :
-                                item.frequency === 'quarterly' ? item.amount / 3 :
-                                item.amount;
-
-            if (item.type === 'income') {
-              monthlyIncome += monthlyAmount;
-            } else {
-              monthlyCosts += monthlyAmount;
-            }
-          });
-
-          yearlyProfit = (monthlyIncome * 12) - (monthlyCosts * 12);
-
-          // Load actual invoice data for YTD
-          const currentYear = new Date().getFullYear();
-          const [outgoingInvoices, incomingInvoices] = await Promise.all([
-            outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id),
-            incomingInvoiceService.getInvoices(user.uid, selectedCompany.id),
-          ]);
-
-          actualYTDIncome = outgoingInvoices
-            .filter(inv => {
-              const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-              return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
-            })
-            .reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
-
-          actualYTDCosts = incomingInvoices
-            .filter(inv => {
-              const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-              return invDate.getFullYear() === currentYear;
-            })
-            .reduce((sum, inv) => sum + (inv.amount || 0), 0);
-        } catch (error) {
-          console.warn('Could not load financial data:', error);
+        if (item.type === 'income') {
+          monthlyIncome += monthlyAmount;
+        } else {
+          monthlyCosts += monthlyAmount;
         }
-      }
-
-      setStats({
-        totalEmployees: allEmployees.length,
-        employeesWithAccount,
-        totalCompanies: companies.length,
-        pendingLeaveRequests: pendingLeavesList.length,
-        pendingTimesheets: timesheetsSnapshot.size,
-        monthlyIncome,
-        monthlyCosts,
-        yearlyProfit,
-        actualYTDIncome,
-        actualYTDCosts
       });
 
-      setPendingLeaves(pendingLeavesList.slice(0, 3));
-      setRecentActivities(activities);
+      const newStats: DashboardStats = {
+        totalEmployees: companyEmployees.filter(e => e.companyId === selectedCompany.id).length,
+        activeEmployees: activeEmployees.length,
+        pendingTimesheets: pendingTimesheets.length,
+        pendingLeaveRequests: pendingLeave.length,
+        pendingExpenses: pendingExpenses.length,
+        totalPendingExpenseAmount,
+        monthlyBudgetIncome: monthlyIncome,
+        monthlyBudgetCosts: monthlyCosts,
+        monthlyBudgetProfit: monthlyIncome - monthlyCosts,
+        overtimeHoursThisWeek: 0,
+      };
+
+      setStats(newStats);
+
+      setChartData([
+        { name: 'Uren', value: pendingTimesheets.length, color: COLORS[0] },
+        { name: 'Verlof', value: pendingLeave.length, color: COLORS[1] },
+        { name: 'Onkosten', value: pendingExpenses.length, color: COLORS[2] },
+      ]);
+
+      setBudgetChartData([
+        { name: 'Inkomsten', value: monthlyIncome, fill: '#10b981' },
+        { name: 'Kosten', value: monthlyCosts, fill: '#ef4444' },
+      ]);
 
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -183,9 +123,12 @@ const AdminDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, companies.length, selectedCompany?.id, showError]);
+  }, [user, selectedCompany?.id, showError]);
 
-  // Refresh data when page becomes visible (user returns to dashboard)
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -197,10 +140,6 @@ const AdminDashboard: React.FC = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [loadDashboardData]);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
-
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -209,251 +148,247 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
-  if (!stats) {
+  if (!stats || !selectedCompany) {
     return (
       <div className="text-center py-12">
-        <AlertTriangle className="mx-auto h-12 w-12 text-red-600" />
-        <h3 className="mt-2 text-sm font-medium text-gray-900">Fout bij laden</h3>
+        <AlertCircle className="mx-auto h-12 w-12 text-red-600" />
+        <h3 className="mt-2 text-sm font-medium text-gray-900">Selecteer een bedrijf</h3>
       </div>
     );
   }
 
+  const totalPending = stats.pendingTimesheets + stats.pendingLeaveRequests + stats.pendingExpenses;
+
   return (
-    <div className="space-y-4 pb-24 sm:pb-6">
-      {/* Header - Mobile Optimized */}
-      <div className="px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-sm text-gray-600 mt-1">Systeem overzicht</p>
-      </div>
-
-      {/* Stats Grid - Mobile First */}
-      <div className="px-4 sm:px-0 space-y-3 sm:space-y-4">
-        
-        {/* Row 1: Employees */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-primary-50 to-primary-100">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-gray-600">Werknemers</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalEmployees}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {stats.employeesWithAccount} met account
-                </p>
-              </div>
-              <div className="p-2 sm:p-3 bg-primary-600 rounded-lg">
-                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-green-50 to-green-100">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-gray-600">Bedrijven</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalCompanies}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Actief beheerd
-                </p>
-              </div>
-              <div className="p-2 sm:p-3 bg-green-600 rounded-lg">
-                <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Row 2: Pending Items */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-orange-50 to-orange-100">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-gray-600">Verlofvragen</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.pendingLeaveRequests}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Wachten op goedkeuring
-                </p>
-              </div>
-              <div className="p-2 sm:p-3 bg-orange-600 rounded-lg">
-                <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4 sm:p-6 bg-gradient-to-br from-purple-50 to-purple-100">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-gray-600">Uren in</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.pendingTimesheets}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Te verwerken
-                </p>
-              </div>
-              <div className="p-2 sm:p-3 bg-purple-600 rounded-lg">
-                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Row 3: Financial Data (only if company selected) */}
-        {selectedCompany && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Card className="p-4 sm:p-6 bg-gradient-to-br from-emerald-50 to-emerald-100">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Maandelijkse Inkomsten</p>
-                  <p className="text-xl sm:text-2xl font-bold text-emerald-700">
-                    €{stats.monthlyIncome.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                    <ArrowUpRight className="h-3 w-3 text-emerald-600" />
-                    YTD: €{stats.actualYTDIncome.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </p>
-                </div>
-                <div className="p-2 sm:p-3 bg-emerald-600 rounded-lg">
-                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-4 sm:p-6 bg-gradient-to-br from-red-50 to-red-100">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Maandelijkse Kosten</p>
-                  <p className="text-xl sm:text-2xl font-bold text-red-700">
-                    €{stats.monthlyCosts.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                    <ArrowDownRight className="h-3 w-3 text-red-600" />
-                    YTD: €{stats.actualYTDCosts.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </p>
-                </div>
-                <div className="p-2 sm:p-3 bg-red-600 rounded-lg">
-                  <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-blue-100">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Verwachte Jaarwinst</p>
-                  <p className={`text-xl sm:text-2xl font-bold ${stats.yearlyProfit >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                    {stats.yearlyProfit >= 0 ? '+' : ''}€{stats.yearlyProfit.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Op basis van begroting
-                  </p>
-                </div>
-                <div className={`p-2 sm:p-3 ${stats.yearlyProfit >= 0 ? 'bg-blue-600' : 'bg-red-600'} rounded-lg`}>
-                  <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                </div>
-              </div>
-            </Card>
+    <div className="space-y-6 pb-24 sm:pb-6">
+      <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-700 rounded-xl p-6 text-white">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Management Dashboard</h1>
+            <p className="text-blue-100 mt-1">{selectedCompany.name}</p>
           </div>
-        )}
+          <Activity className="h-12 w-12 text-blue-200 opacity-50" />
+        </div>
       </div>
 
-      {/* Pending Leave Requests - Mobile Card */}
-      {stats.pendingLeaveRequests > 0 && (
-        <div className="px-4 sm:px-0">
-          <Card className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm sm:text-base font-semibold text-gray-900">
-                Recente verlofvragen
-              </h2>
-              <button
-                onClick={() => window.location.href = '/admin/leave-approvals'}
-                className="text-xs text-primary-600 hover:text-primary-700 font-medium"
-              >
-                Alle →
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {pendingLeaves.map((leave) => (
-                <div key={leave.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {leave.employeeName || 'Werknemer'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {leave.reason || 'Verlof'}
-                    </p>
-                  </div>
-                  <div className="ml-2 flex-shrink-0">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      In behandeling
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+      {totalPending > 0 && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-red-900">{totalPending} items wachten!</h3>
+            <p className="text-xs text-red-700 mt-1">
+              {stats.pendingTimesheets} uren • {stats.pendingLeaveRequests} verlof • {stats.pendingExpenses} onkosten
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/timesheet-approvals')}
+            className="text-red-600 hover:text-red-700 font-semibold text-sm whitespace-nowrap"
+          >
+            Bekijk →
+          </button>
         </div>
       )}
 
-      {/* Quick Actions - Mobile Optimized */}
-      <div className="px-4 sm:px-0">
-        <Card className="p-4 sm:p-6">
-          <h2 className="text-sm sm:text-base font-semibold text-gray-900 mb-4">
-            Snelle acties
-          </h2>
-          
-          <div className="space-y-2">
-            <button
-              onClick={() => window.location.href = '/employees'}
-              className="w-full flex items-center justify-between px-4 py-3 bg-primary-50 hover:bg-primary-100 text-primary-900 rounded-lg transition-colors text-sm"
-            >
-              <span className="font-medium">Werknemers beheren</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-blue-700">Actieve Medewerkers</p>
+              <p className="text-3xl font-bold text-blue-900 mt-2">{stats.activeEmployees}</p>
+              <p className="text-xs text-blue-600 mt-1">van {stats.totalEmployees} totaal</p>
+            </div>
+            <Users className="h-10 w-10 text-blue-400" />
+          </div>
+        </Card>
 
-            <button
-              onClick={() => window.location.href = '/admin/leave-approvals'}
-              className="w-full flex items-center justify-between px-4 py-3 bg-orange-50 hover:bg-orange-100 text-orange-900 rounded-lg transition-colors text-sm"
-            >
-              <span className="font-medium">Verlofvragen</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
+        <Card
+          className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate('/timesheet-approvals')}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-orange-700">Uren Wachten</p>
+              <p className="text-3xl font-bold text-orange-900 mt-2">{stats.pendingTimesheets}</p>
+              <p className="text-xs text-orange-600 mt-1">te goedkeuren</p>
+            </div>
+            <div className="relative">
+              <Clock className="h-10 w-10 text-orange-400" />
+              {stats.pendingTimesheets > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {stats.pendingTimesheets}
+                </span>
+              )}
+            </div>
+          </div>
+        </Card>
 
-            <button
-              onClick={() => window.location.href = '/timesheet-approvals'}
-              className="w-full flex items-center justify-between px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-900 rounded-lg transition-colors text-sm"
-            >
-              <span className="font-medium">Uren verwerken</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
+        <Card
+          className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate('/admin/leave-approvals')}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-purple-700">Verlof Wachten</p>
+              <p className="text-3xl font-bold text-purple-900 mt-2">{stats.pendingLeaveRequests}</p>
+              <p className="text-xs text-purple-600 mt-1">aanvragen</p>
+            </div>
+            <div className="relative">
+              <Calendar className="h-10 w-10 text-purple-400" />
+              {stats.pendingLeaveRequests > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {stats.pendingLeaveRequests}
+                </span>
+              )}
+            </div>
+          </div>
+        </Card>
 
-            {selectedCompany && (
-              <button
-                onClick={() => window.location.href = '/budgeting'}
-                className="w-full flex items-center justify-between px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 rounded-lg transition-colors text-sm"
-              >
-                <span className="font-medium">Financiële Begroting</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            )}
+        <Card
+          className="p-6 bg-gradient-to-br from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => navigate('/admin-expenses')}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-medium text-green-700">Onkosten</p>
+              <p className="text-3xl font-bold text-green-900 mt-2">€{(stats.totalPendingExpenseAmount / 100).toFixed(0)}</p>
+              <p className="text-xs text-green-600 mt-1">{stats.pendingExpenses} in behandeling</p>
+            </div>
+            <div className="relative">
+              <Receipt className="h-10 w-10 text-green-400" />
+              {stats.pendingExpenses > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  {stats.pendingExpenses}
+                </span>
+              )}
+            </div>
           </div>
         </Card>
       </div>
 
-      {/* System Status - Mobile Card */}
-      <div className="px-4 sm:px-0">
-        <Card className="p-4 sm:p-6 border-l-4 border-green-500">
-          <div className="flex items-start space-x-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-blue-600" />
+            Pending Items Overzicht
+          </h2>
+          {totalPending > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name}: ${value}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+              <CheckCircle className="h-16 w-16 mb-3" />
+              <p className="text-sm font-medium">Alles verwerkt!</p>
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold text-gray-900">Systeem Status</h3>
-              <p className="text-xs text-gray-600 mt-1">
-                ✓ Alle systemen operationeel
+          )}
+        </Card>
+
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-green-600" />
+            Maandelijkse Begroting
+          </h2>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={budgetChartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis tickFormatter={(value) => `€${(value / 1000).toFixed(0)}k`} />
+              <Tooltip formatter={(value: number) => `€${value.toLocaleString('nl-NL')}`} />
+              <Bar dataKey="value" fill="#8884d8" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="grid grid-cols-3 gap-4 mt-4">
+            <div className="text-center">
+              <p className="text-xs text-gray-600">Inkomsten</p>
+              <p className="text-lg font-bold text-green-600">€{stats.monthlyBudgetIncome.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-600">Kosten</p>
+              <p className="text-lg font-bold text-red-600">€{stats.monthlyBudgetCosts.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-600">Winst</p>
+              <p className={`text-lg font-bold ${stats.monthlyBudgetProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                {stats.monthlyBudgetProfit >= 0 ? '+' : ''}€{stats.monthlyBudgetProfit.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}
               </p>
             </div>
           </div>
         </Card>
       </div>
+
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Snelle Acties</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            {
+              title: 'Uren Goedkeuren',
+              count: stats.pendingTimesheets,
+              icon: Clock,
+              path: '/timesheet-approvals',
+              color: 'blue',
+            },
+            {
+              title: 'Verlof Goedkeuren',
+              count: stats.pendingLeaveRequests,
+              icon: Calendar,
+              path: '/admin/leave-approvals',
+              color: 'purple',
+            },
+            {
+              title: 'Team Beheren',
+              icon: Users,
+              path: '/employees',
+              color: 'green',
+            },
+            {
+              title: 'Begroting',
+              icon: Wallet,
+              path: '/budgeting',
+              color: 'emerald',
+            },
+          ].map((action) => {
+            const Icon = action.icon;
+            const colorClasses = {
+              blue: 'bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700',
+              purple: 'bg-purple-50 border-purple-200 hover:bg-purple-100 text-purple-700',
+              green: 'bg-green-50 border-green-200 hover:bg-green-100 text-green-700',
+              emerald: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100 text-emerald-700',
+            };
+
+            return (
+              <button
+                key={action.title}
+                onClick={() => navigate(action.path)}
+                className={`relative p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 text-center ${colorClasses[action.color as keyof typeof colorClasses]}`}
+              >
+                <Icon className="h-6 w-6" />
+                <p className="text-xs font-medium line-clamp-1">{action.title}</p>
+                {action.count !== undefined && action.count > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {action.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
     </div>
   );
 };

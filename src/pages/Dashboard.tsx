@@ -161,6 +161,73 @@ const Dashboard: React.FC = () => {
 
   // ========== PROJECT COMPANY DASHBOARD ==========
   if (isProjectCompany && (userRole === 'admin' || userRole === 'manager')) {
+    const [projectStats, setProjectStats] = useState<any>(null);
+    const [loadingProjectStats, setLoadingProjectStats] = useState(true);
+
+    useEffect(() => {
+      const loadProjectStats = async () => {
+        if (!user || !selectedCompany) return;
+
+        try {
+          setLoadingProjectStats(true);
+          const { collection, query, where, getDocs } = await import('firebase/firestore');
+          const { db } = await import('../lib/firebase');
+
+          const timeEntriesQuery = query(
+            collection(db, 'timeEntries'),
+            where('workCompanyId', '==', selectedCompany.id)
+          );
+          const timeEntriesSnap = await getDocs(timeEntriesQuery);
+
+          let totalHours = 0;
+          let totalOvertimeHours = 0;
+          let totalWeekendHours = 0;
+          const employeeIds = new Set();
+
+          timeEntriesSnap.forEach(doc => {
+            const data = doc.data();
+            totalHours += data.regularHours || 0;
+            totalOvertimeHours += data.overtimeHours || 0;
+            totalWeekendHours += data.weekendHours || 0;
+            if (data.employeeId) employeeIds.add(data.employeeId);
+          });
+
+          const invoicesQuery = query(
+            collection(db, 'outgoingInvoices'),
+            where('companyId', '==', selectedCompany.id)
+          );
+          const invoicesSnap = await getDocs(invoicesQuery);
+
+          let totalRevenue = 0;
+          invoicesSnap.forEach(doc => {
+            const data = doc.data();
+            if (data.status !== 'cancelled') {
+              totalRevenue += data.totalAmount || data.amount || 0;
+            }
+          });
+
+          setProjectStats({
+            totalHours,
+            totalOvertimeHours,
+            totalWeekendHours,
+            totalRevenue,
+            activeEmployees: employeeIds.size,
+            revenuePerHour: totalHours > 0 ? totalRevenue / totalHours : 0,
+          });
+        } catch (error) {
+          console.error('Error loading project stats:', error);
+        } finally {
+          setLoadingProjectStats(false);
+        }
+      };
+
+      loadProjectStats();
+    }, [user, selectedCompany?.id]);
+
+    if (loadingProjectStats) {
+      return <LoadingSpinner />;
+    }
+
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Hero Header */}
@@ -181,62 +248,137 @@ const Dashboard: React.FC = () => {
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-orange-900">{totalPending} items wachten op actie</h3>
               <p className="text-xs text-orange-700 mt-1">
-                {pendingTimesheets.length} uren • {pendingLeave.length} verlof • €{stats.totalExpenses.toFixed(0)} onkosten
+                {pendingTimesheets.length} uren • {pendingLeave.length} verlof • {pendingExpenses.length} onkosten
               </p>
             </div>
+            <button
+              onClick={() => {
+                if (pendingTimesheets.length > 0) navigate('/timesheet-approvals');
+                else if (pendingLeave.length > 0) navigate('/admin/leave-approvals');
+              }}
+              className="text-orange-600 hover:text-orange-700 font-semibold text-sm whitespace-nowrap"
+            >
+              Bekijk →
+            </button>
           </div>
         )}
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {/* Uren Wachten */}
-          <Card className="p-4 bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium text-primary-700">Uren</p>
-                <p className="text-2xl font-bold text-primary-900 mt-2">{pendingTimesheets.length}</p>
-                <p className="text-xs text-primary-600 mt-2">wachten</p>
+        {/* Project Stats */}
+        {projectStats && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-blue-700">Totale Uren</p>
+                  <p className="text-2xl font-bold text-blue-900 mt-2">{projectStats.totalHours.toFixed(0)}</p>
+                  <p className="text-xs text-blue-600 mt-2">geregistreerd</p>
+                </div>
+                <Clock className="h-8 w-8 text-blue-300" />
               </div>
-              <Clock className="h-8 w-8 text-primary-300" />
-            </div>
-          </Card>
+            </Card>
 
-          {/* Verlof */}
-          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium text-purple-700">Verlof</p>
-                <p className="text-2xl font-bold text-purple-900 mt-2">{pendingLeave.length}</p>
-                <p className="text-xs text-purple-600 mt-2">aanvragen</p>
+            <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-green-700">Omzet</p>
+                  <p className="text-2xl font-bold text-green-900 mt-2">€{(projectStats.totalRevenue / 1000).toFixed(0)}k</p>
+                  <p className="text-xs text-green-600 mt-2">totaal</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-green-300" />
               </div>
-              <Calendar className="h-8 w-8 text-purple-300" />
-            </div>
-          </Card>
+            </Card>
 
-          {/* Onkosten */}
-          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium text-green-700">Onkosten</p>
-                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
-                <p className="text-xs text-green-600 mt-2">in behandeling</p>
+            <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-purple-700">€/Uur</p>
+                  <p className="text-2xl font-bold text-purple-900 mt-2">€{projectStats.revenuePerHour.toFixed(0)}</p>
+                  <p className="text-xs text-purple-600 mt-2">gemiddeld</p>
+                </div>
+                <Euro className="h-8 w-8 text-purple-300" />
               </div>
-              <ArrowUpRight className="h-8 w-8 text-green-300" />
-            </div>
-          </Card>
+            </Card>
 
-          {/* Team */}
-          <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium text-orange-700">Team</p>
-                <p className="text-2xl font-bold text-orange-900 mt-2">{employees?.length || 0}</p>
-                <p className="text-xs text-orange-600 mt-2">medewerkers</p>
+            <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-orange-700">Medewerkers</p>
+                  <p className="text-2xl font-bold text-orange-900 mt-2">{projectStats.activeEmployees}</p>
+                  <p className="text-xs text-orange-600 mt-2">actief</p>
+                </div>
+                <Users className="h-8 w-8 text-orange-300" />
               </div>
-              <Users className="h-8 w-8 text-orange-300" />
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Pending Actions */}
+        {totalPending > 0 && (
+          <div className="grid grid-cols-3 gap-3">
+            <Card
+              className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/timesheet-approvals')}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-orange-700">Uren</p>
+                  <p className="text-2xl font-bold text-orange-900 mt-2">{pendingTimesheets.length}</p>
+                  <p className="text-xs text-orange-600 mt-2">wachten</p>
+                </div>
+                <div className="relative">
+                  <Clock className="h-8 w-8 text-orange-300" />
+                  {pendingTimesheets.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {pendingTimesheets.length}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            <Card
+              className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/admin/leave-approvals')}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-purple-700">Verlof</p>
+                  <p className="text-2xl font-bold text-purple-900 mt-2">{pendingLeave.length}</p>
+                  <p className="text-xs text-purple-600 mt-2">aanvragen</p>
+                </div>
+                <div className="relative">
+                  <Calendar className="h-8 w-8 text-purple-300" />
+                  {pendingLeave.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {pendingLeave.length}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            <Card
+              className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/admin-expenses')}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-green-700">Onkosten</p>
+                  <p className="text-2xl font-bold text-green-900 mt-2">{pendingExpenses.length}</p>
+                  <p className="text-xs text-green-600 mt-2">pending</p>
+                </div>
+                <div className="relative">
+                  <Receipt className="h-8 w-8 text-green-300" />
+                  {pendingExpenses.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                      {pendingExpenses.length}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Action Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -265,7 +407,7 @@ const Dashboard: React.FC = () => {
               <ChevronRight className="h-5 w-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="font-semibold text-gray-900 text-left">Statistieken</p>
-            <p className="text-xs text-gray-600 mt-1 text-left">Projectoverzicht</p>
+            <p className="text-xs text-gray-600 mt-1 text-left">Uitgebreide analyse</p>
           </button>
 
           <button
@@ -279,35 +421,9 @@ const Dashboard: React.FC = () => {
               <ChevronRight className="h-5 w-5 text-green-400 group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="font-semibold text-gray-900 text-left">Facturatie</p>
-            <p className="text-xs text-gray-600 mt-1 text-left">Facturen beheren</p>
+            <p className="text-xs text-gray-600 mt-1 text-left">Omzet beheren</p>
           </button>
         </div>
-
-        {/* Pending Items */}
-        {totalPending > 0 && (
-          <Card>
-            <div className="p-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900">Actie Vereist</h2>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {pendingTimesheets.map((ts) => (
-                <button
-                  key={ts.id}
-                  onClick={() => navigate('/timesheet-approvals')}
-                  className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center justify-between group"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Week {ts.weekNumber} • {employees?.find((e: any) => e.id === ts.employeeId)?.personalInfo?.firstName || 'Medewerker'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">{ts.totalRegularHours}u uren ingediend</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              ))}
-            </div>
-          </Card>
-        )}
       </div>
     );
   }
