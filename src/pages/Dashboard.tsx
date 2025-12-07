@@ -40,7 +40,7 @@ import { getPayrollCalculations } from '../services/payrollService';
 
 const Dashboard: React.FC = () => {
   const { employees, companies, loading, selectedCompany } = useApp();
-  const { user, userRole, currentEmployeeId } = useAuth();
+  const { user, userRole, currentEmployeeId, adminUserId } = useAuth();
   const navigate = useNavigate();
 
   // ========== SHARED STATE ==========
