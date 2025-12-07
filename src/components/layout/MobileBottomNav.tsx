@@ -12,6 +12,8 @@ import {
   Send,
   Download,
   MoreVertical,
+  Upload,
+  Wallet,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -26,9 +28,26 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
   
   if (!userRole) return null;
 
-  const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined;
+  const companyType = selectedCompany?.companyType as 'employer' | 'project' | 'holding' | undefined;
 
   const getCoreNavItems = () => {
+    // ✅ HOLDING COMPANY
+    if (companyType === 'holding') {
+      if (userRole === 'admin' || userRole === 'manager') {
+        return [
+          { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-slate-600 to-slate-700' },
+          { href: '/incoming-invoices', icon: Upload, label: 'Inkoop', gradient: 'from-purple-500 to-purple-600' },
+          { href: '/outgoing-invoices', icon: Send, label: 'Verkoop', gradient: 'from-green-500 to-green-600' },
+          { href: '/settings', icon: Settings, label: 'Instellingen', gradient: 'from-gray-500 to-gray-600' },
+        ];
+      }
+      // Employee in holding company (shouldn't happen, but fallback)
+      return [
+        { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-slate-600 to-slate-700' },
+        { href: '/settings', icon: Settings, label: 'Profiel', gradient: 'from-gray-500 to-gray-600' },
+      ];
+    }
+
     // ✅ PROJECT COMPANY - Admin & Manager see same items
     if (companyType === 'project') {
       if (userRole === 'admin' || userRole === 'manager') {
