@@ -26,7 +26,7 @@ import { ALL_NAVIGATION_ITEMS, NavigationItem } from '../utils/menuConfig';
 
 const Settings: React.FC = () => {
   const { user, userRole } = useAuth();
-  const { companies } = useApp();
+  const { companies, selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [activeTab, setActiveTab] = useState<'account' | 'company'>('account');
   const [loading, setLoading] = useState(false);
@@ -45,14 +45,14 @@ const Settings: React.FC = () => {
   const [coAdminEmail, setCoAdminEmail] = useState('');
   const [coAdmins, setCoAdmins] = useState<string[]>([]);
 
-  // Favorites state
+  // Favorites state - nu per bedrijf
   const [favoritePages, setFavoritePages] = useState<string[]>([]);
 
   useEffect(() => {
     if (user && userRole === 'admin' && activeTab === 'company') {
       loadDefaultCompany();
     }
-  }, [user, userRole, activeTab]);
+  }, [user, userRole, activeTab, selectedCompany?.id]);
 
   useEffect(() => {
     if (user) {
@@ -68,7 +68,13 @@ const Settings: React.FC = () => {
       const settings = await getUserSettings(user.uid);
       setSelectedDefaultCompanyId(settings?.defaultCompanyId || '');
       setCoAdmins(settings?.coAdminEmails || []);
-      setFavoritePages(settings?.favoritePages || []);
+
+      // Load favorites voor het geselecteerde bedrijf
+      if (selectedCompany?.id && settings?.favoritePages) {
+        setFavoritePages(settings.favoritePages[selectedCompany.id] || []);
+      } else {
+        setFavoritePages([]);
+      }
     } catch (error) {
       console.error('Error loading default company:', error);
     }
@@ -318,14 +324,22 @@ const Settings: React.FC = () => {
   };
 
   const handleSaveFavorites = async () => {
-    if (!user) return;
+    if (!user || !selectedCompany) return;
 
     try {
       setSaving(true);
+
+      // Haal huidige settings op
+      const currentSettings = await getUserSettings(user.uid);
+      const allFavorites = currentSettings?.favoritePages || {};
+
+      // Update favorieten voor dit specifieke bedrijf
+      allFavorites[selectedCompany.id] = favoritePages;
+
       await saveUserSettings(user.uid, {
-        favoritePages: favoritePages
+        favoritePages: allFavorites
       });
-      success('Favorieten opgeslagen', 'Je favoriete pagina\'s zijn bijgewerkt');
+      success('Favorieten opgeslagen', `Favorieten voor ${selectedCompany.name} zijn bijgewerkt`);
     } catch (error) {
       console.error('Error saving favorites:', error);
       showError('Fout bij opslaan', 'Kon favorieten niet opslaan');
@@ -669,6 +683,20 @@ const Settings: React.FC = () => {
                 Favoriete Pagina's
               </h2>
               <div className="space-y-4">
+                {selectedCompany ? (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Let op:</strong> Je stelt favorieten in voor <strong>{selectedCompany.name}</strong>.
+                      Elk bedrijf heeft zijn eigen favorieten.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      Selecteer eerst een bedrijf om favorieten in te stellen.
+                    </p>
+                  </div>
+                )}
                 <p className="text-sm text-gray-600">
                   Selecteer je favoriete pagina's om ze bovenaan het menu weer te geven voor snelle toegang.
                 </p>

@@ -184,16 +184,21 @@ const Sidebar: React.FC = () => {
     }
   }, []);
 
-  // Load favorite pages from user settings
+  // Load favorite pages from user settings voor het geselecteerde bedrijf
   useEffect(() => {
     const loadFavorites = async () => {
-      if (user && userRole === 'admin') {
+      if (user && userRole === 'admin' && selectedCompany?.id) {
         try {
           const settings = await getUserSettings(user.uid);
-          console.log('Loaded favorites from settings:', settings?.favoritePages);
-          if (settings?.favoritePages && settings.favoritePages.length > 0) {
-            setFavoritePages(settings.favoritePages);
+          console.log('Loaded all favorites from settings:', settings?.favoritePages);
+
+          // Haal favorieten op voor het geselecteerde bedrijf
+          if (settings?.favoritePages && settings.favoritePages[selectedCompany.id]) {
+            const companyFavorites = settings.favoritePages[selectedCompany.id];
+            console.log(`Favorites for company ${selectedCompany.name}:`, companyFavorites);
+            setFavoritePages(companyFavorites);
           } else {
+            console.log(`No favorites found for company ${selectedCompany.name}`);
             setFavoritePages([]);
           }
         } catch (error) {
@@ -206,7 +211,7 @@ const Sidebar: React.FC = () => {
     };
 
     loadFavorites();
-  }, [user?.uid, userRole]);
+  }, [user?.uid, userRole, selectedCompany?.id]);
 
   const handleToggleCollapsed = () => {
     const newState = !collapsed;
