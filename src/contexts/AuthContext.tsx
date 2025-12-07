@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useToast } from '../hooks/useToast';
-import { getUserRole, getEmployeeById, getPrimaryAdminForCoAdmin } from '../services/firebase';
+import { getUserRole, getEmployeeById, getUserSettings } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -45,37 +45,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCurrentEmployeeId(roleData?.employeeId || null);
 
           if (roleData?.role === 'admin') {
-  // Check if this admin is a co-admin for someone else
-  try {
-    if (user.email) {
-      const primaryAdminUserId = await getPrimaryAdminForCoAdmin(user.email);
-      if (primaryAdminUserId) {
-        console.log('[AuthContext] Co-admin detected, using primary admin UID:', primaryAdminUserId);
-        setAdminUserId(primaryAdminUserId);
-      } else {
-        console.log('[AuthContext] Primary admin, using own UID');
-        setAdminUserId(user.uid);
-      }
-    } else {
-      setAdminUserId(user.uid);
-    }
-  } catch (error) {
-    console.error('[AuthContext] Error checking co-admin status, using own UID:', error);
-    setAdminUserId(user.uid);
-  }
-} else if (roleData?.role === 'manager') {
-  // Manager krijgt hun eigenuid, zodat ze hun bedrijf kunnen laden
-  setAdminUserId(user.uid);
-} else if (roleData?.role === 'employee' && roleData?.employeeId) {
-  const employeeDoc = await getEmployeeById(roleData.employeeId);
-  if (employeeDoc) {
-    setAdminUserId(employeeDoc.userId);
-  } else {
-    setAdminUserId(null);
-  }
-} else {
-  setAdminUserId(null);
-}
+            // ✅ CHECK IF THIS ADMIN IS A CO-ADMIN
+            // Get co-admin's own settings to find primary admin UID
+            try {
+              const userSettings = await getUserSettings(user.uid);
+              
+              if (userSettings?.primaryAdminUserId) {
+                // ✅ This user is a co-admin - use primary admin's UID
+                console.log('[AuthContext] Co-admin detected, primaryAdminUserId:', userSettings.primaryAdminUserId);
+                setAdminUserId(userSettings.primaryAdminUserId);
+              } else {
+                // ✅ This user is a primary admin - use their own UID
+                console.log('[AuthContext] Primary admin detected, using own UID:', user.uid);
+                setAdminUserId(user.uid);
+              }
+            } catch (settingsError) {
+              console.error('[AuthContext] Error loading user settings, using own UID:', settingsError);
+              setAdminUserId(user.uid);
+            }
+          } else if (roleData?.role === 'manager') {
+            // Manager gets their own UID so they can load their assigned company
+            setAdminUserId(user.uid);
+          } else if (roleData?.role === 'employee' && roleData?.employeeId) {
+            const employeeDoc = await getEmployeeById(roleData.employeeId);
+            if (employeeDoc) {
+              setAdminUserId(employeeDoc.userId);
+            } else {
+              setAdminUserId(null);
+            }
+          } else {
+            setAdminUserId(null);
+          }
         } catch (err) {
           console.error('Error loading user role:', err);
           setUserRole(null);
@@ -132,10 +132,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { createUserRole } = await import('../services/firebase');
       await createUserRole(user.uid, 'admin', undefined, {
-  firstName: displayName.split(' ')[0],
-  lastName: displayName.split(' ').slice(1).join(' '),
-  email: email,
-});
+        firstName: displayName.split(' ')[0],
+        lastName: displayName.split(' ').slice(1).join(' '),
+        email: email,
+      });
       setUserRole('admin');
 
       success('Account aangemaakt!', 'Je kunt nu beginnen met het beheren van je loonadministratie');
