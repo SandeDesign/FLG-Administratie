@@ -728,7 +728,31 @@ const Settings: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
                   {selectedCompany && ALL_NAVIGATION_ITEMS
-                    .filter(item => item.roles.includes('admin') && item.name !== 'Dashboard')
+                    .filter(item => {
+                      // Basis filter: alleen admin items, geen dashboard
+                      if (!item.roles.includes('admin') || item.name === 'Dashboard') {
+                        return false;
+                      }
+
+                      // Voor projectbedrijven: filter HR/Payroll pagina's uit
+                      if (selectedCompany.companyType === 'project') {
+                        const excludedForProjects = [
+                          '/companies',
+                          '/employees',
+                          '/leave',
+                          '/absence',
+                          '/leave-approvals',
+                          '/payroll',
+                          '/payslips',
+                          '/tax-returns',
+                          '/settings',
+                        ];
+                        return !excludedForProjects.includes(item.href);
+                      }
+
+                      // Voor werkgever-bedrijven: alles is beschikbaar
+                      return true;
+                    })
                     .map((item) => {
                       const Icon = item.icon;
                       const isFavorite = favoritePages.includes(item.href);
