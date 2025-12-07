@@ -53,6 +53,10 @@ const Dashboard: React.FC = () => {
     approvedThisMonth: 0,
     pendingActions: 0,
     totalExpenses: 0,
+    outgoingInvoices: 0,
+    outgoingTotal: 0,
+    incomingInvoices: 0,
+    incomingTotal: 0,
   });
   const [projectStats, setProjectStats] = useState<any>(null);
   const [loadingProjectStats, setLoadingProjectStats] = useState(true);
@@ -67,6 +71,92 @@ const Dashboard: React.FC = () => {
     budgetItems: 0,
   });
 
+  // ========== LOAD INVOICE STATS (All Companies) ==========
+  const loadInvoiceStats = useCallback(async () => {
+    if (!user || !selectedCompany) return;
+
+    try {
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      const { db } = await import('../lib/firebase');
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      console.log('📊 Loading invoice stats for company:', selectedCompany.id);
+      console.log('🔍 Start of month:', startOfMonth);
+
+      // Uitgaande facturen (Verkoop)
+      const outgoingQuery = query(
+        collection(db, 'outgoingInvoices'),
+        where('companyId', '==', selectedCompany.id)
+      );
+      const outgoingSnap = await getDocs(outgoingQuery);
+      console.log('✅ Outgoing invoices total:', outgoingSnap.size);
+
+      let outgoingCount = 0;
+      let outgoingTotal = 0;
+      let outgoingThisMonth = 0;
+      let outgoingTotalThisMonth = 0;
+
+      outgoingSnap.forEach(doc => {
+        const data = doc.data();
+        outgoingCount++;
+        outgoingTotal += data.totalAmount || data.amount || 0;
+        
+        // Check if created this month
+        const docDate = data.invoiceDate || data.createdAt;
+        if (docDate) {
+          const date = typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate;
+          if (date >= startOfMonth) {
+            outgoingThisMonth++;
+            outgoingTotalThisMonth += data.totalAmount || data.amount || 0;
+          }
+        }
+      });
+
+      // Inkomende facturen (Inkoop)
+      const incomingQuery = query(
+        collection(db, 'incomingInvoices'),
+        where('companyId', '==', selectedCompany.id)
+      );
+      const incomingSnap = await getDocs(incomingQuery);
+      console.log('✅ Incoming invoices total:', incomingSnap.size);
+
+      let incomingCount = 0;
+      let incomingTotal = 0;
+      let incomingThisMonth = 0;
+      let incomingTotalThisMonth = 0;
+
+      incomingSnap.forEach(doc => {
+        const data = doc.data();
+        incomingCount++;
+        incomingTotal += data.totalAmount || data.amount || 0;
+
+        // Check if created this month
+        const docDate = data.invoiceDate || data.createdAt;
+        if (docDate) {
+          const date = typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate;
+          if (date >= startOfMonth) {
+            incomingThisMonth++;
+            incomingTotalThisMonth += data.totalAmount || data.amount || 0;
+          }
+        }
+      });
+
+      console.log('💰 Outgoing stats:', { count: outgoingCount, total: outgoingTotal, thisMonth: outgoingThisMonth, totalThisMonth: outgoingTotalThisMonth });
+      console.log('💰 Incoming stats:', { count: incomingCount, total: incomingTotal, thisMonth: incomingThisMonth, totalThisMonth: incomingTotalThisMonth });
+
+      setStats(prev => ({
+        ...prev,
+        outgoingInvoices: outgoingThisMonth,
+        outgoingTotal: outgoingTotalThisMonth,
+        incomingInvoices: incomingThisMonth,
+        incomingTotal: incomingTotalThisMonth,
+      }));
+    } catch (error) {
+      console.error('❌ Error loading invoice stats:', error);
+    }
+  }, [user, selectedCompany]);
+
   // ========== LOAD HOLDING DATA ==========
   const loadHoldingData = useCallback(async () => {
     if (!user || !selectedCompany || userRole !== 'admin') return;
@@ -74,26 +164,50 @@ const Dashboard: React.FC = () => {
 
     setDashLoading(true);
     try {
-      const { collection, query, where, getDocs, getFirestore } = await import('firebase/firestore');
-      const db = getFirestore();
+      const { collection, query, where, getDocs } = await import('firebase/firestore');
+      const { db } = await import('../lib/firebase');
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      console.log('🏢 Loading holding data for:', selectedCompany.name);
 
       // Uitgaande facturen deze maand
       const outgoingQuery = query(
         collection(db, 'outgoingInvoices'),
-        where('companyId', '==', selectedCompany.id),
-        where('createdAt', '>=', startOfMonth)
+        where('companyId', '==', selectedCompany.id)
       );
       const outgoingSnap = await getDocs(outgoingQuery);
+
+      let outgoingThisMonth = 0;
+      outgoingSnap.forEach(doc => {
+        const data = doc.data();
+        const docDate = data.invoiceDate || data.createdAt;
+        if (docDate) {
+          const date = typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate;
+          if (date >= startOfMonth) {
+            outgoingThisMonth++;
+          }
+        }
+      });
 
       // Inkomende facturen deze maand
       const incomingQuery = query(
         collection(db, 'incomingInvoices'),
-        where('companyId', '==', selectedCompany.id),
-        where('createdAt', '>=', startOfMonth)
+        where('companyId', '==', selectedCompany.id)
       );
       const incomingSnap = await getDocs(incomingQuery);
+
+      let incomingThisMonth = 0;
+      incomingSnap.forEach(doc => {
+        const data = doc.data();
+        const docDate = data.invoiceDate || data.createdAt;
+        if (docDate) {
+          const date = typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate;
+          if (date >= startOfMonth) {
+            incomingThisMonth++;
+          }
+        }
+      });
 
       // Budget items
       const budgetQuery = query(
@@ -103,13 +217,15 @@ const Dashboard: React.FC = () => {
       );
       const budgetSnap = await getDocs(budgetQuery);
 
+      console.log('✅ Holding stats:', { outgoing: outgoingThisMonth, incoming: incomingThisMonth, budget: budgetSnap.size });
+
       setHoldingStats({
-        outgoingInvoices: outgoingSnap.size,
-        incomingInvoices: incomingSnap.size,
+        outgoingInvoices: outgoingThisMonth,
+        incomingInvoices: incomingThisMonth,
         budgetItems: budgetSnap.size,
       });
     } catch (error) {
-      console.error('Error loading holding data:', error);
+      console.error('❌ Error loading holding data:', error);
     } finally {
       setDashLoading(false);
     }
@@ -148,12 +264,15 @@ const Dashboard: React.FC = () => {
         activeEmployees: activeEmps,
         pendingActions: (timesheets.length || 0) + (leave.length || 0),
       }));
+
+      // Load invoice stats
+      await loadInvoiceStats();
     } catch (error) {
       console.error('Error loading admin data:', error);
     } finally {
       setDashLoading(false);
     }
-  }, [user, selectedCompany, userRole, employees]);
+  }, [user, selectedCompany, userRole, employees, loadInvoiceStats]);
 
   // ========== LOAD MANAGER DATA ==========
   const loadManagerData = useCallback(async () => {
@@ -171,12 +290,15 @@ const Dashboard: React.FC = () => {
         ...prev,
         pendingActions: (timesheets.length || 0) + (leave.length || 0),
       }));
+
+      // Load invoice stats
+      await loadInvoiceStats();
     } catch (error) {
       console.error('Error loading manager data:', error);
     } finally {
       setDashLoading(false);
     }
-  }, [user, selectedCompany, userRole]);
+  }, [user, selectedCompany, userRole, loadInvoiceStats]);
 
   // ========== LOAD EMPLOYEE DATA ==========
   const loadEmployeeData = useCallback(async () => {
@@ -263,6 +385,9 @@ const Dashboard: React.FC = () => {
 
         console.log('✅ Project stats:', stats);
         setProjectStats(stats);
+
+        // Also load invoice stats
+        await loadInvoiceStats();
       } catch (error) {
         console.error('❌ Error loading project stats:', error);
       } finally {
@@ -271,7 +396,7 @@ const Dashboard: React.FC = () => {
     };
 
     loadProjectStats();
-  }, [user, selectedCompany?.id, selectedCompany?.companyType]);
+  }, [user, selectedCompany?.id, selectedCompany?.companyType, loadInvoiceStats]);
 
   // ========== LOAD EMPLOYEE STATS ==========
   useEffect(() => {
@@ -358,9 +483,9 @@ const Dashboard: React.FC = () => {
           <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-green-700">Facturen</p>
-                <p className="text-2xl font-bold text-green-900 mt-2">{holdingStats.outgoingInvoices}</p>
-                <p className="text-xs text-green-600 mt-2">deze maand</p>
+                <p className="text-xs font-medium text-green-700">Verkoop</p>
+                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-green-600 mt-2">{stats.outgoingInvoices} facturen</p>
               </div>
               <Send className="h-8 w-8 text-green-300" />
             </div>
@@ -370,8 +495,8 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-purple-700">Inkoop</p>
-                <p className="text-2xl font-bold text-purple-900 mt-2">{holdingStats.incomingInvoices}</p>
-                <p className="text-xs text-purple-600 mt-2">deze maand</p>
+                <p className="text-2xl font-bold text-purple-900 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-purple-600 mt-2">{stats.incomingInvoices} facturen</p>
               </div>
               <Upload className="h-8 w-8 text-purple-300" />
             </div>
@@ -380,9 +505,9 @@ const Dashboard: React.FC = () => {
           <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-orange-700">Budget</p>
-                <p className="text-2xl font-bold text-orange-900 mt-2">{holdingStats.budgetItems}</p>
-                <p className="text-xs text-orange-600 mt-2">actieve items</p>
+                <p className="text-xs font-medium text-orange-700">Marge</p>
+                <p className="text-2xl font-bold text-orange-900 mt-2">€{((stats.outgoingTotal - stats.incomingTotal) / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-orange-600 mt-2">verschil</p>
               </div>
               <Wallet className="h-8 w-8 text-orange-300" />
             </div>
@@ -526,6 +651,55 @@ const Dashboard: React.FC = () => {
             </Card>
           </div>
         )}
+
+        {/* Verkoop / Inkoop Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-green-700">Verkoop</p>
+                <p className="text-xl font-bold text-green-900 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-green-600 mt-2">{stats.outgoingInvoices} facturen</p>
+              </div>
+              <Send className="h-8 w-8 text-green-300" />
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-purple-700">Inkoop</p>
+                <p className="text-xl font-bold text-purple-900 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-purple-600 mt-2">{stats.incomingInvoices} facturen</p>
+              </div>
+              <Upload className="h-8 w-8 text-purple-300" />
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-blue-700">Marge</p>
+                <p className="text-xl font-bold text-blue-900 mt-2">€{((stats.outgoingTotal - stats.incomingTotal) / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-blue-600 mt-2">winst</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-blue-300" />
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-orange-700">Marges %</p>
+                <p className="text-xl font-bold text-orange-900 mt-2">
+                  {stats.outgoingTotal > 0 ? (((stats.outgoingTotal - stats.incomingTotal) / stats.outgoingTotal) * 100).toFixed(0) : 0}%
+                </p>
+                <p className="text-xs text-orange-600 mt-2">ratio</p>
+              </div>
+              <BarChart3 className="h-8 w-8 text-orange-300" />
+            </div>
+          </Card>
+        </div>
 
         {/* Pending Actions */}
         {totalPending > 0 && (
@@ -695,36 +869,39 @@ const Dashboard: React.FC = () => {
             </div>
           </Card>
 
-          {/* Pending Timesheets */}
-          <Card className="p-4 bg-orange-50 border-orange-200">
+          {/* Verkoop */}
+          <Card className="p-4 bg-green-50 border-green-200">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-orange-700">Uren Wachten</p>
-                <p className="text-2xl font-bold text-orange-900 mt-2">{pendingTimesheets.length}</p>
+                <p className="text-xs font-medium text-green-700">Verkoop</p>
+                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-green-600 mt-2">{stats.outgoingInvoices} facturen</p>
               </div>
-              <Clock className="h-8 w-8 text-orange-300" />
+              <Send className="h-8 w-8 text-green-300" />
             </div>
           </Card>
 
-          {/* Pending Leave */}
+          {/* Inkoop */}
           <Card className="p-4 bg-purple-50 border-purple-200">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-purple-700">Verlof Wachten</p>
-                <p className="text-2xl font-bold text-purple-900 mt-2">{pendingLeave.length}</p>
+                <p className="text-xs font-medium text-purple-700">Inkoop</p>
+                <p className="text-2xl font-bold text-purple-900 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-purple-600 mt-2">{stats.incomingInvoices} facturen</p>
               </div>
-              <Calendar className="h-8 w-8 text-purple-300" />
+              <Upload className="h-8 w-8 text-purple-300" />
             </div>
           </Card>
 
           {/* Pending Expenses */}
-          <Card className="p-4 bg-green-50 border-green-200">
+          <Card className="p-4 bg-orange-50 border-orange-200">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-green-700">Onkosten</p>
-                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
+                <p className="text-xs font-medium text-orange-700">Onkosten</p>
+                <p className="text-2xl font-bold text-orange-900 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
+                <p className="text-xs text-orange-600 mt-2">{pendingExpenses.length} wachten</p>
               </div>
-              <ArrowUpRight className="h-8 w-8 text-green-300" />
+              <ArrowUpRight className="h-8 w-8 text-orange-300" />
             </div>
           </Card>
         </div>
