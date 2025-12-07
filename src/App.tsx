@@ -101,6 +101,7 @@ function App() {
                           {/* ✅ FACTURATIE - MET RELATIES EN STATISTIEKEN! */}
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
                           <Route path="budgeting" element={<Budgeting />} />
+                          <Route path="/investment-pitch" element={<InvestmentPitch />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
                           <Route path="incoming-invoices" element={<IncomingInvoices />} />
                           {/* ✅ NEW ROUTE - Incoming Invoices Stats Dashboard */}
