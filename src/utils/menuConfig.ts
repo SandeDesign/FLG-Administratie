@@ -60,7 +60,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { name: 'Salarisverwerking', href: '/payroll', icon: DollarSign, roles: ['admin'], companyTypes: ['employer'] },
 
   // FACTURATIE SECTION (employer, project, holding)
   { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
@@ -79,10 +78,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // SYSTEEM SECTION (employer en holding)
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
-  { name: 'Belastingaangiften', href: '/tax-returns', icon: FileText, roles: ['admin'], companyTypes: ['employer', 'holding'] },
-  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding'] },
   { name: 'Gebruikers Beheer', href: '/admin/users', icon: UserPlus, roles: ['admin'], companyTypes: ['employer', 'holding'] },
-  { name: 'Rollen Beheer', href: '/admin/roles', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding'] },
   { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding'] },
 
   // PROJECT EXTRA PAGES
