@@ -4,6 +4,7 @@ import { Save, Download, Trash2, Plus, Edit2, ChevronDown, ChevronUp, TrendingUp
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { db } from '../lib/firebase';
+import { generateInvestmentPDF } from '../lib/generateInvestmentPDF';
 import { collection, doc, setDoc, getDoc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
 
 // Types
@@ -720,7 +721,24 @@ const InvestmentPitch: React.FC = () => {
               Edit
             </button>
             <button
-              onClick={() => generatePDF(currentPitch)}
+              onClick={() => generateInvestmentPDF({
+  companyName: currentPitch.companyName,
+  elevatorPitch: currentPitch.elevatorPitch,
+  currentARR: currentPitch.currentARR,
+  currentMargin: currentPitch.currentMargin,
+  problemStatement: currentPitch.problemStatement,
+  solutionStatement: currentPitch.solutionStatement,
+  differentiator: currentPitch.differentiator,
+  targetMarket: currentPitch.targetMarket,
+  tam: currentPitch.tam,
+  sam: currentPitch.sam,
+  som: currentPitch.som,
+  askingAmount: currentPitch.askingAmount,
+  runway: currentPitch.runway,
+  projectedYear1Revenue: currentPitch.projectedYear1Revenue,
+  projectedYear2Revenue: currentPitch.projectedYear2Revenue,
+  projectedYear3Revenue: currentPitch.projectedYear3Revenue,
+})}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
             >
               <Download className="h-4 w-4" />
