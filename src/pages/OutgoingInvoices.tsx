@@ -50,7 +50,7 @@ interface ProductionWeek {
 
 const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
-  const { selectedCompany, employees, queryUserId } = useApp(); // ✅ Gebruik queryUserId voor queries
+  const { selectedCompany, employees, queryUserId } = useApp();
   const { success, error: showError } = useToast();
 
   const [invoices, setInvoices] = useState<OutgoingInvoice[]>([]);
@@ -66,15 +66,19 @@ const OutgoingInvoices: React.FC = () => {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [vatRate, setVatRate] = useState<0 | 9 | 21>(21);
 
   // Production Import State
   const [showProductionImport, setShowProductionImport] = useState(false);
   const [productionWeeks, setProductionWeeks] = useState<ProductionWeek[]>([]);
   const [selectedProductionWeeks, setSelectedProductionWeeks] = useState<ProductionWeek[]>([]);
+  const [selectedOpdrachtgever, setSelectedOpdrachtgever] = useState('');
   const [selectedProductionEmployeeId, setSelectedProductionEmployeeId] = useState('');
   const [selectedProductionWeekIds, setSelectedProductionWeekIds] = useState<string[]>([]);
   const [loadingProduction, setLoadingProduction] = useState(false);
   const [invoicedWeekIds, setInvoicedWeekIds] = useState<Set<string>>(new Set());
+  const [opdrachtgevers, setOpdrachtgevers] = useState<string[]>([]);
+  const [loadingOpdrachtgevers, setLoadingOpdrachtgevers] = useState(false);
 
   const [formData, setFormData] = useState({
     clientId: '',
@@ -135,30 +139,65 @@ const OutgoingInvoices: React.FC = () => {
     }
   }, [user, selectedCompany, queryUserId]);
 
+  // Load opdrachtgevers from production weeks
+  const loadOpdrachtgevers = async () => {
+    if (!user || !selectedCompany || !queryUserId) return;
+
+    setLoadingOpdrachtgevers(true);
+    try {
+      const q = query(
+        collection(db, 'productionWeeks'),
+        where('userId', '==', queryUserId),
+        where('companyId', '==', selectedCompany.id)
+      );
+
+      const snap = await getDocs(q);
+      const uniqueOpdrachtgevers = new Set<string>();
+
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.entries && Array.isArray(data.entries)) {
+          data.entries.forEach((entry: ProductionEntry) => {
+            if (entry.opdrachtgever) {
+              uniqueOpdrachtgevers.add(entry.opdrachtgever);
+            }
+          });
+        }
+      });
+
+      const sorted = Array.from(uniqueOpdrachtgevers).sort();
+      setOpdrachtgevers(sorted);
+      
+      if (sorted.length === 0) {
+        showError('Geen data', 'Geen opdrachtgevers gevonden in productie weeks');
+      }
+    } catch (error) {
+      console.error('Error loading opdrachtgevers:', error);
+      showError('Fout', `Kon opdrachtgevers niet laden: ${error instanceof Error ? error.message : 'Onbekend'}`);
+    } finally {
+      setLoadingOpdrachtgevers(false);
+    }
+  };
+
   // Load which weeks have already been invoiced for an employee
   const loadInvoicedWeeks = async (employeeId: string) => {
     if (!user || !selectedCompany || !queryUserId) return new Set<string>();
 
     try {
-      // Get all invoices for this company
       const invoiceData = await outgoingInvoiceService.getInvoices(queryUserId, selectedCompany.id);
 
-      // Find the employee name
       const employee = employees.find(e => e.id === employeeId);
       const employeeName = employee
         ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
         : '';
 
-      // Check all invoice items for week references for this employee
       const usedWeekIds = new Set<string>();
 
       invoiceData.forEach(invoice => {
         invoice.items.forEach(item => {
-          // Check if title matches pattern "Week X EmployeeName"
           if (item.title && employeeName && item.title.includes(employeeName)) {
             const weekMatch = item.title.match(/Week (\d+)/);
             if (weekMatch) {
-              // Create a composite key: week-year-employeeId (we'll match this later)
               usedWeekIds.add(`week-${weekMatch[1]}-${employeeId}`);
             }
           }
@@ -172,18 +211,23 @@ const OutgoingInvoices: React.FC = () => {
     }
   };
 
-  // Load production weeks when employee is selected
+  // Load production weeks when employee is selected (filtered by opdrachtgever)
   const handleLoadProductionWeeks = async () => {
-    if (!selectedProductionEmployeeId || !user || !selectedCompany || !queryUserId) {
-      console.error('❌ Missing data:', { selectedProductionEmployeeId, user: !!user, selectedCompany: !!selectedCompany, queryUserId: !!queryUserId });
-      showError('Fout', 'Selecteer een medewerker');
+    if (!selectedOpdrachtgever || !selectedProductionEmployeeId || !user || !selectedCompany || !queryUserId) {
+      console.error('❌ Missing data:', { 
+        selectedOpdrachtgever, 
+        selectedProductionEmployeeId, 
+        user: !!user, 
+        selectedCompany: !!selectedCompany, 
+        queryUserId: !!queryUserId 
+      });
+      showError('Fout', 'Selecteer opdrachtgever en medewerker');
       return;
     }
 
-    console.log('🔄 Loading production weeks for employee:', selectedProductionEmployeeId);
+    console.log('🔄 Loading production weeks for employee:', selectedProductionEmployeeId, 'opdrachtgever:', selectedOpdrachtgever);
     setLoadingProduction(true);
     try {
-      // Load invoiced weeks for this employee
       const invoicedIds = await loadInvoicedWeeks(selectedProductionEmployeeId);
       setInvoicedWeekIds(invoicedIds);
 
@@ -202,15 +246,25 @@ const OutgoingInvoices: React.FC = () => {
 
       snap.docs.forEach(doc => {
         const data = doc.data();
-        console.log('📋 Week data:', { week: data.week, year: data.year, entries: data.entries?.length });
-        weeks.push({
-          id: doc.id,
-          week: data.week,
-          year: data.year,
-          employeeId: data.employeeId,
-          entries: data.entries || [],
-          totalHours: data.totalHours || 0
-        });
+        
+        // Filter entries by selected opdrachtgever
+        const filteredEntries = (data.entries || []).filter(
+          (entry: ProductionEntry) => entry.opdrachtgever === selectedOpdrachtgever
+        );
+
+        if (filteredEntries.length > 0) {
+          const totalHours = filteredEntries.reduce((sum: number, entry: ProductionEntry) => sum + entry.uren, 0);
+          
+          console.log('📋 Week data:', { week: data.week, year: data.year, entries: filteredEntries.length });
+          weeks.push({
+            id: doc.id,
+            week: data.week,
+            year: data.year,
+            employeeId: data.employeeId,
+            entries: filteredEntries,
+            totalHours: totalHours
+          });
+        }
       });
 
       console.log('✅ Loaded weeks:', weeks.length);
@@ -219,7 +273,7 @@ const OutgoingInvoices: React.FC = () => {
       setSelectedProductionWeeks([]);
 
       if (weeks.length === 0) {
-        showError('Geen data', `Geen productie weken gevonden`);
+        showError('Geen data', `Geen productie weken gevonden voor deze combinatie`);
       } else {
         success('Geladen', `${weeks.length} weken gevonden`);
       }
@@ -231,7 +285,6 @@ const OutgoingInvoices: React.FC = () => {
     }
   };
 
-  // Handle week selection (toggle for multi-select)
   const handleWeekToggle = (weekId: string) => {
     const week = productionWeeks.find(w => w.id === weekId);
     if (!week) return;
@@ -239,36 +292,30 @@ const OutgoingInvoices: React.FC = () => {
     const isSelected = selectedProductionWeekIds.includes(weekId);
 
     if (isSelected) {
-      // Remove from selection
       setSelectedProductionWeekIds(prev => prev.filter(id => id !== weekId));
       setSelectedProductionWeeks(prev => prev.filter(w => w.id !== weekId));
     } else {
-      // Add to selection
       setSelectedProductionWeekIds(prev => [...prev, weekId]);
       setSelectedProductionWeeks(prev => [...prev, week]);
     }
   };
 
-  // Check if a week is already invoiced
   const isWeekInvoiced = (week: ProductionWeek): boolean => {
     const key = `week-${week.week}-${week.employeeId}`;
     return invoicedWeekIds.has(key);
   };
 
-  // Select all uninvoiced weeks
   const selectAllUninvoiced = () => {
     const uninvoicedWeeks = productionWeeks.filter(w => !isWeekInvoiced(w));
     setSelectedProductionWeekIds(uninvoicedWeeks.map(w => w.id));
     setSelectedProductionWeeks(uninvoicedWeeks);
   };
 
-  // Clear selection
   const clearWeekSelection = () => {
     setSelectedProductionWeekIds([]);
     setSelectedProductionWeeks([]);
   };
 
-  // Add production weeks as invoice items (one item per week)
   const addAllProductionItems = () => {
     console.log('🚀 Adding production items...');
 
@@ -286,14 +333,12 @@ const OutgoingInvoices: React.FC = () => {
     const rate = 41.31;
     const newItems: InvoiceItem[] = [];
 
-    // Create an invoice item for each selected week
     selectedProductionWeeks.forEach(week => {
       if (!week.entries || week.entries.length === 0) {
         console.warn(`⚠️ Week ${week.week} has no entries, skipping`);
         return;
       }
 
-      // Build description in table format
       const tableHeader = 'Monteur\tDatum\tUren\tOpdrachtgever\tLocaties';
       const tableRows = week.entries
         .map(entry => `${entry.monteur}\t${entry.datum}\t${entry.uren}\t${entry.opdrachtgever}\t${entry.locaties}`)
@@ -320,14 +365,13 @@ const OutgoingInvoices: React.FC = () => {
       return;
     }
 
-    // Remove empty first item if it exists
     const updatedItems = items.filter(i => i.title.trim() !== '');
     setItems([...updatedItems, ...newItems]);
 
-    // Reset selection
     setSelectedProductionWeeks([]);
     setSelectedProductionWeekIds([]);
     setProductionWeeks([]);
+    setSelectedOpdrachtgever('');
     setSelectedProductionEmployeeId('');
     setShowProductionImport(false);
 
@@ -340,7 +384,7 @@ const OutgoingInvoices: React.FC = () => {
       clientId: '',
       clientName: '',
       clientEmail: '',
-      clientAddress: { street: '', city: '', zipCode: '', country: 'nederland' },
+      clientAddress: { street: '', city: '', zipCode: '', country: 'Nederland' },
       clientPhone: '',
       clientKvk: '',
       clientTaxNumber: '',
@@ -355,9 +399,11 @@ const OutgoingInvoices: React.FC = () => {
     setShowProductionImport(false);
     setProductionWeeks([]);
     setSelectedProductionWeeks([]);
+    setSelectedOpdrachtgever('');
     setSelectedProductionEmployeeId('');
     setSelectedProductionWeekIds([]);
     setInvoicedWeekIds(new Set());
+    setVatRate(21);
     loadRelations();
     generateNextInvoiceNumber();
     setView('create');
@@ -416,7 +462,7 @@ const OutgoingInvoices: React.FC = () => {
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
-  const vatAmount = subtotal * 0.21;
+  const vatAmount = subtotal * (vatRate / 100);
   const total = subtotal + vatAmount;
 
   const handleSubmitInvoice = async (e: React.FormEvent) => {
@@ -485,13 +531,12 @@ const OutgoingInvoices: React.FC = () => {
     }
     setSendingWebhook(invoiceId);
     try {
-      // ⭐ AANPASSING: bankAccount toegevoegd
       const info: CompanyInfo = {
         id: selectedCompany?.id || '',
         name: selectedCompany?.name || '',
         kvk: selectedCompany?.kvk || '',
         taxNumber: selectedCompany?.taxNumber || '',
-        bankAccount: selectedCompany?.bankAccount || '',  // ← NIEUW
+        bankAccount: selectedCompany?.bankAccount || '',
         contactInfo: { email: selectedCompany?.contactInfo?.email || '', phone: selectedCompany?.contactInfo?.phone || '' },
         address: { street: selectedCompany?.address?.street || '', city: selectedCompany?.address?.city || '', zipCode: selectedCompany?.address?.zipCode || '', country: selectedCompany?.address?.country || '' }
       };
@@ -719,13 +764,13 @@ const OutgoingInvoices: React.FC = () => {
             </div>
           </Card>
 
-          {/* Dates */}
+          {/* Dates & VAT */}
           <Card className="p-5 sm:p-6 space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <div className="p-2 bg-orange-100 rounded-lg">
                 <Calendar className="h-4 w-4 text-orange-600" />
               </div>
-              <h2 className="text-sm font-semibold text-gray-900">Datums</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Datums & BTW</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -748,57 +793,143 @@ const OutgoingInvoices: React.FC = () => {
                 />
               </div>
             </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-2">BTW Tarief</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[0, 9, 21].map((rate) => (
+                  <button
+                    key={rate}
+                    type="button"
+                    onClick={() => setVatRate(rate as 0 | 9 | 21)}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      vatRate === rate
+                        ? 'bg-primary-600 text-white border-2 border-primary-600'
+                        : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-primary-300'
+                    }`}
+                  >
+                    {rate}%
+                    {rate === 0 && <span className="block text-xs mt-0.5">Verlegd</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
           </Card>
 
-          {/* Production Data */}
-          <Card className="p-4 sm:p-5 bg-amber-50 border-2 border-amber-200">
-            <div className="flex items-center justify-between gap-3">
+          {/* Invoice Items */}
+          <Card className="p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-amber-100 rounded">
-                  <Factory className="h-4 w-4 text-amber-600" />
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
                 </div>
-                <div>
-                  <p className="text-xs font-medium text-amber-700">Production data</p>
-                  <p className="text-xs text-amber-600">Uit database</p>
-                </div>
+                <h2 className="text-sm font-semibold text-gray-900">Factuurregels</h2>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowProductionImport(!showProductionImport)}
-                className="px-3 py-1 text-xs font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded transition-colors whitespace-nowrap"
-              >
-                {showProductionImport ? '✕ Sluit' : '+ Open'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    loadOpdrachtgevers();
+                    setShowProductionImport(true);
+                  }}
+                  className="flex items-center gap-1 text-xs font-semibold text-amber-600 hover:text-amber-700 transition-colors"
+                >
+                  <Factory className="h-4 w-4" />
+                  Importeer data
+                </button>
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Regel toevoegen
+                </button>
+              </div>
             </div>
-            
+
             {showProductionImport && (
-              <div className="mt-4 pt-4 border-t border-amber-200 space-y-3">
+              <div className="mb-4 p-4 bg-amber-50 border-2 border-amber-200 rounded-lg space-y-3">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-amber-100 rounded">
+                      <Factory className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-amber-700">Production data import</p>
+                      <p className="text-xs text-amber-600">Uit database</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowProductionImport(false);
+                      setProductionWeeks([]);
+                      setSelectedProductionWeeks([]);
+                      setSelectedOpdrachtgever('');
+                      setSelectedProductionEmployeeId('');
+                      setSelectedProductionWeekIds([]);
+                      setOpdrachtgevers([]);
+                    }}
+                    className="text-amber-600 hover:text-amber-700 transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
                 <div className="bg-white rounded-lg p-3 space-y-3">
-                  {/* Step 1: Employee Selector */}
+                  {/* Step 1: Opdrachtgever Selector */}
                   <div>
-                    <label className="block text-xs font-semibold text-amber-900 mb-2">STAP 1: Selecteer medewerker</label>
+                    <label className="block text-xs font-semibold text-amber-900 mb-2">STAP 1: Selecteer opdrachtgever</label>
                     <select
-                      value={selectedProductionEmployeeId}
+                      value={selectedOpdrachtgever}
                       onChange={(e) => {
-                        setSelectedProductionEmployeeId(e.target.value);
+                        setSelectedOpdrachtgever(e.target.value);
                         setProductionWeeks([]);
                         setSelectedProductionWeeks([]);
+                        setSelectedProductionEmployeeId('');
                         setSelectedProductionWeekIds([]);
                         setInvoicedWeekIds(new Set());
                       }}
                       className="w-full px-3 py-2 border-2 border-amber-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                      disabled={loadingOpdrachtgevers}
                     >
-                      <option value="">-- Kies medewerker --</option>
-                      {employees.map((emp) => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                      <option value="">{loadingOpdrachtgevers ? '⏳ Laden...' : '-- Kies opdrachtgever --'}</option>
+                      {opdrachtgevers.map((og) => (
+                        <option key={og} value={og}>
+                          {og}
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  {/* Step 2: Load Button */}
-                  {selectedProductionEmployeeId && (
+                  {/* Step 2: Employee Selector */}
+                  {selectedOpdrachtgever && (
+                    <div>
+                      <label className="block text-xs font-semibold text-amber-900 mb-2">STAP 2: Selecteer medewerker</label>
+                      <select
+                        value={selectedProductionEmployeeId}
+                        onChange={(e) => {
+                          setSelectedProductionEmployeeId(e.target.value);
+                          setProductionWeeks([]);
+                          setSelectedProductionWeeks([]);
+                          setSelectedProductionWeekIds([]);
+                          setInvoicedWeekIds(new Set());
+                        }}
+                        className="w-full px-3 py-2 border-2 border-amber-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                      >
+                        <option value="">-- Kies medewerker --</option>
+                        {employees.map((emp) => (
+                          <option key={emp.id} value={emp.id}>
+                            {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Step 3: Load Button */}
+                  {selectedOpdrachtgever && selectedProductionEmployeeId && (
                     <button
                       type="button"
                       onClick={handleLoadProductionWeeks}
@@ -809,11 +940,11 @@ const OutgoingInvoices: React.FC = () => {
                     </button>
                   )}
 
-                  {/* Step 3: Week Selector (Multi-select with checkboxes) */}
+                  {/* Step 4: Week Selector (Multi-select with checkboxes) */}
                   {productionWeeks.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-semibold text-amber-900">STAP 2: Selecteer weken (meerdere mogelijk)</label>
+                        <label className="text-xs font-semibold text-amber-900">STAP 3: Selecteer weken (meerdere mogelijk)</label>
                         <div className="flex gap-2">
                           <button
                             type="button"
@@ -878,10 +1009,10 @@ const OutgoingInvoices: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Step 4: Preview selected weeks */}
+                  {/* Step 5: Preview selected weeks */}
                   {selectedProductionWeeks.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold text-amber-900">STAP 3: Preview geselecteerde weken</p>
+                      <p className="text-xs font-semibold text-amber-900">STAP 4: Preview geselecteerde weken</p>
                       <div className="bg-white border-2 border-amber-200 rounded p-2 max-h-48 overflow-y-auto space-y-3">
                         {selectedProductionWeeks.map((week) => (
                           <div key={week.id} className="border-b border-amber-200 pb-2 last:border-0 last:pb-0">
@@ -909,7 +1040,7 @@ const OutgoingInvoices: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Step 5: Add Button */}
+                      {/* Step 6: Add Button */}
                       <button
                         type="button"
                         onClick={addAllProductionItems}
@@ -920,7 +1051,7 @@ const OutgoingInvoices: React.FC = () => {
                     </div>
                   )}
 
-                  {productionWeeks.length === 0 && selectedProductionEmployeeId && !loadingProduction && (
+                  {productionWeeks.length === 0 && selectedOpdrachtgever && selectedProductionEmployeeId && !loadingProduction && (
                     <p className="text-xs text-amber-600 p-2 bg-amber-100 rounded">
                       ⚠️ Klik "LAAD WEKEN" om productie weken op te halen
                     </p>
@@ -928,26 +1059,6 @@ const OutgoingInvoices: React.FC = () => {
                 </div>
               </div>
             )}
-          </Card>
-
-          {/* Invoice Items */}
-          <Card className="p-5 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                </div>
-                <h2 className="text-sm font-semibold text-gray-900">Factuurregels</h2>
-              </div>
-              <button
-                type="button"
-                onClick={addItem}
-                className="flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Regel toevoegen
-              </button>
-            </div>
 
             <div className="space-y-3">
               {items.map((item, i) => (
@@ -1025,7 +1136,7 @@ const OutgoingInvoices: React.FC = () => {
                 <span className="text-lg font-semibold text-gray-900">€{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">BTW (21%):</span>
+                <span className="text-sm text-gray-600">BTW ({vatRate}%):</span>
                 <span className="text-lg font-semibold text-gray-900">€{vatAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t border-primary-200">
