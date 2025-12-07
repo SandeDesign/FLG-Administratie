@@ -22,6 +22,11 @@ import {
   Factory,
   BarChart3,
   Wallet,
+  DollarSign,
+  UserPlus,
+  Package,
+  LineChart,
+  PieChart,
 } from 'lucide-react';
 
 export type CompanyType = 'employer' | 'project';
@@ -51,8 +56,11 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
   { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin', 'manager'], companyTypes: ['employer'] },
+  { name: 'Verlof', href: '/leave', icon: Calendar, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
   { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'manager'], companyTypes: ['employer'] },
+  { name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'], companyTypes: ['employer'] },
+  { name: 'Salarisverwerking', href: '/payroll', icon: DollarSign, roles: ['admin'], companyTypes: ['employer'] },
 
   // FACTURATIE SECTION (both)
   { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project'] },
@@ -60,16 +68,27 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project'] },
   { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project'] },
+  { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project'] },
+  { name: 'Declaraties Medewerkers', href: '/expenses', icon: Receipt, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
 
   // DATA & EXPORTS SECTION (alleen employer)
   { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { name: 'Drive Bestanden', href: '/drive-files', icon: FolderOpen, roles: ['admin'], companyTypes: ['employer'] },
+  { name: 'Exports Beheer', href: '/exports-management', icon: Package, roles: ['admin'], companyTypes: ['employer'] },
 
   // SYSTEEM SECTION (alleen employer)
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
+  { name: 'Belastingaangiften', href: '/tax-returns', icon: FileText, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer'] },
+  { name: 'Gebruikers Beheer', href: '/admin/users', icon: UserPlus, roles: ['admin'], companyTypes: ['employer'] },
+  { name: 'Rollen Beheer', href: '/admin/roles', icon: Shield, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project'] },
+
+  // PROJECT EXTRA PAGES
+  { name: 'Productie Pool', href: '/production-pool', icon: Package, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
+  { name: 'Project Team', href: '/project-team', icon: Users, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
+  { name: 'Investment Pitch', href: '/investment-pitch', icon: LineChart, roles: ['admin'], companyTypes: ['project'] },
 ];
 
 // SECTION DEFINITIONS
@@ -119,7 +138,13 @@ export const getNavigationSections = (
         title: 'Facturatie',
         icon: Receipt,
         defaultOpen: false,
-        items: filtered.filter(i => ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)),
+        items: filtered.filter(i => ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkoop Overzicht'].includes(i.name)),
+      },
+      {
+        title: 'Overig',
+        icon: Settings,
+        defaultOpen: false,
+        items: filtered.filter(i => ['Investment Pitch', 'Instellingen'].includes(i.name)),
       },
     ].filter(section => section.items.length > 0);
   }
@@ -131,7 +156,7 @@ export const getNavigationSections = (
       icon: Activity,
       defaultOpen: false,
       items: filtered.filter(i =>
-        ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof Goedkeuren', 'Verzuim Beheren'].includes(i.name)
+        ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof', 'Verlof Goedkeuren', 'Ziekteverzuim', 'Verzuim Beheren', 'Salarisverwerking', 'Declaraties Medewerkers'].includes(i.name)
       ),
     },
     {
@@ -139,20 +164,20 @@ export const getNavigationSections = (
       icon: Receipt,
       defaultOpen: false,
       items: filtered.filter(i =>
-        ['Relaties', 'Begroting', 'Declaraties', 'Uitgaande Facturen', 'Inkomende Facturen'].includes(i.name)
+        ['Relaties', 'Begroting', 'Declaraties', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkoop Overzicht'].includes(i.name)
       ),
     },
     {
       title: 'Data & Exports',
       icon: TrendingUp,
       defaultOpen: false,
-      items: filtered.filter(i => ['Uren Export', 'Drive Bestanden'].includes(i.name)),
+      items: filtered.filter(i => ['Uren Export', 'Drive Bestanden', 'Exports Beheer'].includes(i.name)),
     },
     {
       title: 'Systeem',
       icon: Settings,
       defaultOpen: false,
-      items: filtered.filter(i => ['Bedrijven', 'Loonstroken', 'Audit Log', 'Instellingen'].includes(i.name)),
+      items: filtered.filter(i => ['Bedrijven', 'Loonstroken', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Instellingen'].includes(i.name)),
     },
   ].filter(section => section.items.length > 0);
 };

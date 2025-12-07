@@ -734,23 +734,16 @@ const Settings: React.FC = () => {
                         return false;
                       }
 
-                      // Voor projectbedrijven: filter HR/Payroll pagina's uit
+                      // Voor projectbedrijven: alleen project items
                       if (selectedCompany.companyType === 'project') {
-                        const excludedForProjects = [
-                          '/companies',
-                          '/employees',
-                          '/leave',
-                          '/absence',
-                          '/leave-approvals',
-                          '/payroll',
-                          '/payslips',
-                          '/tax-returns',
-                          '/settings',
-                        ];
-                        return !excludedForProjects.includes(item.href);
+                        // Project items zijn toegestaan
+                        if (item.companyTypes.includes('project')) {
+                          return true;
+                        }
+                        return false;
                       }
 
-                      // Voor werkgever-bedrijven: alles is beschikbaar
+                      // Voor werkgever-bedrijven: ALLES is beschikbaar (ook project items!)
                       return true;
                     })
                     .map((item) => {

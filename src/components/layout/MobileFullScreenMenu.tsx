@@ -3,29 +3,16 @@ import { NavLink } from 'react-router-dom';
 import {
   X,
   ChevronRight,
-  Users,
-  Wallet,
-  Factory,
-  Download,
-  User,
-  Settings,
   LogOut,
   LayoutDashboard,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
-import { navigation } from './Sidebar';
+import { getFilteredNavigation, getNavigationSections, CompanyType } from '../../utils/menuConfig';
 
 interface MobileFullScreenMenuProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface MenuSection {
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  items: typeof navigation;
 }
 
 export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOpen, onClose }) => {
@@ -35,63 +22,16 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
   if (!isOpen) return null;
 
-  const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined;
+  const companyType = selectedCompany?.companyType as CompanyType | undefined;
 
-  // Filter navigation by role AND company type
-  const filteredNavigation = navigation.filter(item => {
-    const roleMatches = userRole && item.roles.includes(userRole);
-    const companyTypeMatches = !companyType || !item.companyTypes || item.companyTypes.includes(companyType);
-    return roleMatches && companyTypeMatches;
-  });
+  // Get filtered navigation using menuConfig
+  const filteredNavigation = getFilteredNavigation(userRole, companyType);
 
   // Dashboard item (standalone)
   const dashboardItem = filteredNavigation.find(i => i.name === 'Dashboard');
 
-  // Sections matching Sidebar
-  const menuSections: MenuSection[] = [
-    {
-      title: 'HR',
-      icon: Users,
-      color: 'bg-blue-500',
-      items: filteredNavigation.filter(i =>
-        ['Werknemers', 'Uren Goedkeuren', 'Verlof Beheren', 'Verzuim Beheren', 'Mijn Team'].includes(i.name)
-      )
-    },
-    {
-      title: 'Financieel',
-      icon: Wallet,
-      color: 'bg-emerald-500',
-      items: filteredNavigation.filter(i =>
-        ['Klanten & Leveranciers', 'Begroting', 'Verkoop', 'Inkoop Upload', 'Inkoop Overzicht', 'Declaraties'].includes(i.name)
-      )
-    },
-    {
-      title: 'Project',
-      icon: Factory,
-      color: 'bg-orange-500',
-      items: filteredNavigation.filter(i => ['Productie', 'Project Stats'].includes(i.name))
-    },
-    {
-      title: 'Data',
-      icon: Download,
-      color: 'bg-purple-500',
-      items: filteredNavigation.filter(i => ['Uren Export', 'Loonstroken', 'Drive'].includes(i.name))
-    },
-    {
-      title: 'Mijn Zaken',
-      icon: User,
-      color: 'bg-cyan-500',
-      items: filteredNavigation.filter(i =>
-        ['Mijn Uren', 'Mijn Verlof', 'Mijn Declaraties', 'Mijn Loonstroken', 'Verlof Goedkeuren'].includes(i.name)
-      )
-    },
-    {
-      title: 'Systeem',
-      icon: Settings,
-      color: 'bg-gray-500',
-      items: filteredNavigation.filter(i => ['Bedrijven', 'Audit Log', 'Instellingen'].includes(i.name))
-    },
-  ].filter(section => section.items.length > 0);
+  // Get sections from menuConfig
+  const menuSections = getNavigationSections(userRole, companyType);
 
   const toggleSection = (sectionTitle: string) => {
     setExpandedSections(prev =>
@@ -189,58 +129,64 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
           )}
 
           {/* Sections */}
-          {menuSections.map((section) => (
-            <div key={section.title} className="space-y-1">
-              {/* Section Header */}
-              <button
-                onClick={() => toggleSection(section.title)}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200 group"
-              >
-                <div className="flex items-center space-x-2">
-                  <div className={`p-1.5 rounded-md ${section.color}`}>
-                    <section.icon className="h-3.5 w-3.5 text-white" />
+          {menuSections.map((section) => {
+            const SectionIcon = section.icon;
+            return (
+              <div key={section.title} className="space-y-1">
+                {/* Section Header */}
+                <button
+                  onClick={() => toggleSection(section.title)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200 group"
+                >
+                  <div className="flex items-center space-x-2">
+                    <div className="p-1.5 rounded-md bg-primary-500">
+                      <SectionIcon className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{section.title}</span>
                   </div>
-                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{section.title}</span>
-                </div>
-                <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
-                  expandedSections.includes(section.title) ? 'rotate-90' : ''
-                }`} />
-              </button>
+                  <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+                    expandedSections.includes(section.title) ? 'rotate-90' : ''
+                  }`} />
+                </button>
 
-              {/* Section Items */}
-              {expandedSections.includes(section.title) && (
-                <div className="space-y-0.5 ml-2 pl-3 border-l border-gray-100">
-                  {section.items.map((item) => (
-                    <NavLink
-                      key={item.name}
-                      to={item.href}
-                      onClick={onClose}
-                      className={({ isActive }) =>
-                        `flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
-                          isActive
-                            ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 shadow-sm border border-primary-200'
-                            : 'text-gray-700 hover:bg-gray-50'
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <div className={`p-1.5 rounded-lg transition-all duration-200 ${
-                            isActive ? 'bg-primary-500 shadow-sm' : 'bg-gray-100'
-                          }`}>
-                            <item.icon className={`h-3.5 w-3.5 ${
-                              isActive ? 'text-white' : 'text-gray-600'
-                            }`} />
-                          </div>
-                          <span className="font-medium">{item.name}</span>
-                        </>
-                      )}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                {/* Section Items */}
+                {expandedSections.includes(section.title) && (
+                  <div className="space-y-0.5 ml-2 pl-3 border-l border-gray-100">
+                    {section.items.map((item) => {
+                      const ItemIcon = item.icon;
+                      return (
+                        <NavLink
+                          key={item.name}
+                          to={item.href}
+                          onClick={onClose}
+                          className={({ isActive }) =>
+                            `flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
+                              isActive
+                                ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 shadow-sm border border-primary-200'
+                                : 'text-gray-700 hover:bg-gray-50'
+                            }`
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              <div className={`p-1.5 rounded-lg transition-all duration-200 ${
+                                isActive ? 'bg-primary-500 shadow-sm' : 'bg-gray-100'
+                              }`}>
+                                <ItemIcon className={`h-3.5 w-3.5 ${
+                                  isActive ? 'text-white' : 'text-gray-600'
+                                }`} />
+                              </div>
+                              <span className="font-medium">{item.name}</span>
+                            </>
+                          )}
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         {/* Footer */}
