@@ -168,7 +168,7 @@ const Budgeting: React.FC = () => {
   const [showActualData, setShowActualData] = useState(true);
   const [projectionYears, setProjectionYears] = useState(3);
   const [refreshing, setRefreshing] = useState(false);
-  const [drillDownCategory, setDrillDownCategory] = useState<{ type: 'cost' | 'income', category: string } | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
@@ -211,9 +211,18 @@ const Budgeting: React.FC = () => {
     success('Ververst', 'Gegevens zijn bijgewerkt');
   };
 
+  const toggleCategory = (category: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category);
+    } else {
+      newExpanded.add(category);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
   // Map budget categories to invoice categories for matching
   const matchInvoiceToCategory = (invoice: OutgoingInvoice | any, type: 'income' | 'cost'): BudgetCategory | null => {
-    // Voor nu een eenvoudige matching - kan later uitgebreid worden
     const description = invoice.description?.toLowerCase() || invoice.notes?.toLowerCase() || '';
 
     if (type === 'income') {
@@ -237,6 +246,7 @@ const Budgeting: React.FC = () => {
 
   // Get invoices for a specific category
   const getInvoicesForCategory = (category: string, type: 'income' | 'cost') => {
+    const currentYear = new Date().getFullYear();
     if (type === 'income') {
       return outgoingInvoices.filter(inv => {
         const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
@@ -264,7 +274,7 @@ const Budgeting: React.FC = () => {
   };
 
   // Filter items by type
-  const costItems = budgetItems.filter(i => i.type === 'cost' || !i.type); // backwards compatible
+  const costItems = budgetItems.filter(i => i.type === 'cost' || !i.type);
   const incomeItems = budgetItems.filter(i => i.type === 'income');
   const activeCostItems = costItems.filter(i => i.isActive);
   const activeIncomeItems = incomeItems.filter(i => i.isActive);
@@ -310,18 +320,12 @@ const Budgeting: React.FC = () => {
   // Helper to safely convert date to ISO string
   const toDateString = (date: any): string => {
     if (!date) return new Date().toISOString().split('T')[0];
-
-    // If it's already a Date object
     if (date instanceof Date) {
       return date.toISOString().split('T')[0];
     }
-
-    // If it's a Firebase Timestamp with toDate method
     if (date.toDate && typeof date.toDate === 'function') {
       return date.toDate().toISOString().split('T')[0];
     }
-
-    // Try to parse as string/number
     try {
       return new Date(date).toISOString().split('T')[0];
     } catch {
@@ -446,35 +450,71 @@ const Budgeting: React.FC = () => {
     }).format(amount);
   };
 
-  // Generate projection data for charts
+  // Generate projection data based on actual invoices
   const generateProjections = () => {
     const projections = [];
     const now = new Date();
 
     for (let year = 0; year < projectionYears; year++) {
       const projYear = now.getFullYear() + year;
-      let yearIncome = 0;
-      let yearCosts = 0;
-
-      activeIncomeItems.forEach(item => {
-        const baseMonthly = getMonthlyAmount(item);
-        const growth = item.growthRate || 0;
-        const yearlyAmount = baseMonthly * 12 * Math.pow(1 + growth / 100, year);
-        const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
-        yearIncome += yearlyAmount * weight;
+      
+      // Get invoices for this year
+      const yearInvoices = outgoingInvoices.filter(inv => {
+        const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+        return invDate.getFullYear() === projYear && inv.status !== 'cancelled';
       });
 
-      activeCostItems.forEach(item => {
-        const baseMonthly = getMonthlyAmount(item);
-        const growth = item.growthRate || 0;
-        yearCosts += baseMonthly * 12 * Math.pow(1 + growth / 100, year);
+      const yearCosts = incomingInvoices.filter(inv => {
+        const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+        return invDate.getFullYear() === projYear;
       });
+
+      // For current year and future, use actual data or budget
+      let yearIncome: number;
+      let yearCostAmount: number;
+
+      if (projYear === currentYear && yearInvoices.length > 0) {
+        // Current year: actual data + projection for remaining months
+        const actualIncome = yearInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+        const months = yearInvoices[0].invoiceDate instanceof Date 
+          ? yearInvoices[0].invoiceDate.getMonth() + 1
+          : new Date(yearInvoices[0].invoiceDate).getMonth() + 1;
+        yearIncome = actualIncome + (monthlyIncome * (12 - months));
+      } else if (projYear === currentYear) {
+        // Current year no invoices yet
+        yearIncome = monthlyIncome * 12;
+      } else {
+        // Future years: use budget with growth
+        yearIncome = activeIncomeItems.reduce((sum, item) => {
+          const baseMonthly = getMonthlyAmount(item);
+          const growth = item.growthRate || 0;
+          const yearlyAmount = baseMonthly * 12 * Math.pow(1 + growth / 100, year);
+          const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
+          return sum + (yearlyAmount * weight);
+        }, 0);
+      }
+
+      if (projYear === currentYear && yearCosts.length > 0) {
+        const actualCosts = yearCosts.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+        const months = yearCosts[0].invoiceDate instanceof Date 
+          ? yearCosts[0].invoiceDate.getMonth() + 1
+          : new Date(yearCosts[0].invoiceDate).getMonth() + 1;
+        yearCostAmount = actualCosts + (monthlyCosts * (12 - months));
+      } else if (projYear === currentYear) {
+        yearCostAmount = monthlyCosts * 12;
+      } else {
+        yearCostAmount = activeCostItems.reduce((sum, item) => {
+          const baseMonthly = getMonthlyAmount(item);
+          const growth = item.growthRate || 0;
+          return sum + (baseMonthly * 12 * Math.pow(1 + growth / 100, year));
+        }, 0);
+      }
 
       projections.push({
         year: projYear,
         income: yearIncome,
-        costs: yearCosts,
-        profit: yearIncome - yearCosts,
+        costs: yearCostAmount,
+        profit: yearIncome - yearCostAmount,
       });
     }
 
@@ -601,17 +641,16 @@ const Budgeting: React.FC = () => {
   </div>
 
   <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 16px; border-radius: 12px; margin-bottom: 24px; border-left: 4px solid #f59e0b;">
-    <h3 style="font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 8px;">⚠️ Gewogen Projectie</h3>
+    <h3 style="font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 8px;">📊 Invoice-gebaseerde Projectie</h3>
     <p style="font-size: 14px; color: #78350f; line-height: 1.5;">
-      Inkomsten worden gewogen op zekerheid: <strong>Bevestigd (100%)</strong>, <strong>Waarschijnlijk (75%)</strong>,
-      <strong>Potentieel (50%)</strong>, <strong>Speculatief (25%)</strong>. Dit geeft een realistischer beeld voor investeerders.
+      Gebaseerd op werkelijke in- en uitgaande facturen. Inkomsten = uitgaande facturen. Kosten = inkomende facturen.
     </p>
   </div>
 
   <div class="summary-grid">
     <div class="summary-card income">
-      <h3>Jaarlijkse Inkomsten (Gewogen)</h3>
-      <div class="amount">${formatCurrency(weightedMonthlyIncome * 12)}</div>
+      <h3>Jaarlijkse Inkomsten</h3>
+      <div class="amount">${formatCurrency(yearlyIncome)}</div>
     </div>
     <div class="summary-card costs">
       <h3>Jaarlijkse Kosten</h3>
@@ -619,7 +658,7 @@ const Budgeting: React.FC = () => {
     </div>
     <div class="summary-card profit">
       <h3>Verwachte Winst</h3>
-      <div class="amount">${formatCurrency(weightedMonthlyIncome * 12 - yearlyCosts)}</div>
+      <div class="amount">${formatCurrency(yearlyProfit)}</div>
     </div>
   </div>
 
@@ -627,20 +666,20 @@ const Budgeting: React.FC = () => {
     <h2>Kerngetallen</h2>
     <div class="metrics-grid">
       <div class="metric-card">
-        <div class="value">${formatCurrency(weightedMonthlyIncome * 12)}</div>
-        <div class="label">ARR (Gewogen)</div>
+        <div class="value">${formatCurrency(yearlyIncome)}</div>
+        <div class="label">ARR</div>
       </div>
       <div class="metric-card">
         <div class="value">${formatCurrency(monthlyIncome)}</div>
-        <div class="label">MRR (Max)</div>
+        <div class="label">MRR</div>
       </div>
       <div class="metric-card">
         <div class="value" style="color: ${yearlyProfit >= 0 ? '#059669' : '#dc2626'}">${yearlyIncome > 0 ? ((yearlyProfit / yearlyIncome) * 100).toFixed(1) : 0}%</div>
         <div class="label">Winstmarge</div>
       </div>
       <div class="metric-card">
-        <div class="value">${activeIncomeItems.length}</div>
-        <div class="label">Inkomstenbronnen</div>
+        <div class="value">${outgoingInvoices.length}</div>
+        <div class="label">Uitgaande Facturen</div>
       </div>
     </div>
   </div>
@@ -671,115 +710,12 @@ const Budgeting: React.FC = () => {
     </table>
   </div>
 
-  ${activeIncomeItems.length > 0 ? `
-  <div class="section">
-    <h2>Inkomstenbronnen (${activeIncomeItems.length})</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Bron</th>
-          <th>Categorie</th>
-          <th>Bedrag/mnd</th>
-          <th>Zekerheid</th>
-          <th>Groei/jaar</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${activeIncomeItems.map(item => `
-          <tr>
-            <td><strong>${item.name}</strong>${item.supplier ? `<br><small style="color:#666">${item.supplier}</small>` : ''}</td>
-            <td>${INCOME_CATEGORY_CONFIG[item.category as BudgetIncomeCategory]?.label || item.category}</td>
-            <td class="positive">${formatCurrency(getMonthlyAmount(item))}</td>
-            <td>${CONFIDENCE_CONFIG[item.confidence || 'confirmed'].label}</td>
-            <td>${item.growthRate || 0}%</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  </div>
-  ` : ''}
-
-  ${activeCostItems.length > 0 ? `
-  <div class="section">
-    <h2>Kostenstructuur (${activeCostItems.length})</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Kostenpost</th>
-          <th>Categorie</th>
-          <th>Bedrag/mnd</th>
-          <th>Leverancier</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${activeCostItems.map(item => `
-          <tr>
-            <td><strong>${item.name}</strong></td>
-            <td>${COST_CATEGORY_CONFIG[item.category as BudgetCostCategory]?.label || item.category}</td>
-            <td class="negative">${formatCurrency(getMonthlyAmount(item))}</td>
-            <td>${item.supplier || '-'}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  </div>
-  ` : ''}
-
-  ${showActualData && (actualYTDIncome > 0 || actualYTDCosts > 0) ? `
-  <div class="section">
-    <h2>YTD Realiteit vs Projectie (${currentYear})</h2>
-    <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
-      <em>Gebaseerd op ${outgoingInvoices.filter(inv => {
-        const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-        return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
-      }).length} uitgaande facturen en ${incomingInvoices.filter(inv => {
-        const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-        return invDate.getFullYear() === currentYear;
-      }).length} inkomende facturen in ${currentYear}</em>
-    </p>
-    <table>
-      <thead>
-        <tr>
-          <th>Metric</th>
-          <th>Geprojecteerd YTD</th>
-          <th>Werkelijk YTD (Facturen)</th>
-          <th>Verschil</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Inkomsten</td>
-          <td>${formatCurrency(projectedYTDIncome)}</td>
-          <td class="positive">${formatCurrency(actualYTDIncome)}</td>
-          <td class="${incomeVariance >= 0 ? 'positive' : 'negative'}">${incomeVariance >= 0 ? '+' : ''}${formatCurrency(incomeVariance)}</td>
-        </tr>
-        <tr>
-          <td>Kosten</td>
-          <td>${formatCurrency(projectedYTDCosts)}</td>
-          <td class="negative">${actualYTDCosts > 0 ? formatCurrency(actualYTDCosts) : '<span style="color: #9ca3af;">Geen facturen</span>'}</td>
-          <td class="${costVariance <= 0 ? 'positive' : 'negative'}">${actualYTDCosts > 0 ? (costVariance <= 0 ? '' : '+') + formatCurrency(costVariance) : '<span style="color: #9ca3af;">-</span>'}</td>
-        </tr>
-      </tbody>
-    </table>
-    ${actualYTDCosts === 0 ? `
-    <div style="background: #f3f4f6; padding: 12px; border-radius: 8px; margin-top: 12px;">
-      <p style="font-size: 13px; color: #6b7280; margin: 0;">
-        <strong>Let op:</strong> Er zijn nog geen inkomende facturen geregistreerd in ${currentYear}.
-        Upload facturen via "Inkoop Upload" om een realistisch beeld te krijgen van de werkelijke kosten.
-      </p>
-    </div>
-    ` : ''}
-  </div>
-  ` : ''}
-
   <div class="footer">
-    <p>Dit document is automatisch gegenereerd en bevat financiële projecties gebaseerd op ingevoerde begrotingsdata.</p>
-    <p>Gewogen inkomsten zijn gecorrigeerd voor zekerheid: Bevestigd (100%), Waarschijnlijk (75%), Potentieel (50%), Speculatief (25%)</p>
+    <p>Dit document is automatisch gegenereerd en bevat financiële projecties gebaseerd op werkelijke in- en uitgaande facturen.</p>
   </div>
 </body>
 </html>`;
 
-    // Create downloadable file
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -790,7 +726,7 @@ const Budgeting: React.FC = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    success('Gedownload', `${fileName} is gedownload. Open het bestand en klik op "Print / PDF" voor een PDF.`);
+    success('Gedownload', `${fileName} is gedownload`);
   };
 
   if (!selectedCompany) {
@@ -971,7 +907,7 @@ const Budgeting: React.FC = () => {
                 {/* Income Comparison */}
                 <div className="p-4 bg-emerald-50 rounded-xl">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-emerald-700">Inkomsten</span>
+                    <span className="text-sm font-medium text-emerald-700">Inkomsten (Uitgaande Facturen)</span>
                     <span className={`text-sm font-bold ${incomeVariance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {incomeVariance >= 0 ? '+' : ''}{formatCurrency(incomeVariance)}
                     </span>
@@ -982,7 +918,7 @@ const Budgeting: React.FC = () => {
                       <span className="font-medium">{formatCurrency(projectedYTDIncome)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Werkelijk (facturen)</span>
+                      <span className="text-gray-600">Werkelijk</span>
                       <span className="font-medium text-emerald-700">{formatCurrency(actualYTDIncome)}</span>
                     </div>
                   </div>
@@ -997,7 +933,7 @@ const Budgeting: React.FC = () => {
                 {/* Costs Comparison */}
                 <div className="p-4 bg-red-50 rounded-xl">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-red-700">Kosten</span>
+                    <span className="text-sm font-medium text-red-700">Kosten (Inkomende Facturen)</span>
                     <span className={`text-sm font-bold ${costVariance <= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {costVariance >= 0 ? '+' : ''}{formatCurrency(costVariance)}
                     </span>
@@ -1008,7 +944,7 @@ const Budgeting: React.FC = () => {
                       <span className="font-medium">{formatCurrency(projectedYTDCosts)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Werkelijk (facturen)</span>
+                      <span className="text-gray-600">Werkelijk</span>
                       <span className="font-medium text-red-700">{formatCurrency(actualYTDCosts)}</span>
                     </div>
                   </div>
@@ -1055,7 +991,6 @@ const Budgeting: React.FC = () => {
               onAction={() => handleOpenModal(undefined, 'cost')}
             />
           ) : (
-            // Group items by category
             Object.entries(
               costItems.reduce((groups, item) => {
                 const category = item.category as BudgetCostCategory;
@@ -1067,15 +1002,14 @@ const Budgeting: React.FC = () => {
               const config = COST_CATEGORY_CONFIG[category as BudgetCostCategory] || COST_CATEGORY_CONFIG.other;
               const Icon = config.icon;
               const categoryTotal = items.reduce((sum, item) => sum + (item.isActive ? getMonthlyAmount(item) : 0), 0);
-
               const categoryInvoices = getInvoicesForCategory(category, 'cost');
-              const isExpanded = drillDownCategory?.type === 'cost' && drillDownCategory?.category === category;
+              const isExpanded = expandedCategories.has(category);
 
               return (
                 <div key={category} className="space-y-2">
-                  {/* Category Header - Clickable */}
+                  {/* Category Header - Clickable Toggle */}
                   <button
-                    onClick={() => setDrillDownCategory(isExpanded ? null : { type: 'cost', category })}
+                    onClick={() => toggleCategory(category)}
                     className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor} transition-all hover:shadow-md`}
                   >
                     <div className="flex items-center gap-2">
@@ -1102,87 +1036,89 @@ const Budgeting: React.FC = () => {
                     </div>
                   </button>
 
-                  {/* Drill-down: Show Invoices */}
-                  {isExpanded && categoryInvoices.length > 0 && (
-                    <Card className="ml-4 p-4 bg-gray-50">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                        Facturen in deze categorie ({currentYear})
-                      </h4>
-                      <div className="space-y-2">
-                        {categoryInvoices.map((inv: any) => {
-                          const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-                          return (
-                            <div key={inv.id} className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 text-sm">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{inv.supplier || inv.description || 'Onbekend'}</p>
-                                <p className="text-xs text-gray-500">
-                                  {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
-                                </p>
+                  {/* Items - Show when expanded */}
+                  {isExpanded && (
+                    <div className="space-y-2 pl-2">
+                      {items.map((item) => (
+                        <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
+                          <div className="flex items-center gap-4">
+                            <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                                {!item.isActive && (
+                                  <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                                    Inactief
+                                  </span>
+                                )}
                               </div>
-                              <p className="font-bold text-red-600">
-                                {formatCurrency(inv.amount || 0)}
+                              <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                                {item.supplier && <span>{item.supplier}</span>}
+                                {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-red-600">
+                                -{formatCurrencyDetailed(item.amount)}
                               </p>
+                              <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
                             </div>
-                          );
-                        })}
-                        <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
-                          <span>Totaal YTD</span>
-                          <span className="text-red-600">
-                            {formatCurrency(categoryInvoices.reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0))}
-                          </span>
-                        </div>
-                      </div>
-                    </Card>
-                  )}
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleOpenModal(item)}
+                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Bewerken"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(item)}
+                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Verwijderen"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
 
-                  {/* Items in this category */}
-                  <div className="space-y-2 pl-2">
-                    {items.map((item) => (
-                      <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
-                        <div className="flex items-center gap-4">
-                          <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                              {!item.isActive && (
-                                <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                                  Inactief
-                                </span>
-                              )}
+                      {/* Invoices for this category */}
+                      {categoryInvoices.length > 0 && (
+                        <Card className="ml-4 p-4 bg-gray-50">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                            Facturen in deze categorie ({currentYear})
+                          </h4>
+                          <div className="space-y-2">
+                            {categoryInvoices.map((inv: any) => {
+                              const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                              return (
+                                <div key={inv.id} className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 text-sm">
+                                  <div className="flex-1">
+                                    <p className="font-medium text-gray-900">{inv.supplier || inv.description || 'Onbekend'}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
+                                    </p>
+                                  </div>
+                                  <p className="font-bold text-red-600">
+                                    {formatCurrency(inv.amount || 0)}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                            <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
+                              <span>Totaal YTD</span>
+                              <span className="text-red-600">
+                                {formatCurrency(categoryInvoices.reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0))}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                              {item.supplier && <span>{item.supplier}</span>}
-                              {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
-                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-red-600">
-                              -{formatCurrencyDetailed(item.amount)}
-                            </p>
-                            <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
-                          </div>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => handleOpenModal(item)}
-                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                              title="Bewerken"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item)}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Verwijderen"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -1202,7 +1138,6 @@ const Budgeting: React.FC = () => {
               onAction={() => handleOpenModal(undefined, 'income')}
             />
           ) : (
-            // Group items by category
             Object.entries(
               incomeItems.reduce((groups, item) => {
                 const category = item.category as BudgetIncomeCategory;
@@ -1219,15 +1154,14 @@ const Budgeting: React.FC = () => {
                 const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
                 return sum + (getMonthlyAmount(item) * weight);
               }, 0);
-
               const categoryInvoices = getInvoicesForCategory(category, 'income');
-              const isExpanded = drillDownCategory?.type === 'income' && drillDownCategory?.category === category;
+              const isExpanded = expandedCategories.has(category);
 
               return (
                 <div key={category} className="space-y-2">
-                  {/* Category Header - Clickable */}
+                  {/* Category Header - Clickable Toggle */}
                   <button
-                    onClick={() => setDrillDownCategory(isExpanded ? null : { type: 'income', category })}
+                    onClick={() => toggleCategory(category)}
                     className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor} transition-all hover:shadow-md`}
                   >
                     <div className="flex items-center gap-2">
@@ -1257,112 +1191,114 @@ const Budgeting: React.FC = () => {
                     </div>
                   </button>
 
-                  {/* Drill-down: Show Invoices */}
-                  {isExpanded && categoryInvoices.length > 0 && (
-                    <Card className="ml-4 p-4 bg-gray-50">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                        Facturen in deze categorie ({currentYear})
-                      </h4>
-                      <div className="space-y-2">
-                        {categoryInvoices.map((inv: any) => {
-                          const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-                          return (
-                            <div key={inv.id} className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 text-sm">
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900">{inv.clientName || inv.description || 'Onbekend'}</p>
-                                <p className="text-xs text-gray-500">
-                                  {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
-                                </p>
+                  {/* Items - Show when expanded */}
+                  {isExpanded && (
+                    <div className="space-y-2 pl-2">
+                      {items.map((item) => {
+                        const confConfig = CONFIDENCE_CONFIG[item.confidence || 'confirmed'];
+                        const ConfIcon = confConfig.icon;
+
+                        return (
+                          <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
+                            <div className="flex items-center gap-4">
+                              <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                                <Icon className="h-5 w-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                                  <span className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${confConfig.bgColor} ${confConfig.color}`}>
+                                    <ConfIcon className="h-3 w-3" />
+                                    {confConfig.label}
+                                  </span>
+                                  {!item.isActive && (
+                                    <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                                      Inactief
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                                  {item.supplier && <span>{item.supplier}</span>}
+                                  {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
+                                  {item.growthRate && item.growthRate > 0 && (
+                                    <span className="text-emerald-600">• +{item.growthRate}%/jaar</span>
+                                  )}
+                                </div>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-emerald-600">
-                                  {formatCurrency(inv.totalAmount || inv.amount || 0)}
+                                <p className="text-lg font-bold text-emerald-600">
+                                  +{formatCurrencyDetailed(item.amount)}
                                 </p>
-                                {inv.status && (
-                                  <span className={`text-xs ${
-                                    inv.status === 'paid' ? 'text-green-600' :
-                                    inv.status === 'sent' ? 'text-blue-600' :
-                                    'text-gray-600'
-                                  }`}>
-                                    {inv.status === 'paid' ? 'Betaald' :
-                                     inv.status === 'sent' ? 'Verzonden' :
-                                     inv.status === 'draft' ? 'Concept' : inv.status}
-                                  </span>
-                                )}
+                                <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                              </div>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => handleOpenModal(item)}
+                                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                  title="Bewerken"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item)}
+                                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Verwijderen"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
                               </div>
                             </div>
-                          );
-                        })}
-                        <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
-                          <span>Totaal YTD</span>
-                          <span className="text-emerald-600">
-                            {formatCurrency(categoryInvoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || inv.amount || 0), 0))}
-                          </span>
-                        </div>
-                      </div>
-                    </Card>
-                  )}
+                          </Card>
+                        );
+                      })}
 
-                  {/* Items in this category */}
-                  <div className="space-y-2 pl-2">
-                    {items.map((item) => {
-                      const confConfig = CONFIDENCE_CONFIG[item.confidence || 'confirmed'];
-                      const ConfIcon = confConfig.icon;
-
-                      return (
-                        <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
-                          <div className="flex items-center gap-4">
-                            <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
-                              <Icon className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                                <span className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${confConfig.bgColor} ${confConfig.color}`}>
-                                  <ConfIcon className="h-3 w-3" />
-                                  {confConfig.label}
-                                </span>
-                                {!item.isActive && (
-                                  <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                                    Inactief
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                                {item.supplier && <span>{item.supplier}</span>}
-                                {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
-                                {item.growthRate && item.growthRate > 0 && (
-                                  <span className="text-emerald-600">• +{item.growthRate}%/jaar</span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-emerald-600">
-                                +{formatCurrencyDetailed(item.amount)}
-                              </p>
-                              <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
-                            </div>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleOpenModal(item)}
-                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                title="Bewerken"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(item)}
-                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Verwijderen"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
+                      {/* Invoices for this category */}
+                      {categoryInvoices.length > 0 && (
+                        <Card className="ml-4 p-4 bg-gray-50">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                            Facturen in deze categorie ({currentYear})
+                          </h4>
+                          <div className="space-y-2">
+                            {categoryInvoices.map((inv: any) => {
+                              const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                              return (
+                                <div key={inv.id} className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 text-sm">
+                                  <div className="flex-1">
+                                    <p className="font-medium text-gray-900">{inv.clientName || inv.description || 'Onbekend'}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-bold text-emerald-600">
+                                      {formatCurrency(inv.totalAmount || inv.amount || 0)}
+                                    </p>
+                                    {inv.status && (
+                                      <span className={`text-xs ${
+                                        inv.status === 'paid' ? 'text-green-600' :
+                                        inv.status === 'sent' ? 'text-blue-600' :
+                                        'text-gray-600'
+                                      }`}>
+                                        {inv.status === 'paid' ? 'Betaald' :
+                                         inv.status === 'sent' ? 'Verzonden' :
+                                         inv.status === 'draft' ? 'Concept' : inv.status}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
+                              <span>Totaal YTD</span>
+                              <span className="text-emerald-600">
+                                {formatCurrency(categoryInvoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || inv.amount || 0), 0))}
+                              </span>
                             </div>
                           </div>
                         </Card>
-                      );
-                    })}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -1396,15 +1332,16 @@ const Budgeting: React.FC = () => {
             </div>
           </Card>
 
-          {/* Weighted Income Note */}
-          <Card className="p-4 bg-amber-50 border-amber-200">
+          {/* Invoice-based Note */}
+          <Card className="p-4 bg-blue-50 border-blue-200">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-amber-800">Gewogen Projectie</h4>
-                <p className="text-sm text-amber-700 mt-1">
-                  Inkomsten worden gewogen op zekerheid: Bevestigd (100%), Waarschijnlijk (75%),
-                  Potentieel (50%), Speculatief (25%). Dit geeft een realistischer beeld voor investeerders.
+                <h4 className="font-medium text-blue-800">Gebaseerd op Werkelijke Facturen</h4>
+                <p className="text-sm text-blue-700 mt-1">
+                  <strong>Inkomsten</strong> = Uitgaande facturen (facturen naar klanten).
+                  <strong className="ml-2">Kosten</strong> = Inkomende facturen (facturen van leveranciers).
+                  Dit geeft een realistisch beeld van je werkelijke cash flow.
                 </p>
               </div>
             </div>
@@ -1459,19 +1396,19 @@ const Budgeting: React.FC = () => {
 
           {/* Key Metrics for Investors */}
           <Card className="p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Kerngetallen voor Investeerders</h3>
+            <h3 className="font-semibold text-gray-900 mb-4">Kerngetallen</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(weightedMonthlyIncome * 12)}
+                  {formatCurrency(yearlyIncome)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">ARR (Gewogen)</p>
+                <p className="text-xs text-gray-500 mt-1">ARR (Inkomsten)</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold text-gray-900">
                   {formatCurrency(monthlyIncome)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">MRR (Max)</p>
+                <p className="text-xs text-gray-500 mt-1">MRR</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <p className={`text-2xl font-bold ${yearlyProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -1481,9 +1418,9 @@ const Budgeting: React.FC = () => {
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <p className="text-2xl font-bold text-gray-900">
-                  {activeIncomeItems.length}
+                  {outgoingInvoices.length}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Inkomstenbronnen</p>
+                <p className="text-xs text-gray-500 mt-1">Uitgaande Facturen</p>
               </div>
             </div>
           </Card>
