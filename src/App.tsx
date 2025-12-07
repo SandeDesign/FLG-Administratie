@@ -12,7 +12,7 @@ import Absence from './pages/Absence';
 import Expenses from './pages/Expenses';
 import AdminLeaveApprovals from './pages/AdminLeaveApprovals';
 import AdminAbsenceManagement from './pages/AdminAbsenceManagement';
-
+import InvestmentPitch from './pages/InvestmentPitch';
 import ProjectProduction from './pages/ProjectProduction';
 import ProjectStatistics from './pages/ProjectStatistics';
 // ✅ NEW ADMIN PAGES
