@@ -6,8 +6,9 @@ export interface Company {
   taxNumber: string;
 
   // ✅ AANGEPAST: Loonmaatschappij vs Werkmaatschappij structuur
-  companyType: 'payroll_company' | 'work_company';
+  companyType: 'employer' | 'project' | 'holding';
   payrollCompanyId?: string; // Voor work companies - verwijst naar loonmaatschappij
+  primaryEmployerId?: string; // Voor project/holding companies - verwijst naar hoofdbedrijf
 
   // ✅ NIEUW: Toegangsbeheer - managers/gebruikers die toegang hebben tot dit bedrijf
   allowedUsers?: string[]; // Array van user UIDs die toegang hebben tot dit bedrijf

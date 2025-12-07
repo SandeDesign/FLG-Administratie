@@ -22,6 +22,8 @@ import {
   Target,
   Receipt,
   Euro,
+  Upload,
+  Wallet,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -264,7 +266,118 @@ const Dashboard: React.FC = () => {
   }
 
   const isProjectCompany = selectedCompany?.companyType === 'project';
+  const isHoldingCompany = selectedCompany?.companyType === 'holding';
   const totalPending = pendingTimesheets.length + pendingLeave.length + pendingExpenses.length;
+
+  // ========== HOLDING COMPANY DASHBOARD ==========
+  if (isHoldingCompany && (userRole === 'admin' || userRole === 'manager')) {
+    return (
+      <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
+        {/* Hero Header */}
+        <div className="bg-gradient-to-br from-slate-600 via-slate-500 to-slate-700 rounded-xl p-6 text-white space-y-2">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Holding Dashboard</h1>
+              <p className="text-slate-100 mt-1">{selectedCompany?.name}</p>
+            </div>
+            <Briefcase className="h-12 w-12 text-slate-200 opacity-50" />
+          </div>
+        </div>
+
+        {/* Key Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-blue-700">Bedrijven</p>
+                <p className="text-2xl font-bold text-blue-900 mt-2">{companies?.length || 0}</p>
+                <p className="text-xs text-blue-600 mt-2">totaal</p>
+              </div>
+              <Briefcase className="h-8 w-8 text-blue-300" />
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-green-700">Facturen</p>
+                <p className="text-2xl font-bold text-green-900 mt-2">-</p>
+                <p className="text-xs text-green-600 mt-2">deze maand</p>
+              </div>
+              <Send className="h-8 w-8 text-green-300" />
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-purple-700">Inkoop</p>
+                <p className="text-2xl font-bold text-purple-900 mt-2">-</p>
+                <p className="text-xs text-purple-600 mt-2">deze maand</p>
+              </div>
+              <Upload className="h-8 w-8 text-purple-300" />
+            </div>
+          </Card>
+
+          <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-orange-700">Budget</p>
+                <p className="text-2xl font-bold text-orange-900 mt-2">-</p>
+                <p className="text-xs text-orange-600 mt-2">status</p>
+              </div>
+              <Wallet className="h-8 w-8 text-orange-300" />
+            </div>
+          </Card>
+        </div>
+
+        {/* Action Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <button
+            onClick={() => navigate('/outgoing-invoices')}
+            className="p-5 rounded-lg border-2 border-green-200 bg-green-50 hover:bg-green-100 transition-all group"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-green-200 rounded-lg">
+                <Send className="h-5 w-5 text-green-700" />
+              </div>
+              <ChevronRight className="h-5 w-5 text-green-400 group-hover:translate-x-1 transition-transform" />
+            </div>
+            <p className="font-semibold text-gray-900 text-left">Facturatie</p>
+            <p className="text-xs text-gray-600 mt-1 text-left">Uitgaande facturen</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/incoming-invoices')}
+            className="p-5 rounded-lg border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 transition-all group"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-purple-200 rounded-lg">
+                <Upload className="h-5 w-5 text-purple-700" />
+              </div>
+              <ChevronRight className="h-5 w-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
+            </div>
+            <p className="font-semibold text-gray-900 text-left">Inkoop</p>
+            <p className="text-xs text-gray-600 mt-1 text-left">Inkomende facturen</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/budgeting')}
+            className="p-5 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all group"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 bg-blue-200 rounded-lg">
+                <Wallet className="h-5 w-5 text-blue-700" />
+              </div>
+              <ChevronRight className="h-5 w-5 text-blue-400 group-hover:translate-x-1 transition-transform" />
+            </div>
+            <p className="font-semibold text-gray-900 text-left">Begroting</p>
+            <p className="text-xs text-gray-600 mt-1 text-left">Budget beheren</p>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ========== PROJECT COMPANY DASHBOARD ==========
   if (isProjectCompany && (userRole === 'admin' || userRole === 'manager')) {
@@ -473,7 +586,7 @@ const Dashboard: React.FC = () => {
   }
 
   // ========== ADMIN/MANAGER EMPLOYER DASHBOARD ==========
-  if ((userRole === 'admin' || userRole === 'manager') && !isProjectCompany) {
+  if ((userRole === 'admin' || userRole === 'manager') && !isProjectCompany && !isHoldingCompany) {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Hero Header */}

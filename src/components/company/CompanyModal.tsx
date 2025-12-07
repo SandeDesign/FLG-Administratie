@@ -28,7 +28,7 @@ interface CompanyFormData {
   pensionContributionPercentage: number;
 
   // ✅ NIEUW: Bedrijfstype fields
-  companyType: 'employer' | 'project';
+  companyType: 'employer' | 'project' | 'holding';
   primaryEmployerId?: string;
   themeColor?: string; // Theme color for this company
   logoUrl?: string; // Base64 encoded logo
@@ -159,7 +159,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
   const onSubmit = async (data: CompanyFormData) => {
     if (!user) return;
 
-    // ✅ NIEUW: Validatie voor project companies
+    // ✅ NIEUW: Validatie voor project companies (holding is optioneel)
     if (data.companyType === 'project' && !data.primaryEmployerId) {
       showError('Primaire werkgever vereist', 'Selecteer een primaire werkgever voor dit projectbedrijf');
       return;
@@ -198,8 +198,8 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         updatedAt: new Date(),
       };
 
-      // ✅ FIX: Only add primaryEmployerId if it has a value
-      if (data.companyType === 'project' && data.primaryEmployerId) {
+      // ✅ FIX: Only add primaryEmployerId if it has a value (for project or holding)
+      if ((data.companyType === 'project' || data.companyType === 'holding') && data.primaryEmployerId) {
         companyData.primaryEmployerId = data.primaryEmployerId;
       }
 
@@ -236,7 +236,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             Bedrijfstype *
           </label>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
               <input
                 type="radio"
@@ -247,11 +247,26 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
               <div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">Werkgever</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Primaire werkgever (bijv. Buddy BV)
+                  Met HR-functionaliteiten
                 </div>
               </div>
             </label>
-            
+
+            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <input
+                type="radio"
+                value="holding"
+                {...register('companyType', { required: 'Selecteer een bedrijfstype' })}
+                className="mr-3"
+              />
+              <div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">Holding</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Zonder HR-functionaliteiten
+                </div>
+              </div>
+            </label>
+
             <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
               <input
                 type="radio"
@@ -262,7 +277,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
               <div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">Projectbedrijf</div>
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Voor specifieke projecten/klanten
+                  Voor projecten/klanten
                 </div>
               </div>
             </label>
@@ -272,15 +287,15 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
           )}
         </div>
 
-        {/* ✅ NIEUW: Primary employer selector voor project companies */}
-        {companyType === 'project' && (
+        {/* ✅ NIEUW: Primary employer selector voor project/holding companies */}
+        {(companyType === 'project' || companyType === 'holding') && (
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Primaire werkgever *
+              Primaire werkgever {companyType === 'project' ? '*' : '(optioneel)'}
             </label>
             <select
-              {...register('primaryEmployerId', { 
-                required: companyType === 'project' ? 'Selecteer een primaire werkgever' : false 
+              {...register('primaryEmployerId', {
+                required: companyType === 'project' ? 'Selecteer een primaire werkgever' : false
               })}
               className="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
@@ -294,7 +309,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
             {errors.primaryEmployerId && (
               <p className="text-red-500 text-sm mt-1">{errors.primaryEmployerId.message}</p>
             )}
-            {employerCompanies.length === 0 && (
+            {employerCompanies.length === 0 && companyType === 'project' && (
               <p className="text-yellow-600 text-sm mt-1">
                 Maak eerst een werkgever-bedrijf aan voordat je een projectbedrijf kunt maken.
               </p>
@@ -382,7 +397,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
           />
         </div>
 
-        {/* ✅ Instellingen alleen voor employer companies */}
+        {/* ✅ Instellingen alleen voor employer companies (niet voor holding of project) */}
         {companyType === 'employer' && (
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Standaardinstellingen</h3>

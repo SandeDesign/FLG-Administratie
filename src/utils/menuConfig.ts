@@ -29,7 +29,7 @@ import {
   PieChart,
 } from 'lucide-react';
 
-export type CompanyType = 'employer' | 'project';
+export type CompanyType = 'employer' | 'project' | 'holding';
 
 export interface NavigationItem {
   name: string;
@@ -45,14 +45,14 @@ export interface NavigationItem {
 // ALLE MOGELIJKE MENU ITEMS
 export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // ✅ DASHBOARD - SOLO (NO SECTION)
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['employer', 'project'] },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
 
   // ✅ PROJECT-SPECIFIC ITEMS (alleen voor project bedrijven)
   { name: 'Project Dashboard', href: '/project-dashboard', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
   { name: 'Productie Verwerking', href: '/project-production', icon: Factory, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
   { name: 'Statistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
 
-  // PERSONEEL SECTION (alleen employer)
+  // PERSONEEL SECTION (alleen employer - NIET holding)
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
   { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin', 'manager'], companyTypes: ['employer'] },
@@ -62,33 +62,33 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { name: 'Salarisverwerking', href: '/payroll', icon: DollarSign, roles: ['admin'], companyTypes: ['employer'] },
 
-  // FACTURATIE SECTION (both)
-  { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project'] },
-  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project'] },
+  // FACTURATIE SECTION (employer, project, holding)
+  { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project'] },
-  { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project'] },
-  { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project'] },
+  { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
   { name: 'Declaraties Medewerkers', href: '/expenses', icon: Receipt, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
 
-  // DATA & EXPORTS SECTION (alleen employer)
+  // DATA & EXPORTS SECTION (alleen employer - NIET holding)
   { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { name: 'Drive Bestanden', href: '/drive-files', icon: FolderOpen, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Exports Beheer', href: '/exports-management', icon: Package, roles: ['admin'], companyTypes: ['employer'] },
+  { name: 'Drive Bestanden', href: '/drive-files', icon: FolderOpen, roles: ['admin'], companyTypes: ['employer', 'holding'] },
+  { name: 'Exports Beheer', href: '/exports-management', icon: Package, roles: ['admin'], companyTypes: ['employer', 'holding'] },
 
-  // SYSTEEM SECTION (alleen employer)
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer'] },
+  // SYSTEEM SECTION (employer en holding)
+  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
-  { name: 'Belastingaangiften', href: '/tax-returns', icon: FileText, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Gebruikers Beheer', href: '/admin/users', icon: UserPlus, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Rollen Beheer', href: '/admin/roles', icon: Shield, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project'] },
+  { name: 'Belastingaangiften', href: '/tax-returns', icon: FileText, roles: ['admin'], companyTypes: ['employer', 'holding'] },
+  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding'] },
+  { name: 'Gebruikers Beheer', href: '/admin/users', icon: UserPlus, roles: ['admin'], companyTypes: ['employer', 'holding'] },
+  { name: 'Rollen Beheer', href: '/admin/roles', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding'] },
+  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding'] },
 
   // PROJECT EXTRA PAGES
   { name: 'Productie Pool', href: '/production-pool', icon: Package, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
   { name: 'Project Team', href: '/project-team', icon: Users, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
-  { name: 'Investment Pitch', href: '/investment-pitch', icon: LineChart, roles: ['admin'], companyTypes: ['project'] },
+  { name: 'Investment Pitch', href: '/investment-pitch', icon: LineChart, roles: ['admin'], companyTypes: ['project', 'holding'] },
 ];
 
 // SECTION DEFINITIONS
@@ -149,6 +149,32 @@ export const getNavigationSections = (
     ].filter(section => section.items.length > 0);
   }
 
+  if (companyType === 'holding') {
+    // HOLDING BEDRIJF SECTIONS (geen HR-functionaliteiten)
+    return [
+      {
+        title: 'Facturatie',
+        icon: Receipt,
+        defaultOpen: true,
+        items: filtered.filter(i =>
+          ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkoop Overzicht'].includes(i.name)
+        ),
+      },
+      {
+        title: 'Data & Exports',
+        icon: TrendingUp,
+        defaultOpen: false,
+        items: filtered.filter(i => ['Drive Bestanden', 'Exports Beheer'].includes(i.name)),
+      },
+      {
+        title: 'Systeem',
+        icon: Settings,
+        defaultOpen: false,
+        items: filtered.filter(i => ['Bedrijven', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Investment Pitch', 'Instellingen'].includes(i.name)),
+      },
+    ].filter(section => section.items.length > 0);
+  }
+
   // EMPLOYER BEDRIJF SECTIONS
   return [
     {
@@ -200,6 +226,17 @@ export const getMobileBottomNavItems = (
       { href: '/settings', icon: Settings, label: 'Instellingen' },
     ];
     return projectItems;
+  }
+
+  if (companyType === 'holding') {
+    // HOLDING BEDRIJF MOBILE NAV
+    const holdingItems = [
+      { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+      { href: '/outgoing-invoices', icon: Send, label: 'Facturen' },
+      { href: '/incoming-invoices', icon: Upload, label: 'Inkoop' },
+      { href: '/settings', icon: Settings, label: 'Instellingen' },
+    ];
+    return holdingItems;
   }
 
   // EMPLOYER BEDRIJF MOBILE NAV
