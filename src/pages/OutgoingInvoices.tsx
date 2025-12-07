@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Send, Search, Calendar, Euro, Building2, User, CheckCircle, AlertCircle, Clock, Edit, Trash2, ChevronDown, X, ArrowLeft, TrendingUp, Eye, Factory } from 'lucide-react';
+import { Plus, Send, Search, Calendar, Euro, Building2, User, CheckCircle, AlertCircle, Clock, Edit, Trash2, ChevronDown, X, ArrowLeft, TrendingUp, Eye, Factory, Copy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -525,6 +525,49 @@ const OutgoingInvoices: React.FC = () => {
       loadInvoices();
     } catch (e) {
       showError('Fout', 'Kon niet verwijderen');
+    }
+  };
+
+  const handleDuplicateInvoice = async (invoice: OutgoingInvoice) => {
+    try {
+      setFormLoading(true);
+      
+      // Generate new invoice number
+      const newInvoiceNumber = await outgoingInvoiceService.getNextInvoiceNumber(queryUserId!, selectedCompany!.id);
+      
+      // Copy invoice with fresh dates and status
+      const newInvoice: Omit<OutgoingInvoice, 'id' | 'createdAt' | 'updatedAt'> = {
+        userId: queryUserId!,
+        companyId: selectedCompany!.id,
+        invoiceNumber: newInvoiceNumber,
+        clientId: invoice.clientId,
+        clientName: invoice.clientName,
+        clientEmail: invoice.clientEmail,
+        clientPhone: invoice.clientPhone,
+        clientKvk: invoice.clientKvk,
+        clientTaxNumber: invoice.clientTaxNumber,
+        clientAddress: invoice.clientAddress,
+        amount: invoice.amount,
+        vatAmount: invoice.vatAmount,
+        totalAmount: invoice.totalAmount,
+        description: invoice.description,
+        purchaseOrder: invoice.purchaseOrder,
+        projectCode: invoice.projectCode,
+        invoiceDate: new Date(),
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        status: 'draft',
+        items: invoice.items,
+        notes: invoice.notes
+      };
+
+      await outgoingInvoiceService.createInvoice(newInvoice);
+      success('Gekopieerd', 'Factuur gedupliceerd naar nieuw concept');
+      loadInvoices();
+      setExpandedInvoice(null);
+    } catch (e) {
+      showError('Fout', 'Kon niet dupliceren');
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -1252,6 +1295,17 @@ const OutgoingInvoices: React.FC = () => {
                       )}
 
                       <div className="flex gap-1.5 flex-wrap text-xs">
+                        <Button
+                          onClick={() => handleDuplicateInvoice(invoice)}
+                          variant="secondary"
+                          size="sm"
+                          icon={Copy}
+                          className="flex-1"
+                          title="Kopieer naar nieuw concept"
+                        >
+                          Dupliceer
+                        </Button>
+
                         <Button
                           onClick={() => handleEdit(invoice)}
                           variant="secondary"
