@@ -11,14 +11,14 @@ import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
 
 const AdminAbsenceManagement: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { companies, employees, selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeSickLeave, setActiveSickLeave] = useState<SickLeave[]>([]);
 
   const loadActiveSickLeave = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -26,7 +26,7 @@ const AdminAbsenceManagement: React.FC = () => {
     try {
       setLoading(true);
       // Get ALL sick leave records for this user and filter for active
-      const allSickLeaveRecords = await firebaseService.getSickLeaveRecords(user.uid);
+      const allSickLeaveRecords = await firebaseService.getSickLeaveRecords(adminUserId);
       const active = allSickLeaveRecords.filter(record => 
         (record.status === 'active' || record.status === 'partially_recovered') && record.companyId === selectedCompany.id
       );
@@ -37,7 +37,7 @@ const AdminAbsenceManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, showError]);
+  }, [user, adminUserId, selectedCompany, showError]);
 
   useEffect(() => {
     loadActiveSickLeave();

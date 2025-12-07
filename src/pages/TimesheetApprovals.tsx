@@ -32,7 +32,7 @@ interface EmployeeTimesheetSummary {
 }
 
 export default function TimesheetApprovals() {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany, employees } = useApp();
   const { success, error: showError } = useToast();
 
@@ -78,7 +78,7 @@ export default function TimesheetApprovals() {
   }, []);
 
   const loadData = useCallback(async () => {
-    if (!user) {
+    if (!user || !adminUserId) {
       setLoading(false);
       return;
     }
@@ -87,12 +87,12 @@ export default function TimesheetApprovals() {
       setLoading(true);
 
       // Get ALL pending timesheets (not filtered by company - admin sees everything)
-      const pendingTimesheets = await getAllPendingTimesheets(user.uid);
+      const pendingTimesheets = await getAllPendingTimesheets(adminUserId);
       setTimesheets(pendingTimesheets);
 
       // Get ALL timesheets - use first company or skip if none
       const companyIdForAll = selectedCompany?.id || '';
-      const allTimesheetsData = companyIdForAll ? await loadAllTimesheets(user.uid, companyIdForAll) : [];
+      const allTimesheetsData = companyIdForAll ? await loadAllTimesheets(adminUserId, companyIdForAll) : [];
       setAllTimesheets(allTimesheetsData);
 
       const summaries: EmployeeTimesheetSummary[] = [];
@@ -135,17 +135,17 @@ export default function TimesheetApprovals() {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany?.id, employees, showError, loadAllTimesheets]);
+  }, [user, adminUserId, selectedCompany?.id, employees, showError, loadAllTimesheets]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   const handleApprove = async (timesheet: WeeklyTimesheet) => {
-    if (!user) return;
+    if (!user || !adminUserId) return;
 
     try {
-      await approveWeeklyTimesheet(timesheet.id!, timesheet.userId, user.uid);
+      await approveWeeklyTimesheet(timesheet.id!, timesheet.userId, adminUserId);
       success('Uren goedgekeurd', `Week ${timesheet.weekNumber} goedgekeurd`);
       setShowDetailsModal(false);
       setSelectedTimesheet(null);
@@ -161,7 +161,7 @@ export default function TimesheetApprovals() {
   };
 
   const handleRejectConfirm = async () => {
-    if (!selectedTimesheet || !user || !rejectionReason.trim()) {
+    if (!selectedTimesheet || !user || !adminUserId || !rejectionReason.trim()) {
       showError('Fout', 'Reden voor afwijzing is verplicht.');
       return;
     }
@@ -170,7 +170,7 @@ export default function TimesheetApprovals() {
       await rejectWeeklyTimesheet(
         selectedTimesheet.id!,
         selectedTimesheet.userId,
-        user.uid,
+        adminUserId,
         rejectionReason
       );
       success('Uren afgekeurd', `Week ${selectedTimesheet.weekNumber} afgekeurd`);

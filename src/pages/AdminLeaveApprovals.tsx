@@ -11,7 +11,7 @@ import { useToast } from '../hooks/useToast';
 import { formatLeaveType } from '../utils/leaveCalculations';
 
 const AdminLeaveApprovals: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { companies, employees, selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
@@ -21,14 +21,14 @@ const AdminLeaveApprovals: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadPendingRequests = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const allLeaveRequests = await firebaseService.getLeaveRequests(user.uid);
+      const allLeaveRequests = await firebaseService.getLeaveRequests(adminUserId);
       const pending = allLeaveRequests.filter(request => 
         request.status === 'pending' && request.companyId === selectedCompany.id
       );
@@ -39,7 +39,7 @@ const AdminLeaveApprovals: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, showError]);
+  }, [user, adminUserId, selectedCompany, showError]);
 
   useEffect(() => {
     loadPendingRequests();
@@ -72,12 +72,12 @@ const AdminLeaveApprovals: React.FC = () => {
   };
 
   const handleApprove = async (request: LeaveRequest) => {
-    if (!user) return;
+    if (!user || !adminUserId) return;
     setProcessingId(request.id);
     try {
       await firebaseService.approveLeaveRequest(
         request.id,
-        user.uid,
+        adminUserId,
         user.displayName || user.email || 'Admin'
       );
       success('Verlof goedgekeurd', `Verlofaanvraag van ${getEmployeeName(request.employeeId)} is goedgekeurd`);
@@ -91,14 +91,14 @@ const AdminLeaveApprovals: React.FC = () => {
   };
 
   const handleReject = async (request: LeaveRequest) => {
-    if (!user) return;
+    if (!user || !adminUserId) return;
     const reason = prompt('Reden voor afwijzing (optioneel):');
     if (reason === null) return;
     setProcessingId(request.id);
     try {
       await firebaseService.rejectLeaveRequest(
         request.id,
-        user.uid,
+        adminUserId,
         user.displayName || user.email || 'Admin',
         reason || 'Geen reden opgegeven'
       );
