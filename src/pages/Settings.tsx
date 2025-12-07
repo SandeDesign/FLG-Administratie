@@ -23,6 +23,7 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { ALL_NAVIGATION_ITEMS, NavigationItem } from '../utils/menuConfig';
+import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibilitySettings';
 
 const Settings: React.FC = () => {
   const { user, userRole } = useAuth();
@@ -586,6 +587,14 @@ const Settings: React.FC = () => {
 
       {activeTab === 'company' && userRole === 'admin' && (
         <div className="space-y-6">
+          {/* Companies Visibility Settings */}
+          <Card>
+            <div className="p-6">
+              <CompaniesVisibilitySettings />
+            </div>
+          </Card>
+
+          {/* Default Company */}
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -626,6 +635,7 @@ const Settings: React.FC = () => {
             </div>
           </Card>
 
+          {/* Co-Admins */}
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -701,6 +711,7 @@ const Settings: React.FC = () => {
             </div>
           </Card>
 
+          {/* Favorite Pages */}
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
