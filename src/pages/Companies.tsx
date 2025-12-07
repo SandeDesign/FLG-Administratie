@@ -13,7 +13,7 @@ import { useToast } from '../hooks/useToast';
 import { useApp } from '../contexts/AppContext'; // Import useApp to refresh global state
 
 const Companies: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { refreshDashboardStats } = useApp(); // Use refreshDashboardStats
   const { success, error: showError } = useToast();
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -25,7 +25,7 @@ const Companies: React.FC = () => {
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null); // Renamed to avoid conflict
 
   const loadData = useCallback(async () => {
-    if (!user) {
+    if (!user || !adminUserId) {
       setLoading(false);
       return;
     }
@@ -33,8 +33,8 @@ const Companies: React.FC = () => {
     try {
       setLoading(true);
       const [companiesData, branchesData] = await Promise.all([
-        getCompanies(user.uid),
-        getBranches(user.uid)
+        getCompanies(adminUserId),
+        getBranches(adminUserId)
       ]);
       setCompanies(companiesData);
       setBranches(branchesData);
@@ -45,7 +45,7 @@ const Companies: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, showError, refreshDashboardStats]);
+  }, [user, adminUserId, showError, refreshDashboardStats]);
 
   useEffect(() => {
     loadData();
@@ -57,11 +57,11 @@ const Companies: React.FC = () => {
   };
 
   const handleDeleteCompany = async (company: Company) => {
-    if (!user) return;
+    if (!user || !adminUserId) return;
 
     if (window.confirm(`Weet je zeker dat je ${company.name} wilt verwijderen? Dit verwijdert ook alle gerelateerde vestigingen en werknemers.`)) {
       try {
-        await deleteCompany(company.id, user.uid);
+        await deleteCompany(company.id, adminUserId);
         success('Bedrijf verwijderd', `${company.name} is succesvol verwijderd`);
         await loadData(); // Reload data after deletion
       } catch (error) {

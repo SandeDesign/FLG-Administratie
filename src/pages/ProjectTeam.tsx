@@ -10,7 +10,7 @@ import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
 
 const ProjectTeam: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { error: showError } = useToast();
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,7 @@ const ProjectTeam: React.FC = () => {
   }, [selectedCompany]);
 
   const loadProjectTeam = async () => {
-    if (!user || !selectedCompany || selectedCompany.companyType !== 'project') {
+    if (!user || !adminUserId || !selectedCompany || selectedCompany.companyType !== 'project') {
       setLoading(false);
       return;
     }
@@ -32,13 +32,13 @@ const ProjectTeam: React.FC = () => {
 
       // Get employees assigned to this project company
       const employees = await firebaseService.getEmployeesForProjectCompany(
-        user.uid, 
+        adminUserId, 
         selectedCompany.id
       );
       setProjectEmployees(employees);
 
       // Get recent time entries for this project
-      const entries = await firebaseService.getTimeEntries(user.uid);
+      const entries = await firebaseService.getTimeEntries(adminUserId);
       const projectEntries = entries.filter(entry => 
         entry.workCompanyId === selectedCompany.id
       ).slice(0, 10); // Last 10 entries

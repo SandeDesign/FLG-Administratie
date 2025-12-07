@@ -91,7 +91,7 @@ const SYSTEM_PERMISSIONS: Permission[] = [
 ];
 
 const AdminRoles: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { success, error: showError } = useToast();
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,7 +101,7 @@ const AdminRoles: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const loadRoles = useCallback(async () => {
-    if (!user) return;
+    if (!user || !adminUserId || !adminUserId) return;
 
     try {
       setLoading(true);
@@ -194,7 +194,7 @@ const AdminRoles: React.FC = () => {
   };
 
   const handleCreateRole = async (data: CreateRoleData) => {
-    if (!user) return;
+    if (!user || !adminUserId || !adminUserId) return;
 
     try {
       await addDoc(collection(db, 'roles'), {
@@ -217,7 +217,7 @@ const AdminRoles: React.FC = () => {
   };
 
   const handleUpdateRole = async (roleId: string, data: Partial<CreateRoleData>) => {
-    if (!user) return;
+    if (!user || !adminUserId || !adminUserId) return;
 
     try {
       await updateDoc(doc(db, 'roles', roleId), {

@@ -50,7 +50,7 @@ const exportTypes: Array<{ type: ExportType; label: string; description: string;
 ];
 
 export default function ExportsManagement() {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
 
@@ -61,14 +61,14 @@ export default function ExportsManagement() {
   const [endDate, setEndDate] = useState<string>('');
 
   const loadData = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const jobs = await getExportJobs(user.uid, selectedCompany.id);
+      const jobs = await getExportJobs(adminUserId, selectedCompany.id);
       setExportJobs(jobs);
     } catch (error) {
       console.error('Error loading export jobs:', error);
@@ -90,7 +90,7 @@ export default function ExportsManagement() {
   }, [loadData]);
 
   const handleCreateExport = async (exportType: ExportType) => {
-    if (!user || !selectedCompany || !startDate || !endDate) {
+    if (!user || !adminUserId || !selectedCompany || !startDate || !endDate) {
       showError('Fout', 'Selecteer een periode en zorg dat een bedrijf is geselecteerd');
       return;
     }
@@ -99,7 +99,7 @@ export default function ExportsManagement() {
       setCreating(true);
 
       await createExportJob(
-        user.uid,
+        adminUserId,
         selectedCompany.id,
         exportType,
         {

@@ -14,7 +14,7 @@ import Input from '../components/ui/Input';
 import { formatExpenseType } from '../utils/leaveCalculations';
 
 const AdminExpenses: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ const AdminExpenses: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -36,8 +36,8 @@ const AdminExpenses: React.FC = () => {
     try {
       setLoading(true);
       const [expensesData, employeesData] = await Promise.all([
-        firebaseService.getExpenses(user.uid),
-        firebaseService.getEmployees(user.uid)
+        firebaseService.getExpenses(adminUserId),
+        firebaseService.getEmployees(adminUserId)
       ]);
 
       const companyExpenses = expensesData.filter(e => e.companyId === selectedCompany.id);
@@ -51,7 +51,7 @@ const AdminExpenses: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, showError]);
+  }, [user, adminUserId, selectedCompany, showError]);
 
   useEffect(() => {
     loadData();
@@ -95,7 +95,7 @@ const AdminExpenses: React.FC = () => {
   };
 
   const handleApprove = async (expense: Expense) => {
-    if (!user || !expense.id) return;
+    if (!user || !adminUserId || !expense.id) return;
 
     if (window.confirm(`Weet je zeker dat je deze declaratie van ${formatCurrency(expense.amount)} wilt goedkeuren?`)) {
       setActionLoading(true);
@@ -104,7 +104,7 @@ const AdminExpenses: React.FC = () => {
           expense.id,
           expense.userId,
           user.displayName || user.email || 'Admin',
-          user.uid
+          adminUserId
         );
         success('Declaratie goedgekeurd', 'De declaratie is goedgekeurd');
         await loadData();
@@ -124,7 +124,7 @@ const AdminExpenses: React.FC = () => {
   };
 
   const handleReject = async () => {
-    if (!user || !selectedExpense || !selectedExpense.id) return;
+    if (!user || !adminUserId || !selectedExpense || !selectedExpense.id) return;
 
     if (!rejectComment.trim()) {
       showError('Opmerking vereist', 'Geef een reden op voor afwijzing');
@@ -137,7 +137,7 @@ const AdminExpenses: React.FC = () => {
         selectedExpense.id,
         selectedExpense.userId,
         user.displayName || user.email || 'Admin',
-        user.uid,
+        adminUserId,
         rejectComment
       );
       success('Declaratie afgewezen', 'De declaratie is afgewezen');

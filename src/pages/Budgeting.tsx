@@ -192,7 +192,7 @@ const initialFormData: BudgetFormData = {
 };
 
 const Budgeting: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const exportRef = useRef<HTMLDivElement>(null);
@@ -214,7 +214,7 @@ const Budgeting: React.FC = () => {
   // Investment Pitch State
 
   const loadData = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -223,13 +223,13 @@ const Budgeting: React.FC = () => {
       setLoading(true);
 
       // Load budget items
-      const items = await getBudgetItems(user.uid, selectedCompany.id);
+      const items = await getBudgetItems(adminUserId, selectedCompany.id);
       setBudgetItems(items);
 
       // Load actual invoice data for comparison
       const [outgoing, incoming] = await Promise.all([
-        outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id),
-        incomingInvoiceService.getInvoices(user.uid, selectedCompany.id),
+        outgoingInvoiceService.getInvoices(adminUserId, selectedCompany.id),
+        incomingInvoiceService.getInvoices(adminUserId, selectedCompany.id),
       ]);
 
       setOutgoingInvoices(outgoing);
@@ -240,7 +240,7 @@ const Budgeting: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, showError]);
+  }, [user, adminUserId, selectedCompany, showError]);
 
   useEffect(() => {
     loadData();
@@ -445,10 +445,10 @@ const Budgeting: React.FC = () => {
       };
 
       if (editingItem) {
-        await updateBudgetItem(editingItem.id, itemData, user.uid);
+        await updateBudgetItem(editingItem.id, itemData, adminUserId);
         success('Bijgewerkt', 'Item is bijgewerkt');
       } else {
-        await createBudgetItem(itemData, user.uid);
+        await createBudgetItem(itemData, adminUserId);
         success('Toegevoegd', 'Item is toegevoegd');
       }
 
@@ -463,11 +463,11 @@ const Budgeting: React.FC = () => {
   };
 
   const handleDelete = async (item: BudgetItem) => {
-    if (!user) return;
+    if (!user || !adminUserId) return;
 
     if (window.confirm(`Weet je zeker dat je "${item.name}" wilt verwijderen?`)) {
       try {
-        await deleteBudgetItem(item.id, user.uid);
+        await deleteBudgetItem(item.id, adminUserId);
         success('Verwijderd', 'Item is verwijderd');
         await loadData();
       } catch (error) {

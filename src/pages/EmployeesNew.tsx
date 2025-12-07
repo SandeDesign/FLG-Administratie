@@ -14,7 +14,7 @@ import { useToast } from '../hooks/useToast';
 const DEFAULT_PASSWORD = 'DeInstallatie1234!!';
 
 const EmployeesNew: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { companies, selectedCompany, refreshDashboardStats } = useApp();
   const { success, error: showError } = useToast();
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -24,14 +24,14 @@ const EmployeesNew: React.FC = () => {
   const [creatingAccount, setCreatingAccount] = useState<string | null>(null);
 
   const loadEmployees = useCallback(async () => {
-    if (!user) {
+    if (!user || !adminUserId) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const employeesData = await getEmployees(user.uid);
+      const employeesData = await getEmployees(adminUserId);
 
       const filteredEmployees = selectedCompany
         ? employeesData.filter(emp => emp.companyId === selectedCompany.id)
@@ -45,7 +45,7 @@ const EmployeesNew: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, showError, refreshDashboardStats]);
+  }, [user, adminUserId, selectedCompany, showError, refreshDashboardStats]);
 
   useEffect(() => {
     loadEmployees();
@@ -62,11 +62,11 @@ const EmployeesNew: React.FC = () => {
   };
 
   const handleDeleteEmployee = async (employee: Employee) => {
-    if (!user) return;
+    if (!user || !adminUserId) return;
 
     if (window.confirm(`Weet je zeker dat je ${employee.personalInfo.firstName} ${employee.personalInfo.lastName} wilt verwijderen?`)) {
       try {
-        await deleteEmployee(employee.id, user.uid);
+        await deleteEmployee(employee.id, adminUserId);
         success('Werknemer verwijderd', `${employee.personalInfo.firstName} ${employee.personalInfo.lastName} is succesvol verwijderd`);
         await loadEmployees();
       } catch (error) {
@@ -77,7 +77,7 @@ const EmployeesNew: React.FC = () => {
   };
 
   const handleCreateAccount = async (employee: Employee) => {
-    if (!user) return;
+    if (!user || !adminUserId) return;
 
     if (employee.hasAccount) {
       showError('Account bestaat al', `${employee.personalInfo.firstName} heeft al een account`);
@@ -85,14 +85,14 @@ const EmployeesNew: React.FC = () => {
     }
 
     const confirmMsg = `Weet je zeker dat je een account wilt aanmaken voor ${employee.personalInfo.firstName} ${employee.personalInfo.lastName}?\n\nInloggegevens:\nE-mail: ${employee.personalInfo.contactInfo.email}\nWachtwoord: ${DEFAULT_PASSWORD}`;
-    
+
     if (window.confirm(confirmMsg)) {
       try {
         setCreatingAccount(employee.id);
-        
+
         await createEmployeeAuthAccount(
           employee.id,
-          user.uid,
+          adminUserId,
           employee.personalInfo.contactInfo.email,
           DEFAULT_PASSWORD
         );

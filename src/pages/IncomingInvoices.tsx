@@ -28,7 +28,7 @@ interface OCRResult {
 }
 
 const IncomingInvoices: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   const [uploading, setUploading] = useState(false);
@@ -65,7 +65,7 @@ const IncomingInvoices: React.FC = () => {
             file,
             selectedCompany.id,
             selectedCompany.name,
-            user.uid,
+            adminUserId,
             user.email || undefined,
             {
               supplierName: ocrResult.invoiceData.supplierName,
