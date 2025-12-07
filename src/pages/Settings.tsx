@@ -136,10 +136,12 @@ const Settings: React.FC = () => {
 
             console.log('User role document created in users collection');
 
-            // Also create user settings document
+            // Also create user settings document with PRIMARY ADMIN reference
             await saveUserSettings(result.uid, {
               email: coAdminEmail,
               defaultCompanyId: companies.length > 0 ? companies[0].id : undefined,
+              primaryAdminUserId: user.uid,  // ✅ DIRECT LINK to primary admin
+              primaryAdminEmail: user.email, // ✅ For reference
             });
 
             console.log('Firestore user documents created successfully');
@@ -151,7 +153,7 @@ const Settings: React.FC = () => {
         success('Account aangemaakt!', `Er is een account aangemaakt voor ${coAdminEmail} met wachtwoord: DeInstallatie1234!!`);
       }
 
-      // Add to co-admin list
+      // Add to co-admin list in PRIMARY ADMIN's settings
       const newCoAdmins = [...coAdmins, coAdminEmail];
       await saveUserSettings(user.uid, { coAdminEmails: newCoAdmins });
       setCoAdmins(newCoAdmins);
