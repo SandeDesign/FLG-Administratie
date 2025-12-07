@@ -460,7 +460,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-gradient-to-br from-slate-600 via-slate-500 to-slate-700 rounded-xl p-6 text-white space-y-2">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold">Holding Dashboard</h1>
+              <h1 className="text-3xl font-bold">Holding</h1>
               <p className="text-slate-100 mt-1">{selectedCompany?.name}</p>
             </div>
             <Briefcase className="h-12 w-12 text-slate-200 opacity-50" />
