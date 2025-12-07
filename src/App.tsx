@@ -94,6 +94,7 @@ function App() {
                           {/* ✅ TIJD & UREN */}
                           <Route path="timesheets" element={<Timesheets />} />
                           <Route path="timesheet-approvals" element={<TimesheetApprovals />} />
+                          <Route path="admin-expenses" element={<AdminExpenses />} />
                           
                           {/* ✅ VERLOF & VERZUIM */}
                           <Route path="admin/leave-approvals" element={<AdminLeaveApprovals />} />
