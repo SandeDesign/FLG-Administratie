@@ -20,6 +20,8 @@ import {
   ArrowDownRight,
   BarChart3,
   Target,
+  Receipt,
+  Euro,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
