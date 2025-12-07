@@ -70,12 +70,18 @@ const Settings: React.FC = () => {
       setSelectedDefaultCompanyId(settings?.defaultCompanyId || '');
       setCoAdmins(settings?.coAdminEmails || []);
 
+      // Ensure favoritePages is an object, not an array
+      const favoritePages = settings?.favoritePages;
+      const favoritePagesObj = favoritePages && typeof favoritePages === 'object' && !Array.isArray(favoritePages)
+        ? favoritePages
+        : {};
+
       // Load favorites voor het geselecteerde bedrijf
-      if (selectedCompany?.id && settings?.favoritePages) {
-        console.log(`Loading favorites for company ${selectedCompany.name} (${selectedCompany.id}):`, settings.favoritePages[selectedCompany.id]);
-        setFavoritePages(settings.favoritePages[selectedCompany.id] || []);
+      if (selectedCompany?.id) {
+        console.log(`Loading favorites for company ${selectedCompany.name} (${selectedCompany.id}):`, favoritePagesObj[selectedCompany.id]);
+        setFavoritePages(favoritePagesObj[selectedCompany.id] || []);
       } else {
-        console.log('No company selected or no favorites found, resetting to empty');
+        console.log('No company selected, resetting to empty');
         setFavoritePages([]);
       }
     } catch (error) {
@@ -341,8 +347,13 @@ const Settings: React.FC = () => {
       const currentSettings = await getUserSettings(user.uid);
       console.log('Current settings from DB:', currentSettings);
 
-      const allFavorites = currentSettings?.favoritePages || {};
-      console.log('All existing favorites:', allFavorites);
+      // Ensure favoritePages is an object, not an array
+      const existingFavorites = currentSettings?.favoritePages;
+      const allFavorites = existingFavorites && typeof existingFavorites === 'object' && !Array.isArray(existingFavorites)
+        ? { ...existingFavorites }
+        : {};
+
+      console.log('All existing favorites (ensured as object):', allFavorites);
 
       // Update favorieten voor dit specifieke bedrijf
       allFavorites[selectedCompany.id] = favoritePages;

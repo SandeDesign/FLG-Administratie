@@ -1274,13 +1274,29 @@ export const getUserSettings = async (userId: string): Promise<UserSettings | nu
 export const saveUserSettings = async (userId: string, settings: Partial<UserSettings>): Promise<void> => {
   const existingSettings = await getUserSettings(userId);
 
+  // Ensure favoritePages is always an object, never an array
+  const ensuredSettings = {
+    ...settings,
+    favoritePages: settings.favoritePages && typeof settings.favoritePages === 'object' && !Array.isArray(settings.favoritePages)
+      ? settings.favoritePages
+      : (Array.isArray(settings.favoritePages) ? {} : settings.favoritePages)
+  };
+
   // Merge met bestaande settings om nested objects correct te behouden
   const mergedSettings = existingSettings ? {
     ...existingSettings,
-    ...settings,
+    ...ensuredSettings,
+    // Ensure favoritePages from existing settings is also an object
+    favoritePages: {
+      ...(existingSettings.favoritePages && typeof existingSettings.favoritePages === 'object' && !Array.isArray(existingSettings.favoritePages)
+        ? existingSettings.favoritePages
+        : {}),
+      ...(ensuredSettings.favoritePages || {})
+    }
   } : {
     userId,
-    ...settings,
+    ...ensuredSettings,
+    favoritePages: ensuredSettings.favoritePages || {}
   };
 
   const settingsData = convertToTimestamps({
@@ -1295,10 +1311,11 @@ export const saveUserSettings = async (userId: string, settings: Partial<UserSet
     const docRef = doc(db, 'userSettings', existingSettings.id);
     await updateDoc(docRef, cleanedData);
   } else {
-    // Create
+    // Create - ensure favoritePages is initialized as empty object
     const createData = convertToTimestamps({
       userId,
-      ...settings,
+      ...ensuredSettings,
+      favoritePages: ensuredSettings.favoritePages || {},
       createdAt: new Date(),
       updatedAt: new Date()
     });

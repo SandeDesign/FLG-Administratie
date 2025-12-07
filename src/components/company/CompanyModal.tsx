@@ -134,6 +134,13 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
 
     if (!file.type.startsWith('image/')) {
       showError('Ongeldig bestand', 'Upload een afbeelding (JPG, PNG, etc.)');
+      event.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Bestand te groot', 'Kies een afbeelding kleiner dan 5MB');
+      event.target.value = '';
       return;
     }
 
@@ -141,6 +148,10 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
     reader.onloadend = () => {
       const base64String = reader.result as string;
       setLogoPreview(base64String);
+    };
+    reader.onerror = () => {
+      showError('Upload mislukt', 'Kon afbeelding niet laden. Probeer het opnieuw.');
+      event.target.value = '';
     };
     reader.readAsDataURL(file);
   };
@@ -212,6 +223,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
 
   const handleClose = () => {
     reset();
+    setLogoPreview(null);
     onClose();
   };
 
