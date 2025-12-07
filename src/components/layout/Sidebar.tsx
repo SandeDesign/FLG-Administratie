@@ -38,7 +38,7 @@ export interface NavigationItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   roles: string[];
-  companyTypes?: ('employer' | 'project')[];
+  companyTypes?: ('employer' | 'project' | 'holding')[];
   badge?: string;
   color?: string;
 }
@@ -46,48 +46,48 @@ export interface NavigationItem {
 // Menu per rol en bedrijfstype - CLEANER ICONS
 export const navigation: NavigationItem[] = [
   // DASHBOARD - Iedereen
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project'] },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding'] },
 
-  // ADMIN - EMPLOYER (HR Beheer)
+  // ADMIN - EMPLOYER (HR Beheer) - NIET voor holding
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Verlof Beheren', href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: Stethoscope, roles: ['admin'], companyTypes: ['employer'] },
 
-  // FINANCIEEL - Admin both, Manager alleen inkoop
-  { name: 'Klanten & Leveranciers', href: '/invoice-relations', icon: Handshake, roles: ['admin'], companyTypes: ['employer', 'project'] },
-  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project'] },
-  { name: 'Uitgaande facturen', href: '/outgoing-invoices', icon: FileOutput, roles: ['admin'], companyTypes: ['employer', 'project'] },
-  { name: 'Inkomende facturen', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project'] },
-  { name: 'Inkoop Upload', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project'] },
+  // FINANCIEEL - Voor alle types (employer, project, holding)
+  { name: 'Klanten & Leveranciers', href: '/invoice-relations', icon: Handshake, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Uitgaande facturen', href: '/outgoing-invoices', icon: FileOutput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Inkomende facturen', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Inkoop Upload', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
 
   // PROJECT COMPANY
   { name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin', 'manager'], companyTypes: ['project'] },
   { name: 'Project Stats', href: '/project-statistics', icon: BarChart2, roles: ['admin'], companyTypes: ['project'] },
 
-  // DATA & EXPORTS (Admin - Employer)
+  // DATA & EXPORTS (Admin - Employer en Holding)
   { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Loonstroken', href: '/payslips', icon: CreditCard, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Drive', href: '/drive-files', icon: FolderOpen, roles: ['admin'], companyTypes: ['employer'] },
+  { name: 'Drive', href: '/drive-files', icon: FolderOpen, roles: ['admin'], companyTypes: ['employer', 'holding'] },
 
-  // SYSTEEM (Admin - Employer)
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer'] },
+  // SYSTEEM (Admin - Employer en Holding)
+  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },
+  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding'] },
 
-  // MANAGER - Specifiek
+  // MANAGER - Specifiek (alleen employer)
   { name: 'Mijn Team', href: '/employees', icon: Users, roles: ['manager'], companyTypes: ['employer'] },
   { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['manager'], companyTypes: ['employer'] },
   { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['manager'], companyTypes: ['employer'] },
 
-  // EMPLOYEE - Mijn zaken
+  // EMPLOYEE - Mijn zaken (alleen employer)
   { name: 'Mijn Uren', href: '/timesheets', icon: Clock, roles: ['employee', 'manager'], companyTypes: ['employer'] },
   { name: 'Mijn Verlof', href: '/leave', icon: CalendarCheck, roles: ['employee'], companyTypes: ['employer'] },
   { name: 'Mijn Declaraties', href: '/expenses', icon: Receipt, roles: ['employee'], companyTypes: ['employer'] },
   { name: 'Mijn Loonstroken', href: '/payslips', icon: CreditCard, roles: ['employee'], companyTypes: ['employer'] },
 
   // INSTELLINGEN - Iedereen
-  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project'] },
+  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding'] },
 ];
 
 interface Section {
@@ -229,7 +229,7 @@ const Sidebar: React.FC = () => {
   };
 
   // Filter navigation by role AND company type
-  const companyType = selectedCompany?.companyType as 'employer' | 'project' | undefined;
+  const companyType = selectedCompany?.companyType as 'employer' | 'project' | 'holding' | undefined;
   const filteredNavigation = navigation.filter(item => {
     const roleMatches = userRole && item.roles.includes(userRole);
     const companyTypeMatches = !companyType || !item.companyTypes || item.companyTypes.includes(companyType);

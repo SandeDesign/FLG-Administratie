@@ -61,6 +61,59 @@ const Dashboard: React.FC = () => {
     approvedThisMonth: 0,
     nextPayday: null as Date | null,
   });
+  const [holdingStats, setHoldingStats] = useState({
+    outgoingInvoices: 0,
+    incomingInvoices: 0,
+    budgetItems: 0,
+  });
+
+  // ========== LOAD HOLDING DATA ==========
+  const loadHoldingData = useCallback(async () => {
+    if (!user || !selectedCompany || userRole !== 'admin') return;
+    if (selectedCompany.companyType !== 'holding') return;
+
+    setDashLoading(true);
+    try {
+      const { collection, query, where, getDocs, getFirestore } = await import('firebase/firestore');
+      const db = getFirestore();
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      // Uitgaande facturen deze maand
+      const outgoingQuery = query(
+        collection(db, 'outgoingInvoices'),
+        where('companyId', '==', selectedCompany.id),
+        where('createdAt', '>=', startOfMonth)
+      );
+      const outgoingSnap = await getDocs(outgoingQuery);
+
+      // Inkomende facturen deze maand
+      const incomingQuery = query(
+        collection(db, 'incomingInvoices'),
+        where('companyId', '==', selectedCompany.id),
+        where('createdAt', '>=', startOfMonth)
+      );
+      const incomingSnap = await getDocs(incomingQuery);
+
+      // Budget items
+      const budgetQuery = query(
+        collection(db, 'budgetItems'),
+        where('companyId', '==', selectedCompany.id),
+        where('isActive', '==', true)
+      );
+      const budgetSnap = await getDocs(budgetQuery);
+
+      setHoldingStats({
+        outgoingInvoices: outgoingSnap.size,
+        incomingInvoices: incomingSnap.size,
+        budgetItems: budgetSnap.size,
+      });
+    } catch (error) {
+      console.error('Error loading holding data:', error);
+    } finally {
+      setDashLoading(false);
+    }
+  }, [user, selectedCompany, userRole]);
 
   // ========== LOAD ADMIN DATA ==========
   const loadAdminData = useCallback(async () => {
@@ -240,10 +293,15 @@ const Dashboard: React.FC = () => {
   }, [user, currentEmployeeId, userRole]);
 
   useEffect(() => {
-    if (userRole === 'admin') loadAdminData();
+    if (userRole === 'admin') {
+      loadAdminData();
+      if (selectedCompany?.companyType === 'holding') {
+        loadHoldingData();
+      }
+    }
     if (userRole === 'manager') loadManagerData();
     if (userRole === 'employee') loadEmployeeData();
-  }, [loadAdminData, loadManagerData, loadEmployeeData, userRole]);
+  }, [loadAdminData, loadManagerData, loadEmployeeData, loadHoldingData, userRole, selectedCompany?.companyType]);
 
   if (loading || dashLoading) {
     return <LoadingSpinner />;
@@ -301,7 +359,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-green-700">Facturen</p>
-                <p className="text-2xl font-bold text-green-900 mt-2">-</p>
+                <p className="text-2xl font-bold text-green-900 mt-2">{holdingStats.outgoingInvoices}</p>
                 <p className="text-xs text-green-600 mt-2">deze maand</p>
               </div>
               <Send className="h-8 w-8 text-green-300" />
@@ -312,7 +370,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-purple-700">Inkoop</p>
-                <p className="text-2xl font-bold text-purple-900 mt-2">-</p>
+                <p className="text-2xl font-bold text-purple-900 mt-2">{holdingStats.incomingInvoices}</p>
                 <p className="text-xs text-purple-600 mt-2">deze maand</p>
               </div>
               <Upload className="h-8 w-8 text-purple-300" />
@@ -323,8 +381,8 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-orange-700">Budget</p>
-                <p className="text-2xl font-bold text-orange-900 mt-2">-</p>
-                <p className="text-xs text-orange-600 mt-2">status</p>
+                <p className="text-2xl font-bold text-orange-900 mt-2">{holdingStats.budgetItems}</p>
+                <p className="text-xs text-orange-600 mt-2">actieve items</p>
               </div>
               <Wallet className="h-8 w-8 text-orange-300" />
             </div>
