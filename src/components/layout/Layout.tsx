@@ -98,11 +98,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                               : 'hover:bg-gray-50 text-gray-700'
                           }`}
                         >
-                          <div className={`p-1.5 rounded-lg ${
-                            selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400'
-                          }`}>
-                            <Building2 className="h-3 w-3 text-white" />
-                          </div>
+                          {company.logoUrl ? (
+                            <img src={company.logoUrl} alt={company.name} className="h-8 w-8 object-contain rounded" />
+                          ) : (
+                            <div className={`p-1.5 rounded-lg ${
+                              selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400'
+                            }`}>
+                              <Building2 className="h-3 w-3 text-white" />
+                            </div>
+                          )}
                           <span className="font-medium text-sm">{company.name}</span>
                         </button>
                       ))}
@@ -149,11 +153,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             : 'hover:bg-gray-50 text-gray-700'
                         }`}
                       >
-                        <div className={`p-1.5 rounded-lg ${
-                          selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400'
-                        }`}>
-                          <Building2 className="h-3 w-3 text-white" />
-                        </div>
+                        {company.logoUrl ? (
+                          <img src={company.logoUrl} alt={company.name} className="h-8 w-8 object-contain rounded" />
+                        ) : (
+                          <div className={`p-1.5 rounded-lg ${
+                            selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400'
+                          }`}>
+                            <Building2 className="h-3 w-3 text-white" />
+                          </div>
+                        )}
                         <span className="font-medium text-sm">{company.name}</span>
                       </button>
                     ))}

@@ -206,6 +206,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.log('Loaded employees:', employeesData.length);
       console.log('Loaded branches:', branchesData.length);
 
+      // Filter companies based on user's visibleCompanyIds setting
+      if (userRole === 'admin' && user) {
+        try {
+          const userSettings = await getUserSettings(user.uid);
+          const visibleIds = userSettings?.visibleCompanyIds;
+          if (visibleIds && Array.isArray(visibleIds) && visibleIds.length > 0) {
+            companiesData = companiesData.filter(c => visibleIds.includes(c.id));
+            console.log('Filtered to visible companies:', companiesData.length);
+          }
+        } catch (error) {
+          console.error('Error filtering visible companies:', error);
+        }
+      }
+
       setCompanies(companiesData);
       setEmployees(employeesData);
       setBranches(branchesData);
@@ -213,9 +227,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Set default company
       let defaultCompanyId: string | null = null;
 
-      if (userRole === 'admin') {
+      if (userRole === 'admin' && user) {
         try {
-          const userSettings = await getUserSettings(adminUserId);
+          const userSettings = await getUserSettings(user.uid);
           defaultCompanyId = userSettings?.defaultCompanyId || null;
         } catch (error) {
           console.error('Error loading user settings:', error);

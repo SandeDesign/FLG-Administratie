@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { getUserSettings, saveUserSettings } from '../../services/firebase';
 import { useToast } from '../../hooks/useToast';
 
 const CompaniesVisibilitySettings: React.FC = () => {
@@ -11,27 +10,54 @@ const CompaniesVisibilitySettings: React.FC = () => {
   const { companies } = useApp();
   const { success, error: showError } = useToast();
   const [loadingCompanyId, setLoadingCompanyId] = useState<string | null>(null);
+  const [visibleCompanyIds, setVisibleCompanyIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Only show for admin
   if (userRole !== 'admin' || !user) {
     return null;
   }
 
-  const visibleCompanies = companies.filter(c => c.isActive !== false);
-  const hiddenCompanies = companies.filter(c => c.isActive === false);
+  useEffect(() => {
+    loadVisibleCompanies();
+  }, [user]);
+
+  const loadVisibleCompanies = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const settings = await getUserSettings(user.uid);
+      const visible = settings?.visibleCompanyIds || companies.map(c => c.id);
+      setVisibleCompanyIds(visible);
+    } catch (error) {
+      console.error('Error loading visible companies:', error);
+      setVisibleCompanyIds(companies.map(c => c.id));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const visibleCompanies = companies.filter(c => visibleCompanyIds.includes(c.id));
+  const hiddenCompanies = companies.filter(c => !visibleCompanyIds.includes(c.id));
   const totalVisible = visibleCompanies.length;
   const totalCompanies = companies.length;
 
-  const handleToggleCompanyVisibility = async (companyId: string, isActive: boolean) => {
+  const handleToggleCompanyVisibility = async (companyId: string, isVisible: boolean) => {
+    if (!user) return;
     try {
       setLoadingCompanyId(companyId);
-      const companyRef = doc(db, 'companies', companyId);
-      
-      await updateDoc(companyRef, {
-        isActive: !isActive
+
+      const newVisibleIds = isVisible
+        ? visibleCompanyIds.filter(id => id !== companyId)
+        : [...visibleCompanyIds, companyId];
+
+      await saveUserSettings(user.uid, {
+        visibleCompanyIds: newVisibleIds
       });
 
-      if (isActive) {
+      setVisibleCompanyIds(newVisibleIds);
+
+      if (isVisible) {
         success('Verborgen', '✓ Bedrijf is nu verborgen in dropdown');
       } else {
         success('Zichtbaar', '✓ Bedrijf is nu zichtbaar in dropdown');
@@ -45,17 +71,17 @@ const CompaniesVisibilitySettings: React.FC = () => {
   };
 
   const handleEnableAll = async () => {
-    if (hiddenCompanies.length === 0) return;
+    if (!user || hiddenCompanies.length === 0) return;
 
     try {
       setLoadingCompanyId('all');
-      
-      await Promise.all(
-        hiddenCompanies.map(company =>
-          updateDoc(doc(db, 'companies', company.id), { isActive: true })
-        )
-      );
+      const allIds = companies.map(c => c.id);
 
+      await saveUserSettings(user.uid, {
+        visibleCompanyIds: allIds
+      });
+
+      setVisibleCompanyIds(allIds);
       success('Alle zichtbaar', `✓ ${hiddenCompanies.length} bedrijven zijn nu zichtbaar`);
     } catch (error) {
       console.error('Error enabling all companies:', error);
@@ -64,6 +90,10 @@ const CompaniesVisibilitySettings: React.FC = () => {
       setLoadingCompanyId(null);
     }
   };
+
+  if (loading) {
+    return <div className="text-sm text-gray-500">Laden...</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -113,9 +143,9 @@ const CompaniesVisibilitySettings: React.FC = () => {
                 </div>
                 <button
                   onClick={() => handleToggleCompanyVisibility(company.id, true)}
-                  disabled={loadingCompanyId !== null}
-                  className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
-                  title="Verbergen"
+                  disabled={loadingCompanyId !== null || totalVisible === 1}
+                  className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title={totalVisible === 1 ? "Minimaal 1 bedrijf moet zichtbaar zijn" : "Verbergen"}
                 >
                   {loadingCompanyId === company.id ? (
                     <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full" />
