@@ -46,7 +46,7 @@ interface DashboardStats {
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
 const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { employees, selectedCompany } = useApp();
   const { error: showError } = useToast();
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ const AdminDashboard: React.FC = () => {
   const [budgetChartData, setBudgetChartData] = useState<any[]>([]);
 
   const loadDashboardData = useCallback(async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !adminUserId || !selectedCompany) {
       console.log('❌ No user or company selected');
       return;
     }
@@ -66,17 +66,17 @@ const AdminDashboard: React.FC = () => {
       setLoading(true);
       console.log('📊 Loading dashboard for company:', selectedCompany.name);
 
-      const companyEmployees = await getEmployees(user.uid);
+      const companyEmployees = await getEmployees(adminUserId);
       console.log('👥 Employees loaded:', companyEmployees.length);
 
       const activeEmployees = companyEmployees.filter(e => e.status === 'active' && e.companyId === selectedCompany.id);
       console.log('✅ Active employees:', activeEmployees.length);
 
       const [pendingTimesheets, pendingLeave, pendingExpenses, budgetItems] = await Promise.all([
-        getPendingTimesheets(user.uid, selectedCompany.id),
-        getPendingLeaveApprovals(selectedCompany.id, user.uid),
-        getPendingExpenses(selectedCompany.id, user.uid).catch(() => []),
-        getBudgetItems(user.uid, selectedCompany.id).catch(() => []),
+        getPendingTimesheets(adminUserId, selectedCompany.id),
+        getPendingLeaveApprovals(selectedCompany.id, adminUserId),
+        getPendingExpenses(selectedCompany.id, adminUserId).catch(() => []),
+        getBudgetItems(adminUserId, selectedCompany.id).catch(() => []),
       ]);
 
       console.log('⏱️ Pending timesheets:', pendingTimesheets.length);
@@ -146,7 +146,7 @@ const AdminDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany?.id, showError]);
+  }, [user, adminUserId, selectedCompany?.id, showError]);
 
   useEffect(() => {
     loadDashboardData();

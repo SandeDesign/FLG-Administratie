@@ -43,7 +43,7 @@ interface UserRole {
 }
 
 const AdminUsers: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { success, error: showError } = useToast();
   const [users, setUsers] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,14 +51,15 @@ const AdminUsers: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<string>('all');
 
   const loadUsers = useCallback(async () => {
-    if (!user) return;
+    if (!user || !adminUserId) return;
 
     try {
       setLoading(true);
       console.log('Loading users from Firebase...');
-      
+
       const usersCollection = collection(db, 'users');
-      const usersSnapshot = await getDocs(usersCollection);
+      const q = query(usersCollection, where('userId', '==', adminUserId));
+      const usersSnapshot = await getDocs(q);
       
       console.log('Found', usersSnapshot.docs.length, 'user records');
       
@@ -88,7 +89,7 @@ const AdminUsers: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, showError]);
+  }, [user, adminUserId, showError]);
 
   useEffect(() => {
     loadUsers();
