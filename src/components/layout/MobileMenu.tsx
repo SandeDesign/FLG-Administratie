@@ -121,7 +121,11 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center space-x-3">
-            <img src="/Logo_1.png" alt="Logo" className="h-10 w-auto" />
+            {selectedCompany?.logoUrl ? (
+              <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="h-10 w-auto max-w-[150px] object-contain" />
+            ) : (
+              <img src="/Logo_1.png" alt="Logo" className="h-10 w-auto" />
+            )}
           </div>
 
           <button

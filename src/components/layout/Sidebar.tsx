@@ -190,15 +190,23 @@ const Sidebar: React.FC = () => {
       if (user && userRole === 'admin') {
         try {
           const settings = await getUserSettings(user.uid);
-          setFavoritePages(settings?.favoritePages || []);
+          console.log('Loaded favorites from settings:', settings?.favoritePages);
+          if (settings?.favoritePages && settings.favoritePages.length > 0) {
+            setFavoritePages(settings.favoritePages);
+          } else {
+            setFavoritePages([]);
+          }
         } catch (error) {
           console.error('Error loading favorites:', error);
+          setFavoritePages([]);
         }
+      } else {
+        setFavoritePages([]);
       }
     };
 
     loadFavorites();
-  }, [user, userRole]);
+  }, [user?.uid, userRole]);
 
   const handleToggleCollapsed = () => {
     const newState = !collapsed;
@@ -290,12 +298,22 @@ const Sidebar: React.FC = () => {
       {/* Header - Logo */}
       <div className="flex h-16 items-center justify-center border-b border-gray-100 px-3 relative">
         {!collapsed && (
-          <img src="/Logo_1.png" alt="Logo" className="h-10 w-auto" />
+          selectedCompany?.logoUrl ? (
+            <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="h-10 w-auto max-w-[200px] object-contain" />
+          ) : (
+            <img src="/Logo_1.png" alt="Logo" className="h-10 w-auto" />
+          )
         )}
         {collapsed && (
-          <div className="w-9 h-9 bg-primary-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">F</span>
-          </div>
+          selectedCompany?.logoUrl ? (
+            <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center">
+              <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="w-full h-full object-contain p-0.5" />
+            </div>
+          ) : (
+            <div className="w-9 h-9 bg-primary-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">F</span>
+            </div>
+          )
         )}
 
         <button

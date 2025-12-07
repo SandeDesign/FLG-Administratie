@@ -59,7 +59,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
           
           {/* CENTER: LOGO */}
-          <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-12 w-auto flex-shrink-0 mx-2" />
+          {selectedCompany?.logoUrl ? (
+            <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="h-12 w-auto max-w-[120px] object-contain flex-shrink-0 mx-2" />
+          ) : (
+            <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-12 w-auto flex-shrink-0 mx-2" />
+          )}
           
           {/* RIGHT: Company Selector */}
           <div className="flex-1 flex justify-end">

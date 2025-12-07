@@ -31,6 +31,7 @@ interface CompanyFormData {
   companyType: 'employer' | 'project';
   primaryEmployerId?: string;
   themeColor?: string; // Theme color for this company
+  logoUrl?: string; // Base64 encoded logo
 }
 
 interface CompanyModalProps {
@@ -44,9 +45,12 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
   const { user } = useAuth();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  
+
   // ✅ NIEUW: State voor employer companies
   const [employerCompanies, setEmployerCompanies] = useState<Company[]>([]);
+
+  // ✅ NIEUW: State voor logo upload
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<CompanyFormData>({
     defaultValues: {
@@ -106,7 +110,9 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         companyType: company.companyType || 'employer',
         primaryEmployerId: company.primaryEmployerId,
         themeColor: company.themeColor || 'blue',
+        logoUrl: company.logoUrl,
       });
+      setLogoPreview(company.logoUrl || null);
     } else {
       reset({
         country: 'Nederland',
@@ -118,8 +124,26 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         companyType: 'employer',
         themeColor: 'blue',
       });
+      setLogoPreview(null);
     }
   }, [company, reset]);
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showError('Ongeldig bestand', 'Upload een afbeelding (JPG, PNG, etc.)');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setLogoPreview(base64String);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const onSubmit = async (data: CompanyFormData) => {
     if (!user) return;
@@ -140,6 +164,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         bankAccount: data.bankAccount, // ✅ NIEUW: Save bankAccount
         companyType: data.companyType,
         themeColor: data.themeColor || 'blue', // ✅ NIEUW: Save theme color
+        logoUrl: logoPreview || '', // ✅ NIEUW: Save logo as base64
         address: {
           street: data.street,
           city: data.city,
@@ -451,6 +476,46 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
                 </label>
               );
             })}
+          </div>
+        </div>
+
+        {/* Logo Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Bedrijfslogo
+          </label>
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Upload een bedrijfslogo. Het bestand wordt opgeslagen als base64.
+              </p>
+            </div>
+            {logoPreview && (
+              <div className="flex-shrink-0">
+                <div className="w-24 h-24 border-2 border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 flex items-center justify-center p-2">
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLogoPreview(null);
+                  }}
+                  className="text-xs text-red-600 hover:text-red-700 mt-1 block text-center w-full"
+                >
+                  Verwijderen
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

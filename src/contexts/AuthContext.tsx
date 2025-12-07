@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useToast } from '../hooks/useToast';
-import { getUserRole, getEmployeeById } from '../services/firebase';
+import { getUserRole, getEmployeeById, getPrimaryAdminForCoAdmin } from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;

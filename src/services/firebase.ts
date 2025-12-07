@@ -1308,6 +1308,28 @@ export const canUserManageCompany = async (userId: string, companyId: string): P
   }
 };
 
+// Get primary admin UID for a co-admin email
+export const getPrimaryAdminForCoAdmin = async (coAdminEmail: string): Promise<string | null> => {
+  try {
+    const q = query(
+      collection(db, 'userSettings'),
+      where('coAdminEmails', 'array-contains', coAdminEmail)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return null;
+    }
+
+    const primaryAdminSettings = querySnapshot.docs[0].data();
+    return primaryAdminSettings.userId || null;
+  } catch (error) {
+    console.error('Error getting primary admin for co-admin:', error);
+    return null;
+  }
+};
+
 // Get company hierarchy (employer with its project companies)
 export const getCompanyHierarchy = async (userId: string): Promise<CompanyWithEmployees[]> => {
   const companies = await getCompanies(userId);
