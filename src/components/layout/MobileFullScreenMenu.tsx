@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   X,
   ChevronRight,
   LogOut,
   LayoutDashboard,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import { getFilteredNavigation, getNavigationSections, CompanyType } from '../../utils/menuConfig';
+import { getUserSettings } from '../../services/firebase';
 
 interface MobileFullScreenMenuProps {
   isOpen: boolean;
@@ -16,9 +18,34 @@ interface MobileFullScreenMenuProps {
 }
 
 export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOpen, onClose }) => {
-  const { userRole, signOut } = useAuth();
+  const { userRole, signOut, user } = useAuth();
   const { companies, selectedCompany, setSelectedCompany } = useApp();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [favoritePages, setFavoritePages] = useState<string[]>([]);
+
+  // Load favorite pages from user settings for the selected company
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (user && userRole === 'admin' && selectedCompany?.id) {
+        try {
+          const settings = await getUserSettings(user.uid);
+          if (settings?.favoritePages && settings.favoritePages[selectedCompany.id]) {
+            const companyFavorites = settings.favoritePages[selectedCompany.id];
+            setFavoritePages(companyFavorites);
+          } else {
+            setFavoritePages([]);
+          }
+        } catch (error) {
+          console.error('Error loading favorites:', error);
+          setFavoritePages([]);
+        }
+      } else {
+        setFavoritePages([]);
+      }
+    };
+
+    loadFavorites();
+  }, [user?.uid, userRole, selectedCompany?.id]);
 
   if (!isOpen) return null;
 
@@ -29,6 +56,11 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
   // Dashboard item (standalone)
   const dashboardItem = filteredNavigation.find(i => i.name === 'Dashboard');
+
+  // Favorite items (only for admin)
+  const favoriteItems = userRole === 'admin' && favoritePages.length > 0
+    ? filteredNavigation.filter(i => favoritePages.includes(i.href) && i.name !== 'Dashboard')
+    : [];
 
   // Get sections from menuConfig
   const menuSections = getNavigationSections(userRole, companyType);
@@ -55,9 +87,19 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50 flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-md">
-              <span className="text-white font-bold text-xl">F</span>
-            </div>
+            {selectedCompany?.logoUrl ? (
+              <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-white shadow-md">
+                <img
+                  src={selectedCompany.logoUrl}
+                  alt={selectedCompany.name}
+                  className="w-full h-full object-contain p-1"
+                />
+              </div>
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-md">
+                <span className="text-white font-bold text-xl">F</span>
+              </div>
+            )}
             <div>
               <h2 className="text-sm font-bold text-gray-900">FLG-Administratie</h2>
               <p className="text-xs text-gray-500 truncate">{selectedCompany?.name || 'Menu'}</p>
@@ -125,6 +167,63 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                   </>
                 )}
               </NavLink>
+            </div>
+          )}
+
+          {/* Favorites Section - Only for admin */}
+          {favoriteItems.length > 0 && (
+            <div className="pb-3 mb-2 space-y-1">
+              {/* Favorites Header */}
+              <button
+                onClick={() => toggleSection('Favorieten')}
+                className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200 group"
+              >
+                <div className="flex items-center space-x-2">
+                  <div className="p-1.5 rounded-md bg-amber-500">
+                    <Star className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Favorieten</span>
+                </div>
+                <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+                  expandedSections.includes('Favorieten') ? 'rotate-90' : ''
+                }`} />
+              </button>
+
+              {/* Favorites Items */}
+              {expandedSections.includes('Favorieten') && (
+                <div className="space-y-0.5 ml-2 pl-3 border-l border-gray-100">
+                  {favoriteItems.map((item) => {
+                    const ItemIcon = item.icon;
+                    return (
+                      <NavLink
+                        key={item.name}
+                        to={item.href}
+                        onClick={onClose}
+                        className={({ isActive }) =>
+                          `flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
+                            isActive
+                              ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 shadow-sm border border-primary-200'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`
+                        }
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <div className={`p-1.5 rounded-lg transition-all duration-200 ${
+                              isActive ? 'bg-primary-500 shadow-sm' : 'bg-gray-100'
+                            }`}>
+                              <ItemIcon className={`h-3.5 w-3.5 ${
+                                isActive ? 'text-white' : 'text-gray-600'
+                              }`} />
+                            </div>
+                            <span className="font-medium">{item.name}</span>
+                          </>
+                        )}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
