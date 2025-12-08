@@ -1,46 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useApp } from '../../contexts/AppContext';
-import { getUserSettings, saveUserSettings } from '../../services/firebase';
+import { getUserSettings, saveUserSettings, getCompanies } from '../../services/firebase';
 import { useToast } from '../../hooks/useToast';
+import { Company } from '../../types';
 
 const CompaniesVisibilitySettings: React.FC = () => {
-  const { user, userRole } = useAuth();
-  const { companies } = useApp();
+  const { user, userRole, adminUserId } = useAuth();
   const { success, error: showError } = useToast();
   const [loadingCompanyId, setLoadingCompanyId] = useState<string | null>(null);
   const [visibleCompanyIds, setVisibleCompanyIds] = useState<string[]>([]);
+  const [allCompanies, setAllCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Only show for admin
-  if (userRole !== 'admin' || !user) {
+  if (userRole !== 'admin' || !user || !adminUserId) {
     return null;
   }
 
   useEffect(() => {
-    loadVisibleCompanies();
-  }, [user]);
+    loadData();
+  }, [user, adminUserId]);
 
-  const loadVisibleCompanies = async () => {
-    if (!user) return;
+  const loadData = async () => {
+    if (!user || !adminUserId) return;
     try {
       setLoading(true);
+
+      // Load ALL companies (unfiltered) - CRITICAL!
+      const allCompaniesData = await getCompanies(adminUserId);
+      setAllCompanies(allCompaniesData);
+
+      // Load user's visible company IDs
       const settings = await getUserSettings(user.uid);
-      const visible = settings?.visibleCompanyIds || companies.map(c => c.id);
+      const visible = settings?.visibleCompanyIds || allCompaniesData.map(c => c.id);
       setVisibleCompanyIds(visible);
     } catch (error) {
-      console.error('Error loading visible companies:', error);
-      setVisibleCompanyIds(companies.map(c => c.id));
+      console.error('Error loading data:', error);
+      setVisibleCompanyIds([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const visibleCompanies = companies.filter(c => visibleCompanyIds.includes(c.id));
-  const hiddenCompanies = companies.filter(c => !visibleCompanyIds.includes(c.id));
+  const visibleCompanies = allCompanies.filter(c => visibleCompanyIds.includes(c.id));
+  const hiddenCompanies = allCompanies.filter(c => !visibleCompanyIds.includes(c.id));
   const totalVisible = visibleCompanies.length;
-  const totalCompanies = companies.length;
+  const totalCompanies = allCompanies.length;
 
   const handleToggleCompanyVisibility = async (companyId: string, isVisible: boolean) => {
     if (!user) return;
@@ -62,6 +68,9 @@ const CompaniesVisibilitySettings: React.FC = () => {
       } else {
         success('Zichtbaar', '✓ Bedrijf is nu zichtbaar in dropdown');
       }
+
+      // Reload AppContext to update dropdown immediately
+      setTimeout(() => window.location.reload(), 500);
     } catch (error) {
       console.error('Error toggling company visibility:', error);
       showError('Fout', 'Kon zichtbaarheid niet wijzigen');
@@ -75,7 +84,7 @@ const CompaniesVisibilitySettings: React.FC = () => {
 
     try {
       setLoadingCompanyId('all');
-      const allIds = companies.map(c => c.id);
+      const allIds = allCompanies.map(c => c.id);
 
       await saveUserSettings(user.uid, {
         visibleCompanyIds: allIds
@@ -83,6 +92,9 @@ const CompaniesVisibilitySettings: React.FC = () => {
 
       setVisibleCompanyIds(allIds);
       success('Alle zichtbaar', `✓ ${hiddenCompanies.length} bedrijven zijn nu zichtbaar`);
+
+      // Reload AppContext to update dropdown
+      window.location.reload();
     } catch (error) {
       console.error('Error enabling all companies:', error);
       showError('Fout', 'Kon niet alle bedrijven activeren');
