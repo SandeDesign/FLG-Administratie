@@ -57,7 +57,7 @@ const convertDateToISO = (date: any): string => {
 };
 
 const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSuccess, employee }) => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -82,11 +82,11 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
   // ✅ NIEUW: Load companies en filter employer vs project
   useEffect(() => {
     const loadData = async () => {
-      if (user) {
+      if (user && adminUserId) {
         try {
-          const companiesData = await getCompanies(user.uid);
-          const branchesData = await getBranches(user.uid);
-          
+          const companiesData = await getCompanies(adminUserId);
+          const branchesData = await getBranches(adminUserId);
+
           setCompanies(companiesData.filter(c => c.companyType === 'employer'));
           setProjectCompanies(companiesData.filter(c => c.companyType === 'project'));
           setBranches(branchesData);
@@ -248,13 +248,13 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
       };
 
       if (employee) {
-        await updateEmployee(employee.id, user.uid, {
+        await updateEmployee(employee.id, adminUserId!, {
           ...employeeData,
           updatedAt: new Date(),
         });
         success('Werknemer bijgewerkt', `${data.firstName} ${data.lastName} is succesvol bijgewerkt`);
       } else {
-        await createEmployee(user.uid, employeeData);
+        await createEmployee(adminUserId!, employeeData);
         success('Werknemer aangemaakt', `${data.firstName} ${data.lastName} is succesvol aangemaakt`);
       }
 
