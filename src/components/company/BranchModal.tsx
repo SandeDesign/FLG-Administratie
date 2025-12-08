@@ -27,7 +27,7 @@ interface BranchModalProps {
 }
 
 const BranchModal: React.FC<BranchModalProps> = ({ isOpen, onClose, onSuccess, company, branch }) => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
@@ -80,10 +80,10 @@ const BranchModal: React.FC<BranchModalProps> = ({ isOpen, onClose, onSuccess, c
       };
 
       if (branch) {
-        await updateBranch(branch.id, user.uid, branchData);
+        await updateBranch(branch.id, adminUserId!, branchData);
         success('Vestiging bijgewerkt', `${data.name} is succesvol bijgewerkt`);
       } else {
-        await createBranch(user.uid, branchData);
+        await createBranch(adminUserId!, branchData);
         success('Vestiging aangemaakt', `${data.name} is succesvol aangemaakt`);
       }
 

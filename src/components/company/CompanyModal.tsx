@@ -42,7 +42,7 @@ interface CompanyModalProps {
 }
 
 const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess, company }) => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
@@ -70,9 +70,9 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
   // ✅ NIEUW: Load employer companies voor project company selector
   useEffect(() => {
     const loadEmployerCompanies = async () => {
-      if (user) {
+      if (user && adminUserId) {
         try {
-          const companies = await getCompanies(user.uid);
+          const companies = await getCompanies(adminUserId);
           const employers = companies.filter(c => c.companyType === 'employer');
           setEmployerCompanies(employers);
         } catch (error) {
@@ -204,10 +204,10 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
       }
 
       if (company) {
-        await updateCompany(company.id, user.uid, companyData);
+        await updateCompany(company.id, adminUserId!, companyData);
         success('Bedrijf bijgewerkt', `${data.name} is succesvol bijgewerkt`);
       } else {
-        await createCompany(user.uid, companyData);
+        await createCompany(adminUserId!, companyData);
         success('Bedrijf aangemaakt', `${data.name} is succesvol aangemaakt`);
       }
 
