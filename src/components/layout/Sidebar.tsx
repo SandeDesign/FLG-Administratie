@@ -66,11 +66,6 @@ export const navigation: NavigationItem[] = [
   { name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin', 'manager'], companyTypes: ['project'] },
   { name: 'Project Stats', href: '/project-statistics', icon: BarChart2, roles: ['admin'], companyTypes: ['project'] },
 
-  // DATA & EXPORTS (Admin - Employer en Holding)
-  { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Loonstroken', href: '/payslips', icon: CreditCard, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Drive', href: '/drive-files', icon: FolderOpen, roles: ['admin'], companyTypes: ['employer', 'holding'] },
-
   // SYSTEEM (Admin - Employer en Holding)
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },
   { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding'] },

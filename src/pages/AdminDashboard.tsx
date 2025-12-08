@@ -187,7 +187,7 @@ const AdminDashboard: React.FC = () => {
       <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-700 rounded-xl p-6 text-white">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Management Dashboard</h1>
+            <h1 className="text-3xl font-bold">LoonMaatschappij</h1>
             <p className="text-blue-100 mt-1">{selectedCompany.name}</p>
           </div>
           <Activity className="h-12 w-12 text-blue-200 opacity-50" />
