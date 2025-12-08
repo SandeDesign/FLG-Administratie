@@ -50,7 +50,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
   onSuccess,
   editingInvoice
 }) => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error } = useToast();
   const [loading, setLoading] = useState(false);
@@ -87,14 +87,14 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
 
   // Load relations and generate invoice number
   useEffect(() => {
-    if (!isOpen || !selectedCompany || !user) return;
+    if (!isOpen || !selectedCompany || !user || !adminUserId) return;
 
     const loadData = async () => {
       try {
         // Load relations
         const q = query(
           collection(db, 'invoiceRelations'),
-          where('userId', '==', user.uid),
+          where('userId', '==', adminUserId),
           where('companyId', '==', selectedCompany.id)
         );
 
@@ -109,7 +109,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
         // Generate next invoice number
         if (!editingInvoice) {
           const nextNumber = await outgoingInvoiceService.getNextInvoiceNumber(
-            user.uid,
+            adminUserId,
             selectedCompany.id
           );
           setInvoiceNumber(nextNumber);
@@ -205,7 +205,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
     setLoading(true);
     try {
       const invoiceData: Omit<OutgoingInvoice, 'id' | 'createdAt' | 'updatedAt'> = {
-        userId: user.uid,
+        userId: adminUserId!,
         companyId: selectedCompany.id,
         invoiceNumber: invoiceNumber,
         
