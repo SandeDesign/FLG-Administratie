@@ -253,6 +253,13 @@ const Sidebar: React.FC = () => {
   // Sections with distinct colors
   const sections: Section[] = [
     {
+      title: 'Statistieken',
+      icon: TrendingUp,
+      color: 'bg-indigo-500',
+      defaultOpen: companyType === 'holding' || companyType === 'project',
+      items: filteredNavigation.filter(i => i.name === 'Statistieken')
+    },
+    {
       title: 'HR',
       icon: Users,
       color: 'bg-blue-500',
