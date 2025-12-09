@@ -1,199 +1,297 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import {
-  Building2, DollarSign, TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon
-} from 'lucide-react';
-import Card from '../components/ui/Card';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { Building2, Euro, TrendingUp, TrendingDown, Package, Receipt } from 'lucide-react';
+import Card from '../components/ui/Card';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface CompanyStats {
-  id: string;
-  name: string;
-  revenue: number;
-  costs: number;
-  margin: number;
-  marginPercentage: number;
+  companyId: string;
+  companyName: string;
+  companyType: 'employer' | 'project' | 'holding';
+  outgoingInvoicesCount: number;
+  outgoingInvoicesTotal: number;
+  incomingInvoicesCount: number;
+  incomingInvoicesTotal: number;
+  budgetCostsMonthly: number;
+  budgetIncomeMonthly: number;
+  profit: number;
 }
 
 const HoldingStatistics: React.FC = () => {
-  const { user, userRole, adminUserId } = useAuth();
   const { selectedCompany, companies } = useApp();
+  const { adminUserId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [companyStats, setCompanyStats] = useState<CompanyStats[]>([]);
-  const [stats, setStats] = useState({
-    totalCompanies: 0,
+  const [totalStats, setTotalStats] = useState({
     totalRevenue: 0,
     totalCosts: 0,
-    totalMargin: 0,
-    avgMarginPercentage: 0,
+    totalProfit: 0,
+    totalCompanies: 0,
   });
 
   useEffect(() => {
-    if (selectedCompany && adminUserId) {
-      loadStatistics();
+    if (!selectedCompany || !adminUserId || selectedCompany.companyType !== 'holding') {
+      setLoading(false);
+      return;
     }
-  }, [selectedCompany, adminUserId, companies]);
 
-  const loadStatistics = async () => {
-    if (!selectedCompany || !adminUserId) return;
+    loadHoldingStatistics();
+  }, [selectedCompany, adminUserId]);
 
+  const loadHoldingStatistics = async () => {
+    if (!adminUserId) return;
+
+    setLoading(true);
     try {
-      setLoading(true);
+      console.log('📊 Loading holding statistics...');
 
-      const companyStatsMap = new Map<string, CompanyStats>();
-      let totalRevenue = 0;
-      let totalCosts = 0;
+      // Alle bedrijven van deze admin ophalen
+      const allCompanies = companies.filter(c => c.userId === adminUserId);
+      console.log(`✅ Found ${allCompanies.length} companies`);
 
-      for (const company of companies || []) {
-        const outgoingSnap = await getDocs(
-          query(
-            collection(db, 'outgoingInvoices'),
-            where('userId', '==', adminUserId),
-            where('companyId', '==', company.id)
-          )
+      const stats: CompanyStats[] = [];
+
+      for (const company of allCompanies) {
+        console.log(`📈 Loading stats for: ${company.name} (${company.companyType})`);
+
+        // Uitgaande facturen
+        const outgoingQuery = query(
+          collection(db, 'outgoingInvoices'),
+          where('userId', '==', adminUserId),
+          where('companyId', '==', company.id)
         );
-
-        const revenue = outgoingSnap.docs.reduce((sum, doc) => sum + (doc.data().totalAmount || 0), 0);
-
-        const incomingSnap = await getDocs(
-          query(
-            collection(db, 'incomingInvoices'),
-            where('userId', '==', adminUserId),
-            where('companyId', '==', company.id)
-          )
-        );
-
-        const costs = incomingSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
-
-        const margin = revenue - costs;
-        const marginPercentage = revenue > 0 ? (margin / revenue) * 100 : 0;
-
-        companyStatsMap.set(company.id, {
-          id: company.id,
-          name: company.name,
-          revenue,
-          costs,
-          margin,
-          marginPercentage,
+        const outgoingSnap = await getDocs(outgoingQuery);
+        let outgoingTotal = 0;
+        outgoingSnap.forEach(doc => {
+          const data = doc.data();
+          outgoingTotal += data.totalAmount || 0;
         });
 
-        totalRevenue += revenue;
-        totalCosts += costs;
+        // Inkomende facturen
+        const incomingQuery = query(
+          collection(db, 'incomingInvoices'),
+          where('userId', '==', adminUserId),
+          where('companyId', '==', company.id)
+        );
+        const incomingSnap = await getDocs(incomingQuery);
+        let incomingTotal = 0;
+        incomingSnap.forEach(doc => {
+          const data = doc.data();
+          incomingTotal += data.totalAmount || 0;
+        });
+
+        // Budget items
+        const budgetQuery = query(
+          collection(db, 'budgetItems'),
+          where('userId', '==', adminUserId),
+          where('companyId', '==', company.id),
+          where('isActive', '==', true)
+        );
+        const budgetSnap = await getDocs(budgetQuery);
+        let monthlyCosts = 0;
+        let monthlyIncome = 0;
+
+        budgetSnap.forEach(doc => {
+          const data = doc.data();
+          const amount = data.amount || 0;
+          let monthlyAmount = 0;
+
+          // Bereken maandelijks bedrag
+          switch (data.frequency) {
+            case 'monthly':
+              monthlyAmount = amount;
+              break;
+            case 'quarterly':
+              monthlyAmount = amount / 3;
+              break;
+            case 'yearly':
+              monthlyAmount = amount / 12;
+              break;
+          }
+
+          if (data.type === 'cost') {
+            monthlyCosts += monthlyAmount;
+          } else if (data.type === 'income') {
+            monthlyIncome += monthlyAmount;
+          }
+        });
+
+        const profit = outgoingTotal - incomingTotal;
+
+        stats.push({
+          companyId: company.id,
+          companyName: company.name,
+          companyType: company.companyType,
+          outgoingInvoicesCount: outgoingSnap.size,
+          outgoingInvoicesTotal: outgoingTotal,
+          incomingInvoicesCount: incomingSnap.size,
+          incomingInvoicesTotal: incomingTotal,
+          budgetCostsMonthly: monthlyCosts,
+          budgetIncomeMonthly: monthlyIncome,
+          profit,
+        });
+
+        console.log(`✓ ${company.name}: €${outgoingTotal.toFixed(2)} revenue, €${incomingTotal.toFixed(2)} costs`);
       }
 
-      const companyStatsList = Array.from(companyStatsMap.values()).sort((a, b) => b.revenue - a.revenue);
-      const totalMargin = totalRevenue - totalCosts;
-      const avgMarginPercentage = totalRevenue > 0 ? (totalMargin / totalRevenue) * 100 : 0;
+      setCompanyStats(stats);
 
-      setCompanyStats(companyStatsList);
-      setStats({
-        totalCompanies: companyStatsList.length,
+      // Totalen berekenen
+      const totalRevenue = stats.reduce((sum, s) => sum + s.outgoingInvoicesTotal, 0);
+      const totalCosts = stats.reduce((sum, s) => sum + s.incomingInvoicesTotal, 0);
+      const totalProfit = totalRevenue - totalCosts;
+
+      setTotalStats({
         totalRevenue,
         totalCosts,
-        totalMargin,
-        avgMarginPercentage,
+        totalProfit,
+        totalCompanies: stats.length,
       });
+
+      console.log(`💰 Total: €${totalRevenue.toFixed(2)} revenue, €${totalCosts.toFixed(2)} costs, €${totalProfit.toFixed(2)} profit`);
     } catch (error) {
-      console.error('Error loading statistics:', error);
+      console.error('❌ Error loading holding statistics:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
-
   if (!selectedCompany) {
     return (
       <div className="p-6">
-        <p className="text-gray-600">Selecteer eerst een holding bedrijf om statistieken te bekijken.</p>
+        <p className="text-gray-500">Selecteer een holding bedrijf om statistieken te bekijken.</p>
       </div>
     );
   }
 
+  if (selectedCompany.companyType !== 'holding') {
+    return (
+      <div className="p-6">
+        <p className="text-gray-500">Deze pagina is alleen beschikbaar voor holding bedrijven.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+
+  // Data voor charts
+  const revenueChartData = companyStats.map(s => ({
+    name: s.companyName,
+    omzet: s.outgoingInvoicesTotal,
+    kosten: s.incomingInvoicesTotal,
+  }));
+
+  const profitChartData = companyStats
+    .filter(s => s.profit !== 0)
+    .map(s => ({
+      name: s.companyName,
+      value: s.profit,
+    }));
+
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Holding Statistieken</h1>
-        <p className="text-gray-600 mt-1">{selectedCompany.name}</p>
+        <p className="text-gray-600 mt-1">Overzicht van alle bedrijven onder {selectedCompany.name}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4">
+      {/* Totalen Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Bedrijven</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalCompanies}</p>
+              <p className="text-sm font-medium text-gray-600">Totale Omzet</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                €{totalStats.totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+              </p>
             </div>
-            <Building2 className="h-10 w-10 text-blue-500" />
+            <TrendingUp className="h-8 w-8 text-green-600" />
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Totale Omzet</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">€{(stats.totalRevenue / 1000).toFixed(0)}k</p>
+              <p className="text-sm font-medium text-gray-600">Totale Kosten</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                €{totalStats.totalCosts.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+              </p>
             </div>
-            <TrendingUp className="h-10 w-10 text-green-500" />
+            <TrendingDown className="h-8 w-8 text-red-600" />
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Totale Kosten</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">€{(stats.totalCosts / 1000).toFixed(0)}k</p>
+              <p className="text-sm font-medium text-gray-600">Totale Winst</p>
+              <p className={`text-2xl font-bold mt-1 ${totalStats.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                €{totalStats.totalProfit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+              </p>
             </div>
-            <TrendingDown className="h-10 w-10 text-red-500" />
+            <Euro className={`h-8 w-8 ${totalStats.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Totale Marge</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">€{(stats.totalMargin / 1000).toFixed(0)}k</p>
-              <p className="text-xs text-gray-500 mt-1">{stats.avgMarginPercentage.toFixed(1)}%</p>
+              <p className="text-sm font-medium text-gray-600">Aantal Bedrijven</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{totalStats.totalCompanies}</p>
             </div>
-            <Wallet className="h-10 w-10 text-purple-500" />
+            <Building2 className="h-8 w-8 text-blue-600" />
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Omzet per Bedrijf</h3>
+      {/* Omzet vs Kosten per Bedrijf */}
+      <Card>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Omzet vs Kosten per Bedrijf</h2>
+        {revenueChartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={companyStats}>
+            <BarChart data={revenueChartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-              <YAxis />
+              <YAxis tickFormatter={(value) => `€${value.toLocaleString('nl-NL')}`} />
               <Tooltip formatter={(value) => `€${Number(value).toLocaleString('nl-NL')}`} />
               <Legend />
-              <Bar dataKey="revenue" fill="#10B981" name="Omzet" />
-              <Bar dataKey="costs" fill="#EF4444" name="Kosten" />
+              <Bar dataKey="omzet" fill="#10B981" name="Omzet" />
+              <Bar dataKey="kosten" fill="#EF4444" name="Kosten" />
             </BarChart>
           </ResponsiveContainer>
-        </Card>
+        ) : (
+          <p className="text-gray-500 text-center py-8">Geen data beschikbaar</p>
+        )}
+      </Card>
 
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Omzet Verdeling</h3>
+      {/* Winst Distributie */}
+      {profitChartData.length > 0 && (
+        <Card>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Winst Distributie</h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={companyStats}
+                data={profitChartData}
+                dataKey="value"
+                nameKey="name"
                 cx="50%"
                 cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="revenue"
+                outerRadius={100}
+                label={(entry) => `${entry.name}: €${entry.value.toLocaleString('nl-NL')}`}
               >
-                {companyStats.map((entry, index) => (
+                {profitChartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
@@ -201,10 +299,11 @@ const HoldingStatistics: React.FC = () => {
             </PieChart>
           </ResponsiveContainer>
         </Card>
-      </div>
+      )}
 
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Bedrijf Details</h3>
+      {/* Details Tabel */}
+      <Card>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Bedrijven Overzicht</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -213,40 +312,56 @@ const HoldingStatistics: React.FC = () => {
                   Bedrijf
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Omzet
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Kosten
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Marge
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Budget (mnd)
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Marge %
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Winst
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {companyStats.map((company) => (
-                <tr key={company.id}>
+              {companyStats.map((stat) => (
+                <tr key={stat.companyId} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {company.name}
+                    {stat.companyName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    €{company.revenue.toLocaleString('nl-NL')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    €{company.costs.toLocaleString('nl-NL')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={company.margin >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      €{company.margin.toLocaleString('nl-NL')}
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      stat.companyType === 'employer' ? 'bg-blue-100 text-blue-800' :
+                      stat.companyType === 'project' ? 'bg-purple-100 text-purple-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {stat.companyType === 'employer' ? 'Werkgever' :
+                       stat.companyType === 'project' ? 'Project' : 'Holding'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={company.marginPercentage >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      {company.marginPercentage.toFixed(1)}%
-                    </span>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-medium">
+                    €{stat.outgoingInvoicesTotal.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                    <span className="text-gray-400 ml-2">({stat.outgoingInvoicesCount})</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600 font-medium">
+                    €{stat.incomingInvoicesTotal.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                    <span className="text-gray-400 ml-2">({stat.incomingInvoicesCount})</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
+                    <span className="text-red-600">-€{stat.budgetCostsMonthly.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
+                    {stat.budgetIncomeMonthly > 0 && (
+                      <span className="text-green-600 ml-2">+€{stat.budgetIncomeMonthly.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
+                    )}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${
+                    stat.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    €{stat.profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
                   </td>
                 </tr>
               ))}
