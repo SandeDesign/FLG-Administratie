@@ -195,12 +195,21 @@ const IncomingInvoicesStats: React.FC = () => {
           invoice: {
             id: invoice.id,
             supplierName: invoice.supplierName,
-            amount: invoice.totalAmount || invoice.amount,
+            supplierEmail: invoice.supplierEmail || null,
+            invoiceNumber: invoice.invoiceNumber,
+            amount: invoice.amount,
+            subtotal: (invoice as any).subtotal || invoice.amount,
+            vatAmount: invoice.vatAmount,
+            totalAmount: invoice.totalAmount,
             invoiceDate: invoice.invoiceDate,
             dueDate: invoice.dueDate,
+            description: invoice.description,
             status: 'paid',
             paidAt: new Date().toISOString(),
-            description: invoice.description,
+            // ✅ Include download link from internedata.nl
+            fileUrl: invoice.fileUrl || null,
+            driveWebLink: invoice.driveWebLink || null,
+            fileName: invoice.fileName || null,
             ocrData: invoice.ocrData || null,
           },
           company: {
@@ -258,6 +267,7 @@ const IncomingInvoicesStats: React.FC = () => {
         totalAmount: editFormData.totalAmount,
         description: editFormData.description,
         supplierEmail: editFormData.supplierEmail,
+        status: editFormData.status,
         invoiceDate: Timestamp.fromDate(
           editFormData.invoiceDate instanceof Date
             ? editFormData.invoiceDate
@@ -270,6 +280,32 @@ const IncomingInvoicesStats: React.FC = () => {
         ),
         updatedAt: Timestamp.fromDate(new Date()),
       };
+
+      // Clear status-specific timestamps if status is changed
+      if (editFormData.status !== editingInvoice.status) {
+        if (editFormData.status === 'pending') {
+          updateData.approvedAt = null;
+          updateData.approvedBy = null;
+          updateData.paidAt = null;
+          updateData.rejectedAt = null;
+          updateData.rejectionReason = null;
+        } else if (editFormData.status === 'approved') {
+          updateData.paidAt = null;
+          updateData.rejectedAt = null;
+          updateData.rejectionReason = null;
+          if (!editingInvoice.approvedAt) {
+            updateData.approvedAt = Timestamp.fromDate(new Date());
+            updateData.approvedBy = adminUserId;
+          }
+        } else if (editFormData.status === 'rejected') {
+          updateData.approvedAt = null;
+          updateData.approvedBy = null;
+          updateData.paidAt = null;
+          if (!editingInvoice.rejectedAt) {
+            updateData.rejectedAt = Timestamp.fromDate(new Date());
+          }
+        }
+      }
 
       await updateDoc(invoiceRef, updateData);
 
@@ -614,6 +650,26 @@ const IncomingInvoicesStats: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-4">
+              {/* Status Selector */}
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={editFormData.status ?? 'pending'}
+                  onChange={e => setEditFormData({ ...editFormData, status: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="pending">In behandeling (Concept)</option>
+                  <option value="approved">Goedgekeurd</option>
+                  <option value="paid">Betaald</option>
+                  <option value="rejected">Afgewezen</option>
+                </select>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  ℹ️ Je kunt de status aanpassen om bonnen terug te zetten (bijv. van betaald naar concept voor testen)
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
