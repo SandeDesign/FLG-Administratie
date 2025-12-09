@@ -61,6 +61,11 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'], companyTypes: ['employer'] },
 
+  // STATISTIEKEN SECTION (voor alle bedrijfstypes)
+  { name: 'Statistieken', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'], section: 'Statistieken' },
+  { name: 'Statistieken', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'], section: 'Statistieken' },
+  { name: 'Statistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding'], section: 'Statistieken' },
+
   // FACTURATIE SECTION (employer, project, holding)
   { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
   { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
@@ -131,6 +136,12 @@ export const getNavigationSections = (
         items: filtered.filter(i => i.section === 'Project'),
       },
       {
+        title: 'Statistieken',
+        icon: TrendingUp,
+        defaultOpen: false,
+        items: filtered.filter(i => i.section === 'Statistieken'),
+      },
+      {
         title: 'Facturatie',
         icon: Receipt,
         defaultOpen: false,
@@ -149,16 +160,22 @@ export const getNavigationSections = (
     // HOLDING BEDRIJF SECTIONS (geen HR-functionaliteiten)
     return [
       {
+        title: 'Statistieken',
+        icon: TrendingUp,
+        defaultOpen: true,
+        items: filtered.filter(i => i.section === 'Statistieken'),
+      },
+      {
         title: 'Facturatie',
         icon: Receipt,
-        defaultOpen: true,
+        defaultOpen: false,
         items: filtered.filter(i =>
           ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkoop Overzicht'].includes(i.name)
         ),
       },
       {
         title: 'Data & Exports',
-        icon: TrendingUp,
+        icon: BarChart3,
         defaultOpen: false,
         items: filtered.filter(i => ['Drive Bestanden', 'Exports Beheer'].includes(i.name)),
       },
@@ -173,6 +190,12 @@ export const getNavigationSections = (
 
   // EMPLOYER BEDRIJF SECTIONS
   return [
+    {
+      title: 'Statistieken',
+      icon: TrendingUp,
+      defaultOpen: false,
+      items: filtered.filter(i => i.section === 'Statistieken'),
+    },
     {
       title: 'Personeel',
       icon: Activity,
@@ -191,7 +214,7 @@ export const getNavigationSections = (
     },
     {
       title: 'Data & Exports',
-      icon: TrendingUp,
+      icon: BarChart3,
       defaultOpen: false,
       items: filtered.filter(i => ['Uren Export', 'Drive Bestanden', 'Exports Beheer'].includes(i.name)),
     },
