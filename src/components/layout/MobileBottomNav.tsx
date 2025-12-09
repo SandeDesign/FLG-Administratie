@@ -1,8 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  Home, 
-  Clock, 
+import {
+  Home,
+  Clock,
   Settings,
   Users,
   Zap,
@@ -14,6 +14,7 @@ import {
   MoreVertical,
   Upload,
   Wallet,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -36,9 +37,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       if (userRole === 'admin' || userRole === 'manager') {
         return [
           { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
-          { href: '/incoming-invoices', icon: Upload, label: 'Inkoop', gradient: 'from-primary-600 to-primary-700' },
+          { href: '/statistics/holding', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
           { href: '/outgoing-invoices', icon: Send, label: 'Verkoop', gradient: 'from-primary-500 to-primary-600' },
-          { href: '/settings', icon: Settings, label: 'Instellingen', gradient: 'from-primary-600 to-primary-700' },
+          { href: '/settings', icon: Settings, label: 'Menu', gradient: 'from-primary-600 to-primary-700' },
         ];
       }
       // Employee in holding company (shouldn't happen, but fallback)
@@ -53,9 +54,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       if (userRole === 'admin' || userRole === 'manager') {
         return [
           { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
-          { href: '/project-production', icon: Cpu, label: 'Productie', gradient: 'from-primary-600 to-primary-700' },
-          { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-primary-500 to-primary-600' },
-          { href: '/timesheets', icon: Clock, label: 'Uren', gradient: 'from-primary-600 to-primary-700' },
+          { href: '/statistics/project', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
+          { href: '/project-production', icon: Cpu, label: 'Productie', gradient: 'from-primary-500 to-primary-600' },
+          { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-primary-600 to-primary-700' },
         ];
       }
       // Employee in project company
@@ -75,14 +76,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       ],
       manager: [
         { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
-        { href: '/employees', icon: Users, label: 'Team', gradient: 'from-primary-600 to-primary-700' },
-        { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-primary-500 to-primary-600' },
+        { href: '/statistics/employer', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
+        { href: '/employees', icon: Users, label: 'Team', gradient: 'from-primary-500 to-primary-600' },
         { href: '/timesheet-approvals', icon: CheckCircle2, label: 'Beheren', gradient: 'from-primary-600 to-primary-700' },
       ],
       admin: [
         { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
-        { href: '/timesheet-approvals', icon: CheckCircle2, label: 'Uren', gradient: 'from-primary-600 to-primary-700' },
-        { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-primary-500 to-primary-600' },
+        { href: '/statistics/employer', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
+        { href: '/timesheet-approvals', icon: CheckCircle2, label: 'Uren', gradient: 'from-primary-500 to-primary-600' },
         { href: '/employees', icon: Users, label: 'Team', gradient: 'from-primary-600 to-primary-700' },
       ],
     };

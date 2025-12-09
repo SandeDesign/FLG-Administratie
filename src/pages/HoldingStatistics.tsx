@@ -171,7 +171,7 @@ const HoldingStatistics: React.FC = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
               <YAxis />
-              <Tooltip formatter={(value) => \`€\${Number(value).toLocaleString('nl-NL')}\`} />
+              <Tooltip formatter={(value) => `€${Number(value).toLocaleString('nl-NL')}`} />
               <Legend />
               <Bar dataKey="revenue" fill="#10B981" name="Omzet" />
               <Bar dataKey="costs" fill="#EF4444" name="Kosten" />
@@ -188,16 +188,16 @@ const HoldingStatistics: React.FC = () => {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => \`\${name}: \${(percent * 100).toFixed(0)}%\`}
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="revenue"
               >
                 {companyStats.map((entry, index) => (
-                  <Cell key={\`cell-\${index}\`} fill={COLORS[index % COLORS.length]} />
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => \`€\${Number(value).toLocaleString('nl-NL')}\`} />
+              <Tooltip formatter={(value) => `€${Number(value).toLocaleString('nl-NL')}`} />
             </PieChart>
           </ResponsiveContainer>
         </Card>
