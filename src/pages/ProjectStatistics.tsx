@@ -1,129 +1,136 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import {
-  Factory, Clock, DollarSign, TrendingUp, Users, Package, Calendar
-} from 'lucide-react';
-import Card from '../components/ui/Card';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-
-interface ProductionStats {
-  employeeName: string;
-  totalHours: number;
-  invoicedHours: number;
-  difference: number;
-}
+import { Factory, Euro, TrendingUp, Package, Clock } from 'lucide-react';
+import Card from '../components/ui/Card';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 const ProjectStatistics: React.FC = () => {
-  const { user, userRole, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
+  const { adminUserId } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [productionStats, setProductionStats] = useState<ProductionStats[]>([]);
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalProductionHours: 0,
-    totalInvoicedHours: 0,
+    totalOvertime: 0,
     totalRevenue: 0,
+    totalCosts: 0,
+    totalInvoices: 0,
     averageHourlyRate: 0,
-    activeEmployees: 0,
-    completedProjects: 0,
   });
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
 
   useEffect(() => {
-    if (selectedCompany && adminUserId) {
-      loadStatistics();
+    if (!selectedCompany || !adminUserId || selectedCompany.companyType !== 'project') {
+      setLoading(false);
+      return;
     }
+
+    loadProjectStatistics();
   }, [selectedCompany, adminUserId]);
 
-  const loadStatistics = async () => {
-    if (!selectedCompany || !adminUserId) return;
+  const loadProjectStatistics = async () => {
+    if (!adminUserId || !selectedCompany) return;
 
+    setLoading(true);
     try {
-      setLoading(true);
+      console.log('📊 Loading project statistics...');
 
-      const employeesSnap = await getDocs(
-        query(
-          collection(db, 'employees'),
-          where('userId', '==', adminUserId),
-          where('companyId', '==', selectedCompany.id)
-        )
+      // Time entries (productie)
+      const timeEntriesQuery = query(
+        collection(db, 'timeEntries'),
+        where('userId', '==', adminUserId)
       );
-
-      const employees = employeesSnap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      const timeEntriesSnap = await getDocs(
-        query(
-          collection(db, 'timeEntries'),
-          where('userId', '==', adminUserId),
-          where('companyId', '==', selectedCompany.id)
-        )
-      );
-
-      const productionStatsMap = new Map<string, ProductionStats>();
+      const timeEntriesSnap = await getDocs(timeEntriesQuery);
       let totalHours = 0;
+      let totalOvertime = 0;
 
-      timeEntriesSnap.docs.forEach(doc => {
-        const entry = doc.data();
-        const employeeId = entry.employeeId;
-        const hours = entry.hours || 0;
-        totalHours += hours;
-
-        if (!productionStatsMap.has(employeeId)) {
-          const employee = employees.find(e => e.id === employeeId);
-          productionStatsMap.set(employeeId, {
-            employeeName: employee ? `${employee.firstName} ${employee.lastName}` : 'Onbekend',
-            totalHours: 0,
-            invoicedHours: 0,
-            difference: 0,
-          });
-        }
-
-        const stats = productionStatsMap.get(employeeId)!;
-        stats.totalHours += hours;
-        stats.invoicedHours += hours;
+      timeEntriesSnap.forEach(doc => {
+        const data = doc.data();
+        totalHours += data.regularHours || 0;
+        totalOvertime += data.overtimeHours || 0;
       });
 
-      const outgoingInvoicesSnap = await getDocs(
-        query(
-          collection(db, 'outgoingInvoices'),
-          where('userId', '==', adminUserId),
-          where('companyId', '==', selectedCompany.id)
-        )
+      // Outgoing invoices (omzet)
+      const outgoingQuery = query(
+        collection(db, 'outgoingInvoices'),
+        where('userId', '==', adminUserId),
+        where('companyId', '==', selectedCompany.id)
       );
+      const outgoingSnap = await getDocs(outgoingQuery);
+      let totalRevenue = 0;
+      const monthlyRevenueMap = new Map<string, number>();
+      const monthlyHoursMap = new Map<string, number>();
 
-      const totalRevenue = outgoingInvoicesSnap.docs.reduce((sum, doc) => {
-        return sum + (doc.data().totalAmount || 0);
-      }, 0);
+      outgoingSnap.forEach(doc => {
+        const data = doc.data();
+        totalRevenue += data.totalAmount || 0;
 
-      const monthlyDataMap = new Map<string, { month: string; hours: number; revenue: number }>();
-      const now = new Date();
+        const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
+        const monthKey = `${invoiceDate.getFullYear()}-${String(invoiceDate.getMonth() + 1).padStart(2, '0')}`;
+        monthlyRevenueMap.set(monthKey, (monthlyRevenueMap.get(monthKey) || 0) + (data.totalAmount || 0));
+      });
 
-      for (let i = 5; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthKey = date.toLocaleDateString('nl-NL', { month: 'short', year: '2-digit' });
-        monthlyDataMap.set(monthKey, { month: monthKey, hours: 0, revenue: 0 });
-      }
+      // Incoming invoices (kosten)
+      const incomingQuery = query(
+        collection(db, 'incomingInvoices'),
+        where('userId', '==', adminUserId),
+        where('companyId', '==', selectedCompany.id)
+      );
+      const incomingSnap = await getDocs(incomingQuery);
+      let totalCosts = 0;
+      const monthlyCostsMap = new Map<string, number>();
 
-      const productionStatsList = Array.from(productionStatsMap.values());
-      const avgRate = totalHours > 0 ? totalRevenue / totalHours : 0;
+      incomingSnap.forEach(doc => {
+        const data = doc.data();
+        totalCosts += data.totalAmount || 0;
 
-      setProductionStats(productionStatsList);
-      setMonthlyData(Array.from(monthlyDataMap.values()));
+        const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
+        const monthKey = `${invoiceDate.getFullYear()}-${String(invoiceDate.getMonth() + 1).padStart(2, '0')}`;
+        monthlyCostsMap.set(monthKey, (monthlyCostsMap.get(monthKey) || 0) + (data.totalAmount || 0));
+      });
+
+      // Time entries per maand tellen
+      timeEntriesSnap.forEach(doc => {
+        const data = doc.data();
+        const date = data.date?.toDate?.() || new Date(data.date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const hours = (data.regularHours || 0) + (data.overtimeHours || 0);
+        monthlyHoursMap.set(monthKey, (monthlyHoursMap.get(monthKey) || 0) + hours);
+      });
+
+      const averageHourlyRate = totalHours > 0 ? totalRevenue / totalHours : 0;
+
       setStats({
         totalProductionHours: totalHours,
-        totalInvoicedHours: totalHours,
+        totalOvertime,
         totalRevenue,
-        averageHourlyRate: avgRate,
-        activeEmployees: employees.length,
-        completedProjects: outgoingInvoicesSnap.size,
+        totalCosts,
+        totalInvoices: outgoingSnap.size,
+        averageHourlyRate,
       });
+
+      // Maandelijkse data voor chart
+      const allMonthKeys = new Set([
+        ...Array.from(monthlyRevenueMap.keys()),
+        ...Array.from(monthlyCostsMap.keys()),
+        ...Array.from(monthlyHoursMap.keys()),
+      ]);
+      const monthlyChartData = Array.from(allMonthKeys)
+        .sort()
+        .map(monthKey => ({
+          month: monthKey,
+          omzet: monthlyRevenueMap.get(monthKey) || 0,
+          kosten: monthlyCostsMap.get(monthKey) || 0,
+          uren: monthlyHoursMap.get(monthKey) || 0,
+        }));
+      setMonthlyData(monthlyChartData);
+
+      console.log('✅ Project statistics loaded successfully');
     } catch (error) {
-      console.error('Error loading statistics:', error);
+      console.error('❌ Error loading project statistics:', error);
     } finally {
       setLoading(false);
     }
@@ -132,126 +139,193 @@ const ProjectStatistics: React.FC = () => {
   if (!selectedCompany) {
     return (
       <div className="p-6">
-        <p className="text-gray-600">Selecteer eerst een project bedrijf om statistieken te bekijken.</p>
+        <p className="text-gray-500">Selecteer een project bedrijf om statistieken te bekijken.</p>
       </div>
     );
   }
 
+  if (selectedCompany.companyType !== 'project') {
+    return (
+      <div className="p-6">
+        <p className="text-gray-500">Deze pagina is alleen beschikbaar voor project bedrijven.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  const profit = stats.totalRevenue - stats.totalCosts;
+  const profitMargin = stats.totalRevenue > 0 ? (profit / stats.totalRevenue) * 100 : 0;
+
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Project Statistieken</h1>
-        <p className="text-gray-600 mt-1">{selectedCompany.name}</p>
+        <p className="text-gray-600 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Productie Uren</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{Math.round(stats.totalProductionHours)}</p>
+              <p className="text-sm font-medium text-gray-600">Productie Uren</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {stats.totalProductionHours.toLocaleString('nl-NL')}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {stats.totalOvertime > 0 && `+${stats.totalOvertime.toFixed(0)} overuren`}
+              </p>
             </div>
-            <Clock className="h-10 w-10 text-blue-500" />
+            <Clock className="h-8 w-8 text-blue-600" />
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Gefactureerd</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{Math.round(stats.totalInvoicedHours)}h</p>
+              <p className="text-sm font-medium text-gray-600">Gemiddeld Uurtarief</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                €{stats.averageHourlyRate.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+              </p>
             </div>
-            <DollarSign className="h-10 w-10 text-green-500" />
+            <Euro className="h-8 w-8 text-green-600" />
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Omzet</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">€{(stats.totalRevenue / 1000).toFixed(1)}k</p>
+              <p className="text-sm font-medium text-gray-600">Totale Omzet</p>
+              <p className="text-2xl font-bold text-green-600 mt-1">
+                €{stats.totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">{stats.totalInvoices} facturen</p>
             </div>
-            <TrendingUp className="h-10 w-10 text-emerald-500" />
+            <TrendingUp className="h-8 w-8 text-green-600" />
           </div>
         </Card>
 
-        <Card className="p-4">
+        <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Gem. Uurtarief</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">€{stats.averageHourlyRate.toFixed(2)}</p>
+              <p className="text-sm font-medium text-gray-600">Winstmarge</p>
+              <p className={`text-2xl font-bold mt-1 ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {profitMargin.toFixed(1)}%
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                €{profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} winst
+              </p>
             </div>
-            <Factory className="h-10 w-10 text-purple-500" />
+            <Factory className={`h-8 w-8 ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`} />
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Maandelijkse Productie (6m)</h3>
+      {/* Financieel Overzicht */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Verkoop (Omzet)</p>
+            <p className="text-2xl font-bold text-green-600 mt-1">
+              €{stats.totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        </Card>
+
+        <Card>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Inkoop (Kosten)</p>
+            <p className="text-2xl font-bold text-red-600 mt-1">
+              €{stats.totalCosts.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        </Card>
+
+        <Card>
+          <div>
+            <p className="text-sm font-medium text-gray-600">Netto Winst</p>
+            <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              €{profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Maandelijkse Omzet vs Kosten */}
+      {monthlyData.length > 0 && (
+        <Card>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Maandelijkse Omzet vs Kosten</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis yAxisId="left" />
-              <YAxis yAxisId="right" orientation="right" />
-              <Tooltip />
+              <YAxis tickFormatter={(value) => `€${value.toLocaleString('nl-NL')}`} />
+              <Tooltip formatter={(value) => `€${Number(value).toLocaleString('nl-NL')}`} />
               <Legend />
-              <Line yAxisId="left" type="monotone" dataKey="hours" stroke="#3B82F6" name="Uren" strokeWidth={2} />
-              <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#10B981" name="Omzet (€)" strokeWidth={2} />
+              <Line type="monotone" dataKey="omzet" stroke="#10B981" name="Omzet" strokeWidth={2} />
+              <Line type="monotone" dataKey="kosten" stroke="#EF4444" name="Kosten" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
+      )}
 
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Productie per Medewerker (Top 8)</h3>
+      {/* Maandelijkse Productie Uren */}
+      {monthlyData.length > 0 && (
+        <Card>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Maandelijkse Productie Uren</h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={productionStats.slice(0, 8)}>
+            <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="employeeName" angle={-45} textAnchor="end" height={100} />
+              <XAxis dataKey="month" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="totalHours" fill="#3B82F6" name="Productie Uren" />
-              <Bar dataKey="invoicedHours" fill="#10B981" name="Gefactureerd" />
+              <Bar dataKey="uren" fill="#3B82F6" name="Productie Uren" />
             </BarChart>
           </ResponsiveContainer>
         </Card>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Users className="h-8 w-8 text-blue-500" />
-            <div>
-              <p className="text-sm text-gray-600">Actieve Medewerkers</p>
-              <p className="text-xl font-bold text-gray-900">{stats.activeEmployees}</p>
-            </div>
+      {/* Project Performance Indicatoren */}
+      <Card>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Indicatoren</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <p className="text-sm font-medium text-blue-900">Omzet per Uur</p>
+            <p className="text-2xl font-bold text-blue-600 mt-2">
+              €{stats.averageHourlyRate.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+            </p>
           </div>
-        </Card>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <p className="text-sm font-medium text-green-900">Winstmarge</p>
+            <p className="text-2xl font-bold text-green-600 mt-2">{profitMargin.toFixed(1)}%</p>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <p className="text-sm font-medium text-purple-900">Totale Productie</p>
+            <p className="text-2xl font-bold text-purple-600 mt-2">
+              {stats.totalProductionHours.toLocaleString('nl-NL')} uur
+            </p>
+          </div>
+        </div>
+      </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Package className="h-8 w-8 text-purple-500" />
-            <div>
-              <p className="text-sm text-gray-600">Facturen</p>
-              <p className="text-xl font-bold text-gray-900">{stats.completedProjects}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <Calendar className="h-8 w-8 text-green-500" />
-            <div>
-              <p className="text-sm text-gray-600">Efficiency</p>
-              <p className="text-xl font-bold text-gray-900">
-                {stats.totalProductionHours > 0 ? ((stats.totalInvoicedHours / stats.totalProductionHours) * 100).toFixed(0) : 0}%
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
+      {/* Geen werknemers notitie */}
+      <Card>
+        <div className="flex items-center gap-3 text-gray-600">
+          <Package className="h-5 w-5" />
+          <p className="text-sm">
+            <strong>Let op:</strong> Project bedrijven hebben geen eigen personeel in dienst.
+            Productie uren worden geregistreerd door werknemers van gekoppelde employer bedrijven.
+          </p>
+        </div>
+      </Card>
     </div>
   );
 };
