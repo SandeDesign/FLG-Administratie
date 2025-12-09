@@ -28,6 +28,7 @@ import {
   Receipt,
   CreditCard,
   Star,
+  TrendingUp,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -65,6 +66,16 @@ export const navigation: NavigationItem[] = [
   // PROJECT COMPANY
   { name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin', 'manager'], companyTypes: ['project'] },
   { name: 'Project Stats', href: '/project-statistics', icon: BarChart2, roles: ['admin'], companyTypes: ['project'] },
+
+  // STATISTIEKEN - Voor alle rollen en bedrijfstypes
+  { name: 'Statistieken', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'] },
+  { name: 'Statistieken', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'] },
+  { name: 'Statistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding'] },
+
+  // DATA & EXPORTS (Admin - Employer en Holding)
+  { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin'], companyTypes: ['employer'] },
+  { name: 'Loonstroken', href: '/payslips', icon: CreditCard, roles: ['admin'], companyTypes: ['employer'] },
+  { name: 'Drive', href: '/drive-files', icon: FolderOpen, roles: ['admin'], companyTypes: ['employer', 'holding'] },
 
   // SYSTEEM (Admin - Employer en Holding)
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },

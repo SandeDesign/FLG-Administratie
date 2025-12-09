@@ -187,6 +187,46 @@ const IncomingInvoicesStats: React.FC = () => {
         )
       );
 
+      // ✅ Trigger webhook to Make.com when invoice is marked as paid
+      try {
+        const webhookPayload = {
+          event: 'incoming_invoice.paid',
+          timestamp: new Date().toISOString(),
+          invoice: {
+            id: invoice.id,
+            supplierName: invoice.supplierName,
+            amount: invoice.totalAmount || invoice.amount,
+            invoiceDate: invoice.invoiceDate,
+            dueDate: invoice.dueDate,
+            status: 'paid',
+            paidAt: new Date().toISOString(),
+            description: invoice.description,
+            ocrData: invoice.ocrData || null,
+          },
+          company: {
+            id: selectedCompany?.id,
+            name: selectedCompany?.name,
+          },
+          user: {
+            id: user.uid,
+            email: user.email,
+          },
+        };
+
+        await fetch('https://hook.eu2.make.com/8jntdat5emrvrcfgoq7giviwvtjx9nwt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(webhookPayload),
+        });
+
+        console.log('✅ Webhook triggered successfully for paid invoice:', invoice.id);
+      } catch (webhookError) {
+        console.error('⚠️ Webhook failed (non-critical):', webhookError);
+        // Don't fail the whole operation if webhook fails
+      }
+
       success('Factuur gemarkeerd als betaald');
     } catch (err) {
       showError('Kon factuur niet bijwerken');
@@ -449,22 +489,23 @@ const IncomingInvoicesStats: React.FC = () => {
                           </button>
 
                           {invoice.status === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleApprove(invoice)}
-                                disabled={isSaving}
-                                className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors disabled:opacity-50"
-                              >
-                                <CheckCircle className="w-4 h-4 text-green-600" />
-                              </button>
-                              <button
-                                onClick={() => openEdit(invoice)}
-                                className="p-2 hover:bg-primary-100 dark:hover:bg-primary-900 rounded-lg transition-colors"
-                              >
-                                <Edit2 className="w-4 h-4 text-primary-600" />
-                              </button>
-                            </>
+                            <button
+                              onClick={() => handleApprove(invoice)}
+                              disabled={isSaving}
+                              className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            </button>
                           )}
+
+                          {/* ✅ Edit button always available for admin & co-admin */}
+                          <button
+                            onClick={() => openEdit(invoice)}
+                            className="p-2 hover:bg-primary-100 dark:hover:bg-primary-900 rounded-lg transition-colors"
+                            title="Bewerken"
+                          >
+                            <Edit2 className="w-4 h-4 text-primary-600" />
+                          </button>
 
                           {(invoice.status === 'approved' || invoice.status === 'pending') && (
                             <button

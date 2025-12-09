@@ -16,6 +16,9 @@ import InvestmentPitch from './pages/InvestmentPitch';
 import ProjectProduction from './pages/ProjectProduction';
 import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibilitySettings';
 import ProjectStatistics from './pages/ProjectStatistics';
+// ✅ STATISTICS PAGES
+import EmployerStatistics from './pages/EmployerStatistics';
+import HoldingStatistics from './pages/HoldingStatistics';
 // ✅ NEW ADMIN PAGES
 import AdminDashboard from './pages/AdminDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
@@ -86,7 +89,12 @@ function App() {
                           <Route path="employees" element={<EmployeesNew />} />
                           <Route path="project-production" element={<ProjectProduction />} />
                           <Route path="project-statistics" element={<ProjectStatistics />} />
-                          
+
+                          {/* ✅ STATISTICS ROUTES */}
+                          <Route path="statistics/employer" element={<EmployerStatistics />} />
+                          <Route path="statistics/project" element={<ProjectStatistics />} />
+                          <Route path="statistics/holding" element={<HoldingStatistics />} />
+
                           {/* ✅ NEW ADMIN ROUTES */}
                           <Route path="admin/dashboard" element={<AdminDashboard />} />
                           <Route path="admin/users" element={<AdminUsers />} />
@@ -139,6 +147,11 @@ function App() {
 
                           {/* Manager kan productie beheren */}
                           <Route path="project-production" element={<ProjectProduction />} />
+
+                          {/* ✅ STATISTICS ROUTES */}
+                          <Route path="statistics/employer" element={<EmployerStatistics />} />
+                          <Route path="statistics/project" element={<ProjectStatistics />} />
+                          <Route path="statistics/holding" element={<HoldingStatistics />} />
 
                           {/* Manager kan uren beheren */}
                           <Route path="timesheets" element={<Timesheets />} />
