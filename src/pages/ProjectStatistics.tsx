@@ -1,261 +1,257 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import {
-  BarChart3, Calendar, MapPin, Users, Zap, TrendingUp, TrendingDown,
-  AlertCircle, CheckCircle2, Activity, DollarSign, Briefcase, Clock, Award,
-  ArrowUp, ArrowDown, AlertTriangle, Eye, Target, Percent
+  Factory, Clock, DollarSign, TrendingUp, Users, Package, Calendar
 } from 'lucide-react';
-import { EmptyState } from '../components/ui/EmptyState';
 import Card from '../components/ui/Card';
-import { projectStatisticsService } from '../services/projectStatisticsService';
-import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  Area, AreaChart, ComposedChart, ScatterChart, Scatter
-} from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+
+interface ProductionStats {
+  employeeName: string;
+  totalHours: number;
+  invoicedHours: number;
+  difference: number;
+}
 
 const ProjectStatistics: React.FC = () => {
-  const { user, adminUserId } = useAuth();
+  const { user, userRole, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [weeklyData, setWeeklyData] = useState<any[]>([]);
-  const [dailyData, setDailyData] = useState<any[]>([]);
+  const [productionStats, setProductionStats] = useState<ProductionStats[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
-  const [branchData, setBranchData] = useState<any[]>([]);
-  const [branchDetailedData, setBranchDetailedData] = useState<any[]>([]);
-  const [employeeData, setEmployeeData] = useState<any[]>([]);
-  const [employeeLocationMatrix, setEmployeeLocationMatrix] = useState<any[]>([]);
-  const [averagePerAddress, setAveragePerAddress] = useState<any[]>([]);
-  const [insights, setInsights] = useState<any>(null);
+  const [stats, setStats] = useState({
+    totalProductionHours: 0,
+    totalInvoicedHours: 0,
+    totalRevenue: 0,
+    averageHourlyRate: 0,
+    activeEmployees: 0,
+    completedProjects: 0,
+  });
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!selectedCompany?.id || !user?.uid) {
-        setLoading(false);
-        return;
+    if (selectedCompany && adminUserId) {
+      loadStatistics();
+    }
+  }, [selectedCompany, adminUserId]);
+
+  const loadStatistics = async () => {
+    if (!selectedCompany || !adminUserId) return;
+
+    try {
+      setLoading(true);
+
+      const employeesSnap = await getDocs(
+        query(
+          collection(db, 'employees'),
+          where('userId', '==', adminUserId),
+          where('companyId', '==', selectedCompany.id)
+        )
+      );
+
+      const employees = employeesSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      const timeEntriesSnap = await getDocs(
+        query(
+          collection(db, 'timeEntries'),
+          where('userId', '==', adminUserId),
+          where('companyId', '==', selectedCompany.id)
+        )
+      );
+
+      const productionStatsMap = new Map<string, ProductionStats>();
+      let totalHours = 0;
+
+      timeEntriesSnap.docs.forEach(doc => {
+        const entry = doc.data();
+        const employeeId = entry.employeeId;
+        const hours = entry.hours || 0;
+        totalHours += hours;
+
+        if (!productionStatsMap.has(employeeId)) {
+          const employee = employees.find(e => e.id === employeeId);
+          productionStatsMap.set(employeeId, {
+            employeeName: employee ? \`\${employee.firstName} \${employee.lastName}\` : 'Onbekend',
+            totalHours: 0,
+            invoicedHours: 0,
+            difference: 0,
+          });
+        }
+
+        const stats = productionStatsMap.get(employeeId)!;
+        stats.totalHours += hours;
+        stats.invoicedHours += hours;
+      });
+
+      const outgoingInvoicesSnap = await getDocs(
+        query(
+          collection(db, 'outgoingInvoices'),
+          where('userId', '==', adminUserId),
+          where('companyId', '==', selectedCompany.id)
+        )
+      );
+
+      const totalRevenue = outgoingInvoicesSnap.docs.reduce((sum, doc) => {
+        return sum + (doc.data().totalAmount || 0);
+      }, 0);
+
+      const monthlyDataMap = new Map<string, { month: string; hours: number; revenue: number }>();
+      const now = new Date();
+
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthKey = date.toLocaleDateString('nl-NL', { month: 'short', year: '2-digit' });
+        monthlyDataMap.set(monthKey, { month: monthKey, hours: 0, revenue: 0 });
       }
 
-      try {
-        setLoading(true);
-        setError(null);
+      const productionStatsList = Array.from(productionStatsMap.values());
+      const avgRate = totalHours > 0 ? totalRevenue / totalHours : 0;
 
-        const companyId = selectedCompany.id;
-        const userId = user.uid;
-        const now = new Date();
-        const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-
-        console.log(`📊 Loading statistics for: ${selectedCompany.name} (${companyId})`);
-
-        const [weeks, days, monthly, branches, branchDetailed, employees, matrix, addresses, advInsights] = await Promise.all([
-          projectStatisticsService.getWeeklyBreakdown(companyId, userId, now.getFullYear()),
-          projectStatisticsService.getDailyBreakdown(companyId, userId, startDate, now),
-          projectStatisticsService.getMonthlyBreakdown(companyId, userId, now.getFullYear()),
-          projectStatisticsService.getBranchPerformance(companyId, userId),
-          projectStatisticsService.getBranchDetailedStats(companyId, userId),
-          projectStatisticsService.getEmployeeDetailedStats(companyId, userId),
-          projectStatisticsService.getEmployeeLocationMatrix(companyId, userId),
-          projectStatisticsService.getAverageEurPerAddress(companyId, userId),
-          projectStatisticsService.getAdvancedInsights(companyId, userId),
-        ]);
-
-        console.log(`✅ All statistics loaded successfully`);
-
-        setWeeklyData(weeks || []);
-        setDailyData(days || []);
-        setMonthlyData(monthly || []);
-        setBranchData(branches || []);
-        setBranchDetailedData(branchDetailed || []);
-        setEmployeeData(employees || []);
-        setEmployeeLocationMatrix(matrix || []);
-        setAveragePerAddress(addresses || []);
-        setInsights(advInsights || {});
-      } catch (err) {
-        console.error('❌ Error loading statistics:', err);
-        setError('Kon statistieken niet laden');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [selectedCompany?.id, user?.uid]);
-
-  // BEREKENDE METRIEKEN
-  const computedStats = useMemo(() => {
-    if (!insights?.summary || !weeklyData.length || !branchData.length) return null;
-
-    const summary = insights.summary;
-    const avgHoursPerEmployee = summary.totalEmployees > 0 ? summary.totalHours / summary.totalEmployees : 0;
-    const overtimePercentage = summary.totalHours > 0 ? (summary.totalOvertime / summary.totalHours) * 100 : 0;
-    const costPerHour = summary.totalHours > 0 ? summary.totalGrossPay / summary.totalHours : 0;
-    const revenuePerHour = summary.totalHours > 0 ? summary.totalRevenue / summary.totalHours : 0;
-    const profitPerHour = revenuePerHour - costPerHour;
-    const costRatio = summary.totalRevenue > 0 ? (summary.totalGrossPay / summary.totalRevenue) * 100 : 0;
-    const expenseRatio = summary.totalRevenue > 0 ? (summary.totalExpenses / summary.totalRevenue) * 100 : 0;
-    const inactivePercentage = summary.totalEmployees > 0 ? (summary.inactiveEmployees / summary.totalEmployees) * 100 : 0;
-
-    const totalSubmitted = weeklyData.reduce((sum, w) => sum + w.submittedCount, 0);
-    const totalDraft = weeklyData.reduce((sum, w) => sum + w.draftCount, 0);
-    const submissionRate = (totalSubmitted + totalDraft) > 0 ? (totalSubmitted / (totalSubmitted + totalDraft)) * 100 : 0;
-
-    return {
-      avgHoursPerEmployee,
-      overtimePercentage,
-      costPerHour,
-      revenuePerHour,
-      profitPerHour,
-      costRatio,
-      expenseRatio,
-      inactivePercentage,
-      totalSubmitted,
-      totalDraft,
-      submissionRate,
-      topBranch: branchData[0],
-      averageEmployeeCost: summary.totalEmployees > 0 ? summary.totalGrossPay / summary.totalEmployees : 0,
-      averageEmployeeRevenue: summary.activeEmployees > 0 ? summary.totalRevenue / summary.activeEmployees : 0,
-    };
-  }, [insights, weeklyData, branchData]);
+      setProductionStats(productionStatsList);
+      setMonthlyData(Array.from(monthlyDataMap.values()));
+      setStats({
+        totalProductionHours: totalHours,
+        totalInvoicedHours: totalHours,
+        totalRevenue,
+        averageHourlyRate: avgRate,
+        activeEmployees: employees.length,
+        completedProjects: outgoingInvoicesSnap.size,
+      });
+    } catch (error) {
+      console.error('Error loading statistics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!selectedCompany) {
     return (
-      <EmptyState
-        icon={BarChart3}
-        title="Geen bedrijf geselecteerd"
-        description="Selecteer een bedrijf om statistieken te bekijken."
-      />
-    );
-  }
-
-  if (error) {
-    return (
-      <EmptyState
-        icon={AlertCircle}
-        title="Fout bij laden"
-        description={error}
-      />
+      <div className="p-6">
+        <p className="text-gray-600">Selecteer eerst een project bedrijf om statistieken te bekijken.</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-12 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 p-6 rounded-lg">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-5xl font-bold text-gray-900 dark:text-white">Volledige Analytics Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">Gedetailleerde analyse voor {selectedCompany.name}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500">Bijgewerkt: {new Date().toLocaleDateString('nl-NL')}</p>
-        </div>
+    <div className="space-y-6 p-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Project Statistieken</h1>
+        <p className="text-gray-600 mt-1">{selectedCompany.name}</p>
       </div>
 
-      {/* HOOFD KPI KAARTEN */}
-      {insights?.summary && computedStats && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="p-6 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 border-l-4 border-l-primary-600 shadow-lg hover:shadow-xl transition">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">Totaal Medewerkers</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-2">{insights.summary.totalEmployees}</p>
-                  <div className="flex items-center gap-2 mt-3">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <p className="text-sm text-green-700 font-medium">{insights.summary.activeEmployees} actief</p>
-                  </div>
-                </div>
-                <Users className="w-16 h-16 text-primary-200 dark:text-primary-700" />
-              </div>
-            </Card>
-
-            <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-l-4 border-l-purple-600 shadow-lg hover:shadow-xl transition">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">Totale Uren</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-2">{insights.summary.totalHours.toFixed(0)}</p>
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-red-600" />
-                      <p className="text-sm text-red-700">Overwerk: {insights.summary.totalOvertime.toFixed(0)}h ({computedStats.overtimePercentage.toFixed(1)}%)</p>
-                    </div>
-                  </div>
-                </div>
-                <Clock className="w-16 h-16 text-purple-200 dark:text-purple-700" />
-              </div>
-            </Card>
-
-            <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 border-l-4 border-l-green-600 shadow-lg hover:shadow-xl transition">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">Opbrengsten</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-2">€{(insights.summary.totalRevenue / 1000).toFixed(1)}k</p>
-                  <div className="mt-3">
-                    <p className="text-sm text-green-700">€{computedStats.revenuePerHour.toFixed(2)}/uur</p>
-                  </div>
-                </div>
-                <DollarSign className="w-16 h-16 text-green-200 dark:text-green-700" />
-              </div>
-            </Card>
-
-            <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border-l-4 border-l-orange-600 shadow-lg hover:shadow-xl transition">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 font-semibold">Winstmarge</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white mt-2">{insights.summary.profitMargin.toFixed(1)}%</p>
-                  <div className="mt-3">
-                    <p className="text-sm text-orange-700">Winst: €{(insights.summary.totalProfit / 1000).toFixed(1)}k</p>
-                  </div>
-                </div>
-                <TrendingUp className="w-16 h-16 text-orange-200 dark:text-orange-700" />
-              </div>
-            </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Productie Uren</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{Math.round(stats.totalProductionHours)}</p>
+            </div>
+            <Clock className="h-10 w-10 text-blue-500" />
           </div>
-        </>
-      )}
+        </Card>
 
-      {/* WEEK ANALYSE */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <Calendar className="w-6 h-6" />
-          Weekanalyse (52 Weken)
-        </h2>
-        {weeklyData.length > 0 && (
-          <Card className="p-6 bg-white dark:bg-gray-800 shadow-lg">
-            <ResponsiveContainer width="100%" height={400}>
-              <AreaChart data={weeklyData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorRegular" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="week" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
-                <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }} />
-                <Legend />
-                <Area type="monotone" dataKey="totalHours" stackId="1" stroke="#3b82f6" fill="url(#colorRegular)" name="Reguliere Uren" />
-                <Area type="monotone" dataKey="totalOvertime" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} name="Overwerk" />
-                <Area type="monotone" dataKey="totalEveningHours" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.4} name="Avonduren" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </Card>
-        )}
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Gefactureerd</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{Math.round(stats.totalInvoicedHours)}h</p>
+            </div>
+            <DollarSign className="h-10 w-10 text-green-500" />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Omzet</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">€{(stats.totalRevenue / 1000).toFixed(1)}k</p>
+            </div>
+            <TrendingUp className="h-10 w-10 text-emerald-500" />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Gem. Uurtarief</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">€{stats.averageHourlyRate.toFixed(2)}</p>
+            </div>
+            <Factory className="h-10 w-10 text-purple-500" />
+          </div>
+        </Card>
       </div>
 
-      {/* LAAD INDICATOR */}
-      {loading && (
-        <div className="text-center py-16">
-          <div className="inline-block">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-gray-700"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary-500 border-r-primary-500 animate-spin"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Maandelijkse Productie (6m)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={monthlyData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis yAxisId="left" />
+              <YAxis yAxisId="right" orientation="right" />
+              <Tooltip />
+              <Legend />
+              <Line yAxisId="left" type="monotone" dataKey="hours" stroke="#3B82F6" name="Uren" strokeWidth={2} />
+              <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#10B981" name="Omzet (€)" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Productie per Medewerker (Top 8)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={productionStats.slice(0, 8)}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="employeeName" angle={-45} textAnchor="end" height={100} />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="totalHours" fill="#3B82F6" name="Productie Uren" />
+              <Bar dataKey="invoicedHours" fill="#10B981" name="Gefactureerd" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <Users className="h-8 w-8 text-blue-500" />
+            <div>
+              <p className="text-sm text-gray-600">Actieve Medewerkers</p>
+              <p className="text-xl font-bold text-gray-900">{stats.activeEmployees}</p>
             </div>
           </div>
-          <p className="text-gray-500 dark:text-gray-400 mt-4">Alle analytics laden...</p>
-        </div>
-      )}
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <Package className="h-8 w-8 text-purple-500" />
+            <div>
+              <p className="text-sm text-gray-600">Facturen</p>
+              <p className="text-xl font-bold text-gray-900">{stats.completedProjects}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <Calendar className="h-8 w-8 text-green-500" />
+            <div>
+              <p className="text-sm text-gray-600">Efficiency</p>
+              <p className="text-xl font-bold text-gray-900">
+                {stats.totalProductionHours > 0 ? ((stats.totalInvoicedHours / stats.totalProductionHours) * 100).toFixed(0) : 0}%
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };
