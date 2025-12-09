@@ -76,7 +76,7 @@ const ProjectStatistics: React.FC = () => {
         if (!productionStatsMap.has(employeeId)) {
           const employee = employees.find(e => e.id === employeeId);
           productionStatsMap.set(employeeId, {
-            employeeName: employee ? \`\${employee.firstName} \${employee.lastName}\` : 'Onbekend',
+            employeeName: employee ? `${employee.firstName} ${employee.lastName}` : 'Onbekend',
             totalHours: 0,
             invoicedHours: 0,
             difference: 0,
