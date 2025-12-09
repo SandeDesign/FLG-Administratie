@@ -24,7 +24,7 @@ import {
   incomingInvoiceService,
   IncomingInvoice,
 } from '../services/incomingInvoiceService';
-import { doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, Timestamp, deleteField } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const IncomingInvoicesStats: React.FC = () => {
@@ -256,6 +256,8 @@ const IncomingInvoicesStats: React.FC = () => {
 
     try {
       setIsSaving(true);
+      console.log('💾 Saving invoice:', editingInvoice.id);
+      console.log('📝 Edit data:', editFormData);
       const invoiceRef = doc(db, 'incomingInvoices', editingInvoice.id);
 
       const updateData: any = {
@@ -284,43 +286,42 @@ const IncomingInvoicesStats: React.FC = () => {
       // Clear status-specific timestamps if status is changed
       if (editFormData.status !== editingInvoice.status) {
         if (editFormData.status === 'pending') {
-          updateData.approvedAt = null;
-          updateData.approvedBy = null;
-          updateData.paidAt = null;
-          updateData.rejectedAt = null;
-          updateData.rejectionReason = null;
+          updateData.approvedAt = deleteField();
+          updateData.approvedBy = deleteField();
+          updateData.paidAt = deleteField();
+          updateData.rejectedAt = deleteField();
+          updateData.rejectionReason = deleteField();
         } else if (editFormData.status === 'approved') {
-          updateData.paidAt = null;
-          updateData.rejectedAt = null;
-          updateData.rejectionReason = null;
+          updateData.paidAt = deleteField();
+          updateData.rejectedAt = deleteField();
+          updateData.rejectionReason = deleteField();
           if (!editingInvoice.approvedAt) {
             updateData.approvedAt = Timestamp.fromDate(new Date());
             updateData.approvedBy = adminUserId;
           }
         } else if (editFormData.status === 'rejected') {
-          updateData.approvedAt = null;
-          updateData.approvedBy = null;
-          updateData.paidAt = null;
+          updateData.approvedAt = deleteField();
+          updateData.approvedBy = deleteField();
+          updateData.paidAt = deleteField();
           if (!editingInvoice.rejectedAt) {
             updateData.rejectedAt = Timestamp.fromDate(new Date());
           }
         }
       }
 
+      console.log('📤 Sending update to Firestore:', updateData);
       await updateDoc(invoiceRef, updateData);
+      console.log('✅ Update successful, reloading invoices...');
 
-      setInvoices(prev =>
-        prev.map(inv =>
-          inv.id === editingInvoice.id
-            ? { ...editFormData, id: editingInvoice.id }
-            : inv
-        )
-      );
+      // Reload invoices from Firestore to ensure we have the latest data
+      await loadInvoices();
+      console.log('✅ Invoices reloaded');
 
       success('Factuur bijgewerkt');
       setEditingInvoice(null);
       setEditFormData(null);
     } catch (err) {
+      console.error('❌ Error saving invoice:', err);
       showError('Kon factuur niet bijwerken');
     } finally {
       setIsSaving(false);
