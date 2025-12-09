@@ -86,12 +86,6 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       items: filteredNavigation.filter(i => ['Productie', 'Project Stats'].includes(i.name))
     },
     {
-      title: 'Data',
-      icon: Download,
-      color: 'bg-purple-500',
-      items: filteredNavigation.filter(i => ['Uren Export', 'Loonstroken', 'Drive'].includes(i.name))
-    },
-    {
       title: 'Mijn Zaken',
       icon: User,
       color: 'bg-cyan-500',
