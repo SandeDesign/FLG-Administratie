@@ -50,7 +50,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // ✅ PROJECT-SPECIFIC ITEMS (alleen voor project bedrijven)
   { name: 'Project Dashboard', href: '/project-dashboard', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
   { name: 'Productie Verwerking', href: '/project-production', icon: Factory, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
-  { name: 'Statistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
+  { name: 'Projectstatistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
 
   // PERSONEEL SECTION (alleen employer - NIET holding)
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'], companyTypes: ['employer'] },
@@ -62,9 +62,9 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: HeartPulse, roles: ['admin', 'manager'], companyTypes: ['employer'] },
 
   // STATISTIEKEN SECTION (voor alle bedrijfstypes)
-  { name: 'Statistieken', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'], section: 'Statistieken' },
-  { name: 'Statistieken', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'], section: 'Statistieken' },
-  { name: 'Statistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding'], section: 'Statistieken' },
+  { name: 'Werkgeverstatistieken', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'], section: 'Statistieken' },
+  { name: 'Projectstatistieken', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'], section: 'Statistieken' },
+  { name: 'Holdingstatistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding'], section: 'Statistieken' },
 
   // FACTURATIE SECTION (employer, project, holding)
   { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
