@@ -250,6 +250,9 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
       if (employee) {
         await updateEmployee(employee.id, adminUserId!, {
           ...employeeData,
+          // ✅ FIX: Behoud bestaande account koppeling
+          userId: employee.userId || adminUserId,
+          hasAccount: employee.hasAccount || false,
           updatedAt: new Date(),
         });
         success('Werknemer bijgewerkt', `${data.firstName} ${data.lastName} is succesvol bijgewerkt`);
