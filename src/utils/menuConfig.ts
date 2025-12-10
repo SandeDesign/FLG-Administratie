@@ -75,11 +75,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
   { name: 'Declaraties Medewerkers', href: '/expenses', icon: Receipt, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
 
-  // DATA & EXPORTS SECTION (alleen employer - NIET holding)
-  { name: 'Uren Export', href: '/timesheet-export', icon: Download, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { name: 'Drive Bestanden', href: '/drive-files', icon: FolderOpen, roles: ['admin'], companyTypes: ['employer', 'holding'] },
-  { name: 'Exports Beheer', href: '/exports-management', icon: Package, roles: ['admin'], companyTypes: ['employer', 'holding'] },
-
   // SYSTEEM SECTION (employer en holding)
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
