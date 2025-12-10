@@ -50,6 +50,7 @@ import {
   deleteBudgetItem,
   calculateMonthlyBudget,
   calculateYearlyBudget,
+  getPayrollCalculations,
 } from '../services/firebase';
 import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
 import { incomingInvoiceService } from '../services/incomingInvoiceService';
@@ -200,6 +201,7 @@ const Budgeting: React.FC = () => {
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [outgoingInvoices, setOutgoingInvoices] = useState<OutgoingInvoice[]>([]);
   const [incomingInvoices, setIncomingInvoices] = useState<any[]>([]);
+  const [payrollCalculations, setPayrollCalculations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
@@ -235,6 +237,14 @@ const Budgeting: React.FC = () => {
 
       setOutgoingInvoices(outgoing);
       setIncomingInvoices(incoming);
+
+      // Load payroll data for employer companies only
+      if (selectedCompany.companyType === 'employer') {
+        const payroll = await getPayrollCalculations(adminUserId);
+        setPayrollCalculations(payroll);
+      } else {
+        setPayrollCalculations([]);
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       showError('Fout bij laden', 'Kon gegevens niet laden');
@@ -353,12 +363,24 @@ const Budgeting: React.FC = () => {
     })
     .reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
 
-  const actualYTDCosts = incomingInvoices
+  // Calculate personnel costs from payroll (YTD)
+  const actualYTDPersonnelCosts = payrollCalculations
+    .filter(calc => {
+      const calcDate = calc.periodStartDate instanceof Date ? calc.periodStartDate : new Date(calc.periodStartDate);
+      return calcDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, calc) => sum + (calc.grossPay || 0), 0);
+
+  // Calculate invoice costs (YTD)
+  const actualYTDInvoiceCosts = incomingInvoices
     .filter(inv => {
       const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
       return invDate.getFullYear() === currentYear;
     })
     .reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
+
+  // Total actual costs (invoices + personnel)
+  const actualYTDCosts = actualYTDInvoiceCosts + actualYTDPersonnelCosts;
 
   // Projected for FULL YEAR based on budget items
   const projectedFullYearIncome = weightedMonthlyIncome * 12;
@@ -1222,6 +1244,100 @@ const Budgeting: React.FC = () => {
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </button>
+                                    </div>
+                                  </div>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* PERSONEELSKOSTEN SECTIE (alleen voor employer bedrijven) */}
+              {selectedCompany?.companyType === 'employer' && payrollCalculations.filter(calc => {
+                const calcDate = calc.periodStartDate instanceof Date ? calc.periodStartDate : new Date(calc.periodStartDate);
+                return calcDate.getFullYear() === currentYear;
+              }).length > 0 && (
+                <div className="mt-8 pt-8 border-t-4 border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">💼 Personeelskosten (uit Salarisverwerking {currentYear})</h2>
+                    <div className="text-sm text-gray-500">
+                      Totaal YTD: <span className="font-bold text-red-600">{formatCurrency(actualYTDPersonnelCosts)}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {/* Group payroll by month */}
+                    {Object.entries(
+                      payrollCalculations
+                        .filter(calc => {
+                          const calcDate = calc.periodStartDate instanceof Date ? calc.periodStartDate : new Date(calc.periodStartDate);
+                          return calcDate.getFullYear() === currentYear;
+                        })
+                        .reduce((groups, calc) => {
+                          const calcDate = calc.periodStartDate instanceof Date ? calc.periodStartDate : new Date(calc.periodStartDate);
+                          const monthKey = `${calcDate.getFullYear()}-${String(calcDate.getMonth() + 1).padStart(2, '0')}`;
+                          const monthName = calcDate.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
+                          if (!groups[monthKey]) groups[monthKey] = { name: monthName, calcs: [] };
+                          groups[monthKey].calcs.push(calc);
+                          return groups;
+                        }, {} as Record<string, { name: string, calcs: any[] }>)
+                    ).sort((a, b) => b[0].localeCompare(a[0])).map(([monthKey, { name: monthName, calcs }]) => {
+                      const config = COST_CATEGORY_CONFIG.personnel;
+                      const Icon = config.icon;
+                      const monthTotal = calcs.reduce((sum, calc) => sum + (calc.grossPay || 0), 0);
+                      const isExpanded = expandedCategories.has(`payroll-${monthKey}`);
+
+                      return (
+                        <div key={monthKey} className="space-y-2">
+                          <button
+                            onClick={() => toggleCategory(`payroll-${monthKey}`)}
+                            className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border-2 ${config.borderColor} transition-all hover:shadow-md`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className={`h-5 w-5 ${config.textColor}`} />
+                              <h3 className={`font-semibold ${config.textColor}`}>{monthName}</h3>
+                              <span className="text-xs text-gray-500">({calcs.length} medewerker{calcs.length !== 1 ? 's' : ''})</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <p className={`text-sm font-bold ${config.textColor}`}>
+                                  {formatCurrency(monthTotal)}
+                                </p>
+                                <p className="text-xs text-gray-500">Bruto Loon</p>
+                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
+                              ) : (
+                                <ChevronDown className={`h-4 w-4 ${config.textColor}`} />
+                              )}
+                            </div>
+                          </button>
+
+                          {isExpanded && (
+                            <div className="space-y-2 pl-2">
+                              {calcs.map((calc: any) => (
+                                <Card key={calc.id} className="p-3 bg-white">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                      <p className="font-medium text-gray-900">{calc.employeeName || 'Medewerker'}</p>
+                                      <p className="text-xs text-gray-500">
+                                        Periode: {calc.periodStartDate instanceof Date
+                                          ? calc.periodStartDate.toLocaleDateString('nl-NL')
+                                          : new Date(calc.periodStartDate).toLocaleDateString('nl-NL')} - {calc.periodEndDate instanceof Date
+                                          ? calc.periodEndDate.toLocaleDateString('nl-NL')
+                                          : new Date(calc.periodEndDate).toLocaleDateString('nl-NL')}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-bold text-red-600 text-lg">
+                                        {formatCurrency(calc.grossPay || 0)}
+                                      </p>
+                                      <p className="text-xs text-gray-500">Bruto</p>
                                     </div>
                                   </div>
                                 </Card>
