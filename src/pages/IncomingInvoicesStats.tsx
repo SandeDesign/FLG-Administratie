@@ -189,6 +189,9 @@ const IncomingInvoicesStats: React.FC = () => {
 
       // ✅ Trigger webhook to Make.com when invoice is marked as paid
       try {
+        console.log('📎 Invoice fileUrl:', invoice.fileUrl);
+        console.log('📎 Full invoice object:', invoice);
+
         const webhookPayload = {
           event: 'incoming_invoice.paid',
           timestamp: new Date().toISOString(),
@@ -203,7 +206,7 @@ const IncomingInvoicesStats: React.FC = () => {
             totalAmount: invoice.totalAmount,
             invoiceDate: invoice.invoiceDate,
             dueDate: invoice.dueDate,
-            description: invoice.description,
+            description: invoice.description || '',
             status: 'paid',
             paidAt: new Date().toISOString(),
             // ✅ Include download link from internedata.nl
@@ -221,6 +224,8 @@ const IncomingInvoicesStats: React.FC = () => {
             email: user.email,
           },
         };
+
+        console.log('🚀 Sending webhook payload:', webhookPayload);
 
         await fetch('https://hook.eu2.make.com/8jntdat5emrvrcfgoq7giviwvtjx9nwt', {
           method: 'POST',
@@ -261,15 +266,14 @@ const IncomingInvoicesStats: React.FC = () => {
       const invoiceRef = doc(db, 'incomingInvoices', editingInvoice.id);
 
       const updateData: any = {
-        supplierName: editFormData.supplierName,
-        invoiceNumber: editFormData.invoiceNumber,
-        subtotal: editFormData.subtotal || editFormData.amount,
-        amount: editFormData.subtotal || editFormData.amount,
-        vatAmount: editFormData.vatAmount,
-        totalAmount: editFormData.totalAmount,
-        description: editFormData.description,
-        supplierEmail: editFormData.supplierEmail,
-        status: editFormData.status,
+        supplierName: editFormData.supplierName || '',
+        invoiceNumber: editFormData.invoiceNumber || '',
+        subtotal: editFormData.subtotal || editFormData.amount || 0,
+        amount: editFormData.subtotal || editFormData.amount || 0,
+        vatAmount: editFormData.vatAmount || 0,
+        totalAmount: editFormData.totalAmount || 0,
+        description: editFormData.description || '',
+        status: editFormData.status || 'pending',
         invoiceDate: Timestamp.fromDate(
           editFormData.invoiceDate instanceof Date
             ? editFormData.invoiceDate
@@ -282,6 +286,11 @@ const IncomingInvoicesStats: React.FC = () => {
         ),
         updatedAt: Timestamp.fromDate(new Date()),
       };
+
+      // Add optional fields only if they have values
+      if (editFormData.supplierEmail) {
+        updateData.supplierEmail = editFormData.supplierEmail;
+      }
 
       // Clear status-specific timestamps if status is changed
       if (editFormData.status !== editingInvoice.status) {
