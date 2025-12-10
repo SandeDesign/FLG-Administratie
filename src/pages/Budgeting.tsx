@@ -210,6 +210,7 @@ const Budgeting: React.FC = () => {
   const [projectionYears, setProjectionYears] = useState(3);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [isPitchDeckOpen, setIsPitchDeckOpen] = useState(false);
 
   // Investment Pitch State
 
@@ -838,7 +839,7 @@ const Budgeting: React.FC = () => {
           </Button>
           <Button
             variant="secondary"
-            onClick={() => window.location.href = '/investment-pitch'}
+            onClick={() => setIsPitchDeckOpen(true)}
             size="sm"
             className="text-blue-600 hover:bg-blue-50"
           >
@@ -869,7 +870,7 @@ const Budgeting: React.FC = () => {
             <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
           <button
-            onClick={() => window.location.href = '/investment-pitch'}
+            onClick={() => setIsPitchDeckOpen(true)}
             className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
             title="Pitch Deck"
           >
@@ -1098,7 +1099,7 @@ const Budgeting: React.FC = () => {
       {/* Costs Tab */}
       {activeTab === 'costs' && (
         <div className="space-y-6">
-          {costItems.length === 0 ? (
+          {costItems.length === 0 && incomingInvoices.length === 0 ? (
             <EmptyState
               icon={TrendingDown}
               title="Geen kosten"
@@ -1107,137 +1108,201 @@ const Budgeting: React.FC = () => {
               onAction={() => handleOpenModal(undefined, 'cost')}
             />
           ) : (
-            Object.entries(
-              costItems.reduce((groups, item) => {
-                const category = item.category as BudgetCostCategory;
-                if (!groups[category]) groups[category] = [];
-                groups[category].push(item);
-                return groups;
-              }, {} as Record<BudgetCostCategory, BudgetItem[]>)
-            ).map(([category, items]) => {
-              const config = COST_CATEGORY_CONFIG[category as BudgetCostCategory] || COST_CATEGORY_CONFIG.other;
-              const Icon = config.icon;
-              const categoryTotal = items.reduce((sum, item) => sum + (item.isActive ? getMonthlyAmount(item) : 0), 0);
-              const categoryInvoices = getInvoicesForCategory(category, 'cost');
-              const isExpanded = expandedCategories.has(category);
-
-              return (
-                <div key={category} className="space-y-2">
-                  {/* Category Header - Clickable Toggle */}
-                  <button
-                    onClick={() => toggleCategory(category)}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor} transition-all hover:shadow-md`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className={`h-5 w-5 ${config.textColor}`} />
-                      <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
-                      <span className="text-xs text-gray-500">({items.length})</span>
-                      {categoryInvoices.length > 0 && (
-                        <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
-                          {categoryInvoices.length} facturen
-                        </span>
-                      )}
+            <>
+              {/* GEPLANDE KOSTEN SECTIE */}
+              {costItems.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">📋 Geplande Kosten (Budget Items)</h2>
+                    <div className="text-sm text-gray-500">
+                      Totaal: <span className="font-bold text-red-600">{formatCurrency(monthlyCosts)}/mnd</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className={`text-sm font-bold ${config.textColor}`}>
-                          {formatCurrency(categoryTotal)}/mnd
-                        </p>
-                      </div>
-                      {isExpanded ? (
-                        <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
-                      ) : (
-                        <ChevronDown className={`h-4 w-4 ${config.textColor}`} />
-                      )}
-                    </div>
-                  </button>
+                  </div>
 
-                  {/* Items - Show when expanded */}
-                  {isExpanded && (
-                    <div className="space-y-2 pl-2">
-                      {items.map((item) => (
-                        <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
-                          <div className="flex items-center gap-4">
-                            <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
-                              <Icon className="h-5 w-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                                {!item.isActive && (
-                                  <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                                    Inactief
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                                {item.supplier && <span>{item.supplier}</span>}
-                                {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-red-600">
-                                -{formatCurrencyDetailed(item.amount)}
-                              </p>
-                              <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
-                            </div>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleOpenModal(item)}
-                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                title="Bewerken"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(item)}
-                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Verwijderen"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
+                  <div className="space-y-2">
+                    {Object.entries(
+                      costItems.reduce((groups, item) => {
+                        const category = item.category as BudgetCostCategory;
+                        if (!groups[category]) groups[category] = [];
+                        groups[category].push(item);
+                        return groups;
+                      }, {} as Record<BudgetCostCategory, BudgetItem[]>)
+                    ).map(([category, items]) => {
+                      const config = COST_CATEGORY_CONFIG[category as BudgetCostCategory] || COST_CATEGORY_CONFIG.other;
+                      const Icon = config.icon;
+                      const categoryTotal = items.reduce((sum, item) => sum + (item.isActive ? getMonthlyAmount(item) : 0), 0);
+                      const isExpanded = expandedCategories.has(`planned-cost-${category}`);
 
-                      {/* Invoices for this category */}
-                      {categoryInvoices.length > 0 && (
-                        <Card className="ml-4 p-4 bg-gray-50">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                            Facturen in deze categorie ({currentYear})
-                          </h4>
-                          <div className="space-y-2">
-                            {categoryInvoices.map((inv: any) => {
-                              const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-                              return (
-                                <div key={inv.id} className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 text-sm">
-                                  <div className="flex-1">
-                                    <p className="font-medium text-gray-900">{inv.supplier || inv.description || 'Onbekend'}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
-                                    </p>
+                      return (
+                        <div key={category} className="space-y-2">
+                          {/* Category Header */}
+                          <button
+                            onClick={() => toggleCategory(`planned-cost-${category}`)}
+                            className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor} transition-all hover:shadow-md`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className={`h-5 w-5 ${config.textColor}`} />
+                              <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
+                              <span className="text-xs text-gray-500">({items.length} items)</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <p className={`text-sm font-bold ${config.textColor}`}>
+                                  {formatCurrency(categoryTotal)}/mnd
+                                </p>
+                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
+                              ) : (
+                                <ChevronDown className={`h-4 w-4 ${config.textColor}`} />
+                              )}
+                            </div>
+                          </button>
+
+                          {/* Items */}
+                          {isExpanded && (
+                            <div className="space-y-2 pl-2">
+                              {items.map((item) => (
+                                <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
+                                  <div className="flex items-center gap-4">
+                                    <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                                      <Icon className="h-5 w-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                                        {!item.isActive && (
+                                          <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                                            Inactief
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                                        {item.supplier && <span>{item.supplier}</span>}
+                                        {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-lg font-bold text-red-600">
+                                        -{formatCurrencyDetailed(item.amount)}
+                                      </p>
+                                      <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={() => handleOpenModal(item)}
+                                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        title="Bewerken"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDelete(item)}
+                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Verwijderen"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
                                   </div>
-                                  <p className="font-bold text-red-600">
-                                    {formatCurrency(inv.amount || 0)}
-                                  </p>
-                                </div>
-                              );
-                            })}
-                            <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
-                              <span>Totaal YTD</span>
-                              <span className="text-red-600">
-                                {formatCurrency(categoryInvoices.reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0))}
-                              </span>
+                                </Card>
+                              ))}
                             </div>
-                          </div>
-                        </Card>
-                      )}
-                    </div>
-                  )}
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })
+              )}
+
+              {/* WERKELIJKE KOSTEN SECTIE */}
+              {incomingInvoices.filter(inv => {
+                const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                return invDate.getFullYear() === currentYear;
+              }).length > 0 && (
+                <div className="mt-8 pt-8 border-t-4 border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">💰 Werkelijke Kosten (Inkomende Facturen {currentYear})</h2>
+                    <div className="text-sm text-gray-500">
+                      Totaal YTD: <span className="font-bold text-red-600">{formatCurrency(actualYTDCosts)}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {Object.entries(
+                      incomingInvoices
+                        .filter(inv => {
+                          const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                          return invDate.getFullYear() === currentYear;
+                        })
+                        .reduce((groups, inv) => {
+                          const category = matchInvoiceToCategory(inv, 'cost') || 'other';
+                          if (!groups[category]) groups[category] = [];
+                          groups[category].push(inv);
+                          return groups;
+                        }, {} as Record<string, any[]>)
+                    ).map(([category, invoices]) => {
+                      const config = COST_CATEGORY_CONFIG[category as BudgetCostCategory] || COST_CATEGORY_CONFIG.other;
+                      const Icon = config.icon;
+                      const categoryTotal = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+                      const isExpanded = expandedCategories.has(`actual-cost-${category}`);
+
+                      return (
+                        <div key={category} className="space-y-2">
+                          <button
+                            onClick={() => toggleCategory(`actual-cost-${category}`)}
+                            className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border-2 ${config.borderColor} transition-all hover:shadow-md`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className={`h-5 w-5 ${config.textColor}`} />
+                              <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
+                              <span className="text-xs text-gray-500">({invoices.length} facturen)</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <p className={`text-sm font-bold ${config.textColor}`}>
+                                  {formatCurrency(categoryTotal)}
+                                </p>
+                                <p className="text-xs text-gray-500">YTD</p>
+                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
+                              ) : (
+                                <ChevronDown className={`h-4 w-4 ${config.textColor}`} />
+                              )}
+                            </div>
+                          </button>
+
+                          {isExpanded && (
+                            <div className="space-y-2 pl-2">
+                              {invoices.map((inv: any) => {
+                                const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                                return (
+                                  <Card key={inv.id} className="p-3 bg-white">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900">{inv.supplier || inv.description || 'Onbekend'}</p>
+                                        <p className="text-xs text-gray-500">
+                                          {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
+                                        </p>
+                                      </div>
+                                      <p className="font-bold text-red-600 text-lg">
+                                        {formatCurrency(inv.amount || 0)}
+                                      </p>
+                                    </div>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -1245,7 +1310,7 @@ const Budgeting: React.FC = () => {
       {/* Income Tab */}
       {activeTab === 'income' && (
         <div className="space-y-6">
-          {incomeItems.length === 0 ? (
+          {incomeItems.length === 0 && outgoingInvoices.length === 0 ? (
             <EmptyState
               icon={TrendingUp}
               title="Geen inkomsten"
@@ -1254,170 +1319,238 @@ const Budgeting: React.FC = () => {
               onAction={() => handleOpenModal(undefined, 'income')}
             />
           ) : (
-            Object.entries(
-              incomeItems.reduce((groups, item) => {
-                const category = item.category as BudgetIncomeCategory;
-                if (!groups[category]) groups[category] = [];
-                groups[category].push(item);
-                return groups;
-              }, {} as Record<BudgetIncomeCategory, BudgetItem[]>)
-            ).map(([category, items]) => {
-              const config = INCOME_CATEGORY_CONFIG[category as BudgetIncomeCategory] || INCOME_CATEGORY_CONFIG.other;
-              const Icon = config.icon;
-              const categoryTotal = items.reduce((sum, item) => sum + (item.isActive ? getMonthlyAmount(item) : 0), 0);
-              const weightedTotal = items.reduce((sum, item) => {
-                if (!item.isActive) return sum;
-                const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
-                return sum + (getMonthlyAmount(item) * weight);
-              }, 0);
-              const categoryInvoices = getInvoicesForCategory(category, 'income');
-              const isExpanded = expandedCategories.has(category);
-
-              return (
-                <div key={category} className="space-y-2">
-                  {/* Category Header - Clickable Toggle */}
-                  <button
-                    onClick={() => toggleCategory(category)}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor} transition-all hover:shadow-md`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className={`h-5 w-5 ${config.textColor}`} />
-                      <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
-                      <span className="text-xs text-gray-500">({items.length})</span>
-                      {categoryInvoices.length > 0 && (
-                        <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
-                          {categoryInvoices.length} facturen
-                        </span>
-                      )}
+            <>
+              {/* GEPLANDE INKOMSTEN SECTIE */}
+              {incomeItems.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">📋 Geplande Inkomsten (Budget Items)</h2>
+                    <div className="text-sm text-gray-500">
+                      Totaal: <span className="font-bold text-emerald-600">{formatCurrency(monthlyIncome)}/mnd</span>
+                      <span className="mx-2">•</span>
+                      Gewogen: <span className="font-bold text-emerald-600">{formatCurrency(weightedMonthlyIncome)}/mnd</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className={`text-sm font-bold ${config.textColor}`}>
-                          {formatCurrency(categoryTotal)}/mnd
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Gewogen: {formatCurrency(weightedTotal)}/mnd
-                        </p>
-                      </div>
-                      {isExpanded ? (
-                        <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
-                      ) : (
-                        <ChevronDown className={`h-4 w-4 ${config.textColor}`} />
-                      )}
-                    </div>
-                  </button>
+                  </div>
 
-                  {/* Items - Show when expanded */}
-                  {isExpanded && (
-                    <div className="space-y-2 pl-2">
-                      {items.map((item) => {
-                        const confConfig = CONFIDENCE_CONFIG[item.confidence || 'confirmed'];
-                        const ConfIcon = confConfig.icon;
+                  <div className="space-y-2">
+                    {Object.entries(
+                      incomeItems.reduce((groups, item) => {
+                        const category = item.category as BudgetIncomeCategory;
+                        if (!groups[category]) groups[category] = [];
+                        groups[category].push(item);
+                        return groups;
+                      }, {} as Record<BudgetIncomeCategory, BudgetItem[]>)
+                    ).map(([category, items]) => {
+                      const config = INCOME_CATEGORY_CONFIG[category as BudgetIncomeCategory] || INCOME_CATEGORY_CONFIG.other;
+                      const Icon = config.icon;
+                      const categoryTotal = items.reduce((sum, item) => sum + (item.isActive ? getMonthlyAmount(item) : 0), 0);
+                      const weightedTotal = items.reduce((sum, item) => {
+                        if (!item.isActive) return sum;
+                        const weight = CONFIDENCE_CONFIG[item.confidence || 'confirmed'].weight;
+                        return sum + (getMonthlyAmount(item) * weight);
+                      }, 0);
+                      const isExpanded = expandedCategories.has(`planned-income-${category}`);
 
-                        return (
-                          <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
-                            <div className="flex items-center gap-4">
-                              <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
-                                <Icon className="h-5 w-5" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                                  <span className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${confConfig.bgColor} ${confConfig.color}`}>
-                                    <ConfIcon className="h-3 w-3" />
-                                    {confConfig.label}
-                                  </span>
-                                  {!item.isActive && (
-                                    <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                                      Inactief
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                                  {item.supplier && <span>{item.supplier}</span>}
-                                  {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
-                                  {item.growthRate && item.growthRate > 0 && (
-                                    <span className="text-emerald-600">• +{item.growthRate}%/jaar</span>
-                                  )}
-                                </div>
-                              </div>
+                      return (
+                        <div key={category} className="space-y-2">
+                          {/* Category Header */}
+                          <button
+                            onClick={() => toggleCategory(`planned-income-${category}`)}
+                            className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border ${config.borderColor} transition-all hover:shadow-md`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className={`h-5 w-5 ${config.textColor}`} />
+                              <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
+                              <span className="text-xs text-gray-500">({items.length} items)</span>
+                            </div>
+                            <div className="flex items-center gap-3">
                               <div className="text-right">
-                                <p className="text-lg font-bold text-emerald-600">
-                                  +{formatCurrencyDetailed(item.amount)}
+                                <p className={`text-sm font-bold ${config.textColor}`}>
+                                  {formatCurrency(categoryTotal)}/mnd
                                 </p>
-                                <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                                <p className="text-xs text-gray-500">
+                                  Gewogen: {formatCurrency(weightedTotal)}/mnd
+                                </p>
                               </div>
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => handleOpenModal(item)}
-                                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                  title="Bewerken"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(item)}
-                                  className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  title="Verwijderen"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
+                              ) : (
+                                <ChevronDown className={`h-4 w-4 ${config.textColor}`} />
+                              )}
                             </div>
-                          </Card>
-                        );
-                      })}
+                          </button>
 
-                      {/* Invoices for this category */}
-                      {categoryInvoices.length > 0 && (
-                        <Card className="ml-4 p-4 bg-gray-50">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                            Facturen in deze categorie ({currentYear})
-                          </h4>
-                          <div className="space-y-2">
-                            {categoryInvoices.map((inv: any) => {
-                              const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-                              return (
-                                <div key={inv.id} className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 text-sm">
-                                  <div className="flex-1">
-                                    <p className="font-medium text-gray-900">{inv.clientName || inv.description || 'Onbekend'}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
-                                    </p>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="font-bold text-emerald-600">
-                                      {formatCurrency(inv.totalAmount || inv.amount || 0)}
-                                    </p>
-                                    {inv.status && (
-                                      <span className={`text-xs ${
-                                        inv.status === 'paid' ? 'text-green-600' :
-                                        inv.status === 'sent' ? 'text-blue-600' :
-                                        'text-gray-600'
-                                      }`}>
-                                        {inv.status === 'paid' ? 'Betaald' :
-                                         inv.status === 'sent' ? 'Verzonden' :
-                                         inv.status === 'draft' ? 'Concept' : inv.status}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                            <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
-                              <span>Totaal YTD</span>
-                              <span className="text-emerald-600">
-                                {formatCurrency(categoryInvoices.reduce((sum: number, inv: any) => sum + (inv.totalAmount || inv.amount || 0), 0))}
-                              </span>
+                          {/* Items */}
+                          {isExpanded && (
+                            <div className="space-y-2 pl-2">
+                              {items.map((item) => {
+                                const confConfig = CONFIDENCE_CONFIG[item.confidence || 'confirmed'];
+                                const ConfIcon = confConfig.icon;
+
+                                return (
+                                  <Card key={item.id} className={`p-4 ${!item.isActive ? 'opacity-60' : ''}`}>
+                                    <div className="flex items-center gap-4">
+                                      <div className={`p-2.5 rounded-lg ${config.bgColor} ${config.textColor}`}>
+                                        <Icon className="h-5 w-5" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                                          <span className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${confConfig.bgColor} ${confConfig.color}`}>
+                                            <ConfIcon className="h-3 w-3" />
+                                            {confConfig.label}
+                                          </span>
+                                          {!item.isActive && (
+                                            <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                                              Inactief
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                                          {item.supplier && <span>{item.supplier}</span>}
+                                          {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
+                                          {item.growthRate && item.growthRate > 0 && (
+                                            <span className="text-emerald-600">• +{item.growthRate}%/jaar</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-lg font-bold text-emerald-600">
+                                          +{formatCurrencyDetailed(item.amount)}
+                                        </p>
+                                        <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                                      </div>
+                                      <div className="flex gap-1">
+                                        <button
+                                          onClick={() => handleOpenModal(item)}
+                                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                          title="Bewerken"
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDelete(item)}
+                                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                          title="Verwijderen"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </Card>
+                                );
+                              })}
                             </div>
-                          </div>
-                        </Card>
-                      )}
-                    </div>
-                  )}
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })
+              )}
+
+              {/* WERKELIJKE INKOMSTEN SECTIE */}
+              {outgoingInvoices.filter(inv => {
+                const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
+              }).length > 0 && (
+                <div className="mt-8 pt-8 border-t-4 border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">💰 Werkelijke Inkomsten (Uitgaande Facturen {currentYear})</h2>
+                    <div className="text-sm text-gray-500">
+                      Totaal YTD: <span className="font-bold text-emerald-600">{formatCurrency(actualYTDIncome)}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {Object.entries(
+                      outgoingInvoices
+                        .filter(inv => {
+                          const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                          return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
+                        })
+                        .reduce((groups, inv) => {
+                          const category = matchInvoiceToCategory(inv, 'income') || 'services';
+                          if (!groups[category]) groups[category] = [];
+                          groups[category].push(inv);
+                          return groups;
+                        }, {} as Record<string, any[]>)
+                    ).map(([category, invoices]) => {
+                      const config = INCOME_CATEGORY_CONFIG[category as BudgetIncomeCategory] || INCOME_CATEGORY_CONFIG.other;
+                      const Icon = config.icon;
+                      const categoryTotal = invoices.reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
+                      const isExpanded = expandedCategories.has(`actual-income-${category}`);
+
+                      return (
+                        <div key={category} className="space-y-2">
+                          <button
+                            onClick={() => toggleCategory(`actual-income-${category}`)}
+                            className={`w-full flex items-center justify-between p-3 rounded-lg ${config.bgColor} border-2 ${config.borderColor} transition-all hover:shadow-md`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Icon className={`h-5 w-5 ${config.textColor}`} />
+                              <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
+                              <span className="text-xs text-gray-500">({invoices.length} facturen)</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <p className={`text-sm font-bold ${config.textColor}`}>
+                                  {formatCurrency(categoryTotal)}
+                                </p>
+                                <p className="text-xs text-gray-500">YTD</p>
+                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
+                              ) : (
+                                <ChevronDown className={`h-4 w-4 ${config.textColor}`} />
+                              )}
+                            </div>
+                          </button>
+
+                          {isExpanded && (
+                            <div className="space-y-2 pl-2">
+                              {invoices.map((inv: any) => {
+                                const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                                return (
+                                  <Card key={inv.id} className="p-3 bg-white">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <p className="font-medium text-gray-900">{inv.clientName || inv.description || 'Onbekend'}</p>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                          <span>{invDate.toLocaleDateString('nl-NL')}</span>
+                                          <span>• {inv.invoiceNumber || 'Geen nr'}</span>
+                                          {inv.status && (
+                                            <>
+                                              <span>•</span>
+                                              <span className={`font-medium ${
+                                                inv.status === 'paid' ? 'text-green-600' :
+                                                inv.status === 'sent' ? 'text-blue-600' :
+                                                'text-gray-600'
+                                              }`}>
+                                                {inv.status === 'paid' ? 'Betaald' :
+                                                 inv.status === 'sent' ? 'Verzonden' :
+                                                 inv.status === 'draft' ? 'Concept' : inv.status}
+                                              </span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <p className="font-bold text-emerald-600 text-lg">
+                                        {formatCurrency(inv.totalAmount || inv.amount || 0)}
+                                      </p>
+                                    </div>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -1832,6 +1965,39 @@ const Budgeting: React.FC = () => {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pitch Deck Modal */}
+      {isPitchDeckOpen && (
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          <div className="flex min-h-full items-center justify-center">
+            <div className="fixed inset-0 bg-black/50" onClick={() => setIsPitchDeckOpen(false)} />
+            <div className="relative bg-white rounded-xl shadow-xl w-full h-full md:w-[95vw] md:h-[95vh] md:max-w-7xl overflow-hidden flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+                <h2 className="text-xl font-bold text-gray-900">Investment Pitch Deck</h2>
+                <button
+                  onClick={() => setIsPitchDeckOpen(false)}
+                  className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                  title="Sluiten"
+                >
+                  <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Iframe Content */}
+              <div className="flex-1 overflow-hidden">
+                <iframe
+                  src="/investment-pitch?mode=frame"
+                  className="w-full h-full border-0"
+                  title="Investment Pitch Deck"
+                />
+              </div>
             </div>
           </div>
         </div>

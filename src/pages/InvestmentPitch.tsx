@@ -84,6 +84,9 @@ const InvestmentPitch: React.FC = () => {
   const [view, setView] = useState<'list' | 'editor' | 'preview'>('list');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
+  // Check if in frame mode
+  const isFrameMode = new URLSearchParams(window.location.search).get('mode') === 'frame';
+
   // Load pitches from Firebase
   useEffect(() => {
     if (!user || !selectedCompany) return;
@@ -103,6 +106,15 @@ const InvestmentPitch: React.FC = () => {
           updatedAt: doc.data().updatedAt?.toDate(),
         })) as InvestmentPitch[];
         setPitches(data);
+
+        // If in frame mode, automatically show the most recent pitch in preview
+        if (isFrameMode && data.length > 0) {
+          const mostRecent = data.sort((a, b) =>
+            (b.updatedAt?.getTime() || 0) - (a.updatedAt?.getTime() || 0)
+          )[0];
+          setCurrentPitch(mostRecent);
+          setView('preview');
+        }
       } catch (error) {
         console.error('Error loading pitches:', error);
       } finally {
@@ -111,7 +123,7 @@ const InvestmentPitch: React.FC = () => {
     };
 
     loadPitches();
-  }, [user, selectedCompany]);
+  }, [user, selectedCompany, isFrameMode]);
 
   // Initialize new pitch
   const createNewPitch = () => {
@@ -709,43 +721,51 @@ const InvestmentPitch: React.FC = () => {
   // PREVIEW VIEW
   if (view === 'preview' && currentPitch && metrics) {
     return (
-      <div className="p-8 space-y-8 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">{currentPitch.companyName}</h1>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setView('editor')}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              <Edit2 className="h-4 w-4" />
-              Edit
-            </button>
-            <button
-              onClick={() => generateInvestmentPDF({
-  companyName: currentPitch.companyName,
-  elevatorPitch: currentPitch.elevatorPitch,
-  currentARR: currentPitch.currentARR,
-  currentMargin: currentPitch.currentMargin,
-  problemStatement: currentPitch.problemStatement,
-  solutionStatement: currentPitch.solutionStatement,
-  differentiator: currentPitch.differentiator,
-  targetMarket: currentPitch.targetMarket,
-  tam: currentPitch.tam,
-  sam: currentPitch.sam,
-  som: currentPitch.som,
-  askingAmount: currentPitch.askingAmount,
-  runway: currentPitch.runway,
-  projectedYear1Revenue: currentPitch.projectedYear1Revenue,
-  projectedYear2Revenue: currentPitch.projectedYear2Revenue,
-  projectedYear3Revenue: currentPitch.projectedYear3Revenue,
-})}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-            >
-              <Download className="h-4 w-4" />
-              PDF Download
-            </button>
+      <div className={isFrameMode ? "space-y-6 p-4" : "p-8 space-y-8 max-w-7xl mx-auto"}>
+        {!isFrameMode && (
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-900">{currentPitch.companyName}</h1>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setView('editor')}
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                <Edit2 className="h-4 w-4" />
+                Edit
+              </button>
+              <button
+                onClick={() => generateInvestmentPDF({
+    companyName: currentPitch.companyName,
+    elevatorPitch: currentPitch.elevatorPitch,
+    currentARR: currentPitch.currentARR,
+    currentMargin: currentPitch.currentMargin,
+    problemStatement: currentPitch.problemStatement,
+    solutionStatement: currentPitch.solutionStatement,
+    differentiator: currentPitch.differentiator,
+    targetMarket: currentPitch.targetMarket,
+    tam: currentPitch.tam,
+    sam: currentPitch.sam,
+    som: currentPitch.som,
+    askingAmount: currentPitch.askingAmount,
+    runway: currentPitch.runway,
+    projectedYear1Revenue: currentPitch.projectedYear1Revenue,
+    projectedYear2Revenue: currentPitch.projectedYear2Revenue,
+    projectedYear3Revenue: currentPitch.projectedYear3Revenue,
+  })}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+              >
+                <Download className="h-4 w-4" />
+                PDF Download
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {isFrameMode && currentPitch.companyName && (
+          <div className="mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">{currentPitch.companyName}</h1>
+          </div>
+        )}
 
         {/* Executive Summary */}
         <div className="bg-gradient-to-r from-primary-900 to-indigo-900 text-white rounded-lg p-8">
