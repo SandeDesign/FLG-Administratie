@@ -13,8 +13,8 @@ const CompaniesVisibilitySettings: React.FC = () => {
   const [allCompanies, setAllCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Only show for admin
-  if (userRole !== 'admin' || !user || !adminUserId) {
+  // Show for admin and co-admin (manager role)
+  if ((userRole !== 'admin' && userRole !== 'manager') || !user || !adminUserId) {
     return null;
   }
 
@@ -112,10 +112,10 @@ const CompaniesVisibilitySettings: React.FC = () => {
       <div>
         <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
           <Building2 className="h-5 w-5 text-primary-600" />
-          Bedrijven Zichtbaarheid
+          Bedrijven Zichtbaarheid (Persoonlijk)
         </h2>
         <p className="text-sm text-gray-600">
-          Kies welke bedrijven zichtbaar zijn in je bedrijfenkeuze. Verborgen bedrijven zijn nog steeds beschikbaar maar verschijnen niet in de dropdown.
+          Kies welke bedrijven <strong>voor jou</strong> zichtbaar zijn in de bedrijfenkeuze. Deze instelling is persoonlijk - andere gebruikers (admin/co-admin) kunnen hun eigen voorkeuren instellen.
         </p>
       </div>
 

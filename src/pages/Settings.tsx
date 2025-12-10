@@ -379,7 +379,7 @@ const Settings: React.FC = () => {
 
   const tabs = [
     { id: 'account', name: 'Account', icon: User },
-    ...(userRole === 'admin' ? [{ id: 'company', name: 'Bedrijf', icon: Building2 }] : []),
+    ...((userRole === 'admin' || userRole === 'manager') ? [{ id: 'company', name: 'Bedrijf', icon: Building2 }] : []),
   ];
 
   return (
@@ -588,7 +588,7 @@ const Settings: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'company' && userRole === 'admin' && (
+      {activeTab === 'company' && (userRole === 'admin' || userRole === 'manager') && (
         <div className="space-y-6">
           {/* Companies Visibility Settings */}
           <Card>
