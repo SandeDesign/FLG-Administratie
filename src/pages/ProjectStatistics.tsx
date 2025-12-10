@@ -38,10 +38,10 @@ const ProjectStatistics: React.FC = () => {
     try {
       console.log('📊 Loading project statistics...');
 
-      // Time entries (productie)
+      // Time entries (productie) - Load all production hours for this company
       const timeEntriesQuery = query(
         collection(db, 'timeEntries'),
-        where('userId', '==', adminUserId)
+        where('companyId', '==', selectedCompany.id)
       );
       const timeEntriesSnap = await getDocs(timeEntriesQuery);
       let totalHours = 0;
@@ -171,7 +171,7 @@ const ProjectStatistics: React.FC = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <div className="flex items-center justify-between">
             <div>
@@ -184,18 +184,6 @@ const ProjectStatistics: React.FC = () => {
               </p>
             </div>
             <Clock className="h-8 w-8 text-blue-600" />
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Gemiddeld Uurtarief</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                €{stats.averageHourlyRate.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            <Euro className="h-8 w-8 text-green-600" />
           </div>
         </Card>
 

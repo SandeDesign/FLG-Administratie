@@ -48,10 +48,10 @@ const EmployerStatistics: React.FC = () => {
       );
       const activeEmps = companyEmployees.filter(e => e.status === 'active');
 
-      // Time entries (uren registraties)
+      // Time entries (uren registraties) - Load all hours for this company's employees
       const timeEntriesQuery = query(
         collection(db, 'timeEntries'),
-        where('userId', '==', adminUserId)
+        where('companyId', '==', selectedCompany.id)
       );
       const timeEntriesSnap = await getDocs(timeEntriesQuery);
       let totalHours = 0;

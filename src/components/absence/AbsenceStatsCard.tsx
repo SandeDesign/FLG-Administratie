@@ -10,13 +10,19 @@ interface AbsenceStatsCardProps {
 
 const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYearStats }) => {
   const formatPercentage = (value: number) => {
+    if (isNaN(value) || !isFinite(value)) {
+      return '0.00%';
+    }
     return value.toFixed(2) + '%';
   };
 
   const getTrendIcon = () => {
     if (!previousYearStats) return null;
 
-    const diff = stats.absencePercentage - previousYearStats.absencePercentage;
+    const currentPct = isNaN(stats.absencePercentage) ? 0 : stats.absencePercentage;
+    const prevPct = isNaN(previousYearStats.absencePercentage) ? 0 : previousYearStats.absencePercentage;
+    const diff = currentPct - prevPct;
+
     if (diff > 0) {
       return <TrendingUp className="h-4 w-4 text-red-600" />;
     } else if (diff < 0) {
@@ -28,21 +34,26 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
   const getTrendColor = () => {
     if (!previousYearStats) return '';
 
-    const diff = stats.absencePercentage - previousYearStats.absencePercentage;
+    const currentPct = isNaN(stats.absencePercentage) ? 0 : stats.absencePercentage;
+    const prevPct = isNaN(previousYearStats.absencePercentage) ? 0 : previousYearStats.absencePercentage;
+    const diff = currentPct - prevPct;
+
     if (diff > 0) return 'text-red-600';
     if (diff < 0) return 'text-green-600';
     return 'text-gray-600';
   };
 
   const getStatusColor = () => {
-    if (stats.absencePercentage < 3) return 'text-green-600';
-    if (stats.absencePercentage < 5) return 'text-orange-600';
+    const pct = isNaN(stats.absencePercentage) ? 0 : stats.absencePercentage;
+    if (pct < 3) return 'text-green-600';
+    if (pct < 5) return 'text-orange-600';
     return 'text-red-600';
   };
 
   const getStatusText = () => {
-    if (stats.absencePercentage < 3) return 'Laag';
-    if (stats.absencePercentage < 5) return 'Gemiddeld';
+    const pct = isNaN(stats.absencePercentage) ? 0 : stats.absencePercentage;
+    if (pct < 3) return 'Laag';
+    if (pct < 5) return 'Gemiddeld';
     return 'Hoog';
   };
 
@@ -94,7 +105,11 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
             <div className={`flex items-center space-x-1 ${getTrendColor()}`}>
               {getTrendIcon()}
               <span className="text-sm font-medium">
-                {Math.abs(stats.absencePercentage - previousYearStats.absencePercentage).toFixed(2)}%
+                {(() => {
+                  const currentPct = isNaN(stats.absencePercentage) ? 0 : stats.absencePercentage;
+                  const prevPct = isNaN(previousYearStats.absencePercentage) ? 0 : previousYearStats.absencePercentage;
+                  return Math.abs(currentPct - prevPct).toFixed(2);
+                })()}%
               </span>
             </div>
           )}
@@ -120,7 +135,7 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
               Gemiddelde Duur per Keer
             </p>
             <p className="text-xl font-bold text-gray-900 dark:text-white">
-              {stats.averageDuration.toFixed(1)} dagen
+              {isNaN(stats.averageDuration) || !isFinite(stats.averageDuration) ? '0.0' : stats.averageDuration.toFixed(1)} dagen
             </p>
           </div>
         </div>
