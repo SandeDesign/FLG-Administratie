@@ -39,7 +39,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
           { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
           { href: '/statistics/holding', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
           { href: '/outgoing-invoices', icon: Send, label: 'Verkoop', gradient: 'from-primary-500 to-primary-600' },
-          { href: '/settings', icon: Settings, label: 'Menu', gradient: 'from-primary-600 to-primary-700' },
+          { href: '/budgeting', icon: Wallet, label: 'Begroting', gradient: 'from-primary-600 to-primary-700' },
         ];
       }
       // Employee in holding company (shouldn't happen, but fallback)
@@ -82,9 +82,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       ],
       admin: [
         { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
-        { href: '/statistics/employer', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
+        { href: '/outgoing-invoices', icon: Send, label: 'Verkoop', gradient: 'from-primary-600 to-primary-700' },
         { href: '/timesheet-approvals', icon: CheckCircle2, label: 'Uren', gradient: 'from-primary-500 to-primary-600' },
-        { href: '/employees', icon: Users, label: 'Team', gradient: 'from-primary-600 to-primary-700' },
+        { href: '/incoming-invoices', icon: Upload, label: 'Inkoop', gradient: 'from-primary-600 to-primary-700' },
       ],
     };
 
