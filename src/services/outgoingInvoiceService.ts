@@ -1,14 +1,15 @@
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
-  Timestamp 
+import {
+  collection,
+  addDoc,
+  getDocs,
+  getDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -80,18 +81,18 @@ export const outgoingInvoiceService = {
       // ✅ NIEUW: Haal company op voor invoicePrefix
       let invoicePrefix = '';
       try {
-        const companyDoc = await getDocs(query(
-          collection(db, 'companies'),
-          where('userId', '==', userId),
-          where('id', '==', companyId)
-        ));
+        const companyDocRef = doc(db, 'companies', companyId);
+        const companySnap = await getDoc(companyDocRef);
 
-        if (!companyDoc.empty) {
-          const companyData = companyDoc.docs[0].data();
+        if (companySnap.exists()) {
+          const companyData = companySnap.data();
           invoicePrefix = companyData.invoicePrefix || '';
+          console.log('✅ Loaded invoice prefix:', invoicePrefix, 'for company:', companyId);
+        } else {
+          console.warn('⚠️ Company not found:', companyId);
         }
       } catch (err) {
-        console.warn('Could not load company prefix:', err);
+        console.error('❌ Could not load company prefix:', err);
       }
 
       const q = query(
@@ -105,23 +106,30 @@ export const outgoingInvoiceService = {
 
       if (querySnapshot.empty) {
         const num = '001';
-        return invoicePrefix ? `${invoicePrefix}-${num}` : num;
+        const result = invoicePrefix ? `${invoicePrefix}-${num}` : num;
+        console.log('📝 First invoice for company, generated:', result);
+        return result;
       }
 
       const lastInvoice = querySnapshot.docs[0].data();
       const lastNumber = lastInvoice.invoiceNumber;
+      console.log('📋 Last invoice number:', lastNumber);
 
       const match = lastNumber.match(/(\d+)$/);
       if (!match) {
         const num = '001';
-        return invoicePrefix ? `${invoicePrefix}-${num}` : num;
+        const result = invoicePrefix ? `${invoicePrefix}-${num}` : num;
+        console.log('📝 Could not parse last number, generated:', result);
+        return result;
       }
 
       const nextNum = (parseInt(match[1]) + 1).toString().padStart(3, '0');
+      const result = invoicePrefix ? `${invoicePrefix}-${nextNum}` : nextNum;
+      console.log('📝 Generated next invoice number:', result);
 
-      return invoicePrefix ? `${invoicePrefix}-${nextNum}` : nextNum;
+      return result;
     } catch (error) {
-      console.error('Error getting next invoice number:', error);
+      console.error('❌ Error getting next invoice number:', error);
       return '001';
     }
   },
