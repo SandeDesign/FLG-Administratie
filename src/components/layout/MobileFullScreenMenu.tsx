@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   X,
-  ChevronRight,
+  ChevronDown,
   LogOut,
   LayoutDashboard,
   Star,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -75,49 +76,59 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
-      {/* Overlay */}
+      {/* Modern Overlay with blur */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-gradient-to-br from-gray-900/60 via-gray-800/50 to-gray-900/60 backdrop-blur-md transition-opacity"
         onClick={onClose}
       />
 
-      {/* Menu Content */}
-      <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-white shadow-2xl transform transition-transform duration-300 ease-out overflow-hidden flex flex-col">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50 flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            {selectedCompany?.logoUrl ? (
-              <div className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center bg-white shadow-md">
-                <img
-                  src={selectedCompany.logoUrl}
-                  alt={selectedCompany.name}
-                  className="w-full h-full object-contain p-1"
-                />
-              </div>
-            ) : (
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-xl">F</span>
-              </div>
-            )}
-            <div>
-              <h2 className="text-sm font-bold text-gray-900">FLG-Administratie</h2>
-              <p className="text-xs text-gray-500 truncate">{selectedCompany?.name || 'Menu'}</p>
-            </div>
+      {/* Modern Menu Content */}
+      <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-gradient-to-br from-white via-gray-50/95 to-white/90 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ease-out overflow-hidden flex flex-col">
+
+        {/* Modern Header with Gradient */}
+        <div className="relative p-6 border-b border-white/20 bg-gradient-to-br from-primary-600 via-primary-500 to-indigo-600 flex-shrink-0 shadow-lg">
+          {/* Background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{
+              backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
+              backgroundSize: '32px 32px'
+            }} />
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors duration-200"
-          >
-            <X className="h-5 w-5" />
-          </button>
+
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              {selectedCompany?.logoUrl ? (
+                <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center bg-white shadow-xl shadow-black/20 ring-2 ring-white/30">
+                  <img
+                    src={selectedCompany.logoUrl}
+                    alt={selectedCompany.name}
+                    className="w-full h-full object-contain p-2"
+                  />
+                </div>
+              ) : (
+                <div className="w-14 h-14 bg-gradient-to-br from-white to-gray-100 rounded-2xl flex items-center justify-center shadow-xl shadow-black/20 ring-2 ring-white/30">
+                  <Sparkles className="w-7 h-7 text-primary-600" />
+                </div>
+              )}
+              <div>
+                <h2 className="text-base font-bold text-white drop-shadow-sm">FLG-Administratie</h2>
+                <p className="text-xs text-primary-100 truncate max-w-[160px] mt-0.5">{selectedCompany?.name || 'Menu'}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2.5 rounded-xl text-white/90 hover:bg-white/20 hover:text-white transition-all duration-200 backdrop-blur-sm shadow-lg"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Company Selector - Only for admin */}
+        {/* Modern Company Selector */}
         {userRole === 'admin' && companies && companies.length > 0 && (
-          <div className="p-4 border-b border-gray-100 flex-shrink-0">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Bedrijf
+          <div className="p-5 border-b border-gray-200/50 flex-shrink-0 bg-white/60 backdrop-blur-sm">
+            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2.5">
+              Bedrijf Selecteren
             </label>
             <select
               value={selectedCompany?.id || ''}
@@ -125,7 +136,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                 const company = companies.find(c => c.id === e.target.value);
                 if (company) setSelectedCompany(company);
               }}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm hover:shadow-md hover:border-primary-200"
             >
               <option value="">Selecteer bedrijf</option>
               {companies.map((company) => (
@@ -137,61 +148,62 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-          
-          {/* Dashboard */}
+        {/* Modern Navigation */}
+        <nav className="flex-1 overflow-y-auto px-4 py-5 space-y-3">
+
+          {/* Dashboard Card */}
           {dashboardItem && (
-            <div className="pb-3 mb-2 border-b border-gray-100">
+            <div className="mb-4">
               <NavLink
                 to={dashboardItem.href}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium text-sm ${
+                  `flex items-center space-x-4 px-5 py-4 rounded-2xl transition-all duration-300 font-semibold text-sm shadow-lg hover:shadow-xl ${
                     isActive
-                      ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 shadow-sm border border-primary-200'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-primary-500/40'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-gray-200/50'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`p-2 rounded-lg transition-all duration-200 ${
-                      isActive ? 'bg-primary-500 shadow-sm' : 'bg-gray-100'
+                    <div className={`p-3 rounded-xl transition-all duration-300 ${
+                      isActive ? 'bg-white/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200'
                     }`}>
-                      <LayoutDashboard className={`h-4 w-4 ${
-                        isActive ? 'text-white' : 'text-gray-600'
+                      <LayoutDashboard className={`h-5 w-5 ${
+                        isActive ? 'text-white' : 'text-gray-700'
                       }`} />
                     </div>
-                    <span>Dashboard</span>
+                    <span className="flex-1">Dashboard</span>
+                    {isActive && (
+                      <div className="w-2 h-2 rounded-full bg-white shadow-sm"></div>
+                    )}
                   </>
                 )}
               </NavLink>
             </div>
           )}
 
-          {/* Favorites Section - Only for admin */}
+          {/* Favorites Card */}
           {favoriteItems.length > 0 && (
-            <div className="pb-3 mb-2 space-y-1">
-              {/* Favorites Header */}
+            <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl p-4 mb-4 shadow-lg border border-amber-100">
               <button
                 onClick={() => toggleSection('Favorieten')}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200 group"
+                className="w-full flex items-center justify-between mb-3 group"
               >
-                <div className="flex items-center space-x-2">
-                  <div className="p-1.5 rounded-md bg-amber-500">
-                    <Star className="h-3.5 w-3.5 text-white" />
+                <div className="flex items-center space-x-3">
+                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg">
+                    <Star className="h-4 w-4 text-white fill-white" />
                   </div>
-                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Favorieten</span>
+                  <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">Favorieten</span>
                 </div>
-                <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
-                  expandedSections.includes('Favorieten') ? 'rotate-90' : ''
+                <ChevronDown className={`h-5 w-5 text-amber-600 transition-transform duration-300 ${
+                  expandedSections.includes('Favorieten') ? 'rotate-180' : ''
                 }`} />
               </button>
 
-              {/* Favorites Items */}
               {expandedSections.includes('Favorieten') && (
-                <div className="space-y-0.5 ml-2 pl-3 border-l border-gray-100">
+                <div className="space-y-1.5 mt-2">
                   {favoriteItems.map((item) => {
                     const ItemIcon = item.icon;
                     return (
@@ -200,23 +212,23 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                         to={item.href}
                         onClick={onClose}
                         className={({ isActive }) =>
-                          `flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
+                          `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                             isActive
-                              ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 shadow-sm border border-primary-200'
-                              : 'text-gray-700 hover:bg-gray-50'
+                              ? 'bg-white text-amber-700 shadow-md'
+                              : 'text-gray-700 hover:bg-white/60'
                           }`
                         }
                       >
                         {({ isActive }) => (
                           <>
-                            <div className={`p-1.5 rounded-lg transition-all duration-200 ${
-                              isActive ? 'bg-primary-500 shadow-sm' : 'bg-gray-100'
+                            <div className={`p-2 rounded-lg transition-all duration-200 ${
+                              isActive ? 'bg-amber-100' : 'bg-white/70'
                             }`}>
-                              <ItemIcon className={`h-3.5 w-3.5 ${
-                                isActive ? 'text-white' : 'text-gray-600'
+                              <ItemIcon className={`h-4 w-4 ${
+                                isActive ? 'text-amber-600' : 'text-gray-600'
                               }`} />
                             </div>
-                            <span className="font-medium">{item.name}</span>
+                            <span className="flex-1">{item.name}</span>
                           </>
                         )}
                       </NavLink>
@@ -227,30 +239,29 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
             </div>
           )}
 
-          {/* Sections */}
+          {/* Modern Section Cards */}
           {menuSections.map((section) => {
             const SectionIcon = section.icon;
+            const isExpanded = expandedSections.includes(section.title);
             return (
-              <div key={section.title} className="space-y-1">
-                {/* Section Header */}
+              <div key={section.title} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <button
                   onClick={() => toggleSection(section.title)}
-                  className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200 group"
+                  className="w-full flex items-center justify-between p-4 group hover:bg-gray-50 transition-colors duration-200"
                 >
-                  <div className="flex items-center space-x-2">
-                    <div className="p-1.5 rounded-md bg-primary-500">
-                      <SectionIcon className="h-3.5 w-3.5 text-white" />
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 shadow-lg group-hover:shadow-xl transition-shadow">
+                      <SectionIcon className="h-4 w-4 text-white" />
                     </div>
-                    <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">{section.title}</span>
+                    <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">{section.title}</span>
                   </div>
-                  <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
-                    expandedSections.includes(section.title) ? 'rotate-90' : ''
+                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${
+                    isExpanded ? 'rotate-180 text-primary-600' : ''
                   }`} />
                 </button>
 
-                {/* Section Items */}
-                {expandedSections.includes(section.title) && (
-                  <div className="space-y-0.5 ml-2 pl-3 border-l border-gray-100">
+                {isExpanded && (
+                  <div className="px-3 pb-3 space-y-1 bg-gradient-to-br from-gray-50 to-white">
                     {section.items.map((item) => {
                       const ItemIcon = item.icon;
                       return (
@@ -259,23 +270,26 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                           to={item.href}
                           onClick={onClose}
                           className={({ isActive }) =>
-                            `flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-sm ${
+                            `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                               isActive
-                                ? 'bg-gradient-to-r from-primary-50 to-indigo-50 text-primary-700 shadow-sm border border-primary-200'
-                                : 'text-gray-700 hover:bg-gray-50'
+                                ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+                                : 'text-gray-700 hover:bg-white hover:shadow-md'
                             }`
                           }
                         >
                           {({ isActive }) => (
                             <>
-                              <div className={`p-1.5 rounded-lg transition-all duration-200 ${
-                                isActive ? 'bg-primary-500 shadow-sm' : 'bg-gray-100'
+                              <div className={`p-2 rounded-lg transition-all duration-200 ${
+                                isActive ? 'bg-white/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200'
                               }`}>
-                                <ItemIcon className={`h-3.5 w-3.5 ${
+                                <ItemIcon className={`h-4 w-4 ${
                                   isActive ? 'text-white' : 'text-gray-600'
                                 }`} />
                               </div>
-                              <span className="font-medium">{item.name}</span>
+                              <span className="flex-1">{item.name}</span>
+                              {isActive && (
+                                <div className="w-2 h-2 rounded-full bg-white shadow-sm"></div>
+                              )}
                             </>
                           )}
                         </NavLink>
@@ -288,16 +302,16 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="border-t border-gray-100 p-4 bg-gradient-to-r from-slate-50 to-gray-50 flex-shrink-0">
+        {/* Modern Footer */}
+        <div className="border-t border-gray-200/50 p-5 bg-gradient-to-br from-gray-50 via-white to-gray-50 flex-shrink-0 shadow-inner">
           <button
             onClick={() => {
               signOut();
               onClose();
             }}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 text-sm font-medium text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200"
+            className="w-full flex items-center justify-center space-x-3 px-5 py-3.5 text-sm font-bold text-red-700 bg-white hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl border border-red-100 hover:border-red-200"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-5 w-5" />
             <span>Uitloggen</span>
           </button>
         </div>

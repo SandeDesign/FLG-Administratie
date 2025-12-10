@@ -31,10 +31,15 @@ const CompaniesVisibilitySettings: React.FC = () => {
       const allCompaniesData = await getCompanies(adminUserId);
       setAllCompanies(allCompaniesData);
 
-      // Load user's visible company IDs
+      // ✅ Load THIS USER's visible company IDs (not admin's!)
+      // Each user (admin or co-admin) has their own visibility preferences
       const settings = await getUserSettings(user.uid);
       const visible = settings?.visibleCompanyIds || allCompaniesData.map(c => c.id);
       setVisibleCompanyIds(visible);
+
+      console.log('👤 Loading visibility for user:', user.uid, user.email);
+      console.log('📋 User settings:', settings);
+      console.log('👁️ Visible company IDs:', visible);
     } catch (error) {
       console.error('Error loading data:', error);
       setVisibleCompanyIds([]);
@@ -57,6 +62,10 @@ const CompaniesVisibilitySettings: React.FC = () => {
         ? visibleCompanyIds.filter(id => id !== companyId)
         : [...visibleCompanyIds, companyId];
 
+      // ✅ Save to THIS USER's settings (user.uid), not admin's
+      console.log('💾 Saving visibility for user:', user.uid, user.email);
+      console.log('👁️ New visible IDs:', newVisibleIds);
+
       await saveUserSettings(user.uid, {
         visibleCompanyIds: newVisibleIds
       });
@@ -64,9 +73,9 @@ const CompaniesVisibilitySettings: React.FC = () => {
       setVisibleCompanyIds(newVisibleIds);
 
       if (isVisible) {
-        success('Verborgen', '✓ Bedrijf is nu verborgen in dropdown');
+        success('Verborgen', `✓ Bedrijf is nu verborgen voor ${user.email}`);
       } else {
-        success('Zichtbaar', '✓ Bedrijf is nu zichtbaar in dropdown');
+        success('Zichtbaar', `✓ Bedrijf is nu zichtbaar voor ${user.email}`);
       }
 
       // Reload AppContext to update dropdown immediately

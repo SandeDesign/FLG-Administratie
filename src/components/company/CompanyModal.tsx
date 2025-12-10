@@ -14,6 +14,7 @@ interface CompanyFormData {
   kvk: string;
   taxNumber: string;
   bankAccount?: string; // ✅ NIEUW: Bankrekening voor facturen
+  invoiceName?: string; // ✅ NIEUW: Afwijkende factuurnaam
   street: string;
   city: string;
   zipCode: string;
@@ -93,6 +94,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         kvk: company.kvk,
         taxNumber: company.taxNumber,
         bankAccount: company.bankAccount, // ✅ NIEUW: Load bankAccount
+        invoiceName: (company as any).invoiceName, // ✅ NIEUW: Load invoiceName
         street: company.address.street,
         city: company.address.city,
         zipCode: company.address.zipCode,
@@ -173,6 +175,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         kvk: data.kvk,
         taxNumber: data.taxNumber,
         bankAccount: data.bankAccount, // ✅ NIEUW: Save bankAccount
+        invoiceName: data.invoiceName || data.name, // ✅ NIEUW: Save invoiceName (default to company name)
         companyType: data.companyType,
         themeColor: data.themeColor || 'blue', // ✅ NIEUW: Save theme color
         logoUrl: logoPreview || '', // ✅ NIEUW: Save logo as base64
@@ -343,6 +346,16 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
             {...register('bankAccount')}
             error={errors.bankAccount?.message}
           />
+
+          <Input
+            label="Factuurnaam (optioneel)"
+            placeholder="Laat leeg om de bedrijfsnaam te gebruiken"
+            {...register('invoiceName')}
+            error={errors.invoiceName?.message}
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
+            Vul een afwijkende naam in die op facturen gebruikt moet worden. Laat leeg om de standaard bedrijfsnaam te gebruiken.
+          </p>
         </div>
 
         <div className="space-y-4">
