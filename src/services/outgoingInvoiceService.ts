@@ -77,6 +77,23 @@ const COLLECTION_NAME = 'outgoingInvoices';
 export const outgoingInvoiceService = {
   async getNextInvoiceNumber(userId: string, companyId: string): Promise<string> {
     try {
+      // ✅ NIEUW: Haal company op voor invoicePrefix
+      let invoicePrefix = '';
+      try {
+        const companyDoc = await getDocs(query(
+          collection(db, 'companies'),
+          where('userId', '==', userId),
+          where('id', '==', companyId)
+        ));
+
+        if (!companyDoc.empty) {
+          const companyData = companyDoc.docs[0].data();
+          invoicePrefix = companyData.invoicePrefix || '';
+        }
+      } catch (err) {
+        console.warn('Could not load company prefix:', err);
+      }
+
       const q = query(
         collection(db, COLLECTION_NAME),
         where('userId', '==', userId),
@@ -85,29 +102,27 @@ export const outgoingInvoiceService = {
       );
 
       const querySnapshot = await getDocs(q);
-      
+
       if (querySnapshot.empty) {
-        const year = new Date().getFullYear();
-        return `${year}-001`;
+        const num = '001';
+        return invoicePrefix ? `${invoicePrefix}-${num}` : num;
       }
 
       const lastInvoice = querySnapshot.docs[0].data();
       const lastNumber = lastInvoice.invoiceNumber;
-      
+
       const match = lastNumber.match(/(\d+)$/);
       if (!match) {
-        const year = new Date().getFullYear();
-        return `${year}-001`;
+        const num = '001';
+        return invoicePrefix ? `${invoicePrefix}-${num}` : num;
       }
-      
+
       const nextNum = (parseInt(match[1]) + 1).toString().padStart(3, '0');
-      const year = new Date().getFullYear();
-      
-      return `${year}-${nextNum}`;
+
+      return invoicePrefix ? `${invoicePrefix}-${nextNum}` : nextNum;
     } catch (error) {
       console.error('Error getting next invoice number:', error);
-      const year = new Date().getFullYear();
-      return `${year}-001`;
+      return '001';
     }
   },
 
