@@ -339,7 +339,12 @@ const Budgeting: React.FC = () => {
 
   // Calculate actual data from invoices (current year)
   const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth();
+  const currentMonth = new Date().getMonth(); // 0-11
+  const currentDate = new Date();
+  const daysInYear = 365;
+  const dayOfYear = Math.floor((currentDate.getTime() - new Date(currentYear, 0, 1).getTime()) / (1000 * 60 * 60 * 24));
+  const yearProgress = dayOfYear / daysInYear; // 0 tot 1
+  const remainingProgress = 1 - yearProgress;
 
   const actualYTDIncome = outgoingInvoices
     .filter(inv => {
@@ -355,9 +360,23 @@ const Budgeting: React.FC = () => {
     })
     .reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
 
-  // Projected vs Actual comparison
-  const projectedYTDIncome = monthlyIncome * (currentMonth + 1);
-  const projectedYTDCosts = monthlyCosts * (currentMonth + 1);
+  // Projected for FULL YEAR based on budget items
+  const projectedFullYearIncome = weightedMonthlyIncome * 12;
+  const projectedFullYearCosts = monthlyCosts * 12;
+
+  // What we SHOULD have had YTD based on budget
+  const projectedYTDIncome = projectedFullYearIncome * yearProgress;
+  const projectedYTDCosts = projectedFullYearCosts * yearProgress;
+
+  // Projected for remaining period
+  const projectedRemainingIncome = projectedFullYearIncome * remainingProgress;
+  const projectedRemainingCosts = projectedFullYearCosts * remainingProgress;
+
+  // Full year forecast: actual YTD + projected remaining
+  const forecastFullYearIncome = actualYTDIncome + projectedRemainingIncome;
+  const forecastFullYearCosts = actualYTDCosts + projectedRemainingCosts;
+
+  // Variances
   const incomeVariance = actualYTDIncome - projectedYTDIncome;
   const costVariance = actualYTDCosts - projectedYTDCosts;
 
@@ -1607,68 +1626,132 @@ const Budgeting: React.FC = () => {
             </Card>
           </div>
 
-          {/* Vergelijking huidige jaar - eerst tonen */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* REALITY BOX */}
+          {/* Vergelijking huidige jaar - met YTD, Forecast en Budget */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* YTD WERKELIJK */}
             <Card className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-4 h-4 bg-emerald-500 rounded-full"></div>
-                <h3 className="text-lg font-bold text-emerald-900">📊 Realiteit {currentYear}</h3>
+                <h3 className="text-lg font-bold text-emerald-900">📊 YTD {currentYear}</h3>
+                <span className="text-xs bg-emerald-200 text-emerald-800 px-2 py-1 rounded">
+                  {Math.round(yearProgress * 100)}% van jaar
+                </span>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 font-medium">Inkomsten YTD</span>
-                  <span className="font-bold text-emerald-600 text-lg">{formatCurrency(actualYTDIncome)}</span>
+                  <span className="text-gray-600 text-sm font-medium">Inkomsten</span>
+                  <span className="font-bold text-emerald-600">{formatCurrency(actualYTDIncome)}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 font-medium">Kosten YTD</span>
-                  <span className="font-bold text-red-600 text-lg">{formatCurrency(actualYTDCosts)}</span>
+                  <span className="text-gray-600 text-sm font-medium">Kosten</span>
+                  <span className="font-bold text-red-600">{formatCurrency(actualYTDCosts)}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-emerald-100 rounded-lg border-2 border-emerald-300">
-                  <span className="text-emerald-900 font-bold">Resultaat YTD</span>
-                  <span className={`font-bold text-lg ${(actualYTDIncome - actualYTDCosts) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                  <span className="text-emerald-900 font-bold text-sm">Resultaat</span>
+                  <span className={`font-bold ${(actualYTDIncome - actualYTDCosts) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                     {formatCurrency(actualYTDIncome - actualYTDCosts)}
                   </span>
                 </div>
                 <div className="text-xs text-gray-500 text-center mt-2">
-                  Gebaseerd op {outgoingInvoices.filter(inv => {
-                    const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-                    return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
-                  }).length} uitgaande en {incomingInvoices.filter(inv => {
-                    const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
-                    return invDate.getFullYear() === currentYear;
-                  }).length} inkomende facturen
+                  Werkelijk tot vandaag
                 </div>
               </div>
             </Card>
 
-            {/* PROGNOSE BOX */}
-            <Card className="p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-2 border-primary-200">
+            {/* FORECAST VOLLEDIG JAAR */}
+            <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-4 h-4 bg-primary-500 rounded-full"></div>
-                <h3 className="text-lg font-bold text-primary-900">📈 Prognose {currentYear}</h3>
+                <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                <h3 className="text-lg font-bold text-blue-900">🔮 Forecast {currentYear}</h3>
+                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">
+                  Volledig jaar
+                </span>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 font-medium">Inkomsten (gewogen)</span>
-                  <span className="font-bold text-emerald-600 text-lg">{formatCurrency(weightedMonthlyIncome * 12)}</span>
+                  <span className="text-gray-600 text-sm font-medium">Inkomsten</span>
+                  <span className="font-bold text-emerald-600">{formatCurrency(forecastFullYearIncome)}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 font-medium">Kosten (gepland)</span>
-                  <span className="font-bold text-red-600 text-lg">{formatCurrency(yearlyCosts)}</span>
+                  <span className="text-gray-600 text-sm font-medium">Kosten</span>
+                  <span className="font-bold text-red-600">{formatCurrency(forecastFullYearCosts)}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-primary-100 rounded-lg border-2 border-primary-300">
-                  <span className="text-primary-900 font-bold">Resultaat (verwacht)</span>
-                  <span className={`font-bold text-lg ${yearlyProfit >= 0 ? 'text-primary-700' : 'text-red-700'}`}>
-                    {formatCurrency((weightedMonthlyIncome * 12) - yearlyCosts)}
+                <div className="flex justify-between items-center p-3 bg-blue-100 rounded-lg border-2 border-blue-300">
+                  <span className="text-blue-900 font-bold text-sm">Resultaat</span>
+                  <span className={`font-bold ${(forecastFullYearIncome - forecastFullYearCosts) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {formatCurrency(forecastFullYearIncome - forecastFullYearCosts)}
                   </span>
                 </div>
                 <div className="text-xs text-gray-500 text-center mt-2">
-                  Gebaseerd op {activeIncomeItems.length} inkomst items en {activeCostItems.length} kosten items
+                  Werkelijk + Gepland restant
+                </div>
+              </div>
+            </Card>
+
+            {/* BUDGET VOLLEDIG JAAR */}
+            <Card className="p-6 bg-gradient-to-br from-primary-50 to-purple-50 border-2 border-primary-200">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-4 h-4 bg-primary-500 rounded-full"></div>
+                <h3 className="text-lg font-bold text-primary-900">📈 Budget {currentYear}</h3>
+                <span className="text-xs bg-primary-200 text-primary-800 px-2 py-1 rounded">
+                  Planning
+                </span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                  <span className="text-gray-600 text-sm font-medium">Inkomsten</span>
+                  <span className="font-bold text-emerald-600">{formatCurrency(projectedFullYearIncome)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                  <span className="text-gray-600 text-sm font-medium">Kosten</span>
+                  <span className="font-bold text-red-600">{formatCurrency(projectedFullYearCosts)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-primary-100 rounded-lg border-2 border-primary-300">
+                  <span className="text-primary-900 font-bold text-sm">Resultaat</span>
+                  <span className={`font-bold ${(projectedFullYearIncome - projectedFullYearCosts) >= 0 ? 'text-primary-700' : 'text-red-700'}`}>
+                    {formatCurrency(projectedFullYearIncome - projectedFullYearCosts)}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 text-center mt-2">
+                  Budget items gewogen
                 </div>
               </div>
             </Card>
           </div>
+
+          {/* Variantie analyse */}
+          {yearProgress > 0.1 && (
+            <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-l-orange-500">
+              <h4 className="font-bold text-gray-900 mb-3">📊 Analyse vs Budget</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600 mb-1">Inkomsten YTD</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`font-bold ${incomeVariance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {incomeVariance >= 0 ? '+' : ''}{formatCurrency(incomeVariance)}
+                    </span>
+                    <span className={`text-xs ${incomeVariance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      ({((incomeVariance / projectedYTDIncome) * 100).toFixed(1)}%)
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Kosten YTD</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`font-bold ${costVariance <= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {costVariance >= 0 ? '+' : ''}{formatCurrency(costVariance)}
+                    </span>
+                    <span className={`text-xs ${costVariance <= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      ({((costVariance / projectedYTDCosts) * 100).toFixed(1)}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                Vergelijking van werkelijke cijfers met budget verwachting tot nu toe
+              </p>
+            </Card>
+          )}
 
           {/* REALITY PROJECTIONS - Compacter */}
           <div>
