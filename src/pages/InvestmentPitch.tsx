@@ -275,6 +275,16 @@ const InvestmentPitch: React.FC = () => {
     return <div className="p-8 text-center">Bezig met laden...</div>;
   }
 
+  // If no pitches exist and in frame mode, show message
+  if (isFrameMode && pitches.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-500">Geen pitch decks beschikbaar</p>
+      </div>
+    );
+  }
+
   // LIST VIEW
   if (view === 'list') {
     return (

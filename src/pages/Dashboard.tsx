@@ -147,9 +147,9 @@ const Dashboard: React.FC = () => {
 
       setStats(prev => ({
         ...prev,
-        outgoingInvoices: outgoingThisMonth,
+        outgoingInvoices: outgoingCount, // Totaal aantal facturen, niet alleen deze maand
         outgoingTotal: outgoingTotalThisMonth,
-        incomingInvoices: incomingThisMonth,
+        incomingInvoices: incomingCount, // Totaal aantal facturen, niet alleen deze maand
         incomingTotal: incomingTotalThisMonth,
       }));
     } catch (error) {
