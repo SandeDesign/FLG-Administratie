@@ -184,11 +184,15 @@ const Leave: React.FC = () => {
                       {formatLeaveType(request.type)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(request.startDate).toLocaleDateString('nl-NL')} -{' '}
-                      {new Date(request.endDate).toLocaleDateString('nl-NL')}
+                      {request.startDate && request.endDate ? (
+                        <>
+                          {(request.startDate instanceof Date ? request.startDate : new Date(request.startDate)).toLocaleDateString('nl-NL')} -{' '}
+                          {(request.endDate instanceof Date ? request.endDate : new Date(request.endDate)).toLocaleDateString('nl-NL')}
+                        </>
+                      ) : 'Datum niet beschikbaar'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {request.totalDays}
+                      {request.totalDays || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(request.status)}`}>
@@ -196,7 +200,7 @@ const Leave: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(request.createdAt).toLocaleDateString('nl-NL')}
+                      {request.createdAt ? (request.createdAt instanceof Date ? request.createdAt : new Date(request.createdAt)).toLocaleDateString('nl-NL') : '-'}
                     </td>
                   </tr>
                 ))}
