@@ -300,7 +300,7 @@ const Sidebar: React.FC = () => {
       icon: Settings,
       color: 'bg-gray-500',
       defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Bedrijven', 'Audit Log', 'Instellingen'].includes(i.name))
+      items: filteredNavigation.filter(i => ['Bedrijven', 'Instellingen'].includes(i.name))
     },
   ].filter(section => section.items.length > 0);
 
