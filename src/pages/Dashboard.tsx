@@ -822,15 +822,15 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Hero Header */}
-        <div className="bg-gradient-to-br from-indigo-600 via-indigo-500 to-purple-700 rounded-xl p-6 text-white space-y-2">
+        <div className="bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 rounded-xl p-6 text-white space-y-2">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold">
                 {userRole === 'admin' ? 'Management Dashboard' : 'Team Dashboard'}
               </h1>
-              <p className="text-indigo-100 mt-1">{selectedCompany?.name || 'Loonadministratie'}</p>
+              <p className="text-primary-100 mt-1">{selectedCompany?.name || 'Loonadministratie'}</p>
             </div>
-            <TrendingUp className="h-12 w-12 text-indigo-200 opacity-50" />
+            <TrendingUp className="h-12 w-12 text-primary-200 opacity-50" />
           </div>
         </div>
 
