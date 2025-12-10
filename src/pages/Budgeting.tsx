@@ -353,7 +353,7 @@ const Budgeting: React.FC = () => {
       const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
       return invDate.getFullYear() === currentYear;
     })
-    .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    .reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
 
   // Projected vs Actual comparison
   const projectedYTDIncome = monthlyIncome * (currentMonth + 1);
@@ -515,8 +515,8 @@ const Budgeting: React.FC = () => {
         return invDate.getFullYear() === projYear;
       });
 
-      const yearIncome = yearInvoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-      const yearCosts = yearCostsInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+      const yearIncome = yearInvoices.reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
+      const yearCosts = yearCostsInvoices.reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
 
       projections.push({
         year: projYear,
@@ -1245,7 +1245,7 @@ const Budgeting: React.FC = () => {
                     ).map(([category, invoices]) => {
                       const config = COST_CATEGORY_CONFIG[category as BudgetCostCategory] || COST_CATEGORY_CONFIG.other;
                       const Icon = config.icon;
-                      const categoryTotal = invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+                      const categoryTotal = invoices.reduce((sum, inv) => sum + (inv.totalAmount || inv.amount || 0), 0);
                       const isExpanded = expandedCategories.has(`actual-cost-${category}`);
 
                       return (
@@ -1288,7 +1288,7 @@ const Budgeting: React.FC = () => {
                                         </p>
                                       </div>
                                       <p className="font-bold text-red-600 text-lg">
-                                        {formatCurrency(inv.amount || 0)}
+                                        {formatCurrency(inv.totalAmount || inv.amount || 0)}
                                       </p>
                                     </div>
                                   </Card>
