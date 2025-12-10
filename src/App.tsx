@@ -16,6 +16,23 @@ import InvestmentPitch from './pages/InvestmentPitch';
 import ProjectProduction from './pages/ProjectProduction';
 import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibilitySettings';
 import ProjectStatistics from './pages/ProjectStatistics';
+
+// Wrapper for InvestmentPitch that conditionally applies Layout
+const InvestmentPitchWrapper: React.FC = () => {
+  const isFrameMode = new URLSearchParams(window.location.search).get('mode') === 'frame';
+
+  if (isFrameMode) {
+    // Frame mode: No Layout
+    return <InvestmentPitch />;
+  }
+
+  // Normal mode: With Layout
+  return (
+    <Layout>
+      <InvestmentPitch />
+    </Layout>
+  );
+};
 // ✅ STATISTICS PAGES
 import EmployerStatistics from './pages/EmployerStatistics';
 import HoldingStatistics from './pages/HoldingStatistics';
@@ -77,6 +94,9 @@ function App() {
           element={
             <ProtectedRoute>
               <Routes>
+                {/* ✅ FRAME MODE ROUTES (No Layout) */}
+                <Route path="/investment-pitch" element={<InvestmentPitchWrapper />} />
+
                 {/* ✅ ADMIN ROUTES */}
                 {userRole === 'admin' && (
                   <Route
@@ -112,7 +132,6 @@ function App() {
                           {/* ✅ FACTURATIE - MET RELATIES EN STATISTIEKEN! */}
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
                           <Route path="budgeting" element={<Budgeting />} />
-                          <Route path="/investment-pitch" element={<InvestmentPitch />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
                           <Route path="incoming-invoices" element={<IncomingInvoices />} />
                           {/* ✅ NEW ROUTE - Incoming Invoices Stats Dashboard */}

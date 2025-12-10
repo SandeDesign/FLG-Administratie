@@ -120,18 +120,6 @@ const Login: React.FC = () => {
               Inloggen
             </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Nog geen account?{' '}
-              <Link
-                to="/register"
-                className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400"
-              >
-                Registreer hier
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>

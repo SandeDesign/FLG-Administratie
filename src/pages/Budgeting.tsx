@@ -1558,17 +1558,20 @@ const Budgeting: React.FC = () => {
       {/* Projections Tab */}
       {activeTab === 'projections' && (
         <div className="space-y-6">
-          {/* Projection Controls */}
-          <Card className="p-4">
+          {/* Header met uitleg en controls */}
+          <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium text-gray-900">Projectie Instellingen</h3>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Meerjarenprojecties</h2>
+                <p className="text-sm text-gray-500 mt-1">Vergelijk werkelijke cijfers met budget prognoses</p>
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">Jaren:</span>
                 {[1, 3, 5].map(years => (
                   <button
                     key={years}
                     onClick={() => setProjectionYears(years)}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                       projectionYears === years
                         ? 'bg-primary-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1579,25 +1582,100 @@ const Budgeting: React.FC = () => {
                 ))}
               </div>
             </div>
-          </Card>
 
-          {/* Split view note */}
-          <Card className="p-4 bg-blue-50 border-blue-200">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-blue-800">Realiteit vs Prognose</h4>
-                <p className="text-sm text-blue-700 mt-1">
-                  <strong>REALITEIT:</strong> Werkelijke facturen (Inkomsten = uitgaande, Kosten = inkomende)<br/>
-                  <strong>PROGNOSE:</strong> Budget items met zekerheid en groeipercentages
-                </p>
+            <Card className="p-4 bg-gradient-to-r from-emerald-50 to-primary-50 border-l-4 border-l-emerald-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                    <h4 className="font-bold text-emerald-900">📊 REALITEIT (Werkelijk)</h4>
+                  </div>
+                  <p className="text-sm text-emerald-800">
+                    Gebaseerd op daadwerkelijk verstuurde en ontvangen facturen
+                  </p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
+                    <h4 className="font-bold text-primary-900">📈 PROGNOSE (Gepland)</h4>
+                  </div>
+                  <p className="text-sm text-primary-800">
+                    Gebaseerd op geplande budget items met zekerheid & groei
+                  </p>
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
-          {/* REALITY PROJECTIONS */}
+          {/* Vergelijking huidige jaar - eerst tonen */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* REALITY BOX */}
+            <Card className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-4 h-4 bg-emerald-500 rounded-full"></div>
+                <h3 className="text-lg font-bold text-emerald-900">📊 Realiteit {currentYear}</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                  <span className="text-gray-600 font-medium">Inkomsten YTD</span>
+                  <span className="font-bold text-emerald-600 text-lg">{formatCurrency(actualYTDIncome)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                  <span className="text-gray-600 font-medium">Kosten YTD</span>
+                  <span className="font-bold text-red-600 text-lg">{formatCurrency(actualYTDCosts)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-emerald-100 rounded-lg border-2 border-emerald-300">
+                  <span className="text-emerald-900 font-bold">Resultaat YTD</span>
+                  <span className={`font-bold text-lg ${(actualYTDIncome - actualYTDCosts) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {formatCurrency(actualYTDIncome - actualYTDCosts)}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 text-center mt-2">
+                  Gebaseerd op {outgoingInvoices.filter(inv => {
+                    const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                    return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
+                  }).length} uitgaande en {incomingInvoices.filter(inv => {
+                    const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+                    return invDate.getFullYear() === currentYear;
+                  }).length} inkomende facturen
+                </div>
+              </div>
+            </Card>
+
+            {/* PROGNOSE BOX */}
+            <Card className="p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-2 border-primary-200">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-4 h-4 bg-primary-500 rounded-full"></div>
+                <h3 className="text-lg font-bold text-primary-900">📈 Prognose {currentYear}</h3>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                  <span className="text-gray-600 font-medium">Inkomsten (gewogen)</span>
+                  <span className="font-bold text-emerald-600 text-lg">{formatCurrency(weightedMonthlyIncome * 12)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                  <span className="text-gray-600 font-medium">Kosten (gepland)</span>
+                  <span className="font-bold text-red-600 text-lg">{formatCurrency(yearlyCosts)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-primary-100 rounded-lg border-2 border-primary-300">
+                  <span className="text-primary-900 font-bold">Resultaat (verwacht)</span>
+                  <span className={`font-bold text-lg ${yearlyProfit >= 0 ? 'text-primary-700' : 'text-red-700'}`}>
+                    {formatCurrency((weightedMonthlyIncome * 12) - yearlyCosts)}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 text-center mt-2">
+                  Gebaseerd op {activeIncomeItems.length} inkomst items en {activeCostItems.length} kosten items
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* REALITY PROJECTIONS - Compacter */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">📊 Realiteit - Meerjarenprojectie</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+              <h3 className="text-lg font-semibold text-emerald-900">📊 Realiteit - Meerjarenprojectie</h3>
+            </div>
             <Card className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -1646,9 +1724,12 @@ const Budgeting: React.FC = () => {
             <p className="text-xs text-gray-500 mt-2">Gebaseerd op werkelijke uitgaande facturen (inkomsten) en inkomende facturen (kosten)</p>
           </div>
 
-          {/* BUDGET PROJECTIONS */}
+          {/* BUDGET PROJECTIONS - Compacter */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Prognose - Meerjarenprojectie</h3>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
+              <h3 className="text-lg font-semibold text-primary-900">📈 Prognose - Meerjarenprojectie</h3>
+            </div>
             <Card className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -1696,52 +1777,6 @@ const Budgeting: React.FC = () => {
             </Card>
             <p className="text-xs text-gray-500 mt-2">Gebaseerd op budget items met gewogen zekerheid en groeipercentages</p>
           </div>
-
-          {/* Comparison Table */}
-          <Card className="p-6 bg-gray-50">
-            <h3 className="font-semibold text-gray-900 mb-4">Vergelijking Huidige Jaar</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Reality */}
-                <div className="p-4 border-2 border-emerald-200 rounded-lg bg-emerald-50">
-                  <h4 className="font-semibold text-emerald-900 mb-3">📊 Realiteit</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Inkomsten:</span>
-                      <span className="font-bold text-emerald-600">{formatCurrency(generateRealityProjections()[0]?.income || 0)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Kosten:</span>
-                      <span className="font-bold text-red-600">{formatCurrency(generateRealityProjections()[0]?.costs || 0)}</span>
-                    </div>
-                    <div className="flex justify-between pt-2 border-t border-emerald-200">
-                      <span className="text-gray-600 font-medium">Resultaat:</span>
-                      <span className="font-bold text-emerald-600">{formatCurrency(generateRealityProjections()[0]?.profit || 0)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Budget */}
-                <div className="p-4 border-2 border-primary-200 rounded-lg bg-primary-50">
-                  <h4 className="font-semibold text-primary-900 mb-3">📈 Prognose</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Inkomsten:</span>
-                      <span className="font-bold text-emerald-600">{formatCurrency(generateBudgetProjections()[0]?.income || 0)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Kosten:</span>
-                      <span className="font-bold text-red-600">{formatCurrency(generateBudgetProjections()[0]?.costs || 0)}</span>
-                    </div>
-                    <div className="flex justify-between pt-2 border-t border-primary-200">
-                      <span className="text-gray-600 font-medium">Resultaat:</span>
-                      <span className="font-bold text-primary-600">{formatCurrency(generateBudgetProjections()[0]?.profit || 0)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
         </div>
       )}
 
