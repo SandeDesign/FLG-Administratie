@@ -1591,3 +1591,6 @@ export const getBudgetItemsByCategory = (budgetItems: BudgetItem[]): Record<stri
     return acc;
   }, {} as Record<string, BudgetItem[]>);
 };
+
+// Re-export payroll functions from payrollService
+export { getPayrollCalculations } from './payrollService';
