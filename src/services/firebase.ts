@@ -1592,5 +1592,34 @@ export const getBudgetItemsByCategory = (budgetItems: BudgetItem[]): Record<stri
   }, {} as Record<string, BudgetItem[]>);
 };
 
-// Re-export payroll functions from payrollService
-export { getPayrollCalculations } from './payrollService';
+// Get payroll calculations
+export const getPayrollCalculations = async (userId: string): Promise<any[]> => {
+  try {
+    const q = query(
+      collection(db, 'payrollCalculations'),
+      where('userId', '==', userId),
+      orderBy('periodStartDate', 'desc')
+    );
+
+    const querySnapshot = await getDocs(q);
+    const calculations = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      // Convert Firestore Timestamps to Date objects
+      const converted = { ...data, id: doc.id };
+
+      const dateFields = ['periodStartDate', 'periodEndDate', 'paymentDate', 'createdAt', 'updatedAt'];
+      dateFields.forEach(field => {
+        if (converted[field] && typeof converted[field].toDate === 'function') {
+          converted[field] = converted[field].toDate();
+        }
+      });
+
+      return converted;
+    });
+
+    return calculations;
+  } catch (error) {
+    console.error('Error loading payroll calculations:', error);
+    return [];
+  }
+};
