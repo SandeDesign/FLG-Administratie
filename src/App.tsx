@@ -62,6 +62,7 @@ import IncomingInvoicesStats from './pages/IncomingInvoicesStats';
 import Budgeting from './pages/Budgeting';
 import TimesheetExport from './pages/TimesheetExport';
 import DriveFiles from './pages/DriveFiles';
+import Tasks from './pages/Tasks';
 import { AppProvider } from './contexts/AppContext';
 import { ToastContainer } from './components/ui/Toast';
 import EmployeeDashboard from './pages/EmployeeDashboard';
@@ -142,6 +143,7 @@ function App() {
                           <Route path="drive-files" element={<DriveFiles />} />
                           
                           {/* ✅ SYSTEEM */}
+                          <Route path="tasks" element={<Tasks />} />
                           <Route path="payslips" element={<Payslips />} />
                           <Route path="audit-log" element={<AuditLogPage />} />
                           <Route path="settings" element={<Settings />} />
@@ -190,6 +192,7 @@ function App() {
                           <Route path="timesheet-export" element={<TimesheetExport />} />
 
                           {/* Manager eigen loonstroken en instellingen */}
+                          <Route path="tasks" element={<Tasks />} />
                           <Route path="payslips" element={<Payslips />} />
                           <Route path="settings" element={<Settings />} />
 

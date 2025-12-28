@@ -1623,3 +1623,392 @@ export const getPayrollCalculations = async (userId: string): Promise<any[]> => 
     return [];
   }
 };
+
+// ========================================
+// 📋 BUSINESS TASKS - Taken Management
+// ========================================
+
+/**
+ * Haal alle taken op voor een gebruiker
+ * @param userId - User ID
+ * @param companyId - Optioneel: filter op bedrijf
+ * @returns Array van BusinessTask objecten
+ */
+export const getTasks = async (userId: string, companyId?: string): Promise<any[]> => {
+  try {
+    let q = query(
+      collection(db, 'businessTasks'),
+      where('userId', '==', userId),
+      orderBy('dueDate', 'asc')
+    );
+
+    if (companyId) {
+      q = query(
+        collection(db, 'businessTasks'),
+        where('userId', '==', userId),
+        where('companyId', '==', companyId),
+        orderBy('dueDate', 'asc')
+      );
+    }
+
+    const querySnapshot = await getDocs(q);
+    const tasks = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return convertTimestamps({ ...data, id: doc.id });
+    });
+
+    return tasks;
+  } catch (error) {
+    console.error('Error getting tasks:', error);
+    throw error;
+  }
+};
+
+/**
+ * Haal een enkele taak op
+ */
+export const getTask = async (taskId: string, userId: string): Promise<any | null> => {
+  try {
+    const docRef = doc(db, 'businessTasks', taskId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return null;
+    }
+
+    const data = docSnap.data();
+
+    // Verificatie dat de gebruiker toegang heeft
+    if (data.userId !== userId && !data.assignedTo?.includes(userId)) {
+      throw new Error('Geen toegang tot deze taak');
+    }
+
+    return convertTimestamps({ ...data, id: docSnap.id });
+  } catch (error) {
+    console.error('Error getting task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Maak een nieuwe taak aan
+ */
+export const createTask = async (userId: string, taskData: any): Promise<string> => {
+  try {
+    const now = new Date();
+
+    const newTask = {
+      ...taskData,
+      userId,
+      createdBy: userId,
+      status: taskData.status || 'pending',
+      progress: taskData.progress || 0,
+      isRecurring: taskData.isRecurring || false,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    // Bereken nextOccurrence voor terugkerende taken
+    if (newTask.isRecurring && newTask.frequency) {
+      newTask.nextOccurrence = calculateNextOccurrence(
+        newTask.dueDate,
+        newTask.frequency,
+        newTask.recurrenceDay
+      );
+    }
+
+    const taskToSave = convertToTimestamps(newTask);
+    const docRef = await addDoc(collection(db, 'businessTasks'), taskToSave);
+
+    // Audit log
+    await addAuditLog({
+      userId,
+      companyId: taskData.companyId,
+      action: 'create_task',
+      description: `Taak aangemaakt: ${taskData.title}`,
+      entityType: 'task' as any,
+      entityId: docRef.id,
+    });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update een bestaande taak
+ */
+export const updateTask = async (taskId: string, userId: string, updates: any): Promise<void> => {
+  try {
+    const taskRef = doc(db, 'businessTasks', taskId);
+    const taskSnap = await getDoc(taskRef);
+
+    if (!taskSnap.exists()) {
+      throw new Error('Taak niet gevonden');
+    }
+
+    const taskData = taskSnap.data();
+
+    // Verificatie dat de gebruiker toegang heeft
+    if (taskData.userId !== userId && !taskData.assignedTo?.includes(userId)) {
+      throw new Error('Geen toegang tot deze taak');
+    }
+
+    const updatedData = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    // Als taak voltooid wordt, zet completedDate
+    if (updates.status === 'completed' && !taskData.completedDate) {
+      updatedData.completedDate = new Date();
+    }
+
+    // Herbereken nextOccurrence bij wijziging van terugkerende instellingen
+    if (updates.isRecurring !== undefined || updates.frequency !== undefined || updates.dueDate !== undefined) {
+      const isRecurring = updates.isRecurring !== undefined ? updates.isRecurring : taskData.isRecurring;
+      if (isRecurring) {
+        updatedData.nextOccurrence = calculateNextOccurrence(
+          updates.dueDate || taskData.dueDate,
+          updates.frequency || taskData.frequency,
+          updates.recurrenceDay || taskData.recurrenceDay
+        );
+      }
+    }
+
+    const dataToSave = convertToTimestamps(updatedData);
+    await updateDoc(taskRef, dataToSave);
+
+    // Audit log
+    await addAuditLog({
+      userId,
+      companyId: taskData.companyId,
+      action: 'update_task',
+      description: `Taak bijgewerkt: ${taskData.title}`,
+      entityType: 'task' as any,
+      entityId: taskId,
+    });
+  } catch (error) {
+    console.error('Error updating task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Verwijder een taak
+ */
+export const deleteTask = async (taskId: string, userId: string): Promise<void> => {
+  try {
+    const taskRef = doc(db, 'businessTasks', taskId);
+    const taskSnap = await getDoc(taskRef);
+
+    if (!taskSnap.exists()) {
+      throw new Error('Taak niet gevonden');
+    }
+
+    const taskData = taskSnap.data();
+
+    // Verificatie dat de gebruiker toegang heeft (alleen eigenaar kan verwijderen)
+    if (taskData.userId !== userId && taskData.createdBy !== userId) {
+      throw new Error('Geen toegang om deze taak te verwijderen');
+    }
+
+    await deleteDoc(taskRef);
+
+    // Audit log
+    await addAuditLog({
+      userId,
+      companyId: taskData.companyId,
+      action: 'delete_task',
+      description: `Taak verwijderd: ${taskData.title}`,
+      entityType: 'task' as any,
+      entityId: taskId,
+    });
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Haal taken op gebaseerd op status
+ */
+export const getTasksByStatus = async (
+  userId: string,
+  status: string,
+  companyId?: string
+): Promise<any[]> => {
+  try {
+    let q = query(
+      collection(db, 'businessTasks'),
+      where('userId', '==', userId),
+      where('status', '==', status),
+      orderBy('dueDate', 'asc')
+    );
+
+    if (companyId) {
+      q = query(
+        collection(db, 'businessTasks'),
+        where('userId', '==', userId),
+        where('companyId', '==', companyId),
+        where('status', '==', status),
+        orderBy('dueDate', 'asc')
+      );
+    }
+
+    const querySnapshot = await getDocs(q);
+    const tasks = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return convertTimestamps({ ...data, id: doc.id });
+    });
+
+    return tasks;
+  } catch (error) {
+    console.error('Error getting tasks by status:', error);
+    throw error;
+  }
+};
+
+/**
+ * Haal late taken op (overdue)
+ */
+export const getOverdueTasks = async (userId: string, companyId?: string): Promise<any[]> => {
+  try {
+    const now = new Date();
+    let q = query(
+      collection(db, 'businessTasks'),
+      where('userId', '==', userId),
+      where('status', 'in', ['pending', 'in_progress']),
+      orderBy('dueDate', 'asc')
+    );
+
+    if (companyId) {
+      q = query(
+        collection(db, 'businessTasks'),
+        where('userId', '==', userId),
+        where('companyId', '==', companyId),
+        where('status', 'in', ['pending', 'in_progress']),
+        orderBy('dueDate', 'asc')
+      );
+    }
+
+    const querySnapshot = await getDocs(q);
+    const tasks = querySnapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return convertTimestamps({ ...data, id: doc.id });
+      })
+      .filter(task => task.dueDate < now);
+
+    return tasks;
+  } catch (error) {
+    console.error('Error getting overdue tasks:', error);
+    throw error;
+  }
+};
+
+/**
+ * Genereer nieuwe instanties voor terugkerende taken
+ */
+export const generateRecurringTasks = async (userId: string): Promise<number> => {
+  try {
+    const now = new Date();
+
+    // Haal alle terugkerende taken op
+    const q = query(
+      collection(db, 'businessTasks'),
+      where('userId', '==', userId),
+      where('isRecurring', '==', true),
+      where('status', '==', 'completed')
+    );
+
+    const querySnapshot = await getDocs(q);
+    let generatedCount = 0;
+
+    for (const docSnap of querySnapshot.docs) {
+      const task = convertTimestamps({ ...docSnap.data(), id: docSnap.id });
+
+      // Check of we een nieuwe instantie moeten genereren
+      if (task.nextOccurrence && task.nextOccurrence <= now) {
+        // Maak nieuwe taak aan
+        const newTaskData = {
+          ...task,
+          id: undefined, // Verwijder oude ID
+          status: 'pending',
+          progress: 0,
+          completedDate: undefined,
+          dueDate: task.nextOccurrence,
+          startDate: undefined,
+          checklist: task.checklist?.map((item: any) => ({
+            ...item,
+            completed: false,
+            completedBy: undefined,
+            completedAt: undefined,
+          })),
+        };
+
+        const newTaskId = await createTask(userId, newTaskData);
+        generatedCount++;
+
+        // Update de originele taak met nieuwe nextOccurrence
+        const newNextOccurrence = calculateNextOccurrence(
+          task.nextOccurrence,
+          task.frequency,
+          task.recurrenceDay
+        );
+
+        await updateDoc(doc(db, 'businessTasks', task.id), {
+          nextOccurrence: Timestamp.fromDate(newNextOccurrence),
+          lastGenerated: Timestamp.fromDate(now),
+          updatedAt: Timestamp.fromDate(now),
+        });
+      }
+    }
+
+    return generatedCount;
+  } catch (error) {
+    console.error('Error generating recurring tasks:', error);
+    throw error;
+  }
+};
+
+/**
+ * Bereken de volgende occurrence voor een terugkerende taak
+ */
+const calculateNextOccurrence = (
+  currentDate: Date,
+  frequency?: string,
+  recurrenceDay?: number
+): Date => {
+  const next = new Date(currentDate);
+
+  switch (frequency) {
+    case 'daily':
+      next.setDate(next.getDate() + 1);
+      break;
+    case 'weekly':
+      next.setDate(next.getDate() + 7);
+      break;
+    case 'monthly':
+      next.setMonth(next.getMonth() + 1);
+      if (recurrenceDay) {
+        next.setDate(recurrenceDay);
+      }
+      break;
+    case 'quarterly':
+      next.setMonth(next.getMonth() + 3);
+      if (recurrenceDay) {
+        next.setDate(recurrenceDay);
+      }
+      break;
+    case 'yearly':
+      next.setFullYear(next.getFullYear() + 1);
+      break;
+    default:
+      next.setMonth(next.getMonth() + 1);
+  }
+
+  return next;
+};
