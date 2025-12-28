@@ -28,21 +28,21 @@ const WeeklyTasksReminder: React.FC = () => {
     }
 
     try {
-      // Check of we deze week al de reminder hebben getoond
+      // Check of we vandaag al de reminder hebben getoond
       const lastShown = localStorage.getItem(`tasksReminder_${user.uid}_${selectedCompany.id}`);
       const today = new Date();
-      const weekStart = getWeekStart(today);
-      const weekKey = weekStart.toISOString().split('T')[0];
+      const todayKey = today.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-      if (lastShown === weekKey) {
+      if (lastShown === todayKey) {
         setLoading(false);
-        return; // Al getoond deze week
+        return; // Al getoond vandaag
       }
 
       // Haal alle taken op
       const allTasks = await getTasks(user.uid, selectedCompany.id);
 
       // Filter taken voor deze week (inclusief late taken)
+      const weekStart = getWeekStart(today);
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
@@ -77,10 +77,10 @@ const WeeklyTasksReminder: React.FC = () => {
   const handleClose = () => {
     if (!user || !selectedCompany) return;
 
-    // Sla op dat we de reminder deze week hebben getoond
-    const weekStart = getWeekStart(new Date());
-    const weekKey = weekStart.toISOString().split('T')[0];
-    localStorage.setItem(`tasksReminder_${user.uid}_${selectedCompany.id}`, weekKey);
+    // Sla op dat we de reminder vandaag hebben getoond
+    const today = new Date();
+    const todayKey = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+    localStorage.setItem(`tasksReminder_${user.uid}_${selectedCompany.id}`, todayKey);
 
     setShowReminder(false);
   };
