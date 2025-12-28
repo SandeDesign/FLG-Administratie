@@ -436,8 +436,8 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-6 pb-24 sm:pb-6 px-4 sm:px-0">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welkom!</h1>
-          <p className="text-sm text-gray-600 mt-1">Laten we beginnen met je loonadministratie</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Welkom!</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Laten we beginnen met je loonadministratie</p>
         </div>
         <EmptyState
           icon={Briefcase}
@@ -469,47 +469,47 @@ const Dashboard: React.FC = () => {
 
         {/* Key Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-blue-200 dark:border-blue-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-blue-700">Bedrijven</p>
-                <p className="text-2xl font-bold text-blue-900 mt-2">{companies?.length || 0}</p>
-                <p className="text-xs text-blue-600 mt-2">totaal</p>
+                <p className="text-xs font-medium text-blue-700 dark:text-blue-300 dark:text-blue-500">Bedrijven</p>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-2">{companies?.length || 0}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">totaal</p>
               </div>
-              <Briefcase className="h-8 w-8 text-blue-300" />
+              <Briefcase className="h-8 w-8 text-blue-300 dark:text-blue-500" />
             </div>
           </Card>
 
-          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 border-green-200 dark:border-green-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-green-700">Verkoop</p>
-                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-green-600 mt-2">{stats.outgoingInvoices} facturen</p>
+                <p className="text-xs font-medium text-green-700 dark:text-green-300 dark:text-green-500">Verkoop</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2">{stats.outgoingInvoices} facturen</p>
               </div>
-              <Send className="h-8 w-8 text-green-300" />
+              <Send className="h-8 w-8 text-green-300 dark:text-green-500" />
             </div>
           </Card>
 
-          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-purple-200 dark:border-purple-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-purple-700">Inkoop</p>
-                <p className="text-2xl font-bold text-purple-900 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-purple-600 mt-2">{stats.incomingInvoices} facturen</p>
+                <p className="text-xs font-medium text-purple-700 dark:text-purple-300 dark:text-purple-500">Inkoop</p>
+                <p className="text-2xl font-bold text-purple-900 dark:text-purple-100 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">{stats.incomingInvoices} facturen</p>
               </div>
-              <Upload className="h-8 w-8 text-purple-300" />
+              <Upload className="h-8 w-8 text-purple-300 dark:text-purple-500" />
             </div>
           </Card>
 
-          <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+          <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border-orange-200 dark:border-orange-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-orange-700">Marge</p>
-                <p className="text-2xl font-bold text-orange-900 mt-2">€{((stats.outgoingTotal - stats.incomingTotal) / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-orange-600 mt-2">verschil</p>
+                <p className="text-xs font-medium text-orange-700 dark:text-orange-300 dark:text-orange-500">Marge</p>
+                <p className="text-2xl font-bold text-orange-900 dark:text-orange-100 mt-2">€{((stats.outgoingTotal - stats.incomingTotal) / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">verschil</p>
               </div>
-              <Wallet className="h-8 w-8 text-orange-300" />
+              <Wallet className="h-8 w-8 text-orange-300 dark:text-orange-500" />
             </div>
           </Card>
         </div>
@@ -518,44 +518,44 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
             onClick={() => navigate('/outgoing-invoices')}
-            className="p-5 rounded-lg border-2 border-green-200 bg-green-50 hover:bg-green-100 transition-all group"
+            className="p-5 rounded-lg border-2 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 transition-all group"
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 bg-green-200 rounded-lg">
-                <Send className="h-5 w-5 text-green-700" />
+              <div className="p-2 bg-green-200 dark:bg-green-800 rounded-lg">
+                <Send className="h-5 w-5 text-green-700 dark:text-green-300 dark:text-green-500" />
               </div>
-              <ChevronRight className="h-5 w-5 text-green-400 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="h-5 w-5 text-green-400 dark:text-green-500 group-hover:translate-x-1 transition-transform" />
             </div>
-            <p className="font-semibold text-gray-900 text-left">Facturatie</p>
-            <p className="text-xs text-gray-600 mt-1 text-left">Uitgaande facturen</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Facturatie</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Uitgaande facturen</p>
           </button>
 
           <button
             onClick={() => navigate('/incoming-invoices')}
-            className="p-5 rounded-lg border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 transition-all group"
+            className="p-5 rounded-lg border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all group"
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 bg-purple-200 rounded-lg">
-                <Upload className="h-5 w-5 text-purple-700" />
+              <div className="p-2 bg-purple-200 dark:bg-purple-800 rounded-lg">
+                <Upload className="h-5 w-5 text-purple-700 dark:text-purple-300 dark:text-purple-500" />
               </div>
-              <ChevronRight className="h-5 w-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="h-5 w-5 text-purple-400 dark:text-purple-500 group-hover:translate-x-1 transition-transform" />
             </div>
-            <p className="font-semibold text-gray-900 text-left">Inkoop</p>
-            <p className="text-xs text-gray-600 mt-1 text-left">Inkomende facturen</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Inkoop</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Inkomende facturen</p>
           </button>
 
           <button
             onClick={() => navigate('/budgeting')}
-            className="p-5 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all group"
+            className="p-5 rounded-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all group"
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 bg-blue-200 rounded-lg">
-                <Wallet className="h-5 w-5 text-blue-700" />
+              <div className="p-2 bg-blue-200 dark:bg-blue-800 rounded-lg">
+                <Wallet className="h-5 w-5 text-blue-700 dark:text-blue-300 dark:text-blue-500" />
               </div>
-              <ChevronRight className="h-5 w-5 text-blue-400 group-hover:translate-x-1 transition-transform" />
+              <ChevronRight className="h-5 w-5 text-blue-400 dark:text-blue-500 group-hover:translate-x-1 transition-transform" />
             </div>
-            <p className="font-semibold text-gray-900 text-left">Begroting</p>
-            <p className="text-xs text-gray-600 mt-1 text-left">Budget beheren</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Begroting</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Budget beheren</p>
           </button>
         </div>
       </div>
@@ -583,11 +583,11 @@ const Dashboard: React.FC = () => {
 
         {/* Alert Banner */}
         {totalPending > 0 && (
-          <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg flex items-start gap-3">
-            <Bell className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+          <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 dark:border-orange-600 p-4 rounded-lg flex items-start gap-3">
+            <Bell className="h-5 w-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-orange-900">{totalPending} items wachten op actie</h3>
-              <p className="text-xs text-orange-700 mt-1">
+              <h3 className="text-sm font-semibold text-orange-900 dark:text-orange-200">{totalPending} items wachten op actie</h3>
+              <p className="text-xs text-orange-700 dark:text-orange-300 dark:text-orange-500 mt-1">
                 {pendingTimesheets.length} uren • {pendingLeave.length} verlof • {pendingExpenses.length} onkosten
               </p>
             </div>
@@ -596,7 +596,7 @@ const Dashboard: React.FC = () => {
                 if (pendingTimesheets.length > 0) navigate('/timesheet-approvals');
                 else if (pendingLeave.length > 0) navigate('/admin/leave-approvals');
               }}
-              className="text-orange-600 hover:text-orange-700 font-semibold text-sm whitespace-nowrap"
+              className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 dark:text-orange-500 font-semibold text-sm whitespace-nowrap"
             >
               Bekijk →
             </button>
@@ -606,47 +606,47 @@ const Dashboard: React.FC = () => {
         {/* Project Stats */}
         {projectStats && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-blue-200 dark:border-blue-800">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-blue-700">Totale Uren</p>
-                  <p className="text-2xl font-bold text-blue-900 mt-2">{projectStats.totalHours.toFixed(0)}</p>
-                  <p className="text-xs text-blue-600 mt-2">geregistreerd</p>
+                  <p className="text-xs font-medium text-blue-700 dark:text-blue-300 dark:text-blue-500">Totale Uren</p>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 mt-2">{projectStats.totalHours.toFixed(0)}</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">geregistreerd</p>
                 </div>
-                <Clock className="h-8 w-8 text-blue-300" />
+                <Clock className="h-8 w-8 text-blue-300 dark:text-blue-500" />
               </div>
             </Card>
 
-            <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 border-green-200 dark:border-green-800">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-green-700">Omzet</p>
-                  <p className="text-2xl font-bold text-green-900 mt-2">€{(projectStats.totalRevenue / 1000).toFixed(0)}k</p>
-                  <p className="text-xs text-green-600 mt-2">totaal</p>
+                  <p className="text-xs font-medium text-green-700 dark:text-green-300 dark:text-green-500">Omzet</p>
+                  <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-2">€{(projectStats.totalRevenue / 1000).toFixed(0)}k</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">totaal</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-green-300" />
+                <TrendingUp className="h-8 w-8 text-green-300 dark:text-green-500" />
               </div>
             </Card>
 
-            <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+            <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-purple-200 dark:border-purple-800">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-purple-700">€/Uur</p>
-                  <p className="text-2xl font-bold text-purple-900 mt-2">€{projectStats.revenuePerHour.toFixed(0)}</p>
-                  <p className="text-xs text-purple-600 mt-2">gemiddeld</p>
+                  <p className="text-xs font-medium text-purple-700 dark:text-purple-300 dark:text-purple-500">€/Uur</p>
+                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100 mt-2">€{projectStats.revenuePerHour.toFixed(0)}</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">gemiddeld</p>
                 </div>
-                <Euro className="h-8 w-8 text-purple-300" />
+                <Euro className="h-8 w-8 text-purple-300 dark:text-purple-500" />
               </div>
             </Card>
 
-            <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border-orange-200 dark:border-orange-800">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-orange-700">Medewerkers</p>
-                  <p className="text-2xl font-bold text-orange-900 mt-2">{projectStats.activeEmployees}</p>
-                  <p className="text-xs text-orange-600 mt-2">actief</p>
+                  <p className="text-xs font-medium text-orange-700 dark:text-orange-300 dark:text-orange-500">Medewerkers</p>
+                  <p className="text-2xl font-bold text-orange-900 dark:text-orange-100 mt-2">{projectStats.activeEmployees}</p>
+                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">actief</p>
                 </div>
-                <Users className="h-8 w-8 text-orange-300" />
+                <Users className="h-8 w-8 text-orange-300 dark:text-orange-500" />
               </div>
             </Card>
           </div>
@@ -654,49 +654,49 @@ const Dashboard: React.FC = () => {
 
         {/* Verkoop / Inkoop Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 border-green-200 dark:border-green-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-green-700">Verkoop</p>
-                <p className="text-xl font-bold text-green-900 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-green-600 mt-2">{stats.outgoingInvoices} facturen</p>
+                <p className="text-xs font-medium text-green-700 dark:text-green-300 dark:text-green-500">Verkoop</p>
+                <p className="text-xl font-bold text-green-900 dark:text-green-100 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2">{stats.outgoingInvoices} facturen</p>
               </div>
-              <Send className="h-8 w-8 text-green-300" />
+              <Send className="h-8 w-8 text-green-300 dark:text-green-500" />
             </div>
           </Card>
 
-          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-purple-200 dark:border-purple-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-purple-700">Inkoop</p>
-                <p className="text-xl font-bold text-purple-900 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-purple-600 mt-2">{stats.incomingInvoices} facturen</p>
+                <p className="text-xs font-medium text-purple-700 dark:text-purple-300 dark:text-purple-500">Inkoop</p>
+                <p className="text-xl font-bold text-purple-900 dark:text-purple-100 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">{stats.incomingInvoices} facturen</p>
               </div>
-              <Upload className="h-8 w-8 text-purple-300" />
+              <Upload className="h-8 w-8 text-purple-300 dark:text-purple-500" />
             </div>
           </Card>
 
-          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-blue-200 dark:border-blue-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-blue-700">Marge</p>
-                <p className="text-xl font-bold text-blue-900 mt-2">€{((stats.outgoingTotal - stats.incomingTotal) / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-blue-600 mt-2">winst</p>
+                <p className="text-xs font-medium text-blue-700 dark:text-blue-300 dark:text-blue-500">Marge</p>
+                <p className="text-xl font-bold text-blue-900 dark:text-blue-100 mt-2">€{((stats.outgoingTotal - stats.incomingTotal) / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">winst</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-blue-300" />
+              <TrendingUp className="h-8 w-8 text-blue-300 dark:text-blue-500" />
             </div>
           </Card>
 
-          <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+          <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border-orange-200 dark:border-orange-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-orange-700">Marges %</p>
-                <p className="text-xl font-bold text-orange-900 mt-2">
+                <p className="text-xs font-medium text-orange-700 dark:text-orange-300 dark:text-orange-500">Marges %</p>
+                <p className="text-xl font-bold text-orange-900 dark:text-orange-100 mt-2">
                   {stats.outgoingTotal > 0 ? (((stats.outgoingTotal - stats.incomingTotal) / stats.outgoingTotal) * 100).toFixed(0) : 0}%
                 </p>
-                <p className="text-xs text-orange-600 mt-2">ratio</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">ratio</p>
               </div>
-              <BarChart3 className="h-8 w-8 text-orange-300" />
+              <BarChart3 className="h-8 w-8 text-orange-300 dark:text-orange-500" />
             </div>
           </Card>
         </div>
@@ -705,17 +705,17 @@ const Dashboard: React.FC = () => {
         {totalPending > 0 && (
           <div className="grid grid-cols-3 gap-3">
             <Card
-              className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 cursor-pointer hover:shadow-lg transition-shadow"
+              className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 border-orange-200 dark:border-orange-800 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => navigate('/timesheet-approvals')}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-orange-700">Uren</p>
-                  <p className="text-2xl font-bold text-orange-900 mt-2">{pendingTimesheets.length}</p>
-                  <p className="text-xs text-orange-600 mt-2">wachten</p>
+                  <p className="text-xs font-medium text-orange-700 dark:text-orange-300 dark:text-orange-500">Uren</p>
+                  <p className="text-2xl font-bold text-orange-900 dark:text-orange-100 mt-2">{pendingTimesheets.length}</p>
+                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">wachten</p>
                 </div>
                 <div className="relative">
-                  <Clock className="h-8 w-8 text-orange-300" />
+                  <Clock className="h-8 w-8 text-orange-300 dark:text-orange-500" />
                   {pendingTimesheets.length > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                       {pendingTimesheets.length}
@@ -726,17 +726,17 @@ const Dashboard: React.FC = () => {
             </Card>
 
             <Card
-              className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 cursor-pointer hover:shadow-lg transition-shadow"
+              className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-purple-200 dark:border-purple-800 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => navigate('/admin/leave-approvals')}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-purple-700">Verlof</p>
-                  <p className="text-2xl font-bold text-purple-900 mt-2">{pendingLeave.length}</p>
-                  <p className="text-xs text-purple-600 mt-2">aanvragen</p>
+                  <p className="text-xs font-medium text-purple-700 dark:text-purple-300 dark:text-purple-500">Verlof</p>
+                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100 mt-2">{pendingLeave.length}</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">aanvragen</p>
                 </div>
                 <div className="relative">
-                  <Calendar className="h-8 w-8 text-purple-300" />
+                  <Calendar className="h-8 w-8 text-purple-300 dark:text-purple-500" />
                   {pendingLeave.length > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                       {pendingLeave.length}
@@ -747,17 +747,17 @@ const Dashboard: React.FC = () => {
             </Card>
 
             <Card
-              className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-lg transition-shadow"
+              className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 border-green-200 dark:border-green-800 cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => navigate('/admin-expenses')}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-green-700">Onkosten</p>
-                  <p className="text-2xl font-bold text-green-900 mt-2">{pendingExpenses.length}</p>
-                  <p className="text-xs text-green-600 mt-2">pending</p>
+                  <p className="text-xs font-medium text-green-700 dark:text-green-300 dark:text-green-500">Onkosten</p>
+                  <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-2">{pendingExpenses.length}</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">pending</p>
                 </div>
                 <div className="relative">
-                  <Receipt className="h-8 w-8 text-green-300" />
+                  <Receipt className="h-8 w-8 text-green-300 dark:text-green-500" />
                   {pendingExpenses.length > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                       {pendingExpenses.length}
@@ -773,7 +773,7 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button
             onClick={() => navigate('/project-production')}
-            className="p-5 rounded-lg border-2 border-primary-200 bg-primary-50 hover:bg-primary-100 transition-all group"
+            className="p-5 rounded-lg border-2 border-primary-200 bg-primary-50 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-all group"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="p-2 bg-primary-200 rounded-lg">
@@ -781,36 +781,36 @@ const Dashboard: React.FC = () => {
               </div>
               <ChevronRight className="h-5 w-5 text-primary-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <p className="font-semibold text-gray-900 text-left">Productie</p>
-            <p className="text-xs text-gray-600 mt-1 text-left">Projecten beheren</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Productie</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Projecten beheren</p>
           </button>
 
           <button
             onClick={() => navigate('/project-statistics')}
-            className="p-5 rounded-lg border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 transition-all group"
+            className="p-5 rounded-lg border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all group"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="p-2 bg-purple-200 rounded-lg">
-                <BarChart3 className="h-5 w-5 text-purple-700" />
+                <BarChart3 className="h-5 w-5 text-purple-700 dark:text-purple-300 dark:text-purple-500" />
               </div>
               <ChevronRight className="h-5 w-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <p className="font-semibold text-gray-900 text-left">Statistieken</p>
-            <p className="text-xs text-gray-600 mt-1 text-left">Uitgebreide analyse</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Statistieken</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Uitgebreide analyse</p>
           </button>
 
           <button
             onClick={() => navigate('/outgoing-invoices')}
-            className="p-5 rounded-lg border-2 border-green-200 bg-green-50 hover:bg-green-100 transition-all group"
+            className="p-5 rounded-lg border-2 border-green-200 bg-green-50 hover:bg-green-100 dark:hover:bg-green-900/30 transition-all group"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="p-2 bg-green-200 rounded-lg">
-                <Send className="h-5 w-5 text-green-700" />
+                <Send className="h-5 w-5 text-green-700 dark:text-green-300 dark:text-green-500" />
               </div>
               <ChevronRight className="h-5 w-5 text-green-400 group-hover:translate-x-1 transition-transform" />
             </div>
-            <p className="font-semibold text-gray-900 text-left">Facturatie</p>
-            <p className="text-xs text-gray-600 mt-1 text-left">Omzet beheren</p>
+            <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Facturatie</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Omzet beheren</p>
           </button>
         </div>
       </div>
@@ -836,11 +836,11 @@ const Dashboard: React.FC = () => {
 
         {/* Alert Banner */}
         {totalPending > 0 && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-600 p-4 rounded-lg flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-red-900">{totalPending} items wachten!</h3>
-              <p className="text-xs text-red-700 mt-1">
+              <h3 className="text-sm font-semibold text-red-900 dark:text-red-200">{totalPending} items wachten!</h3>
+              <p className="text-xs text-red-700 dark:text-red-300 mt-1">
                 {pendingTimesheets.length} uren • {pendingLeave.length} verlof • {pendingExpenses.length} onkosten
               </p>
             </div>
@@ -849,7 +849,7 @@ const Dashboard: React.FC = () => {
                 if (pendingTimesheets.length > 0) navigate('/timesheet-approvals');
                 else if (pendingLeave.length > 0) navigate('/admin/leave-approvals');
               }}
-              className="text-red-600 hover:text-red-700 font-semibold text-sm"
+              className="text-red-600 hover:text-red-700 dark:text-red-300 font-semibold text-sm"
             >
               Bekijk →
             </button>
@@ -862,46 +862,46 @@ const Dashboard: React.FC = () => {
           <Card className="p-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-600">Actieve Medewerkers</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">{stats.activeEmployees}</p>
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Actieve Medewerkers</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2">{stats.activeEmployees}</p>
               </div>
               <Users className="h-8 w-8 text-primary-400" />
             </div>
           </Card>
 
           {/* Verkoop */}
-          <Card className="p-4 bg-green-50 border-green-200">
+          <Card className="p-4 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-green-700">Verkoop</p>
-                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-green-600 mt-2">{stats.outgoingInvoices} facturen</p>
+                <p className="text-xs font-medium text-green-700 dark:text-green-300 dark:text-green-500">Verkoop</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2">{stats.outgoingInvoices} facturen</p>
               </div>
-              <Send className="h-8 w-8 text-green-300" />
+              <Send className="h-8 w-8 text-green-300 dark:text-green-500" />
             </div>
           </Card>
 
           {/* Inkoop */}
-          <Card className="p-4 bg-purple-50 border-purple-200">
+          <Card className="p-4 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-purple-700">Inkoop</p>
-                <p className="text-2xl font-bold text-purple-900 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-purple-600 mt-2">{stats.incomingInvoices} facturen</p>
+                <p className="text-xs font-medium text-purple-700 dark:text-purple-300 dark:text-purple-500">Inkoop</p>
+                <p className="text-2xl font-bold text-purple-900 dark:text-purple-100 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">{stats.incomingInvoices} facturen</p>
               </div>
-              <Upload className="h-8 w-8 text-purple-300" />
+              <Upload className="h-8 w-8 text-purple-300 dark:text-purple-500" />
             </div>
           </Card>
 
           {/* Pending Expenses */}
-          <Card className="p-4 bg-orange-50 border-orange-200">
+          <Card className="p-4 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-orange-700">Onkosten</p>
-                <p className="text-2xl font-bold text-orange-900 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
-                <p className="text-xs text-orange-600 mt-2">{pendingExpenses.length} wachten</p>
+                <p className="text-xs font-medium text-orange-700 dark:text-orange-300 dark:text-orange-500">Onkosten</p>
+                <p className="text-2xl font-bold text-orange-900 dark:text-orange-100 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">{pendingExpenses.length} wachten</p>
               </div>
-              <ArrowUpRight className="h-8 w-8 text-orange-300" />
+              <ArrowUpRight className="h-8 w-8 text-orange-300 dark:text-orange-500" />
             </div>
           </Card>
         </div>
@@ -938,18 +938,18 @@ const Dashboard: React.FC = () => {
           ].map((action) => {
             const Icon = action.icon;
             const colorClass = {
-              blue: 'bg-primary-50 border-primary-200 hover:bg-primary-100',
-              purple: 'bg-purple-50 border-purple-200 hover:bg-purple-100',
-              green: 'bg-green-50 border-green-200 hover:bg-green-100',
-              gray: 'bg-gray-50 border-gray-200 hover:bg-gray-100',
-            }[action.color] || 'bg-gray-50 border-gray-200';
+              blue: 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/30',
+              purple: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30',
+              green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30',
+              gray: 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700 hover:bg-gray-100',
+            }[action.color] || 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700';
 
             const iconColor = {
               blue: 'text-primary-600',
-              purple: 'text-purple-600',
-              green: 'text-green-600',
-              gray: 'text-gray-600',
-            }[action.color] || 'text-gray-600';
+              purple: 'text-purple-600 dark:text-purple-400',
+              green: 'text-green-600 dark:text-green-400',
+              gray: 'text-gray-600 dark:text-gray-400',
+            }[action.color] || 'text-gray-600 dark:text-gray-400';
 
             return (
               <button
@@ -958,7 +958,7 @@ const Dashboard: React.FC = () => {
                 className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 text-center group relative ${colorClass}`}
               >
                 <Icon className={`h-6 w-6 ${iconColor}`} />
-                <p className="text-xs font-medium text-gray-900 line-clamp-1">{action.title}</p>
+                <p className="text-xs font-medium text-gray-900 dark:text-gray-100 line-clamp-1">{action.title}</p>
                 {action.count && action.count > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     {action.count}
@@ -972,26 +972,26 @@ const Dashboard: React.FC = () => {
         {/* Pending Items Details */}
         {(pendingTimesheets.length > 0 || pendingLeave.length > 0 || pendingExpenses.length > 0) && (
           <Card>
-            <div className="p-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <Zap className="h-5 w-5 text-amber-500" />
                 Vereist Actie
               </h2>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {pendingTimesheets.slice(0, 3).map((ts) => (
                 <button
                   key={ts.id}
                   onClick={() => navigate('/timesheet-approvals')}
-                  className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-start justify-between group"
+                  className="w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-start justify-between group"
                 >
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       📋 Week {ts.weekNumber} - {employees?.find((e: any) => e.id === ts.employeeId)?.personalInfo?.firstName}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">{ts.totalRegularHours}u • Ingediend op {new Date(ts.submittedAt).toLocaleDateString('nl-NL')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{ts.totalRegularHours}u • Ingediend op {new Date(ts.submittedAt).toLocaleDateString('nl-NL')}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               ))}
             </div>
@@ -1019,22 +1019,22 @@ const Dashboard: React.FC = () => {
 
         {/* Key Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Card className="p-4 bg-primary-50 border-primary-200">
+          <Card className="p-4 bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800">
             <p className="text-xs font-medium text-primary-700">Uren Deze Week</p>
             <p className="text-2xl font-bold text-primary-900 mt-2">-</p>
             <p className="text-xs text-primary-600 mt-1">uren</p>
           </Card>
 
-          <Card className="p-4 bg-green-50 border-green-200">
-            <p className="text-xs font-medium text-green-700">Goedgekeurd</p>
-            <p className="text-2xl font-bold text-green-900 mt-2">{employeeStats.approvedThisMonth}</p>
-            <p className="text-xs text-green-600 mt-1">deze maand</p>
+          <Card className="p-4 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+            <p className="text-xs font-medium text-green-700 dark:text-green-300 dark:text-green-500">Goedgekeurd</p>
+            <p className="text-2xl font-bold text-green-900 dark:text-green-100 mt-2">{employeeStats.approvedThisMonth}</p>
+            <p className="text-xs text-green-600 dark:text-green-400 mt-1">deze maand</p>
           </Card>
 
-          <Card className="p-4 bg-purple-50 border-purple-200">
-            <p className="text-xs font-medium text-purple-700">Saldo</p>
-            <p className="text-2xl font-bold text-purple-900 mt-2">-</p>
-            <p className="text-xs text-purple-600 mt-1">verlof</p>
+          <Card className="p-4 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
+            <p className="text-xs font-medium text-purple-700 dark:text-purple-300 dark:text-purple-500">Saldo</p>
+            <p className="text-2xl font-bold text-purple-900 dark:text-purple-100 mt-2">-</p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">verlof</p>
           </Card>
         </div>
 
@@ -1042,49 +1042,49 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => navigate('/employee-dashboard/timesheets')}
-            className="p-4 rounded-lg bg-primary-50 border-2 border-primary-200 hover:bg-primary-100 transition-all text-left group"
+            className="p-4 rounded-lg bg-primary-50 dark:bg-primary-900/20 border-2 border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-all text-left group"
           >
-            <Clock className="h-6 w-6 text-primary-600 mb-2" />
-            <p className="font-semibold text-gray-900">Uren Invoeren</p>
-            <p className="text-xs text-gray-600 mt-1">Jouw uren registreren</p>
+            <Clock className="h-6 w-6 text-primary-600 dark:text-primary-400 mb-2" />
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Uren Invoeren</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Jouw uren registreren</p>
           </button>
 
           <button
             onClick={() => navigate('/employee-dashboard/leave')}
-            className="p-4 rounded-lg bg-purple-50 border-2 border-purple-200 hover:bg-purple-100 transition-all text-left group"
+            className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all text-left group"
           >
-            <Calendar className="h-6 w-6 text-purple-600 mb-2" />
-            <p className="font-semibold text-gray-900">Verlof Aanvragen</p>
-            <p className="text-xs text-gray-600 mt-1">Verlof indienen</p>
+            <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400 mb-2" />
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Verlof Aanvragen</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Verlof indienen</p>
           </button>
 
           <button
             onClick={() => navigate('/employee-dashboard/expenses')}
-            className="p-4 rounded-lg bg-green-50 border-2 border-green-200 hover:bg-green-100 transition-all text-left group"
+            className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition-all text-left group"
           >
-            <AlertCircle className="h-6 w-6 text-green-600 mb-2" />
-            <p className="font-semibold text-gray-900">Onkosten</p>
-            <p className="text-xs text-gray-600 mt-1">Kosten indienen</p>
+            <AlertCircle className="h-6 w-6 text-green-600 dark:text-green-400 mb-2" />
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Onkosten</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Kosten indienen</p>
           </button>
 
           <button
             onClick={() => navigate('/employee-dashboard/payslips')}
-            className="p-4 rounded-lg bg-amber-50 border-2 border-amber-200 hover:bg-amber-100 transition-all text-left group"
+            className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all text-left group"
           >
-            <FileText className="h-6 w-6 text-amber-600 mb-2" />
-            <p className="font-semibold text-gray-900">Loonstroken</p>
-            <p className="text-xs text-gray-600 mt-1">Jouw betalingen</p>
+            <FileText className="h-6 w-6 text-amber-600 dark:text-amber-400 mb-2" />
+            <p className="font-semibold text-gray-900 dark:text-gray-100">Loonstroken</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Jouw betalingen</p>
           </button>
         </div>
 
         {/* Info Card */}
         <Card>
-          <div className="p-4 bg-gradient-to-r from-primary-50 to-indigo-50">
+          <div className="p-4 bg-gradient-to-r from-primary-50 to-indigo-50 dark:from-primary-900/20 dark:to-indigo-900/20">
             <div className="flex items-start gap-3">
-              <Target className="h-5 w-5 text-primary-600 flex-shrink-0 mt-0.5" />
+              <Target className="h-5 w-5 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-gray-900 text-sm">Tips</p>
-                <p className="text-xs text-gray-600 mt-2">
+                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Tips</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                   Zorg dat je uren op tijd indient en verlof vooraf aanvraagt. Je loonstroken zijn beschikbaar na verwerking.
                 </p>
               </div>
