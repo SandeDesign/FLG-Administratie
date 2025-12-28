@@ -30,6 +30,7 @@ import { useApp } from '../contexts/AppContext';
 import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency } from '../types';
 import {
   getTasks,
+  getAllCompanyTasks,
   createTask,
   updateTask,
   deleteTask,
@@ -104,6 +105,7 @@ const Tasks: React.FC = () => {
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
   // Filters
+  const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<TaskCategory | 'all'>('all');
   const [filterPriority, setFilterPriority] = useState<TaskPriority | 'all'>('all');
@@ -131,7 +133,8 @@ const Tasks: React.FC = () => {
 
     try {
       setLoading(true);
-      const data = await getTasks(user.uid, selectedCompany.id);
+      // Haal ALLE bedrijfstaken op voor admin, co-admin en manager
+      const data = await getAllCompanyTasks(selectedCompany.id, user.uid);
 
       // Update status voor late taken
       const now = new Date();
@@ -300,134 +303,86 @@ const Tasks: React.FC = () => {
             {selectedCompany?.name} - {tasks.length} taken
           </p>
         </div>
-        <Button
-          onClick={() => {
-            resetForm();
-            setShowTaskModal(true);
-          }}
-          icon={Plus}
-        >
-          Nieuwe taak
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as TaskStatus | 'all')}
-              className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            >
-              <option value="all">Alle statussen</option>
-              {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                <option key={status} value={status}>
-                  {config.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Categorie
-            </label>
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value as TaskCategory | 'all')}
-              className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            >
-              <option value="all">Alle categorieën</option>
-              {Object.entries(CATEGORY_CONFIG).map(([category, config]) => (
-                <option key={category} value={category}>
-                  {config.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Prioriteit
-            </label>
-            <select
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value as TaskPriority | 'all')}
-              className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            >
-              <option value="all">Alle prioriteiten</option>
-              {Object.entries(PRIORITY_CONFIG).map(([priority, config]) => (
-                <option key={priority} value={priority}>
-                  {config.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            variant="secondary"
+            icon={Filter}
+          >
+            Filters
+          </Button>
+          <Button
+            onClick={() => {
+              resetForm();
+              setShowTaskModal(true);
+            }}
+            icon={Plus}
+          >
+            Nieuwe taak
+          </Button>
         </div>
-      </Card>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Te doen</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {groupedTasks.pending.length}
-              </p>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <Circle className="h-6 w-6 text-yellow-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Bezig</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {groupedTasks.in_progress.length}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <PlayCircle className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Te laat</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {groupedTasks.overdue.length}
-              </p>
-            </div>
-            <div className="p-3 bg-red-100 rounded-lg">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Voltooid</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
-                {groupedTasks.completed.length}
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-        </Card>
       </div>
+
+      {/* Collapsible Filters */}
+      {showFilters && (
+        <Card>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as TaskStatus | 'all')}
+                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              >
+                <option value="all">Alle statussen</option>
+                {Object.entries(STATUS_CONFIG).map(([status, config]) => (
+                  <option key={status} value={status}>
+                    {config.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Categorie
+              </label>
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value as TaskCategory | 'all')}
+                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              >
+                <option value="all">Alle categorieën</option>
+                {Object.entries(CATEGORY_CONFIG).map(([category, config]) => (
+                  <option key={category} value={category}>
+                    {config.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Prioriteit
+              </label>
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value as TaskPriority | 'all')}
+                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              >
+                <option value="all">Alle prioriteiten</option>
+                {Object.entries(PRIORITY_CONFIG).map(([priority, config]) => (
+                  <option key={priority} value={priority}>
+                    {config.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Tasks List */}
       {filteredTasks.length === 0 ? (
