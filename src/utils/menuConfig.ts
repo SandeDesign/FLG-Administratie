@@ -27,6 +27,7 @@ import {
   Package,
   LineChart,
   PieChart,
+  ListChecks,
 } from 'lucide-react';
 
 export type CompanyType = 'employer' | 'project' | 'holding' | 'shareholder' | 'investor';
@@ -75,7 +76,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties Medewerkers', href: '/expenses', icon: Receipt, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
 
-  // SYSTEEM SECTION (employer, holding, shareholder)
+  // SYSTEEM SECTION (employer, project, holding, shareholder)
+  { name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
   { name: 'Gebruikers Beheer', href: '/admin/users', icon: UserPlus, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
@@ -146,7 +148,7 @@ export const getNavigationSections = (
         title: 'Overig',
         icon: Settings,
         defaultOpen: false,
-        items: filtered.filter(i => ['Investment Pitch', 'Instellingen'].includes(i.name)),
+        items: filtered.filter(i => ['Taken', 'Investment Pitch', 'Instellingen'].includes(i.name)),
       },
     ].filter(section => section.items.length > 0);
   }
@@ -178,7 +180,7 @@ export const getNavigationSections = (
         title: 'Systeem',
         icon: Settings,
         defaultOpen: false,
-        items: filtered.filter(i => ['Bedrijven', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Investment Pitch', 'Instellingen'].includes(i.name)),
+        items: filtered.filter(i => ['Taken', 'Bedrijven', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Investment Pitch', 'Instellingen'].includes(i.name)),
       },
     ].filter(section => section.items.length > 0);
   }
@@ -204,7 +206,7 @@ export const getNavigationSections = (
         title: 'Systeem',
         icon: Settings,
         defaultOpen: false,
-        items: filtered.filter(i => ['Bedrijven', 'Gebruikers Beheer', 'Instellingen'].includes(i.name)),
+        items: filtered.filter(i => ['Taken', 'Bedrijven', 'Gebruikers Beheer', 'Instellingen'].includes(i.name)),
       },
     ].filter(section => section.items.length > 0);
   }
@@ -243,7 +245,7 @@ export const getNavigationSections = (
       title: 'Systeem',
       icon: Settings,
       defaultOpen: false,
-      items: filtered.filter(i => ['Bedrijven', 'Loonstroken', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Instellingen'].includes(i.name)),
+      items: filtered.filter(i => ['Taken', 'Bedrijven', 'Loonstroken', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Instellingen'].includes(i.name)),
     },
   ].filter(section => section.items.length > 0);
 };
