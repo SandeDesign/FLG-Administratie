@@ -89,7 +89,7 @@ const HoldingStatistics: React.FC = () => {
       for (const company of workCompanies) {
         console.log(`📈 Loading stats for: ${company.name} (${company.companyType})`);
 
-        // Uitgaande facturen
+        // Uitgaande facturen (ALLE statussen: concept, betaald, etc.)
         const outgoingQuery = query(
           collection(db, 'outgoingInvoices'),
           where('userId', '==', adminUserId),
@@ -97,12 +97,18 @@ const HoldingStatistics: React.FC = () => {
         );
         const outgoingSnap = await getDocs(outgoingQuery);
         let outgoingTotal = 0;
+        const outgoingByStatus: Record<string, number> = {};
         outgoingSnap.forEach(doc => {
           const data = doc.data();
-          outgoingTotal += data.totalAmount || 0;
+          const amount = data.totalAmount || 0;
+          const status = data.status || 'unknown';
+          outgoingTotal += amount;
+          outgoingByStatus[status] = (outgoingByStatus[status] || 0) + 1;
         });
+        console.log(`  💰 Outgoing: ${outgoingSnap.size} facturen, €${outgoingTotal.toFixed(2)}`);
+        console.log(`     Status breakdown:`, outgoingByStatus);
 
-        // Inkomende facturen
+        // Inkomende facturen (ALLE statussen: concept, betaald, etc.)
         const incomingQuery = query(
           collection(db, 'incomingInvoices'),
           where('userId', '==', adminUserId),
@@ -110,10 +116,16 @@ const HoldingStatistics: React.FC = () => {
         );
         const incomingSnap = await getDocs(incomingQuery);
         let incomingTotal = 0;
+        const incomingByStatus: Record<string, number> = {};
         incomingSnap.forEach(doc => {
           const data = doc.data();
-          incomingTotal += data.totalAmount || 0;
+          const amount = data.totalAmount || 0;
+          const status = data.status || 'unknown';
+          incomingTotal += amount;
+          incomingByStatus[status] = (incomingByStatus[status] || 0) + 1;
         });
+        console.log(`  💸 Incoming: ${incomingSnap.size} facturen, €${incomingTotal.toFixed(2)}`);
+        console.log(`     Status breakdown:`, incomingByStatus);
 
         // Budget items
         const budgetQuery = query(
