@@ -1755,10 +1755,25 @@ export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: s
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
+
+          // Probeer verschillende naamvelden
+          let displayName = userData.displayName;
+          if (!displayName && userData.firstName && userData.lastName) {
+            displayName = `${userData.firstName} ${userData.lastName}`;
+          } else if (!displayName && userData.firstName) {
+            displayName = userData.firstName;
+          } else if (!displayName && userData.name) {
+            displayName = userData.name;
+          } else if (!displayName && userData.email) {
+            displayName = userData.email.split('@')[0];
+          }
+
+          console.log('User data voor', uid, ':', { email: userData.email, displayName, allFields: Object.keys(userData) });
+
           return {
             uid,
             email: userData.email || 'Onbekend',
-            displayName: userData.displayName || userData.email?.split('@')[0] || 'Onbekend'
+            displayName: displayName || 'Onbekende gebruiker'
           };
         }
       } catch (error) {
@@ -1768,7 +1783,7 @@ export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: s
       return {
         uid,
         email: 'Onbekend',
-        displayName: uid
+        displayName: 'Onbekende gebruiker'
       };
     });
 
