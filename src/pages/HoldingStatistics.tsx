@@ -84,6 +84,13 @@ const HoldingStatistics: React.FC = () => {
       console.log(`✅ Found ${workCompanies.length} work companies under ${selectedCompany.name}`);
       console.log(`📋 Companies: ${workCompanies.map(c => c.name).join(', ')}`);
 
+      // Als deze holding GEEN werkmaatschappijen heeft, toon dan alleen eigen data
+      // Dit is het geval voor aandeelhouders zoals Sandebeheer en Carlibeheer
+      if (workCompanies.length === 0) {
+        console.log('⚠️ Geen werkmaatschappijen gevonden - toon alleen eigen holding data');
+        workCompanies.push(selectedCompany);
+      }
+
       const stats: CompanyStats[] = [];
 
       for (const company of workCompanies) {
