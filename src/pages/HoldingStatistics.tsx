@@ -49,12 +49,38 @@ const HoldingStatistics: React.FC = () => {
     try {
       console.log('📊 Loading holding statistics...');
 
-      // Alleen werkmaatschappijen onder deze holding ophalen (NIET aandeelhouders)
-      // Werkmaatschappijen hebben primaryEmployerId die verwijst naar deze holding
-      const workCompanies = companies.filter(c =>
-        c.primaryEmployerId === selectedCompany.id &&
-        c.userId === adminUserId
-      );
+      // DEBUG: Laat alle companies zien met hun primaryEmployerId
+      console.log('🔍 ALL COMPANIES DEBUG:');
+      companies.forEach(c => {
+        console.log(`  - ${c.name} (${c.companyType}): primaryEmployerId = ${c.primaryEmployerId || 'NONE'}, id = ${c.id}`);
+      });
+      console.log(`🎯 Current holding: ${selectedCompany.name} (id: ${selectedCompany.id})`);
+
+      // Werkmaatschappijen ophalen:
+      // 1. EERST: companies met primaryEmployerId === holding.id (expliciete link)
+      // 2. FALLBACK: employer/project companies ZONDER primaryEmployerId (backwards compatibility)
+      // 3. EXCLUDE: andere holdings (companyType === 'holding')
+      const workCompanies = companies.filter(c => {
+        // Skip de holding zelf
+        if (c.id === selectedCompany.id) return false;
+
+        // Skip andere holdings (dit zijn waarschijnlijk aandeelhouders zoals Sandebeheer/Carlibeheer)
+        if (c.companyType === 'holding') return false;
+
+        // User moet matchen
+        if (c.userId !== adminUserId) return false;
+
+        // Include als het expliciet linked is via primaryEmployerId
+        if (c.primaryEmployerId === selectedCompany.id) return true;
+
+        // FALLBACK: Include employer/project companies zonder primaryEmployerId (backwards compatibility)
+        if (!c.primaryEmployerId && (c.companyType === 'employer' || c.companyType === 'project')) {
+          return true;
+        }
+
+        return false;
+      });
+
       console.log(`✅ Found ${workCompanies.length} work companies under ${selectedCompany.name}`);
       console.log(`📋 Companies: ${workCompanies.map(c => c.name).join(', ')}`);
 
