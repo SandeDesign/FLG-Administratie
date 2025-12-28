@@ -52,9 +52,13 @@ const HoldingStatistics: React.FC = () => {
       // DEBUG: Laat alle companies zien met hun primaryEmployerId
       console.log('🔍 ALL COMPANIES DEBUG:');
       companies.forEach(c => {
-        console.log(`  - ${c.name} (${c.companyType}): primaryEmployerId = ${c.primaryEmployerId || 'NONE'}, id = ${c.id}`);
+        console.log(`  - ${c.name}`);
+        console.log(`    Type: "${c.companyType}" (typeof: ${typeof c.companyType})`);
+        console.log(`    PrimaryEmployerId: ${c.primaryEmployerId || 'NONE'}`);
+        console.log(`    ID: ${c.id}`);
+        console.log(`    UserId: ${c.userId}`);
       });
-      console.log(`🎯 Current holding: ${selectedCompany.name} (id: ${selectedCompany.id})`);
+      console.log(`🎯 Current holding: ${selectedCompany.name} (id: ${selectedCompany.id}, type: ${selectedCompany.companyType})`);
 
       // Werkmaatschappijen ophalen:
       // 1. EERST: companies met primaryEmployerId === holding.id (expliciete link)
