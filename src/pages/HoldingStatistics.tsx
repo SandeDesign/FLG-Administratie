@@ -75,19 +75,21 @@ const HoldingStatistics: React.FC = () => {
       let workCompanies = [];
 
       if (isOperationalHolding) {
-        // HOLDING: toon werkmaatschappijen
+        // HOLDING: toon werkmaatschappijen + holding zelf
         // 1. EERST: companies met primaryEmployerId === holding.id (expliciete link)
         // 2. FALLBACK: employer/project companies ZONDER primaryEmployerId (backwards compatibility)
         // 3. EXCLUDE: andere holdings en shareholders
         workCompanies = companies.filter(c => {
-          // Skip de holding zelf
-          if (c.id === selectedCompany.id) return false;
-
-          // Skip andere holdings en shareholders
-          if (c.companyType === 'holding' || c.companyType === 'shareholder') return false;
+          // Skip andere holdings en shareholders (maar NIET de huidige holding zelf!)
+          if (c.id !== selectedCompany.id && (c.companyType === 'holding' || c.companyType === 'shareholder')) {
+            return false;
+          }
 
           // User moet matchen
           if (c.userId !== adminUserId) return false;
+
+          // Include de holding zelf (voor eigen facturen)
+          if (c.id === selectedCompany.id) return true;
 
           // Include als het expliciet linked is via primaryEmployerId
           if (c.primaryEmployerId === selectedCompany.id) return true;
@@ -101,18 +103,11 @@ const HoldingStatistics: React.FC = () => {
         });
       } else if (isShareholder) {
         // SHAREHOLDER: toon alleen eigen data (geen werkmaatschappijen)
-        workCompanies = [];
+        workCompanies = [selectedCompany];
       }
 
-      console.log(`✅ Found ${workCompanies.length} work companies under ${selectedCompany.name}`);
-      console.log(`📋 Companies: ${workCompanies.map(c => c.name).join(', ')}`);
-
-      // Als deze holding GEEN werkmaatschappijen heeft, toon dan alleen eigen data
-      // Dit is het geval voor aandeelhouders zoals Sandebeheer en Carlibeheer
-      if (workCompanies.length === 0) {
-        console.log('⚠️ Geen werkmaatschappijen gevonden - toon alleen eigen holding data');
-        workCompanies.push(selectedCompany);
-      }
+      console.log(`✅ Found ${workCompanies.length} companies (incl. holding zelf)`);
+      console.log(`📋 Companies: ${workCompanies.map(c => `${c.name} (${c.companyType})`).join(', ')}`);
 
       const stats: CompanyStats[] = [];
 
