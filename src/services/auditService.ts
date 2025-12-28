@@ -64,6 +64,25 @@ const convertToTimestamps = (data: any) => {
   return converted;
 };
 
+// Helper function to remove undefined values (Firestore doesn't accept undefined)
+const removeUndefinedValues = (obj: any): any => {
+  if (obj === null || obj === undefined || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefinedValues);
+  }
+
+  const cleaned: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      cleaned[key] = removeUndefinedValues(value);
+    }
+  }
+  return cleaned;
+};
+
 export class AuditService {
 
   static async logAction(
@@ -97,10 +116,10 @@ export class AuditService {
     };
 
     const checksum = this.generateChecksum(auditLog);
-    const auditLogData = convertToTimestamps({
+    const auditLogData = removeUndefinedValues(convertToTimestamps({
       ...auditLog,
       checksum,
-    });
+    }));
 
     const docRef = await addDoc(collection(db, 'auditLogs'), auditLogData);
     return docRef.id;
