@@ -80,25 +80,45 @@ const HoldingStatistics: React.FC = () => {
         // 2. FALLBACK: employer/project companies ZONDER primaryEmployerId (backwards compatibility)
         // 3. EXCLUDE: andere holdings en shareholders
         workCompanies = companies.filter(c => {
+          console.log(`\n🔍 Checking company: ${c.name}`);
+          console.log(`   Type: ${c.companyType}`);
+          console.log(`   ID: ${c.id}`);
+          console.log(`   PrimaryEmployerId: ${c.primaryEmployerId || 'NONE'}`);
+          console.log(`   UserId: ${c.userId}`);
+          console.log(`   AdminUserId: ${adminUserId}`);
+          console.log(`   Selected holding ID: ${selectedCompany.id}`);
+
           // Skip andere holdings en shareholders (maar NIET de huidige holding zelf!)
           if (c.id !== selectedCompany.id && (c.companyType === 'holding' || c.companyType === 'shareholder')) {
+            console.log(`   ❌ SKIP: Is andere holding/shareholder`);
             return false;
           }
 
           // User moet matchen
-          if (c.userId !== adminUserId) return false;
+          if (c.userId !== adminUserId) {
+            console.log(`   ❌ SKIP: User ID mismatch`);
+            return false;
+          }
 
           // Include de holding zelf (voor eigen facturen)
-          if (c.id === selectedCompany.id) return true;
-
-          // Include als het expliciet linked is via primaryEmployerId
-          if (c.primaryEmployerId === selectedCompany.id) return true;
-
-          // FALLBACK: Include employer/project companies zonder primaryEmployerId (backwards compatibility)
-          if (!c.primaryEmployerId && (c.companyType === 'employer' || c.companyType === 'project')) {
+          if (c.id === selectedCompany.id) {
+            console.log(`   ✅ INCLUDE: Is de holding zelf`);
             return true;
           }
 
+          // Include als het expliciet linked is via primaryEmployerId
+          if (c.primaryEmployerId === selectedCompany.id) {
+            console.log(`   ✅ INCLUDE: Linked via primaryEmployerId`);
+            return true;
+          }
+
+          // FALLBACK: Include employer/project companies zonder primaryEmployerId (backwards compatibility)
+          if (!c.primaryEmployerId && (c.companyType === 'employer' || c.companyType === 'project')) {
+            console.log(`   ✅ INCLUDE: Employer/project zonder primaryEmployerId (backwards compatibility)`);
+            return true;
+          }
+
+          console.log(`   ❌ SKIP: Geen match met filters`);
           return false;
         });
       } else if (isShareholder) {
