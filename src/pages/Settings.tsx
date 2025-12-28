@@ -24,6 +24,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { ALL_NAVIGATION_ITEMS, NavigationItem } from '../utils/menuConfig';
 import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibilitySettings';
+import { BottomNavSettings } from '../components/settings/BottomNavSettings';
 // ✅ Ensure this component is placed at: src/components/settings/CompaniesVisibilitySettings.tsx
 
 const Settings: React.FC = () => {
@@ -818,6 +819,9 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </Card>
+
+          {/* Bottom Navigation Settings */}
+          <BottomNavSettings />
         </div>
       )}
     </div>

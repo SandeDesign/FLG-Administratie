@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Home,
   Clock,
-  Settings,
+  Settings as SettingsIcon,
   Users,
   Zap,
   CheckCircle2,
@@ -18,15 +18,70 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
+import { db } from '../../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { BottomNavItem } from '../../types';
 
 interface MobileBottomNavProps {
   onMenuClick: () => void;
 }
 
+// Icon mapping voor string naar component
+const ICON_MAP: Record<string, any> = {
+  Home,
+  Clock,
+  Settings: SettingsIcon,
+  Users,
+  Zap,
+  CheckCircle2,
+  Cpu,
+  Package,
+  Send,
+  Download,
+  Upload,
+  Wallet,
+  TrendingUp,
+};
+
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
-  const { userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const { selectedCompany } = useApp();
-  
+  const [customNavItems, setCustomNavItems] = useState<BottomNavItem[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user && selectedCompany) {
+      loadCustomNavItems();
+    }
+  }, [user, selectedCompany]);
+
+  const loadCustomNavItems = async () => {
+    if (!user || !selectedCompany) return;
+
+    try {
+      const settingsRef = doc(db, 'userSettings', user.uid);
+      const settingsDoc = await getDoc(settingsRef);
+
+      if (settingsDoc.exists()) {
+        const data = settingsDoc.data();
+        const companyBottomNav = data.bottomNavItems?.[selectedCompany.id];
+
+        if (companyBottomNav && Array.isArray(companyBottomNav) && companyBottomNav.length === 3) {
+          setCustomNavItems(companyBottomNav);
+        } else {
+          setCustomNavItems(null); // Gebruik defaults
+        }
+      } else {
+        setCustomNavItems(null); // Gebruik defaults
+      }
+    } catch (error) {
+      console.error('Error loading custom nav items:', error);
+      setCustomNavItems(null); // Gebruik defaults bij error
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!userRole) return null;
 
   const companyType = selectedCompany?.companyType as 'employer' | 'project' | 'holding' | undefined;
@@ -91,17 +146,27 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
     return navItems[userRole] || navItems.employee;
   };
 
-  const coreNavItems = getCoreNavItems();
+  // Gebruik custom nav items als beschikbaar, anders defaults
+  const defaultNavItems = getCoreNavItems();
+  const navItemsToUse = customNavItems || defaultNavItems;
+
+  // Als custom items, converteer icon string naar component
+  const finalNavItems = customNavItems
+    ? customNavItems.map(item => ({
+        ...item,
+        icon: ICON_MAP[item.icon] || Clock, // Fallback naar Clock als icon niet gevonden
+      }))
+    : navItemsToUse;
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
       {/* Backdrop blur separator */}
       <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-      
+
       {/* Modern glasmorphism nav */}
       <div className="bg-white/95 backdrop-blur-xl border-t border-white/20 shadow-2xl">
         <div className="flex justify-around items-center px-2 py-3 max-w-full">
-          {coreNavItems.map(({ href, icon: Icon, label, gradient }) => (
+          {finalNavItems.map(({ href, icon: Icon, label, gradient }) => (
             <NavLink
               key={href}
               to={href}
