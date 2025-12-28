@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import { getTasks, getAllCompanyTasks } from '../../services/firebase';
@@ -8,7 +8,11 @@ import Button from '../ui/Button';
 import { Calendar, CheckCircle2, AlertCircle, Clock, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const WeeklyTasksReminder: React.FC = () => {
+export interface WeeklyTasksReminderRef {
+  openManually: () => void;
+}
+
+const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
   const { user, userRole } = useAuth();
   const { selectedCompany } = useApp();
   const navigate = useNavigate();
@@ -16,6 +20,36 @@ const WeeklyTasksReminder: React.FC = () => {
   const [showReminder, setShowReminder] = useState(false);
   const [thisWeekTasks, setThisWeekTasks] = useState<BusinessTask[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Expose openManually functie voor external triggering
+  useImperativeHandle(ref, () => ({
+    openManually: async () => {
+      if (!user || !selectedCompany) return;
+
+      try {
+        // Laad taken
+        const allTasks = await getAllCompanyTasks(selectedCompany.id, user.uid);
+
+        const today = new Date();
+        const weekStart = getWeekStart(today);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+
+        const tasksThisWeek = allTasks.filter(task => {
+          if (task.status === 'completed' || task.status === 'cancelled') return false;
+          const dueDate = new Date(task.dueDate);
+          return dueDate < today || (dueDate >= weekStart && dueDate < weekEnd);
+        });
+
+        if (tasksThisWeek.length > 0) {
+          setThisWeekTasks(tasksThisWeek);
+          setShowReminder(true);
+        }
+      } catch (error) {
+        console.error('❌ Error loading tasks manually:', error);
+      }
+    }
+  }));
 
   useEffect(() => {
     checkWeeklyTasks();
@@ -261,6 +295,8 @@ const WeeklyTasksReminder: React.FC = () => {
       </div>
     </Modal>
   );
-};
+});
+
+WeeklyTasksReminder.displayName = 'WeeklyTasksReminder';
 
 export default WeeklyTasksReminder;
