@@ -29,6 +29,7 @@ import {
   CreditCard,
   Star,
   TrendingUp,
+  ListChecks,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -73,6 +74,7 @@ export const navigation: NavigationItem[] = [
   { name: 'Statistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding'] },
 
   // SYSTEEM (Admin - Employer en Holding)
+  { name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding'] },
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },
   { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding'] },
 
@@ -300,7 +302,7 @@ const Sidebar: React.FC = () => {
       icon: Settings,
       color: 'bg-gray-500',
       defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Bedrijven', 'Instellingen'].includes(i.name))
+      items: filteredNavigation.filter(i => ['Taken', 'Bedrijven', 'Audit Log', 'Instellingen'].includes(i.name))
     },
   ].filter(section => section.items.length > 0);
 

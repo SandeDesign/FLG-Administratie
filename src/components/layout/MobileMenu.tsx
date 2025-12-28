@@ -26,6 +26,7 @@ import {
   Receipt,
   CreditCard,
   FolderOpen,
+  ListChecks,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -97,7 +98,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       title: 'Systeem',
       icon: Settings,
       color: 'bg-gray-500',
-      items: filteredNavigation.filter(i => ['Bedrijven', 'Instellingen'].includes(i.name))
+      items: filteredNavigation.filter(i => ['Taken', 'Bedrijven', 'Audit Log', 'Instellingen'].includes(i.name))
     },
   ].filter(section => section.items.length > 0);
 

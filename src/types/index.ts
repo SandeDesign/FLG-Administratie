@@ -834,3 +834,68 @@ export interface TaxReturn {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ✅ NIEUW: Business Task Management - Persoonsgebonden EN bedrijfsgebonden
+export type TaskCategory = 'operational' | 'compliance' | 'financial' | 'hr' | 'sales' | 'contracts' | 'administration' | 'other';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'overdue' | 'cancelled';
+export type TaskFrequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+export interface TaskChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  completedBy?: string;
+  completedAt?: Date;
+}
+
+export interface BusinessTask {
+  id: string;
+  userId: string;  // Eigenaar van de taak (persoonsgebonden)
+  companyId: string;  // Bedrijf waar taak bij hoort (bedrijfsgebonden)
+
+  // Basis informatie
+  title: string;
+  description?: string;
+  category: TaskCategory;
+  priority: TaskPriority;
+
+  // Toewijzing
+  assignedTo?: string[];  // User IDs van toegewezen personen
+  createdBy: string;  // User ID van maker
+
+  // Datums
+  dueDate: Date;
+  startDate?: Date;
+  completedDate?: Date;
+
+  // Terugkerende taken
+  isRecurring: boolean;
+  frequency?: TaskFrequency;  // Frequentie van herhaling
+  recurrenceDay?: number;  // Dag van de maand (1-31) of week (1-7)
+  nextOccurrence?: Date;  // Wanneer is de volgende occurrence
+  lastGenerated?: Date;  // Wanneer is de laatste occurrence gegenereerd
+
+  // Voortgang
+  status: TaskStatus;
+  progress: number;  // 0-100
+
+  // Gerelateerde entiteiten
+  relatedEmployeeId?: string;
+  relatedExpenseId?: string;
+  relatedLeaveRequestId?: string;
+  relatedInvoiceId?: string;
+
+  // Checklist items (subtaken)
+  checklist?: TaskChecklistItem[];
+
+  // Extra informatie
+  notes?: string;
+  attachments?: string[];  // URLs naar bijlagen
+
+  // Tags voor filtering
+  tags?: string[];
+
+  createdAt: Date;
+  updatedAt: Date;
+}
