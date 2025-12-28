@@ -29,7 +29,7 @@ import {
   PieChart,
 } from 'lucide-react';
 
-export type CompanyType = 'employer' | 'project' | 'holding';
+export type CompanyType = 'employer' | 'project' | 'holding' | 'shareholder' | 'investor';
 
 export interface NavigationItem {
   name: string;
@@ -45,7 +45,7 @@ export interface NavigationItem {
 // ALLE MOGELIJKE MENU ITEMS
 export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // ✅ DASHBOARD - SOLO (NO SECTION)
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // ✅ PROJECT-SPECIFIC ITEMS (alleen voor project bedrijven)
   { name: 'Project Dashboard', href: '/project-dashboard', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
@@ -64,22 +64,22 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // STATISTIEKEN SECTION (voor alle bedrijfstypes)
   { name: 'Werkgeverstatistieken', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'], section: 'Statistieken' },
   { name: 'Projectstatistieken', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'], section: 'Statistieken' },
-  { name: 'Holdingstatistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding'], section: 'Statistieken' },
+  { name: 'Holdingstatistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding', 'shareholder'], section: 'Statistieken' },
 
-  // FACTURATIE SECTION (employer, project, holding)
-  { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
-  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  // FACTURATIE SECTION (employer, project, holding, shareholder)
+  { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
-  { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
-  { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties Medewerkers', href: '/expenses', icon: Receipt, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
 
-  // SYSTEEM SECTION (employer en holding)
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },
+  // SYSTEEM SECTION (employer, holding, shareholder)
+  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
-  { name: 'Gebruikers Beheer', href: '/admin/users', icon: UserPlus, roles: ['admin'], companyTypes: ['employer', 'holding'] },
-  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Gebruikers Beheer', href: '/admin/users', icon: UserPlus, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
+  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // PROJECT EXTRA PAGES
   { name: 'Productie Pool', href: '/production-pool', icon: Package, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
@@ -152,7 +152,7 @@ export const getNavigationSections = (
   }
 
   if (companyType === 'holding') {
-    // HOLDING BEDRIJF SECTIONS (geen HR-functionaliteiten)
+    // HOLDING BEDRIJF SECTIONS (operationele holding zonder HR-functionaliteiten)
     return [
       {
         title: 'Statistieken',
@@ -179,6 +179,32 @@ export const getNavigationSections = (
         icon: Settings,
         defaultOpen: false,
         items: filtered.filter(i => ['Bedrijven', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Investment Pitch', 'Instellingen'].includes(i.name)),
+      },
+    ].filter(section => section.items.length > 0);
+  }
+
+  if (companyType === 'shareholder') {
+    // AANDEELHOUDER SECTIONS (participaties en eigen administratie)
+    return [
+      {
+        title: 'Statistieken',
+        icon: TrendingUp,
+        defaultOpen: true,
+        items: filtered.filter(i => i.section === 'Statistieken'),
+      },
+      {
+        title: 'Facturatie',
+        icon: Receipt,
+        defaultOpen: false,
+        items: filtered.filter(i =>
+          ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkoop Overzicht'].includes(i.name)
+        ),
+      },
+      {
+        title: 'Systeem',
+        icon: Settings,
+        defaultOpen: false,
+        items: filtered.filter(i => ['Bedrijven', 'Gebruikers Beheer', 'Instellingen'].includes(i.name)),
       },
     ].filter(section => section.items.length > 0);
   }

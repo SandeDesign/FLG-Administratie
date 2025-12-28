@@ -34,7 +34,13 @@ const HoldingStatistics: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!selectedCompany || !adminUserId || selectedCompany.companyType !== 'holding') {
+    // Deze pagina is voor holdings EN shareholders
+    if (!selectedCompany || !adminUserId) {
+      setLoading(false);
+      return;
+    }
+
+    if (selectedCompany.companyType !== 'holding' && selectedCompany.companyType !== 'shareholder') {
       setLoading(false);
       return;
     }
@@ -60,30 +66,43 @@ const HoldingStatistics: React.FC = () => {
       });
       console.log(`🎯 Current holding: ${selectedCompany.name} (id: ${selectedCompany.id}, type: ${selectedCompany.companyType})`);
 
-      // Werkmaatschappijen ophalen:
-      // 1. EERST: companies met primaryEmployerId === holding.id (expliciete link)
-      // 2. FALLBACK: employer/project companies ZONDER primaryEmployerId (backwards compatibility)
-      // 3. EXCLUDE: andere holdings (companyType === 'holding')
-      const workCompanies = companies.filter(c => {
-        // Skip de holding zelf
-        if (c.id === selectedCompany.id) return false;
+      // Werkmaatschappijen ophalen op basis van bedrijfstype:
+      // Voor HOLDING: toon employer/project companies (werkmaatschappijen)
+      // Voor SHAREHOLDER: toon alleen eigen data (geen aggregatie van andere bedrijven)
+      const isOperationalHolding = selectedCompany.companyType === 'holding';
+      const isShareholder = selectedCompany.companyType === 'shareholder';
 
-        // Skip andere holdings (dit zijn waarschijnlijk aandeelhouders zoals Sandebeheer/Carlibeheer)
-        if (c.companyType === 'holding') return false;
+      let workCompanies = [];
 
-        // User moet matchen
-        if (c.userId !== adminUserId) return false;
+      if (isOperationalHolding) {
+        // HOLDING: toon werkmaatschappijen
+        // 1. EERST: companies met primaryEmployerId === holding.id (expliciete link)
+        // 2. FALLBACK: employer/project companies ZONDER primaryEmployerId (backwards compatibility)
+        // 3. EXCLUDE: andere holdings en shareholders
+        workCompanies = companies.filter(c => {
+          // Skip de holding zelf
+          if (c.id === selectedCompany.id) return false;
 
-        // Include als het expliciet linked is via primaryEmployerId
-        if (c.primaryEmployerId === selectedCompany.id) return true;
+          // Skip andere holdings en shareholders
+          if (c.companyType === 'holding' || c.companyType === 'shareholder') return false;
 
-        // FALLBACK: Include employer/project companies zonder primaryEmployerId (backwards compatibility)
-        if (!c.primaryEmployerId && (c.companyType === 'employer' || c.companyType === 'project')) {
-          return true;
-        }
+          // User moet matchen
+          if (c.userId !== adminUserId) return false;
 
-        return false;
-      });
+          // Include als het expliciet linked is via primaryEmployerId
+          if (c.primaryEmployerId === selectedCompany.id) return true;
+
+          // FALLBACK: Include employer/project companies zonder primaryEmployerId (backwards compatibility)
+          if (!c.primaryEmployerId && (c.companyType === 'employer' || c.companyType === 'project')) {
+            return true;
+          }
+
+          return false;
+        });
+      } else if (isShareholder) {
+        // SHAREHOLDER: toon alleen eigen data (geen werkmaatschappijen)
+        workCompanies = [];
+      }
 
       console.log(`✅ Found ${workCompanies.length} work companies under ${selectedCompany.name}`);
       console.log(`📋 Companies: ${workCompanies.map(c => c.name).join(', ')}`);
@@ -217,15 +236,15 @@ const HoldingStatistics: React.FC = () => {
   if (!selectedCompany) {
     return (
       <div className="p-6">
-        <p className="text-gray-500">Selecteer een holding bedrijf om statistieken te bekijken.</p>
+        <p className="text-gray-500">Selecteer een holding of aandeelhouder om statistieken te bekijken.</p>
       </div>
     );
   }
 
-  if (selectedCompany.companyType !== 'holding') {
+  if (selectedCompany.companyType !== 'holding' && selectedCompany.companyType !== 'shareholder') {
     return (
       <div className="p-6">
-        <p className="text-gray-500">Deze pagina is alleen beschikbaar voor holding bedrijven.</p>
+        <p className="text-gray-500">Deze pagina is alleen beschikbaar voor holdings en aandeelhouders.</p>
       </div>
     );
   }
@@ -254,11 +273,19 @@ const HoldingStatistics: React.FC = () => {
       value: s.profit,
     }));
 
+  const pageTitle = selectedCompany.companyType === 'shareholder'
+    ? 'Aandeelhouder Statistieken'
+    : 'Holding Statistieken';
+
+  const pageDescription = selectedCompany.companyType === 'shareholder'
+    ? `Overzicht van ${selectedCompany.name}`
+    : `Overzicht van alle bedrijven onder ${selectedCompany.name}`;
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Holding Statistieken</h1>
-        <p className="text-gray-600 mt-1">Overzicht van alle bedrijven onder {selectedCompany.name}</p>
+        <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
+        <p className="text-gray-600 mt-1">{pageDescription}</p>
       </div>
 
       {/* Totalen Cards */}

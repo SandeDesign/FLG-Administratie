@@ -84,7 +84,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
 
   if (!userRole) return null;
 
-  const companyType = selectedCompany?.companyType as 'employer' | 'project' | 'holding' | undefined;
+  const companyType = selectedCompany?.companyType as 'employer' | 'project' | 'holding' | 'shareholder' | 'investor' | undefined;
 
   // Dashboard is altijd het eerste item (fixed)
   const dashboardItem = {
@@ -106,6 +106,21 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
         ];
       }
       // Employee in holding company (shouldn't happen, but fallback)
+      return [
+        { href: '/settings', icon: SettingsIcon, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
+      ];
+    }
+
+    // ✅ SHAREHOLDER COMPANY
+    if (companyType === 'shareholder') {
+      if (userRole === 'admin' || userRole === 'manager') {
+        return [
+          { href: '/statistics/holding', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
+          { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-primary-500 to-primary-600' },
+          { href: '/incoming-invoices', icon: Upload, label: 'Inkoop', gradient: 'from-primary-600 to-primary-700' },
+        ];
+      }
+      // Employee in shareholder company (shouldn't happen, but fallback)
       return [
         { href: '/settings', icon: SettingsIcon, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
       ];

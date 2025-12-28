@@ -5,10 +5,17 @@ export interface Company {
   kvk: string;
   taxNumber: string;
 
-  // ✅ AANGEPAST: Loonmaatschappij vs Werkmaatschappij structuur
-  companyType: 'employer' | 'project' | 'holding';
+  // ✅ AANGEPAST: Bedrijfstype structuur
+  companyType: 'employer' | 'project' | 'holding' | 'shareholder' | 'investor';
+  // 'employer' = Loonmaatschappij (Buddy) waar personeel in dienst is
+  // 'project' = Werkmaatschappij waar personeel wordt gedetacheerd
+  // 'holding' = Operationele holding (Festina Lente) die garant staat
+  // 'shareholder' = Aandeelhouder (Sandebeheer, Carlibeheer) met participaties
+  // 'investor' = Project investeerder (toekomstig)
+
   payrollCompanyId?: string; // Voor work companies - verwijst naar loonmaatschappij
   primaryEmployerId?: string; // Voor project/holding companies - verwijst naar hoofdbedrijf
+  shareholdings?: Array<{ companyId: string; percentage: number }>; // Voor shareholders - participaties in andere bedrijven
 
   // ✅ NIEUW: Toegangsbeheer - managers/gebruikers die toegang hebben tot dit bedrijf
   allowedUsers?: string[]; // Array van user UIDs die toegang hebben tot dit bedrijf

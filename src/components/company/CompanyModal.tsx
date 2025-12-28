@@ -29,7 +29,7 @@ interface CompanyFormData {
   pensionContributionPercentage: number;
 
   // ✅ NIEUW: Bedrijfstype fields
-  companyType: 'employer' | 'project' | 'holding';
+  companyType: 'employer' | 'project' | 'holding' | 'shareholder' | 'investor';
   primaryEmployerId?: string;
   themeColor?: string; // Theme color for this company
   logoUrl?: string; // Base64 encoded logo
@@ -239,48 +239,79 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             Bedrijfstype *
           </label>
-          <div className="grid grid-cols-3 gap-4">
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
               <input
                 type="radio"
                 value="employer"
                 {...register('companyType', { required: 'Selecteer een bedrijfstype' })}
-                className="mr-3"
+                className="mt-1 mr-3"
               />
               <div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">Werkgever</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Met HR-functionaliteiten
+                <div className="font-medium text-gray-900 dark:text-gray-100">Loonmaatschappij</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Personeel in dienst + HR
                 </div>
               </div>
             </label>
 
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
-              <input
-                type="radio"
-                value="holding"
-                {...register('companyType', { required: 'Selecteer een bedrijfstype' })}
-                className="mr-3"
-              />
-              <div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">Holding</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Zonder HR-functionaliteiten
-                </div>
-              </div>
-            </label>
-
-            <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
               <input
                 type="radio"
                 value="project"
                 {...register('companyType', { required: 'Selecteer een bedrijfstype' })}
-                className="mr-3"
+                className="mt-1 mr-3"
               />
               <div>
-                <div className="font-medium text-gray-900 dark:text-gray-100">Projectbedrijf</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Voor projecten/klanten
+                <div className="font-medium text-gray-900 dark:text-gray-100">Werkmaatschappij</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Detachering + Facturatie
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <input
+                type="radio"
+                value="holding"
+                {...register('companyType', { required: 'Selecteer een bedrijfstype' })}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">Holding</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Operationele holding
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <input
+                type="radio"
+                value="shareholder"
+                {...register('companyType', { required: 'Selecteer een bedrijfstype' })}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">Aandeelhouder</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Participatie in holdings
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 opacity-50">
+              <input
+                type="radio"
+                value="investor"
+                {...register('companyType', { required: 'Selecteer een bedrijfstype' })}
+                className="mt-1 mr-3"
+                disabled
+              />
+              <div>
+                <div className="font-medium text-gray-900 dark:text-gray-100">Investeerder</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  (Binnenkort beschikbaar)
                 </div>
               </div>
             </label>

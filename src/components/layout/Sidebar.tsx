@@ -40,7 +40,7 @@ export interface NavigationItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   roles: string[];
-  companyTypes?: ('employer' | 'project' | 'holding')[];
+  companyTypes?: ('employer' | 'project' | 'holding' | 'shareholder' | 'investor')[];
   badge?: string;
   color?: string;
 }
@@ -48,7 +48,7 @@ export interface NavigationItem {
 // Menu per rol en bedrijfstype - CLEANER ICONS
 export const navigation: NavigationItem[] = [
   // DASHBOARD - Iedereen
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // ADMIN - EMPLOYER (HR Beheer) - NIET voor holding
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'], companyTypes: ['employer'] },
@@ -57,11 +57,11 @@ export const navigation: NavigationItem[] = [
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: Stethoscope, roles: ['admin'], companyTypes: ['employer'] },
 
   // FINANCIEEL - Voor alle types (employer, project, holding)
-  { name: 'Klanten & Leveranciers', href: '/invoice-relations', icon: Handshake, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
-  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
-  { name: 'Uitgaande facturen', href: '/outgoing-invoices', icon: FileOutput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
-  { name: 'Inkomende facturen', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding'] },
-  { name: 'Inkoop Upload', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Klanten & Leveranciers', href: '/invoice-relations', icon: Handshake, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Uitgaande facturen', href: '/outgoing-invoices', icon: FileOutput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Inkomende facturen', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Inkoop Upload', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
 
   // PROJECT COMPANY
@@ -71,12 +71,12 @@ export const navigation: NavigationItem[] = [
   // STATISTIEKEN - Voor alle rollen en bedrijfstypes
   { name: 'Statistieken', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { name: 'Statistieken', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'] },
-  { name: 'Statistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding'] },
+  { name: 'Statistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding', 'shareholder'] },
 
-  // SYSTEEM (Admin - Employer en Holding)
-  { name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding'] },
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },
-  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding'] },
+  // SYSTEEM (Admin - Employer, Holding, Shareholder)
+  { name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
+  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
 
   // MANAGER - Specifiek (alleen employer)
   { name: 'Mijn Team', href: '/employees', icon: Users, roles: ['manager'], companyTypes: ['employer'] },
@@ -90,7 +90,7 @@ export const navigation: NavigationItem[] = [
   { name: 'Mijn Loonstroken', href: '/payslips', icon: CreditCard, roles: ['employee'], companyTypes: ['employer'] },
 
   // INSTELLINGEN - Iedereen
-  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 ];
 
 interface Section {
