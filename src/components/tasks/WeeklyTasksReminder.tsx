@@ -306,16 +306,16 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
     >
       <div className="space-y-6">
         {/* Summary */}
-        <div className="bg-gradient-to-r from-primary-50 to-indigo-50 rounded-lg p-4 border border-primary-200">
+        <div className="bg-gradient-to-r from-primary-50 to-indigo-50 dark:from-primary-900/30 dark:to-indigo-900/30 rounded-lg p-4 border border-primary-200 dark:border-primary-800">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-white rounded-lg shadow-sm">
-              <Calendar className="h-6 w-6 text-primary-600" />
+            <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+              <Calendar className="h-6 w-6 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                 {thisWeekTasks.length} {thisWeekTasks.length === 1 ? 'taak' : 'taken'} deze week
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
                 {selectedCompany?.name}
               </p>
             </div>
@@ -326,8 +326,8 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
         {overdueTasks.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              <h4 className="font-semibold text-gray-900">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">
                 Te laat ({overdueTasks.length})
               </h4>
             </div>
@@ -335,23 +335,23 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               {overdueTasks.map(task => (
                 <div
                   key={task.id}
-                  className="p-3 bg-red-50 border border-red-200 rounded-lg"
+                  className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
                 >
                   <div className="flex items-start gap-3">
                     <button
                       onClick={() => handleCompleteTask(task)}
                       disabled={completingTasks.has(task.id)}
-                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-red-400 hover:bg-red-100 disabled:opacity-50 flex items-center justify-center transition-colors"
+                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-red-400 dark:border-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 flex items-center justify-center transition-colors"
                     >
                       {completingTasks.has(task.id) && (
-                        <Check className="h-3 w-3 text-red-600" />
+                        <Check className="h-3 w-3 text-red-600 dark:text-red-400" />
                       )}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{task.title}</p>
-                      <p className="text-sm text-red-600">{formatDate(task.dueDate)}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
+                      <p className="text-sm text-red-600 dark:text-red-400">{formatDate(task.dueDate)}</p>
                       {task.isRecurring && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           🔄 Terugkerend ({task.frequency})
                         </p>
                       )}
@@ -361,13 +361,13 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                         <button
                           onClick={() => handleCompleteTask(task, true)}
                           disabled={completingTasks.has(task.id)}
-                          className="p-1.5 rounded hover:bg-red-100 disabled:opacity-50 transition-colors"
+                          className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 transition-colors"
                           title="Vervolgtaak aanmaken"
                         >
-                          <Plus className="h-4 w-4 text-red-600" />
+                          <Plus className="h-4 w-4 text-red-600 dark:text-red-400" />
                         </button>
                       )}
-                      <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                      <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 mt-0.5" />
                     </div>
                   </div>
                 </div>
@@ -380,8 +380,8 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
         {todayTasks.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Clock className="h-5 w-5 text-orange-600" />
-              <h4 className="font-semibold text-gray-900">
+              <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">
                 Vandaag ({todayTasks.length})
               </h4>
             </div>
@@ -389,23 +389,23 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               {todayTasks.map(task => (
                 <div
                   key={task.id}
-                  className="p-3 bg-orange-50 border border-orange-200 rounded-lg"
+                  className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg"
                 >
                   <div className="flex items-start gap-3">
                     <button
                       onClick={() => handleCompleteTask(task)}
                       disabled={completingTasks.has(task.id)}
-                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-orange-400 hover:bg-orange-100 disabled:opacity-50 flex items-center justify-center transition-colors"
+                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-orange-400 dark:border-orange-500 hover:bg-orange-100 dark:hover:bg-orange-900/30 disabled:opacity-50 flex items-center justify-center transition-colors"
                     >
                       {completingTasks.has(task.id) && (
-                        <Check className="h-3 w-3 text-orange-600" />
+                        <Check className="h-3 w-3 text-orange-600 dark:text-orange-400" />
                       )}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{task.title}</p>
-                      <p className="text-sm text-orange-600">Vandaag</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
+                      <p className="text-sm text-orange-600 dark:text-orange-400">Vandaag</p>
                       {task.isRecurring && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           🔄 Terugkerend ({task.frequency})
                         </p>
                       )}
@@ -415,13 +415,13 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                         <button
                           onClick={() => handleCompleteTask(task, true)}
                           disabled={completingTasks.has(task.id)}
-                          className="p-1.5 rounded hover:bg-orange-100 disabled:opacity-50 transition-colors"
+                          className="p-1.5 rounded hover:bg-orange-100 dark:hover:bg-orange-900/30 disabled:opacity-50 transition-colors"
                           title="Vervolgtaak aanmaken"
                         >
-                          <Plus className="h-4 w-4 text-orange-600" />
+                          <Plus className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                         </button>
                       )}
-                      <Clock className="h-5 w-5 text-orange-500 mt-0.5" />
+                      <Clock className="h-5 w-5 text-orange-500 dark:text-orange-400 mt-0.5" />
                     </div>
                   </div>
                 </div>
@@ -434,8 +434,8 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
         {upcomingTasks.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <h4 className="font-semibold text-gray-900">
+              <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">
                 Binnenkort ({upcomingTasks.length})
               </h4>
             </div>
@@ -443,23 +443,23 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               {upcomingTasks.slice(0, 5).map(task => (
                 <div
                   key={task.id}
-                  className="p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                  className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
                 >
                   <div className="flex items-start gap-3">
                     <button
                       onClick={() => handleCompleteTask(task)}
                       disabled={completingTasks.has(task.id)}
-                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-blue-400 hover:bg-blue-100 disabled:opacity-50 flex items-center justify-center transition-colors"
+                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-blue-400 dark:border-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 flex items-center justify-center transition-colors"
                     >
                       {completingTasks.has(task.id) && (
-                        <Check className="h-3 w-3 text-blue-600" />
+                        <Check className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                       )}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{task.title}</p>
-                      <p className="text-sm text-blue-600">{formatDate(task.dueDate)}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
+                      <p className="text-sm text-blue-600 dark:text-blue-400">{formatDate(task.dueDate)}</p>
                       {task.isRecurring && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           🔄 Terugkerend ({task.frequency})
                         </p>
                       )}
@@ -469,19 +469,19 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                         <button
                           onClick={() => handleCompleteTask(task, true)}
                           disabled={completingTasks.has(task.id)}
-                          className="p-1.5 rounded hover:bg-blue-100 disabled:opacity-50 transition-colors"
+                          className="p-1.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 disabled:opacity-50 transition-colors"
                           title="Vervolgtaak aanmaken"
                         >
-                          <Plus className="h-4 w-4 text-blue-600" />
+                          <Plus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </button>
                       )}
-                      <ChevronRight className="h-5 w-5 text-blue-400 mt-0.5" />
+                      <ChevronRight className="h-5 w-5 text-blue-400 dark:text-blue-500 mt-0.5" />
                     </div>
                   </div>
                 </div>
               ))}
               {upcomingTasks.length > 5 && (
-                <p className="text-sm text-gray-500 text-center py-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
                   + {upcomingTasks.length - 5} meer
                 </p>
               )}
@@ -490,7 +490,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
         )}
 
         {/* Actions */}
-        <div className="flex gap-3 pt-4 border-t border-gray-200">
+        <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <Button
             variant="secondary"
             onClick={handleClose}

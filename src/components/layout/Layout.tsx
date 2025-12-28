@@ -36,7 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* Desktop Sidebar */}
       <Sidebar />
 
@@ -89,11 +89,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {/* Dropdown Menu - Opens LEFT on mobile */}
               {companyDropdownOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setCompanyDropdownOpen(false)} 
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setCompanyDropdownOpen(false)}
                   />
-                  <div className="absolute -left-48 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto lg:right-0">
+                  <div className="absolute -left-48 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto lg:right-0">
                     <div className="p-2 space-y-1">
                       {companies && companies.map((company) => (
                         <button
@@ -104,8 +104,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           }}
                           className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left ${
                             selectedCompany?.id === company.id
-                              ? 'bg-primary-50 border border-primary-200 text-primary-900'
-                              : 'hover:bg-gray-50 text-gray-700'
+                              ? 'bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 text-primary-900 dark:text-primary-200'
+                              : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                           }`}
                         >
                           {company.logoUrl ? (
@@ -129,26 +129,26 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Desktop Header */}
-        <header className="hidden lg:flex lg:items-center lg:justify-end lg:px-6 lg:py-4 lg:bg-white lg:border-b lg:border-gray-200">
+        <header className="hidden lg:flex lg:items-center lg:justify-end lg:px-6 lg:py-4 lg:bg-white dark:bg-gray-800 lg:border-b lg:border-gray-200 dark:border-gray-700">
           {/* RIGHT: Company Selector */}
           <div className="relative">
             <button
               onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
-              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
-              <Building2 className="h-5 w-5 text-primary-600" />
-              <span className="text-sm font-medium text-gray-700">{selectedCompany?.name || 'Selecteer bedrijf'}</span>
-              <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
+              <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{selectedCompany?.name || 'Selecteer bedrijf'}</span>
+              <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Dropdown Menu */}
             {companyDropdownOpen && (
               <>
-                <div 
-                  className="fixed inset-0 z-10" 
-                  onClick={() => setCompanyDropdownOpen(false)} 
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setCompanyDropdownOpen(false)}
                 />
-                <div className="absolute -left-48 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto">
+                <div className="absolute -left-48 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto">
                   <div className="p-2 space-y-1">
                     {companies && companies.map((company) => (
                       <button
@@ -159,8 +159,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         }}
                         className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left ${
                           selectedCompany?.id === company.id
-                            ? 'bg-primary-50 border border-primary-200 text-primary-900'
-                            : 'hover:bg-gray-50 text-gray-700'
+                            ? 'bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 text-primary-900 dark:text-primary-200'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                         }`}
                       >
                         {company.logoUrl ? (

@@ -83,7 +83,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       />
 
       {/* Modern Menu Content */}
-      <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-gradient-to-br from-white via-gray-50/95 to-white/90 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ease-out overflow-hidden flex flex-col">
+      <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-gradient-to-br from-white via-gray-50/95 to-white/90 dark:from-gray-900 dark:via-gray-800/95 dark:to-gray-900/90 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ease-out overflow-hidden flex flex-col">
 
         {/* Modern Header with Gradient */}
         <div className="relative p-6 border-b border-white/20 bg-gradient-to-br from-primary-600 via-primary-500 to-indigo-600 flex-shrink-0 shadow-lg">
@@ -126,8 +126,8 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
         {/* Modern Company Selector */}
         {userRole === 'admin' && companies && companies.length > 0 && (
-          <div className="p-5 border-b border-gray-200/50 flex-shrink-0 bg-white/60 backdrop-blur-sm">
-            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2.5">
+          <div className="p-5 border-b border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm">
+            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2.5">
               Bedrijf Selecteren
             </label>
             <select
@@ -136,7 +136,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                 const company = companies.find(c => c.id === e.target.value);
                 if (company) setSelectedCompany(company);
               }}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm hover:shadow-md hover:border-primary-200"
+              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm hover:shadow-md hover:border-primary-200 dark:hover:border-primary-600"
             >
               <option value="">Selecteer bedrijf</option>
               {companies.map((company) => (
@@ -161,17 +161,17 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                   `flex items-center space-x-4 px-5 py-4 rounded-2xl transition-all duration-300 font-semibold text-sm shadow-lg hover:shadow-xl ${
                     isActive
                       ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-primary-500/40'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 shadow-gray-200/50'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-gray-200/50 dark:shadow-gray-900/50'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      isActive ? 'bg-white/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200'
+                      isActive ? 'bg-white/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600'
                     }`}>
                       <LayoutDashboard className={`h-5 w-5 ${
-                        isActive ? 'text-white' : 'text-gray-700'
+                        isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300'
                       }`} />
                     </div>
                     <span className="flex-1">Dashboard</span>
@@ -186,7 +186,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
           {/* Favorites Card */}
           {favoriteItems.length > 0 && (
-            <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl p-4 mb-4 shadow-lg border border-amber-100">
+            <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-orange-900/30 rounded-2xl p-4 mb-4 shadow-lg border border-amber-100 dark:border-amber-800">
               <button
                 onClick={() => toggleSection('Favorieten')}
                 className="w-full flex items-center justify-between mb-3 group"
@@ -195,9 +195,9 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                   <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg">
                     <Star className="h-4 w-4 text-white fill-white" />
                   </div>
-                  <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">Favorieten</span>
+                  <span className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">Favorieten</span>
                 </div>
-                <ChevronDown className={`h-5 w-5 text-amber-600 transition-transform duration-300 ${
+                <ChevronDown className={`h-5 w-5 text-amber-600 dark:text-amber-400 transition-transform duration-300 ${
                   expandedSections.includes('Favorieten') ? 'rotate-180' : ''
                 }`} />
               </button>
@@ -214,18 +214,18 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                         className={({ isActive }) =>
                           `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                             isActive
-                              ? 'bg-white text-amber-700 shadow-md'
-                              : 'text-gray-700 hover:bg-white/60'
+                              ? 'bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 shadow-md'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-800/60'
                           }`
                         }
                       >
                         {({ isActive }) => (
                           <>
                             <div className={`p-2 rounded-lg transition-all duration-200 ${
-                              isActive ? 'bg-amber-100' : 'bg-white/70'
+                              isActive ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-white/70 dark:bg-gray-700/70'
                             }`}>
                               <ItemIcon className={`h-4 w-4 ${
-                                isActive ? 'text-amber-600' : 'text-gray-600'
+                                isActive ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'
                               }`} />
                             </div>
                             <span className="flex-1">{item.name}</span>
@@ -244,24 +244,24 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
             const SectionIcon = section.icon;
             const isExpanded = expandedSections.includes(section.title);
             return (
-              <div key={section.title} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+              <div key={section.title} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <button
                   onClick={() => toggleSection(section.title)}
-                  className="w-full flex items-center justify-between p-4 group hover:bg-gray-50 transition-colors duration-200"
+                  className="w-full flex items-center justify-between p-4 group hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 shadow-lg group-hover:shadow-xl transition-shadow">
                       <SectionIcon className="h-4 w-4 text-white" />
                     </div>
-                    <span className="text-sm font-bold text-gray-800 uppercase tracking-wide">{section.title}</span>
+                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">{section.title}</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${
-                    isExpanded ? 'rotate-180 text-primary-600' : ''
+                  <ChevronDown className={`h-5 w-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 ${
+                    isExpanded ? 'rotate-180 text-primary-600 dark:text-primary-400' : ''
                   }`} />
                 </button>
 
                 {isExpanded && (
-                  <div className="px-3 pb-3 space-y-1 bg-gradient-to-br from-gray-50 to-white">
+                  <div className="px-3 pb-3 space-y-1 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
                     {section.items.map((item) => {
                       const ItemIcon = item.icon;
                       return (
@@ -273,17 +273,17 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                             `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                               isActive
                                 ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
-                                : 'text-gray-700 hover:bg-white hover:shadow-md'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-md'
                             }`
                           }
                         >
                           {({ isActive }) => (
                             <>
                               <div className={`p-2 rounded-lg transition-all duration-200 ${
-                                isActive ? 'bg-white/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200'
+                                isActive ? 'bg-white/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600'
                               }`}>
                                 <ItemIcon className={`h-4 w-4 ${
-                                  isActive ? 'text-white' : 'text-gray-600'
+                                  isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'
                                 }`} />
                               </div>
                               <span className="flex-1">{item.name}</span>
@@ -303,13 +303,13 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         </nav>
 
         {/* Modern Footer */}
-        <div className="border-t border-gray-200/50 p-5 bg-gradient-to-br from-gray-50 via-white to-gray-50 flex-shrink-0 shadow-inner">
+        <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-5 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex-shrink-0 shadow-inner">
           <button
             onClick={() => {
               signOut();
               onClose();
             }}
-            className="w-full flex items-center justify-center space-x-3 px-5 py-3.5 text-sm font-bold text-red-700 bg-white hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl border border-red-100 hover:border-red-200"
+            className="w-full flex items-center justify-center space-x-3 px-5 py-3.5 text-sm font-bold text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl border border-red-100 dark:border-red-800 hover:border-red-200 dark:hover:border-red-700"
           >
             <LogOut className="h-5 w-5" />
             <span>Uitloggen</span>
