@@ -28,22 +28,15 @@ const WeeklyTasksReminder: React.FC = () => {
     }
 
     try {
-      // Check of we vandaag al de reminder hebben getoond
-      const lastShown = localStorage.getItem(`tasksReminder_${user.uid}_${selectedCompany.id}`);
-      const today = new Date();
-      const todayKey = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-
-      if (lastShown === todayKey) {
-        setLoading(false);
-        return; // Al getoond vandaag
-      }
-
       // Haal ALLE taken op voor dit bedrijf
       // Admin, co-admin en manager zien alle bedrijfstaken
       // Ook taken die aan hen toegewezen zijn
       const allTasks = await getAllCompanyTasks(selectedCompany.id, user.uid);
 
+      console.log('📋 Alle taken opgehaald:', allTasks.length);
+
       // Filter taken voor deze week (inclusief late taken)
+      const today = new Date();
       const weekStart = getWeekStart(today);
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
@@ -57,14 +50,31 @@ const WeeklyTasksReminder: React.FC = () => {
         return dueDate < today || (dueDate >= weekStart && dueDate < weekEnd);
       });
 
+      console.log('📅 Taken deze week:', tasksThisWeek.length);
+
       if (tasksThisWeek.length > 0) {
+        // Check of we vandaag al de reminder hebben getoond
+        const lastShown = localStorage.getItem(`tasksReminder_${user.uid}_${selectedCompany.id}`);
+        const todayKey = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+        console.log('🔑 LastShown:', lastShown, 'TodayKey:', todayKey);
+
+        if (lastShown === todayKey) {
+          console.log('⏭️ Popup al getoond vandaag, skip');
+          setLoading(false);
+          return; // Al getoond vandaag
+        }
+
+        console.log('✅ Toon popup met', tasksThisWeek.length, 'taken');
         setThisWeekTasks(tasksThisWeek);
         setShowReminder(true);
+      } else {
+        console.log('❌ Geen taken om te tonen');
       }
 
       setLoading(false);
     } catch (error) {
-      console.error('Error checking weekly tasks:', error);
+      console.error('❌ Error checking weekly tasks:', error);
       setLoading(false);
     }
   };
