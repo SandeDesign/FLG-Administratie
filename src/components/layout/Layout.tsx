@@ -52,14 +52,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40 h-20 max-h-20">
+        <header className="lg:hidden bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40 h-20 max-h-20">
           {/* LEFT: Back button */}
           <div className="flex-1">
             <button
               onClick={handleBackClick}
-              className={`p-2 rounded-lg hover:bg-gray-100 transition-colors ${canGoBack ? '' : 'opacity-0 pointer-events-none'}`}
+              className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${canGoBack ? '' : 'opacity-0 pointer-events-none'}`}
             >
-              <ArrowLeft className="h-6 w-6 text-gray-600" />
+              <ArrowLeft className="h-6 w-6 text-gray-600 dark:text-gray-300" />
             </button>
           </div>
 
@@ -80,10 +80,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="relative">
               <button
                 onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
-                className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                <Building2 className="h-5 w-5 text-primary-600" />
-                <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
+                <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Dropdown Menu - Opens LEFT on mobile */}
