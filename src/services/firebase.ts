@@ -1727,6 +1727,60 @@ export const getAllCompanyTasks = async (companyId: string, userId?: string): Pr
 };
 
 /**
+ * Haal gebruikers op die toegang hebben tot een bedrijf
+ * (voor toewijzen van taken)
+ */
+export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: string; email: string; displayName?: string }>> => {
+  try {
+    const companyDoc = await getDoc(doc(db, 'companies', companyId));
+
+    if (!companyDoc.exists()) {
+      return [];
+    }
+
+    const companyData = companyDoc.data();
+    const userIds: string[] = [companyData.userId]; // Owner
+
+    // Voeg allowed users toe (managers/co-admins)
+    if (companyData.allowedUsers && Array.isArray(companyData.allowedUsers)) {
+      userIds.push(...companyData.allowedUsers);
+    }
+
+    // Maak unieke lijst
+    const uniqueUserIds = [...new Set(userIds)];
+
+    // Haal user details op uit users collection
+    const usersPromises = uniqueUserIds.map(async (uid) => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          return {
+            uid,
+            email: userData.email || 'Onbekend',
+            displayName: userData.displayName || userData.email?.split('@')[0] || 'Onbekend'
+          };
+        }
+      } catch (error) {
+        console.error(`Error fetching user ${uid}:`, error);
+      }
+
+      return {
+        uid,
+        email: 'Onbekend',
+        displayName: uid
+      };
+    });
+
+    const users = await Promise.all(usersPromises);
+    return users.filter(u => u !== null);
+  } catch (error) {
+    console.error('Error getting company users:', error);
+    return [];
+  }
+};
+
+/**
  * Haal een enkele taak op
  */
 export const getTask = async (taskId: string, userId: string): Promise<any | null> => {

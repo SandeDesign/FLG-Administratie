@@ -31,6 +31,7 @@ import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency } f
 import {
   getTasks,
   getAllCompanyTasks,
+  getCompanyUsers,
   createTask,
   updateTask,
   deleteTask,
@@ -103,6 +104,7 @@ const Tasks: React.FC = () => {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState<BusinessTask | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [companyUsers, setCompanyUsers] = useState<Array<{ uid: string; email: string; displayName?: string }>>([]);
 
   // Filters
   const [showFilters, setShowFilters] = useState(false);
@@ -120,13 +122,26 @@ const Tasks: React.FC = () => {
     isRecurring: false,
     frequency: 'monthly' as TaskFrequency,
     recurrenceDay: 1,
+    assignedTo: [] as string[],
   });
 
   useEffect(() => {
     if (user && selectedCompany) {
       loadTasks();
+      loadCompanyUsers();
     }
   }, [user, selectedCompany]);
+
+  const loadCompanyUsers = async () => {
+    if (!selectedCompany) return;
+
+    try {
+      const users = await getCompanyUsers(selectedCompany.id);
+      setCompanyUsers(users);
+    } catch (err) {
+      console.error('Error loading company users:', err);
+    }
+  };
 
   const loadTasks = async () => {
     if (!user || !selectedCompany) return;
@@ -238,6 +253,7 @@ const Tasks: React.FC = () => {
       isRecurring: task.isRecurring,
       frequency: task.frequency || 'monthly',
       recurrenceDay: task.recurrenceDay || 1,
+      assignedTo: task.assignedTo || [],
     });
     setShowTaskModal(true);
   };
@@ -252,6 +268,7 @@ const Tasks: React.FC = () => {
       isRecurring: false,
       frequency: 'monthly',
       recurrenceDay: 1,
+      assignedTo: [],
     });
     setEditingTask(null);
   };
@@ -545,6 +562,45 @@ const Tasks: React.FC = () => {
               className="w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
               placeholder="Optionele beschrijving..."
             />
+          </div>
+
+          {/* Toewijzen aan gebruikers */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Toewijzen aan
+            </label>
+            <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
+              {companyUsers.length === 0 ? (
+                <p className="text-sm text-gray-500">Geen gebruikers beschikbaar</p>
+              ) : (
+                companyUsers.map((companyUser) => (
+                  <label key={companyUser.uid} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={formData.assignedTo.includes(companyUser.uid)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData({ ...formData, assignedTo: [...formData.assignedTo, companyUser.uid] });
+                        } else {
+                          setFormData({ ...formData, assignedTo: formData.assignedTo.filter(uid => uid !== companyUser.uid) });
+                        }
+                      }}
+                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-gray-900">
+                        {companyUser.displayName || companyUser.email}
+                      </span>
+                      {companyUser.displayName && (
+                        <span className="text-xs text-gray-500 ml-2">
+                          ({companyUser.email})
+                        </span>
+                      )}
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
