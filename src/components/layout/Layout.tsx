@@ -10,6 +10,7 @@ import { useApp } from '../../contexts/AppContext';
 import Sidebar from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileFullScreenMenu } from './MobileFullScreenMenu';
+import WeeklyTasksReminder from '../tasks/WeeklyTasksReminder';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -37,12 +38,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="flex h-screen bg-gray-50">
       {/* Desktop Sidebar */}
       <Sidebar />
-      
+
       {/* Mobile Full Screen Menu */}
       <MobileFullScreenMenu
         isOpen={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
       />
+
+      {/* Weekly Tasks Reminder */}
+      <WeeklyTasksReminder />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
