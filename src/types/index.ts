@@ -384,11 +384,19 @@ export interface EcosystemConfig {
 }
 
 // ✅ NIEUW: User Settings interface
+export interface BottomNavItem {
+  href: string;
+  icon: string;  // Icon naam als string (bijv. 'Clock', 'Users', 'Send')
+  label: string;
+  gradient: string;
+}
+
 export interface UserSettings {
   id?: string;
   userId: string;
   defaultCompanyId?: string;  // Default bedrijf dat wordt geladen
   favoritePages?: { [companyId: string]: string[] };  // Favorieten per bedrijf
+  bottomNavItems?: { [companyId: string]: BottomNavItem[] };  // Custom bottom nav iconen per bedrijf (3 items)
   createdAt: Date;
   updatedAt: Date;
 }

@@ -74,7 +74,7 @@ export const navigation: NavigationItem[] = [
   { name: 'Statistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding'] },
 
   // SYSTEEM (Admin - Employer en Holding)
-  { name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding'] },
+  { name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding'] },
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding'] },
   { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding'] },
 

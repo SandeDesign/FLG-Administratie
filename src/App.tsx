@@ -98,8 +98,8 @@ function App() {
                 {/* ✅ FRAME MODE ROUTES (No Layout) */}
                 <Route path="/investment-pitch" element={<InvestmentPitchWrapper />} />
 
-                {/* ✅ ADMIN ROUTES */}
-                {userRole === 'admin' && (
+                {/* ✅ ADMIN & CO-ADMIN ROUTES */}
+                {(userRole === 'admin' || userRole === 'co-admin') && (
                   <Route
                     path="/*"
                     element={
