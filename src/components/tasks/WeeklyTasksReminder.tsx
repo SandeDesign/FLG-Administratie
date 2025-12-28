@@ -1,12 +1,13 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
-import { getTasks, getAllCompanyTasks } from '../../services/firebase';
+import { getTasks, getAllCompanyTasks, updateTask, createTask } from '../../services/firebase';
 import { BusinessTask } from '../../types';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import { Calendar, CheckCircle2, AlertCircle, Clock, ChevronRight } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertCircle, Clock, ChevronRight, Check, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../hooks/useToast';
 
 export interface WeeklyTasksReminderRef {
   openManually: () => void;
@@ -16,10 +17,12 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
   const { user, userRole } = useAuth();
   const { selectedCompany } = useApp();
   const navigate = useNavigate();
+  const { success, error: showError } = useToast();
 
   const [showReminder, setShowReminder] = useState(false);
   const [thisWeekTasks, setThisWeekTasks] = useState<BusinessTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
 
   // Expose openManually functie voor external triggering
   useImperativeHandle(ref, () => ({
@@ -144,6 +147,135 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
     });
   };
 
+  const calculateNextOccurrence = (task: BusinessTask): Date | undefined => {
+    if (!task.isRecurring || !task.frequency) return undefined;
+
+    const currentDue = new Date(task.dueDate);
+    const next = new Date(currentDue);
+
+    switch (task.frequency) {
+      case 'daily':
+        next.setDate(next.getDate() + 1);
+        break;
+      case 'weekly':
+        next.setDate(next.getDate() + 7);
+        break;
+      case 'monthly':
+        next.setMonth(next.getMonth() + 1);
+        break;
+      case 'quarterly':
+        next.setMonth(next.getMonth() + 3);
+        break;
+      case 'yearly':
+        next.setFullYear(next.getFullYear() + 1);
+        break;
+    }
+
+    return next;
+  };
+
+  const handleCompleteTask = async (task: BusinessTask, createFollowUp: boolean = false) => {
+    if (!user) return;
+
+    try {
+      setCompletingTasks(prev => new Set(prev).add(task.id));
+
+      if (task.isRecurring) {
+        // Voor terugkerende taken: plan volgende cyclus en markeer huidige als voltooid
+        const nextOccurrence = calculateNextOccurrence(task);
+
+        if (nextOccurrence) {
+          // Create new task for next occurrence
+          const newTaskData = {
+            ...task,
+            id: undefined,
+            dueDate: nextOccurrence,
+            status: 'pending' as const,
+            progress: 0,
+            completedDate: undefined,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            lastGenerated: new Date(),
+            nextOccurrence: calculateNextOccurrence({ ...task, dueDate: nextOccurrence }),
+          };
+
+          await createTask(user.uid, newTaskData);
+
+          // Mark current task as completed
+          await updateTask(task.id, user.uid, {
+            status: 'completed',
+            completedDate: new Date(),
+            progress: 100,
+            updatedAt: new Date(),
+          });
+
+          success('Taak voltooid!', `Volgende cyclus ingepland voor ${formatDate(nextOccurrence)}`);
+        }
+      } else if (createFollowUp) {
+        // Create follow-up task
+        const followUpData = {
+          ...task,
+          id: undefined,
+          title: `[Vervolg] ${task.title}`,
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week later
+          status: 'pending' as const,
+          progress: 0,
+          completedDate: undefined,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        await createTask(user.uid, followUpData);
+
+        // Set current task to pending (waiting for follow-up)
+        await updateTask(task.id, user.uid, {
+          status: 'pending',
+          updatedAt: new Date(),
+          notes: (task.notes || '') + `\n\n[Wacht op vervolgtaak]`,
+        });
+
+        success('Vervolgtaak aangemaakt!', 'Huidige taak staat op pending tot vervolgtaak voltooid is');
+      } else {
+        // Gewone completion zonder follow-up
+        await updateTask(task.id, user.uid, {
+          status: 'completed',
+          completedDate: new Date(),
+          progress: 100,
+          updatedAt: new Date(),
+        });
+
+        success('Taak voltooid!', task.title);
+      }
+
+      // Refresh tasks list
+      if (selectedCompany) {
+        const allTasks = await getAllCompanyTasks(selectedCompany.id, user.uid);
+        const today = new Date();
+        const weekStart = getWeekStart(today);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+
+        const tasksThisWeek = allTasks.filter(t => {
+          if (t.status === 'completed' || t.status === 'cancelled') return false;
+          const dueDate = new Date(t.dueDate);
+          return dueDate < today || (dueDate >= weekStart && dueDate < weekEnd);
+        });
+
+        setThisWeekTasks(tasksThisWeek);
+      }
+
+    } catch (error) {
+      console.error('Error completing task:', error);
+      showError('Fout', 'Kon taak niet voltooien');
+    } finally {
+      setCompletingTasks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(task.id);
+        return newSet;
+      });
+    }
+  };
+
   const isOverdue = (task: BusinessTask) => {
     if (task.status === 'completed' || task.status === 'cancelled') return false;
     return new Date(task.dueDate) < new Date();
@@ -205,13 +337,41 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               {overdueTasks.map(task => (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg"
+                  className="p-3 bg-red-50 border border-red-200 rounded-lg"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{task.title}</p>
-                    <p className="text-sm text-red-600">{formatDate(task.dueDate)}</p>
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={() => handleCompleteTask(task)}
+                      disabled={completingTasks.has(task.id)}
+                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-red-400 hover:bg-red-100 disabled:opacity-50 flex items-center justify-center transition-colors"
+                    >
+                      {completingTasks.has(task.id) && (
+                        <Check className="h-3 w-3 text-red-600" />
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                      <p className="text-sm text-red-600">{formatDate(task.dueDate)}</p>
+                      {task.isRecurring && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          🔄 Terugkerend ({task.frequency})
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {!task.isRecurring && (
+                        <button
+                          onClick={() => handleCompleteTask(task, true)}
+                          disabled={completingTasks.has(task.id)}
+                          className="p-1.5 rounded hover:bg-red-100 disabled:opacity-50 transition-colors"
+                          title="Vervolgtaak aanmaken"
+                        >
+                          <Plus className="h-4 w-4 text-red-600" />
+                        </button>
+                      )}
+                      <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                    </div>
                   </div>
-                  <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 ml-2" />
                 </div>
               ))}
             </div>
@@ -231,13 +391,41 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               {todayTasks.map(task => (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg"
+                  className="p-3 bg-orange-50 border border-orange-200 rounded-lg"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{task.title}</p>
-                    <p className="text-sm text-orange-600">Vandaag</p>
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={() => handleCompleteTask(task)}
+                      disabled={completingTasks.has(task.id)}
+                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-orange-400 hover:bg-orange-100 disabled:opacity-50 flex items-center justify-center transition-colors"
+                    >
+                      {completingTasks.has(task.id) && (
+                        <Check className="h-3 w-3 text-orange-600" />
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                      <p className="text-sm text-orange-600">Vandaag</p>
+                      {task.isRecurring && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          🔄 Terugkerend ({task.frequency})
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {!task.isRecurring && (
+                        <button
+                          onClick={() => handleCompleteTask(task, true)}
+                          disabled={completingTasks.has(task.id)}
+                          className="p-1.5 rounded hover:bg-orange-100 disabled:opacity-50 transition-colors"
+                          title="Vervolgtaak aanmaken"
+                        >
+                          <Plus className="h-4 w-4 text-orange-600" />
+                        </button>
+                      )}
+                      <Clock className="h-5 w-5 text-orange-500 mt-0.5" />
+                    </div>
                   </div>
-                  <Clock className="h-5 w-5 text-orange-500 flex-shrink-0 ml-2" />
                 </div>
               ))}
             </div>
@@ -257,13 +445,41 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               {upcomingTasks.slice(0, 5).map(task => (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                  className="p-3 bg-blue-50 border border-blue-200 rounded-lg"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{task.title}</p>
-                    <p className="text-sm text-blue-600">{formatDate(task.dueDate)}</p>
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={() => handleCompleteTask(task)}
+                      disabled={completingTasks.has(task.id)}
+                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-blue-400 hover:bg-blue-100 disabled:opacity-50 flex items-center justify-center transition-colors"
+                    >
+                      {completingTasks.has(task.id) && (
+                        <Check className="h-3 w-3 text-blue-600" />
+                      )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                      <p className="text-sm text-blue-600">{formatDate(task.dueDate)}</p>
+                      {task.isRecurring && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          🔄 Terugkerend ({task.frequency})
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {!task.isRecurring && (
+                        <button
+                          onClick={() => handleCompleteTask(task, true)}
+                          disabled={completingTasks.has(task.id)}
+                          className="p-1.5 rounded hover:bg-blue-100 disabled:opacity-50 transition-colors"
+                          title="Vervolgtaak aanmaken"
+                        >
+                          <Plus className="h-4 w-4 text-blue-600" />
+                        </button>
+                      )}
+                      <ChevronRight className="h-5 w-5 text-blue-400 mt-0.5" />
+                    </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-blue-400 flex-shrink-0 ml-2" />
                 </div>
               ))}
               {upcomingTasks.length > 5 && (
