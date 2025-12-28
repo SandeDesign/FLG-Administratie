@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { 
-  ArrowLeft, 
+import React, { useState, useRef } from 'react';
+import {
+  ArrowLeft,
   Building2,
   ChevronDown
 } from 'lucide-react';
@@ -10,7 +10,7 @@ import { useApp } from '../../contexts/AppContext';
 import Sidebar from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileFullScreenMenu } from './MobileFullScreenMenu';
-import WeeklyTasksReminder from '../tasks/WeeklyTasksReminder';
+import WeeklyTasksReminder, { WeeklyTasksReminderRef } from '../tasks/WeeklyTasksReminder';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,7 +23,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { companies, selectedCompany, setSelectedCompany } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const tasksReminderRef = useRef<WeeklyTasksReminderRef>(null);
+
   const canGoBack = location.pathname !== '/';
 
   const handleBackClick = () => {
@@ -46,7 +47,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       />
 
       {/* Weekly Tasks Reminder */}
-      <WeeklyTasksReminder />
+      <WeeklyTasksReminder ref={tasksReminderRef} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -62,9 +63,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
           </div>
 
-          {/* CENTER: LOGO - Click to open Taken */}
+          {/* CENTER: LOGO - Click to open Taken popup */}
           <button
-            onClick={() => navigate('/tasks')}
+            onClick={() => tasksReminderRef.current?.openManually()}
             className="flex-shrink-0 mx-2 hover:opacity-80 transition-opacity"
           >
             {selectedCompany?.logoUrl ? (
