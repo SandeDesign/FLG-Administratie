@@ -10,9 +10,12 @@ import {
   UserPlus,
   X as XIcon,
   Star,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import { getUserSettings, saveUserSettings } from '../services/firebase';
 import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { createFirebaseUser } from '../utils/firebaseAuth';
@@ -31,6 +34,7 @@ const Settings: React.FC = () => {
   const { user, userRole } = useAuth();
   const { companies, selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const [activeTab, setActiveTab] = useState<'account' | 'company'>('account');
   const [loading, setLoading] = useState(false);
   const [selectedDefaultCompanyId, setSelectedDefaultCompanyId] = useState<string>('');
@@ -466,6 +470,48 @@ const Settings: React.FC = () => {
                     </Button>
                   )}
                 </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Dark Mode */}
+          <Card>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                {isDarkMode ? (
+                  <Moon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                ) : (
+                  <Sun className="h-5 w-5 text-primary-600" />
+                )}
+                Weergave
+              </h2>
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">
+                    Dark Mode
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {isDarkMode ? 'Donkere modus ingeschakeld' : 'Lichte modus ingeschakeld'}
+                  </p>
+                </div>
+                <button
+                  onClick={toggleDarkMode}
+                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                    isDarkMode ? 'bg-primary-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${
+                      isDarkMode ? 'translate-x-8' : 'translate-x-1'
+                    }`}
+                  >
+                    {isDarkMode ? (
+                      <Moon className="h-5 w-5 text-primary-600 p-0.5" />
+                    ) : (
+                      <Sun className="h-5 w-5 text-gray-500 p-0.5" />
+                    )}
+                  </span>
+                </button>
               </div>
             </div>
           </Card>

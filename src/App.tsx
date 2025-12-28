@@ -64,6 +64,7 @@ import TimesheetExport from './pages/TimesheetExport';
 import DriveFiles from './pages/DriveFiles';
 import Tasks from './pages/Tasks';
 import { AppProvider } from './contexts/AppContext';
+import { DarkModeProvider } from './contexts/DarkModeContext';
 import { ToastContainer } from './components/ui/Toast';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
@@ -239,14 +240,16 @@ function App() {
 
   return (
     <AuthProvider>
-      <AppProvider>
-        <Router>
-          <div className="App">
-            <AppContent />
-            <ToastContainer />
-          </div>
-        </Router>
-      </AppProvider>
+      <DarkModeProvider>
+        <AppProvider>
+          <Router>
+            <div className="App">
+              <AppContent />
+              <ToastContainer />
+            </div>
+          </Router>
+        </AppProvider>
+      </DarkModeProvider>
     </AuthProvider>
   );
 }
