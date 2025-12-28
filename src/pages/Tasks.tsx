@@ -95,7 +95,7 @@ const FREQUENCY_LABELS: Record<TaskFrequency, string> = {
 const Tasks: React.FC = () => {
   const { user } = useAuth();
   const { selectedCompany } = useApp();
-  const { showToast } = useToast();
+  const { success, error } = useToast();
 
   const [tasks, setTasks] = useState<BusinessTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,9 +147,9 @@ const Tasks: React.FC = () => {
       });
 
       setTasks(updatedTasks);
-    } catch (error) {
-      console.error('Error loading tasks:', error);
-      showToast('Fout bij laden van taken', 'error');
+    } catch (err) {
+      console.error('Error loading tasks:', err);
+      error('Fout bij laden van taken');
     } finally {
       setLoading(false);
     }
@@ -166,13 +166,13 @@ const Tasks: React.FC = () => {
         dueDate: new Date(formData.dueDate),
       });
 
-      showToast('Taak aangemaakt', 'success');
+      success('Taak aangemaakt');
       setShowTaskModal(false);
       resetForm();
       loadTasks();
-    } catch (error) {
-      console.error('Error creating task:', error);
-      showToast('Fout bij aanmaken van taak', 'error');
+    } catch (err) {
+      console.error('Error creating task:', err);
+      error('Fout bij aanmaken van taak');
     }
   };
 
@@ -186,14 +186,14 @@ const Tasks: React.FC = () => {
         dueDate: new Date(formData.dueDate),
       });
 
-      showToast('Taak bijgewerkt', 'success');
+      success('Taak bijgewerkt');
       setShowTaskModal(false);
       setEditingTask(null);
       resetForm();
       loadTasks();
-    } catch (error) {
-      console.error('Error updating task:', error);
-      showToast('Fout bij bijwerken van taak', 'error');
+    } catch (err) {
+      console.error('Error updating task:', err);
+      error('Fout bij bijwerken van taak');
     }
   };
 
@@ -203,11 +203,11 @@ const Tasks: React.FC = () => {
 
     try {
       await deleteTask(taskId, user.uid);
-      showToast('Taak verwijderd', 'success');
+      success('Taak verwijderd');
       loadTasks();
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      showToast('Fout bij verwijderen van taak', 'error');
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      error('Fout bij verwijderen van taak');
     }
   };
 
@@ -216,11 +216,11 @@ const Tasks: React.FC = () => {
 
     try {
       await updateTask(task.id, user.uid, { status: newStatus });
-      showToast('Status bijgewerkt', 'success');
+      success('Status bijgewerkt');
       loadTasks();
-    } catch (error) {
-      console.error('Error updating status:', error);
-      showToast('Fout bij bijwerken van status', 'error');
+    } catch (err) {
+      console.error('Error updating status:', err);
+      error('Fout bij bijwerken van status');
     }
   };
 

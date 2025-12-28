@@ -16,6 +16,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { Company, Branch, Employee, TimeEntry, UserRole, LeaveRequest, LeaveBalance, SickLeave, AbsenceStatistics, Expense, EmployeeWithCompanies, CompanyWithEmployees, UserSettings, BudgetItem, BudgetType } from '../types';
 import { generatePoortwachterMilestones, shouldActivatePoortwachter } from '../utils/poortwachterTracking';
+import { AuditService } from './auditService';
 
 // Helper function to remove undefined values from objects (Firebase doesn't accept undefined)
 const removeUndefinedValues = (obj: any): any => {
@@ -93,7 +94,21 @@ const convertTimestamps = (data: any) => {
   if (converted.accountCreatedAt && typeof converted.accountCreatedAt.toDate === 'function') {
     converted.accountCreatedAt = converted.accountCreatedAt.toDate();
   }
-  
+
+  // Convert BusinessTask specific dates
+  if (converted.dueDate && typeof converted.dueDate.toDate === 'function') {
+    converted.dueDate = converted.dueDate.toDate();
+  }
+  if (converted.completedDate && typeof converted.completedDate.toDate === 'function') {
+    converted.completedDate = converted.completedDate.toDate();
+  }
+  if (converted.nextOccurrence && typeof converted.nextOccurrence.toDate === 'function') {
+    converted.nextOccurrence = converted.nextOccurrence.toDate();
+  }
+  if (converted.lastGenerated && typeof converted.lastGenerated.toDate === 'function') {
+    converted.lastGenerated = converted.lastGenerated.toDate();
+  }
+
   return converted;
 };
 
@@ -154,7 +169,21 @@ const convertToTimestamps = (data: any) => {
   if (converted.accountCreatedAt instanceof Date) {
     converted.accountCreatedAt = Timestamp.fromDate(converted.accountCreatedAt);
   }
-  
+
+  // Convert BusinessTask specific dates
+  if (converted.dueDate instanceof Date) {
+    converted.dueDate = Timestamp.fromDate(converted.dueDate);
+  }
+  if (converted.completedDate instanceof Date) {
+    converted.completedDate = Timestamp.fromDate(converted.completedDate);
+  }
+  if (converted.nextOccurrence instanceof Date) {
+    converted.nextOccurrence = Timestamp.fromDate(converted.nextOccurrence);
+  }
+  if (converted.lastGenerated instanceof Date) {
+    converted.lastGenerated = Timestamp.fromDate(converted.lastGenerated);
+  }
+
   return converted;
 };
 
@@ -1721,14 +1750,16 @@ export const createTask = async (userId: string, taskData: any): Promise<string>
     const docRef = await addDoc(collection(db, 'businessTasks'), taskToSave);
 
     // Audit log
-    await addAuditLog({
+    await AuditService.logAction(
       userId,
-      companyId: taskData.companyId,
-      action: 'create_task',
-      description: `Taak aangemaakt: ${taskData.title}`,
-      entityType: 'task' as any,
-      entityId: docRef.id,
-    });
+      'create' as any,
+      'task' as any,
+      docRef.id,
+      {
+        companyId: taskData.companyId,
+        metadata: { description: `Taak aangemaakt: ${taskData.title}` },
+      }
+    );
 
     return docRef.id;
   } catch (error) {
@@ -1782,14 +1813,16 @@ export const updateTask = async (taskId: string, userId: string, updates: any): 
     await updateDoc(taskRef, dataToSave);
 
     // Audit log
-    await addAuditLog({
+    await AuditService.logAction(
       userId,
-      companyId: taskData.companyId,
-      action: 'update_task',
-      description: `Taak bijgewerkt: ${taskData.title}`,
-      entityType: 'task' as any,
-      entityId: taskId,
-    });
+      'update' as any,
+      'task' as any,
+      taskId,
+      {
+        companyId: taskData.companyId,
+        metadata: { description: `Taak bijgewerkt: ${taskData.title}` },
+      }
+    );
   } catch (error) {
     console.error('Error updating task:', error);
     throw error;
@@ -1818,14 +1851,16 @@ export const deleteTask = async (taskId: string, userId: string): Promise<void> 
     await deleteDoc(taskRef);
 
     // Audit log
-    await addAuditLog({
+    await AuditService.logAction(
       userId,
-      companyId: taskData.companyId,
-      action: 'delete_task',
-      description: `Taak verwijderd: ${taskData.title}`,
-      entityType: 'task' as any,
-      entityId: taskId,
-    });
+      'delete' as any,
+      'task' as any,
+      taskId,
+      {
+        companyId: taskData.companyId,
+        metadata: { description: `Taak verwijderd: ${taskData.title}` },
+      }
+    );
   } catch (error) {
     console.error('Error deleting task:', error);
     throw error;
