@@ -178,7 +178,7 @@ export const getNavigationSections = (
         title: 'Systeem',
         icon: Settings,
         defaultOpen: false,
-        items: filtered.filter(i => ['Bedrijven', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Investment Pitch', 'Instellingen'].includes(i.name)),
+        items: filtered.filter(i => ['Taken', 'Bedrijven', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Investment Pitch', 'Instellingen'].includes(i.name)),
       },
     ].filter(section => section.items.length > 0);
   }
