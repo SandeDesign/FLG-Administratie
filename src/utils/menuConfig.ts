@@ -146,7 +146,7 @@ export const getNavigationSections = (
         title: 'Overig',
         icon: Settings,
         defaultOpen: false,
-        items: filtered.filter(i => ['Investment Pitch', 'Instellingen'].includes(i.name)),
+        items: filtered.filter(i => ['Investment Pitch', 'Taken', 'Instellingen'].includes(i.name)),
       },
     ].filter(section => section.items.length > 0);
   }
