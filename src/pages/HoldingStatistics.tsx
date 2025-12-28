@@ -49,13 +49,18 @@ const HoldingStatistics: React.FC = () => {
     try {
       console.log('📊 Loading holding statistics...');
 
-      // Alle bedrijven van deze admin ophalen
-      const allCompanies = companies.filter(c => c.userId === adminUserId);
-      console.log(`✅ Found ${allCompanies.length} companies`);
+      // Alleen werkmaatschappijen onder deze holding ophalen (NIET aandeelhouders)
+      // Werkmaatschappijen hebben primaryEmployerId die verwijst naar deze holding
+      const workCompanies = companies.filter(c =>
+        c.primaryEmployerId === selectedCompany.id &&
+        c.userId === adminUserId
+      );
+      console.log(`✅ Found ${workCompanies.length} work companies under ${selectedCompany.name}`);
+      console.log(`📋 Companies: ${workCompanies.map(c => c.name).join(', ')}`);
 
       const stats: CompanyStats[] = [];
 
-      for (const company of allCompanies) {
+      for (const company of workCompanies) {
         console.log(`📈 Loading stats for: ${company.name} (${company.companyType})`);
 
         // Uitgaande facturen
