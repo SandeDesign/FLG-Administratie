@@ -100,7 +100,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       // Employee in holding company (shouldn't happen, but fallback)
       return [
         { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
-        { href: '/settings', icon: Settings, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
+        { href: '/settings', icon: SettingsIcon, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
       ];
     }
 
@@ -117,7 +117,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       // Employee in project company
       return [
         { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
-        { href: '/settings', icon: Settings, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
+        { href: '/settings', icon: SettingsIcon, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
       ];
     }
 
@@ -127,7 +127,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
         { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
         { href: '/timesheets', icon: Clock, label: 'Uren', gradient: 'from-primary-600 to-primary-700' },
         { href: '/payslips', icon: CheckCircle2, label: 'Loonstrook', gradient: 'from-primary-500 to-primary-600' },
-        { href: '/settings', icon: Settings, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
+        { href: '/settings', icon: SettingsIcon, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
       ],
       manager: [
         { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
