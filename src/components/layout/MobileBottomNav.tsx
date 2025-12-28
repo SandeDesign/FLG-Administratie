@@ -86,12 +86,20 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
 
   const companyType = selectedCompany?.companyType as 'employer' | 'project' | 'holding' | undefined;
 
-  const getCoreNavItems = () => {
+  // Dashboard is altijd het eerste item (fixed)
+  const dashboardItem = {
+    href: '/',
+    icon: Home,
+    label: 'Dashboard',
+    gradient: 'from-primary-500 to-primary-600'
+  };
+
+  // Haal de 3 middelste items op (zonder Dashboard)
+  const getMiddleNavItems = () => {
     // ✅ HOLDING COMPANY
     if (companyType === 'holding') {
       if (userRole === 'admin' || userRole === 'manager') {
         return [
-          { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
           { href: '/statistics/holding', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
           { href: '/outgoing-invoices', icon: Send, label: 'Verkoop', gradient: 'from-primary-500 to-primary-600' },
           { href: '/budgeting', icon: Wallet, label: 'Begroting', gradient: 'from-primary-600 to-primary-700' },
@@ -99,7 +107,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       }
       // Employee in holding company (shouldn't happen, but fallback)
       return [
-        { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
         { href: '/settings', icon: SettingsIcon, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
       ];
     }
@@ -108,7 +115,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
     if (companyType === 'project') {
       if (userRole === 'admin' || userRole === 'manager') {
         return [
-          { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
           { href: '/statistics/project', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
           { href: '/project-production', icon: Cpu, label: 'Productie', gradient: 'from-primary-500 to-primary-600' },
           { href: '/outgoing-invoices', icon: Send, label: 'Facturen', gradient: 'from-primary-600 to-primary-700' },
@@ -116,7 +122,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       }
       // Employee in project company
       return [
-        { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
         { href: '/settings', icon: SettingsIcon, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
       ];
     }
@@ -124,19 +129,16 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
     // ✅ EMPLOYER COMPANY
     const navItems: Record<string, Array<{ href: string; icon: any; label: string; gradient: string }>> = {
       employee: [
-        { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
         { href: '/timesheets', icon: Clock, label: 'Uren', gradient: 'from-primary-600 to-primary-700' },
         { href: '/payslips', icon: CheckCircle2, label: 'Loonstrook', gradient: 'from-primary-500 to-primary-600' },
         { href: '/settings', icon: SettingsIcon, label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
       ],
       manager: [
-        { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
         { href: '/statistics/employer', icon: TrendingUp, label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
         { href: '/employees', icon: Users, label: 'Team', gradient: 'from-primary-500 to-primary-600' },
         { href: '/timesheet-approvals', icon: CheckCircle2, label: 'Beheren', gradient: 'from-primary-600 to-primary-700' },
       ],
       admin: [
-        { href: '/', icon: Home, label: 'Dashboard', gradient: 'from-primary-500 to-primary-600' },
         { href: '/outgoing-invoices', icon: Send, label: 'Verkoop', gradient: 'from-primary-600 to-primary-700' },
         { href: '/timesheet-approvals', icon: CheckCircle2, label: 'Uren', gradient: 'from-primary-500 to-primary-600' },
         { href: '/incoming-invoices', icon: Upload, label: 'Inkoop', gradient: 'from-primary-600 to-primary-700' },
@@ -146,17 +148,16 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
     return navItems[userRole] || navItems.employee;
   };
 
-  // Gebruik custom nav items als beschikbaar, anders defaults
-  const defaultNavItems = getCoreNavItems();
-  const navItemsToUse = customNavItems || defaultNavItems;
-
-  // Als custom items, converteer icon string naar component
-  const finalNavItems = customNavItems
+  // Bepaal de 3 middelste items (custom of defaults)
+  const middleItems = customNavItems
     ? customNavItems.map(item => ({
         ...item,
         icon: ICON_MAP[item.icon] || Clock, // Fallback naar Clock als icon niet gevonden
       }))
-    : navItemsToUse;
+    : getMiddleNavItems();
+
+  // Final nav items: Dashboard (fixed) + 3 middle items
+  const finalNavItems = [dashboardItem, ...middleItems];
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
