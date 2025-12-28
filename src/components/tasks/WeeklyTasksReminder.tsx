@@ -186,13 +186,12 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
 
         if (nextOccurrence) {
           // Create new task for next occurrence
+          const { completedDate, id, ...taskWithoutCompleted } = task;
           const newTaskData = {
-            ...task,
-            id: undefined,
+            ...taskWithoutCompleted,
             dueDate: nextOccurrence,
             status: 'pending' as const,
             progress: 0,
-            completedDate: undefined,
             createdAt: new Date(),
             updatedAt: new Date(),
             lastGenerated: new Date(),
@@ -213,14 +212,13 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
         }
       } else if (createFollowUp) {
         // Create follow-up task
+        const { completedDate, id, ...taskWithoutCompleted } = task;
         const followUpData = {
-          ...task,
-          id: undefined,
+          ...taskWithoutCompleted,
           title: `[Vervolg] ${task.title}`,
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week later
           status: 'pending' as const,
           progress: 0,
-          completedDate: undefined,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
