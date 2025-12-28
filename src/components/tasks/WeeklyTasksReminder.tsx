@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
-import { getTasks } from '../../services/firebase';
+import { getTasks, getAllCompanyTasks } from '../../services/firebase';
 import { BusinessTask } from '../../types';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
@@ -9,7 +9,7 @@ import { Calendar, CheckCircle2, AlertCircle, Clock, ChevronRight } from 'lucide
 import { useNavigate } from 'react-router-dom';
 
 const WeeklyTasksReminder: React.FC = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { selectedCompany } = useApp();
   const navigate = useNavigate();
 
@@ -38,8 +38,10 @@ const WeeklyTasksReminder: React.FC = () => {
         return; // Al getoond vandaag
       }
 
-      // Haal alle taken op
-      const allTasks = await getTasks(user.uid, selectedCompany.id);
+      // Haal ALLE taken op voor dit bedrijf
+      // Admin, co-admin en manager zien alle bedrijfstaken
+      // Ook taken die aan hen toegewezen zijn
+      const allTasks = await getAllCompanyTasks(selectedCompany.id, user.uid);
 
       // Filter taken voor deze week (inclusief late taken)
       const weekStart = getWeekStart(today);

@@ -1694,6 +1694,39 @@ export const getTasks = async (userId: string, companyId?: string): Promise<any[
 };
 
 /**
+ * Haal ALLE taken op voor een bedrijf (voor admins/co-admins)
+ * Inclusief taken die zijn toegewezen aan de gebruiker
+ */
+export const getAllCompanyTasks = async (companyId: string, userId?: string): Promise<any[]> => {
+  try {
+    const q = query(
+      collection(db, 'businessTasks'),
+      where('companyId', '==', companyId),
+      orderBy('dueDate', 'asc')
+    );
+
+    const querySnapshot = await getDocs(q);
+    const allTasks = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return convertTimestamps({ ...data, id: doc.id });
+    });
+
+    // Als userId is meegegeven, filter dan op taken die relevant zijn voor deze user
+    // (eigenaar, toegewezen, of alle taken als admin/co-admin)
+    if (userId) {
+      // Voor nu geven we ALLE bedrijfstaken terug
+      // De WeeklyTasksReminder kan filteren als nodig
+      return allTasks;
+    }
+
+    return allTasks;
+  } catch (error) {
+    console.error('Error getting all company tasks:', error);
+    throw error;
+  }
+};
+
+/**
  * Haal een enkele taak op
  */
 export const getTask = async (taskId: string, userId: string): Promise<any | null> => {
