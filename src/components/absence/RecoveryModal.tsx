@@ -80,14 +80,14 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Beter Melden" size="md">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-start">
-            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 mr-3" />
+            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-3" />
             <div>
-              <h4 className="text-sm font-medium text-green-900 dark:text-green-100">
+              <h4 className="text-sm font-medium text-green-900">
                 Herstelmelding
               </h4>
-              <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+              <p className="text-sm text-green-700 mt-1">
                 Ziek sinds: {new Date(sickLeave.startDate).toLocaleDateString('nl-NL')}
               </p>
             </div>
@@ -114,15 +114,15 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
               required: 'Arbeidsgeschiktheid is verplicht',
               valueAsNumber: true,
             })}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
           />
-          <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
             <span>0%</span>
             <span className="font-semibold">{workCapacity}%</span>
             <span>100%</span>
           </div>
           {errors.workCapacityPercentage && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+            <p className="text-sm text-red-600 mt-1">
               {errors.workCapacityPercentage.message}
             </p>
           )}
@@ -134,13 +134,13 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
           </label>
           <select
             {...register('status', { required: 'Status is verplicht' })}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="recovered">Volledig hersteld (100%)</option>
             <option value="partially_recovered">Gedeeltelijk hersteld</option>
           </select>
           {errors.status && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.status.message}</p>
+            <p className="text-sm text-red-600 mt-1">{errors.status.message}</p>
           )}
         </div>
 
@@ -151,7 +151,7 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
           <textarea
             {...register('notes')}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             placeholder="Eventuele aanvullende informatie..."
           />
         </div>

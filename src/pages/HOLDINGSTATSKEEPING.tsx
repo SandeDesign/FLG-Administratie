@@ -108,7 +108,7 @@ const HoldingStatistics: React.FC = () => {
   if (!selectedCompany) {
     return (
       <div className="p-6">
-        <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Selecteer eerst een holding bedrijf om statistieken te bekijken.</p>
+        <p className="text-gray-600 dark:text-gray-400">Selecteer eerst een holding bedrijf om statistieken te bekijken.</p>
       </div>
     );
   }
@@ -117,14 +117,14 @@ const HoldingStatistics: React.FC = () => {
     <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Holding Statistieken</h1>
-        <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{selectedCompany.name}</p>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">{selectedCompany.name}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Bedrijven</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Bedrijven</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{stats.totalCompanies}</p>
             </div>
             <Building2 className="h-10 w-10 text-blue-500" />
@@ -134,7 +134,7 @@ const HoldingStatistics: React.FC = () => {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Totale Omzet</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Totale Omzet</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">€{(stats.totalRevenue / 1000).toFixed(0)}k</p>
             </div>
             <TrendingUp className="h-10 w-10 text-green-500" />
@@ -144,7 +144,7 @@ const HoldingStatistics: React.FC = () => {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Totale Kosten</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Totale Kosten</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">€{(stats.totalCosts / 1000).toFixed(0)}k</p>
             </div>
             <TrendingDown className="h-10 w-10 text-red-500" />
@@ -154,9 +154,9 @@ const HoldingStatistics: React.FC = () => {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Totale Marge</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Totale Marge</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">€{(stats.totalMargin / 1000).toFixed(0)}k</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{stats.avgMarginPercentage.toFixed(1)}%</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stats.avgMarginPercentage.toFixed(1)}%</p>
             </div>
             <Wallet className="h-10 w-10 text-purple-500" />
           </div>
@@ -209,19 +209,19 @@ const HoldingStatistics: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Bedrijf
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Omzet
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Kosten
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Marge
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Marge %
                 </th>
               </tr>
@@ -232,10 +232,10 @@ const HoldingStatistics: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                     {company.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     €{company.revenue.toLocaleString('nl-NL')}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     €{company.costs.toLocaleString('nl-NL')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">

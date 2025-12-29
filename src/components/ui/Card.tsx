@@ -11,14 +11,14 @@ const Card: React.FC<CardProps> = ({ children, className = '', title, subtitle }
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-shadow duration-200 ${className}`}>
       {(title || subtitle) && (
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="px-6 py-4 border-b border-gray-100">
           {title && (
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {title}
             </h3>
           )}
           {subtitle && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {subtitle}
             </p>
           )}

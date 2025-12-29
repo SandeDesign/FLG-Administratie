@@ -59,7 +59,7 @@ const SmartCompanySelector: React.FC<SmartCompanySelectorProps> = ({
             {label}
           </label>
         )}
-        <div className="px-3 py-2 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border rounded-lg border-gray-300 dark:border-gray-600">
+        <div className="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 border rounded-lg border-gray-300 dark:border-gray-600">
           {formatCompanyNameForUI(displayCompany)}
         </div>
         {/* Hidden input voor form submission */}
@@ -84,7 +84,7 @@ const SmartCompanySelector: React.FC<SmartCompanySelectorProps> = ({
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
+        className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
       >
         <option value="">{placeholder}</option>
         {availableCompanies.map((company) => (

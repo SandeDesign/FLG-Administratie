@@ -134,8 +134,8 @@ const AuditLogPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Audit Log</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Audit Log</h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Bekijk alle acties die zijn uitgevoerd in het systeem
           </p>
         </div>
@@ -161,7 +161,7 @@ const AuditLogPage: React.FC = () => {
                     entityType: e.target.value ? (e.target.value as AuditEntityType) : undefined,
                   })
                 }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-gray-100"
               >
                 <option value="">Alle types</option>
                 <option value="employee">Werknemer</option>
@@ -188,7 +188,7 @@ const AuditLogPage: React.FC = () => {
                     action: e.target.value ? (e.target.value as AuditAction) : undefined,
                   })
                 }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-gray-100"
               >
                 <option value="">Alle acties</option>
                 <option value="create">Aangemaakt</option>
@@ -216,7 +216,7 @@ const AuditLogPage: React.FC = () => {
                     startDate: e.target.value ? new Date(e.target.value) : undefined,
                   })
                 }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-gray-100"
               />
             </div>
 
@@ -233,7 +233,7 @@ const AuditLogPage: React.FC = () => {
                     endDate: e.target.value ? new Date(e.target.value) : undefined,
                   })
                 }
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-gray-100"
               />
             </div>
           </div>
@@ -253,54 +253,52 @@ const AuditLogPage: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Datum/Tijd
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Gebruiker
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Actie
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Entiteit ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Ernst
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {auditLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <tr key={log.id} className="hover:bg-gray-50 dark:bg-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {log.createdAt.toLocaleString('nl-NL')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {log.performedBy.name || log.performedBy.email}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           {log.performedBy.role}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {getActionLabel(log.action)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {getEntityTypeLabel(log.entityType)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
                         {log.entityId.substring(0, 8)}...
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(
-                            log.severity
-                          )}`}
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor( log.severity )}`}
                         >
                           {log.severity}
                         </span>
@@ -316,31 +314,31 @@ const AuditLogPage: React.FC = () => {
 
       <Card>
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Statistieken
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Totaal acties
               </p>
-              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {auditLogs.length}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Kritieke acties
               </p>
-              <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
+              <p className="mt-2 text-3xl font-bold text-red-600">
                 {auditLogs.filter((log) => log.severity === 'critical').length}
               </p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Unieke gebruikers
               </p>
-              <p className="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">
+              <p className="mt-2 text-3xl font-bold text-primary-600">
                 {new Set(auditLogs.map((log) => log.performedBy.uid)).size}
               </p>
             </div>

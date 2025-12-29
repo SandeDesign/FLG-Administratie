@@ -34,15 +34,15 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
   const getColorClasses = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800';
+        return 'bg-green-50 border-green-200';
       case 'error':
-        return 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800';
+        return 'bg-red-50 border-red-200';
       case 'warning':
-        return 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800';
+        return 'bg-orange-50 border-orange-200';
       case 'info':
-        return 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800';
+        return 'bg-primary-50 border-primary-200';
       default:
-        return 'bg-white dark:bg-gray-800 border-gray-200 dark:bg-gray-800 dark:border-gray-700';
+        return 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700';
     }
   };
 
@@ -61,13 +61,13 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
                 {toast.title}
               </p>
             )}
-            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {toast.message}
             </p>
           </div>
           <div className="ml-4 flex-shrink-0 flex">
             <button
-              className="bg-transparent rounded-md inline-flex text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
+              className="bg-transparent rounded-md inline-flex text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 focus:outline-none transition-colors"
               onClick={() => onRemove(toast.id)}
             >
               <span className="sr-only">Close</span>

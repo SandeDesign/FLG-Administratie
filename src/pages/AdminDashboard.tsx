@@ -317,7 +317,7 @@ const AdminDashboard: React.FC = () => {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400 dark:text-gray-500">
               <CheckCircle className="h-16 w-16 mb-3" />
               <p className="text-sm font-medium">Alles verwerkt!</p>
             </div>
@@ -346,22 +346,22 @@ const AdminDashboard: React.FC = () => {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400 dark:text-gray-500">
               <Wallet className="h-16 w-16 mb-3" />
               <p className="text-sm font-medium">Geen begroting ingesteld</p>
             </div>
           )}
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div className="text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Inkomsten</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Inkomsten</p>
               <p className="text-lg font-bold text-green-600">€{stats.monthlyBudgetIncome.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Kosten</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Kosten</p>
               <p className="text-lg font-bold text-red-600">€{stats.monthlyBudgetCosts.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Winst</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Winst</p>
               <p className={`text-lg font-bold ${stats.monthlyBudgetProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                 {stats.monthlyBudgetProfit >= 0 ? '+' : ''}€{stats.monthlyBudgetProfit.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}
               </p>

@@ -132,15 +132,15 @@ const EmployeesNew: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+        return 'bg-green-100 text-green-800';
       case 'inactive':
-        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200';
       case 'on_leave':
-        return 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300';
+        return 'bg-primary-100 text-primary-800';
       case 'sick':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+        return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200';
     }
   };
 
@@ -163,8 +163,8 @@ const EmployeesNew: React.FC = () => {
       {/* Header - Mobiel vriendelijk */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Werknemers</h1>
-          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 md:mt-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Werknemers</h1>
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1 md:mt-2">
             Beheer je werknemers en hun gegevens
           </p>
         </div>
@@ -182,11 +182,11 @@ const EmployeesNew: React.FC = () => {
       {companies.length === 0 ? (
         <Card className="p-6 md:p-8">
           <div className="text-center">
-            <Building2 className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <Building2 className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               Geen bedrijven gevonden
             </h3>
-            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-4">
               Je moet eerst een bedrijf aanmaken voordat je werknemers kunt toevoegen.
             </p>
             <Button onClick={() => window.location.href = '/companies'}>
@@ -210,14 +210,14 @@ const EmployeesNew: React.FC = () => {
               {/* Header with name and status */}
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div className="flex items-start gap-3 min-w-0 flex-1">
-                  <div className="p-2 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex-shrink-0">
-                    <User className="h-5 w-5 md:h-6 md:w-6 text-primary-600 dark:text-primary-400" />
+                  <div className="p-2 bg-primary-100 rounded-lg flex-shrink-0">
+                    <User className="h-5 w-5 md:h-6 md:w-6 text-primary-600" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white truncate">
+                    <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                       {employee.personalInfo.firstName} {employee.personalInfo.lastName}
                     </h3>
-                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">
+                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">
                       {employee.contractInfo.position}
                     </p>
                   </div>
@@ -229,7 +229,7 @@ const EmployeesNew: React.FC = () => {
 
               {/* Contact & Contract Info */}
               <div className="space-y-2 mb-4 text-xs md:text-sm flex-1">
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 truncate">
                   <Mail className="h-4 w-4 flex-shrink-0" />
                   <span className="truncate" title={employee.personalInfo.contactInfo.email}>
                     {employee.personalInfo.contactInfo.email}
@@ -237,27 +237,27 @@ const EmployeesNew: React.FC = () => {
                 </div>
                 
                 {employee.personalInfo.contactInfo.phone && (
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 truncate">
                     <Phone className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate">{employee.personalInfo.contactInfo.phone}</span>
                   </div>
                 )}
                 
-                <div className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <div className="text-gray-600 dark:text-gray-400">
                   <span className="font-medium">Contract:</span> {employee.contractInfo.type}
                 </div>
                 
-                <div className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <div className="text-gray-600 dark:text-gray-400">
                   <span className="font-medium">Uren/week:</span> {employee.contractInfo.hoursPerWeek}
                 </div>
               </div>
 
               {/* Account Status Alert */}
               {!employee.hasAccount && (
-                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
                   <div className="flex items-start gap-2 text-xs md:text-sm">
-                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-amber-700 dark:text-amber-300">Geen account</span>
+                    <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <span className="text-amber-700">Geen account</span>
                   </div>
                 </div>
               )}
@@ -289,7 +289,7 @@ const EmployeesNew: React.FC = () => {
                     variant="outline"
                     onClick={() => handleCreateAccount(employee)}
                     disabled={creatingAccount === employee.id}
-                    className="col-span-2 text-xs md:text-sm bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/30 text-primary-700 dark:text-primary-300"
+                    className="col-span-2 text-xs md:text-sm bg-primary-50 border-primary-200 hover:bg-primary-100 text-primary-700"
                   >
                     <LogIn className="h-4 w-4 mr-1" />
                     {creatingAccount === employee.id ? 'Aanmaken...' : 'Account aanmaken'}
@@ -297,7 +297,7 @@ const EmployeesNew: React.FC = () => {
                 )}
 
                 {employee.hasAccount && (
-                  <div className="col-span-2 text-xs text-green-600 dark:text-green-400 text-center py-2 px-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="col-span-2 text-xs text-green-600 text-center py-2 px-3 bg-green-50 rounded-lg border border-green-200">
                     ✓ Account actief
                   </div>
                 )}

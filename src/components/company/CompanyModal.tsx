@@ -235,12 +235,12 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         
         {/* ✅ NIEUW: Bedrijfstype selector */}
-        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             Bedrijfstype *
           </label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100">
               <input
                 type="radio"
                 value="employer"
@@ -249,13 +249,13 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
               />
               <div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">Loonmaatschappij</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   Personeel in dienst + HR
                 </div>
               </div>
             </label>
 
-            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100">
               <input
                 type="radio"
                 value="project"
@@ -264,13 +264,13 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
               />
               <div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">Werkmaatschappij</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   Detachering + Facturatie
                 </div>
               </div>
             </label>
 
-            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100">
               <input
                 type="radio"
                 value="holding"
@@ -279,13 +279,13 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
               />
               <div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">Holding</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   Operationele holding
                 </div>
               </div>
             </label>
 
-            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100">
               <input
                 type="radio"
                 value="shareholder"
@@ -294,13 +294,13 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
               />
               <div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">Aandeelhouder</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   Participatie in holdings
                 </div>
               </div>
             </label>
 
-            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 opacity-50">
+            <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-100 opacity-50">
               <input
                 type="radio"
                 value="investor"
@@ -310,7 +310,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
               />
               <div>
                 <div className="font-medium text-gray-900 dark:text-gray-100">Investeerder</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
                   (Binnenkort beschikbaar)
                 </div>
               </div>
@@ -331,7 +331,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
               {...register('primaryEmployerId', {
                 required: companyType === 'project' ? 'Selecteer een primaire werkgever' : false
               })}
-              className="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               <option value="">Selecteer werkgever...</option>
               {employerCompanies.map((emp) => (
@@ -384,7 +384,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
             {...register('invoicePrefix')}
             error={errors.invoicePrefix?.message}
           />
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 -mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">
             Prefix voor factuurnummers. Bijv: "FLG" maakt "FLG-001", "2025" maakt "2025-001". Laat leeg voor standaard nummering.
           </p>
         </div>
@@ -518,11 +518,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
                     className="sr-only"
                   />
                   <div
-                    className={`w-full h-12 rounded-lg transition-all ${
-                      isSelected
-                        ? 'ring-2 ring-offset-2 ring-gray-900 scale-110'
-                        : 'hover:scale-105'
-                    }`}
+                    className={`w-full h-12 rounded-lg transition-all ${ isSelected ? 'ring-2 ring-offset-2 ring-gray-900 scale-110' : 'hover:scale-105' }`}
                     style={{ backgroundColor: preset.primaryHex }}
                   >
                     {isSelected && (
@@ -543,7 +539,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-center mt-1 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{preset.name}</p>
+                  <p className="text-xs text-center mt-1 text-gray-600 dark:text-gray-400">{preset.name}</p>
                 </label>
               );
             })}
@@ -561,9 +557,9 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
                 type="file"
                 accept="image/*"
                 onChange={handleLogoUpload}
-                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Upload een bedrijfslogo. Het bestand wordt opgeslagen als base64.
               </p>
             </div>

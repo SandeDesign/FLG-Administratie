@@ -316,7 +316,7 @@ const Tasks: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Taken</h1>
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             {selectedCompany?.name} - {tasks.length} taken
           </p>
         </div>
@@ -441,16 +441,14 @@ const Tasks: React.FC = () => {
                         {task.status === 'completed' ? (
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
                         ) : (
-                          <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                          <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400" />
                         )}
                       </button>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3
-                            className={`font-semibold text-gray-900 dark:text-gray-100 ${
-                              task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400 dark:text-gray-500' : ''
-                            }`}
+                            className={`font-semibold text-gray-900 dark:text-gray-100 ${ task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400 dark:text-gray-500' : '' }`}
                           >
                             {task.title}
                           </h3>
@@ -477,9 +475,7 @@ const Tasks: React.FC = () => {
                             {statusConfig.label}
                           </span>
 
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
-                            isOverdue(task) ? 'bg-red-100 text-red-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                          }`}>
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${ isOverdue(task) ? 'bg-red-100 text-red-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' }`}>
                             <Calendar className="h-3 w-3" />
                             {formatDate(task.dueDate)}
                           </span>
@@ -490,23 +486,23 @@ const Tasks: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
-                        className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
+                        className="p-1 hover:bg-gray-100 rounded"
                       >
                         {isExpanded ? (
-                          <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                          <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                         ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                          <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                         )}
                       </button>
                       <button
                         onClick={() => openEditModal(task)}
-                        className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
+                        className="p-1 hover:bg-gray-100 rounded"
                       >
-                        <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                        <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                       </button>
                       <button
                         onClick={() => handleDeleteTask(task.id)}
-                        className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
+                        className="p-1 hover:bg-gray-100 rounded"
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </button>
@@ -516,7 +512,7 @@ const Tasks: React.FC = () => {
                   {/* Expanded content */}
                   {isExpanded && task.description && (
                     <div className="pl-8 pt-2 border-t border-gray-100">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{task.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{task.description}</p>
                     </div>
                   )}
                 </div>
@@ -571,10 +567,10 @@ const Tasks: React.FC = () => {
             </label>
             <div className="max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3 space-y-2">
               {companyUsers.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Geen gebruikers beschikbaar</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Geen gebruikers beschikbaar</p>
               ) : (
                 companyUsers.map((companyUser) => (
-                  <label key={companyUser.uid} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:bg-gray-900 p-2 rounded">
+                  <label key={companyUser.uid} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900 p-2 rounded">
                     <input
                       type="checkbox"
                       checked={formData.assignedTo.includes(companyUser.uid)}
@@ -592,7 +588,7 @@ const Tasks: React.FC = () => {
                         {companyUser.displayName || companyUser.email}
                       </span>
                       {companyUser.displayName && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 ml-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                           ({companyUser.email})
                         </span>
                       )}

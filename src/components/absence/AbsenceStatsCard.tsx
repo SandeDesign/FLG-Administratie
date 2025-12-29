@@ -40,7 +40,7 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
 
     if (diff > 0) return 'text-red-600';
     if (diff < 0) return 'text-green-600';
-    return 'text-gray-600 dark:text-gray-400 dark:text-gray-500';
+    return 'text-gray-600 dark:text-gray-400';
   };
 
   const getStatusColor = () => {
@@ -61,14 +61,14 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+          <div className="p-2 bg-orange-100 rounded-lg">
             <Activity className="h-6 w-6 text-orange-600" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Verzuim Statistieken
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {new Date(stats.periodStart).getFullYear()}
             </p>
           </div>
@@ -76,13 +76,13 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
       </div>
 
       {(stats.longTermAbsence || stats.chronicAbsence) && (
-        <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg flex items-start space-x-2">
+        <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start space-x-2">
           <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+            <p className="text-sm font-medium text-orange-800">
               Aandachtspunt
             </p>
-            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+            <p className="text-xs text-orange-700 mt-1">
               {stats.longTermAbsence && 'Lang verzuim geconstateerd. '}
               {stats.chronicAbsence && 'Frequent verzuim geconstateerd.'}
             </p>
@@ -91,13 +91,13 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
       )}
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
           <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Verzuimpercentage</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Verzuimpercentage</p>
             <p className={`text-2xl font-bold ${getStatusColor()}`}>
               {formatPercentage(stats.absencePercentage)}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Status: {getStatusText()}
             </p>
           </div>
@@ -117,31 +117,31 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
 
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Totaal Dagen</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal Dagen</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
               {stats.totalSickDays}
             </p>
           </div>
 
           <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Frequentie</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Frequentie</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
               {stats.absenceFrequency}x
             </p>
           </div>
 
           <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg col-span-2">
-            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
               Gemiddelde Duur per Keer
             </p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">
+            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
               {isNaN(stats.averageDuration) || !isFinite(stats.averageDuration) ? '0.0' : stats.averageDuration.toFixed(1)} dagen
             </p>
           </div>
         </div>
 
         <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Laatst berekend: {new Date(stats.calculatedAt).toLocaleDateString('nl-NL', {
               day: 'numeric',
               month: 'short',

@@ -140,14 +140,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
     <Modal isOpen={isOpen} onClose={handleClose} title="Nieuwe Declaratie" size="md">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {currentEmployee && (
-          <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
             <div className="flex items-start">
-              <User className="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5 mr-3" />
+              <User className="h-5 w-5 text-primary-600 mt-0.5 mr-3" />
               <div>
-                <h4 className="text-sm font-medium text-primary-900 dark:text-primary-100">
+                <h4 className="text-sm font-medium text-primary-900">
                   {currentEmployee.personalInfo.firstName} {currentEmployee.personalInfo.lastName}
                 </h4>
-                <p className="text-sm text-primary-700 dark:text-primary-300 mt-1">
+                <p className="text-sm text-primary-700 mt-1">
                   {currentEmployee.contractInfo.position}
                 </p>
               </div>
@@ -168,7 +168,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
             </label>
             <select
               {...register('type', { required: 'Type is verplicht' })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="travel">Reiskosten</option>
               <option value="meal">Maaltijd</option>
@@ -177,7 +177,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
               <option value="other">Overig</option>
             </select>
             {errors.type && (
-              <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.type.message}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.type.message}</p>
             )}
           </div>
         </div>
@@ -195,7 +195,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
               })}
               error={errors.kilometers?.message}
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Vergoeding: €{travelRatePerKm.toFixed(2)} per km
             </p>
           </div>
@@ -228,16 +228,16 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
           <textarea
             {...register('description', { required: 'Beschrijving is verplicht' })}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             placeholder="Geef een korte toelichting..."
           />
           {errors.description && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.description.message}</p>
+            <p className="text-sm text-red-600 mt-1">{errors.description.message}</p>
           )}
         </div>
 
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-          <p className="text-xs text-yellow-800 dark:text-yellow-200">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <p className="text-xs text-yellow-800">
             De declaratie wordt opgeslagen als concept. Je kunt deze later nog bewerken voordat je deze indient ter goedkeuring.
           </p>
         </div>

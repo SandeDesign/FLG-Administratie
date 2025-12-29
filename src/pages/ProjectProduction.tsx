@@ -531,7 +531,7 @@ const ProjectProduction: React.FC = () => {
       <div className="space-y-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Productie Verwerking</h1>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
             Beheer productie voor {selectedCompany.name}
           </p>
         </div>
@@ -542,21 +542,21 @@ const ProjectProduction: React.FC = () => {
           <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
             <button
               onClick={() => changeWeek(-1)}
-              className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
               title="Vorige week"
             >
-              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div className="text-center px-4 min-w-[120px]">
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Week {selectedWeek}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedYear}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{selectedYear}</p>
             </div>
             <button
               onClick={() => changeWeek(1)}
-              className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
               title="Volgende week"
             >
-              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
 
@@ -624,20 +624,20 @@ const ProjectProduction: React.FC = () => {
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Totaal Uren</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal Uren</p>
                 <p className="text-xl sm:text-2xl font-bold text-green-600">
                   {productionData.totalHours}u
                 </p>
               </div>
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Entries</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Entries</p>
                 <p className="text-xl sm:text-2xl font-bold text-primary-600">
                   {productionData.totalEntries}
                 </p>
               </div>
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Status</p>
-                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 capitalize">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Status</p>
+                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 capitalize">
                   {productionData.status}
                 </p>
               </div>
@@ -746,7 +746,7 @@ const ProjectProduction: React.FC = () => {
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">Monteur</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Monteur</label>
                         <Input
                           type="text"
                           value={entry.monteur}
@@ -756,7 +756,7 @@ const ProjectProduction: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">Datum</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Datum</label>
                         <Input
                           type="date"
                           value={entry.datum}
@@ -767,7 +767,7 @@ const ProjectProduction: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">Uren</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Uren</label>
                         <Input
                           type="number"
                           min="0"
@@ -788,7 +788,7 @@ const ProjectProduction: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">Opdrachtgever</label>
+                      <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Opdrachtgever</label>
                       <Input
                         type="text"
                         value={entry.opdrachtgever}
@@ -798,7 +798,7 @@ const ProjectProduction: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">Locaties</label>
+                      <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Locaties</label>
                       <Input
                         type="text"
                         value={entry.locaties}
@@ -816,8 +816,8 @@ const ProjectProduction: React.FC = () => {
       ) : (
         <Card className="p-8">
           <div className="text-center">
-            <Factory className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">Geen productie entries beschikbaar</p>
+            <Factory className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Geen productie entries beschikbaar</p>
             <Button onClick={addEntry} size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Eerste Entry Toevoegen

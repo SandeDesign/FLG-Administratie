@@ -261,7 +261,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -300,7 +300,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-10">
                     <div className="max-h-48 overflow-y-auto">
                       {relations.length === 0 ? (
-                        <div className="p-3 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                        <div className="p-3 text-sm text-gray-500 dark:text-gray-400">
                           Geen relaties gevonden
                         </div>
                       ) : (
@@ -309,10 +309,10 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                             key={relation.id}
                             type="button"
                             onClick={() => handleSelectRelation(relation)}
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:bg-gray-800 transition-colors"
+                            className="w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors"
                           >
                             <div className="font-medium text-gray-900 dark:text-gray-100">{relation.name}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{relation.email}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{relation.email}</div>
                           </button>
                         ))
                       )}
@@ -419,11 +419,11 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
             <div className="border-t pt-4">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Subtotaal:</span>
+                  <span className="text-gray-600 dark:text-gray-400">Subtotaal:</span>
                   <span className="font-medium">€{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">BTW (21%):</span>
+                  <span className="text-gray-600 dark:text-gray-400">BTW (21%):</span>
                   <span className="font-medium">€{vatAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold pt-2 border-t">

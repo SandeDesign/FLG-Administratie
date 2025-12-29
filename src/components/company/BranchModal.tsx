@@ -106,8 +106,8 @@ const BranchModal: React.FC<BranchModalProps> = ({ isOpen, onClose, onSuccess, c
     <Modal isOpen={isOpen} onClose={handleClose} title={branch ? 'Vestiging Bewerken' : 'Nieuwe Vestiging'} size="md">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {company && (
-          <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
-            <p className="text-sm font-medium text-primary-900 dark:text-primary-100">
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+            <p className="text-sm font-medium text-primary-900">
               Vestiging voor: {company.name}
             </p>
           </div>
@@ -138,7 +138,7 @@ const BranchModal: React.FC<BranchModalProps> = ({ isOpen, onClose, onSuccess, c
           </label>
           <select
             {...register('cao')}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">Gebruik bedrijfsstandaard</option>
             <option value="cao-algemeen">Algemeen (geen specifieke CAO)</option>
@@ -150,7 +150,7 @@ const BranchModal: React.FC<BranchModalProps> = ({ isOpen, onClose, onSuccess, c
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Specifieke Tarieven (%)</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Specifieke Tarieven (%)</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
               label="Overuren *"

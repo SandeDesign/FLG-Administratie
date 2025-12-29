@@ -113,7 +113,7 @@ const CompaniesVisibilitySettings: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Laden...</div>;
+    return <div className="text-sm text-gray-500 dark:text-gray-400">Laden...</div>;
   }
 
   return (
@@ -123,7 +123,7 @@ const CompaniesVisibilitySettings: React.FC = () => {
           <Building2 className="h-5 w-5 text-primary-600" />
           Bedrijven Zichtbaarheid (Persoonlijk)
         </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Kies welke bedrijven <strong>voor jou</strong> zichtbaar zijn in de bedrijfenkeuze. Deze instelling is persoonlijk - andere gebruikers (admin/co-admin) kunnen hun eigen voorkeuren instellen.
         </p>
       </div>
@@ -154,12 +154,12 @@ const CompaniesVisibilitySettings: React.FC = () => {
                     />
                   ) : (
                     <div className="h-8 w-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-                      <Building2 className="h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                      <Building2 className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{company.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 capitalize">{company.companyType}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{company.companyType}</p>
                   </div>
                 </div>
                 <button
@@ -199,18 +199,18 @@ const CompaniesVisibilitySettings: React.FC = () => {
                     />
                   ) : (
                     <div className="h-8 w-8 bg-gray-200 rounded flex items-center justify-center">
-                      <Building2 className="h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                      <Building2 className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{company.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 capitalize">{company.companyType}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{company.companyType}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => handleToggleCompanyVisibility(company.id, false)}
                   disabled={loadingCompanyId !== null}
-                  className="p-2 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
                   title="Tonen"
                 >
                   {loadingCompanyId === company.id ? (

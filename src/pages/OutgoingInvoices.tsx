@@ -645,16 +645,16 @@ const OutgoingInvoices: React.FC = () => {
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => setView('list')}
-            className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             title="Terug"
           >
-            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           </button>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
               {editingInvoice ? 'Factuur bewerken' : 'Nieuwe factuur'}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{invoiceNumber}</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">{invoiceNumber}</p>
           </div>
         </div>
 
@@ -674,7 +674,7 @@ const OutgoingInvoices: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsRelationsOpen(!isRelationsOpen)}
-                  className="w-full flex items-center justify-between p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm hover:border-gray-300 dark:border-gray-600 transition-colors"
+                  className="w-full flex items-center justify-between p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm hover:border-gray-300 transition-colors"
                 >
                   <span className={formData.clientName ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}>
                     {formData.clientName || 'Kies een klant...'}
@@ -684,7 +684,7 @@ const OutgoingInvoices: React.FC = () => {
                 {isRelationsOpen && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
                     {relations.length === 0 ? (
-                      <div className="p-4 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center">Geen relaties beschikbaar</div>
+                      <div className="p-4 text-xs text-gray-500 dark:text-gray-400 text-center">Geen relaties beschikbaar</div>
                     ) : (
                       relations.map(rel => (
                         <button
@@ -694,7 +694,7 @@ const OutgoingInvoices: React.FC = () => {
                           className="w-full text-left px-4 py-3 hover:bg-primary-50 border-b border-gray-100 last:border-b-0 transition-colors"
                         >
                           <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{rel.name}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{rel.email}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{rel.email}</div>
                         </button>
                       ))
                     )}
@@ -785,11 +785,7 @@ const OutgoingInvoices: React.FC = () => {
                     key={rate}
                     type="button"
                     onClick={() => setVatRate(rate as 0 | 9 | 21)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                      vatRate === rate
-                        ? 'bg-primary-600 text-white border-2 border-primary-600'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 hover:border-primary-300'
-                    }`}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ vatRate === rate ? 'bg-primary-600 text-white border-2 border-primary-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 hover:border-primary-300' }`}
                   >
                     {rate}%
                     {rate === 0 && <span className="block text-xs mt-0.5">Verlegd</span>}
@@ -922,9 +918,7 @@ const OutgoingInvoices: React.FC = () => {
                           return (
                             <label
                               key={week.id}
-                              className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-amber-100 last:border-0 transition-colors ${
-                                isSelected ? 'bg-amber-100' : invoiced ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-amber-50'
-                              }`}
+                              className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-amber-100 last:border-0 transition-colors ${ isSelected ? 'bg-amber-100' : invoiced ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-amber-50' }`}
                             >
                               <input
                                 type="checkbox"
@@ -1083,11 +1077,11 @@ const OutgoingInvoices: React.FC = () => {
           <Card className="p-5 sm:p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-primary-200">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Subtotaal:</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Subtotaal:</span>
                 <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">€{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">BTW ({vatRate}%):</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">BTW ({vatRate}%):</span>
                 <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">€{vatAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t border-primary-200">
@@ -1137,7 +1131,7 @@ const OutgoingInvoices: React.FC = () => {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Facturen</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {filteredInvoices.length} stuks
           </p>
         </div>
@@ -1159,7 +1153,7 @@ const OutgoingInvoices: React.FC = () => {
       {showFilters && (
         <div className="flex flex-col sm:flex-row gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="relative flex-1">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               placeholder="Zoeken..."
@@ -1170,7 +1164,7 @@ const OutgoingInvoices: React.FC = () => {
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -1192,8 +1186,8 @@ const OutgoingInvoices: React.FC = () => {
 
       {filteredInvoices.length === 0 ? (
         <div className="p-6 text-center border border-gray-200 dark:border-gray-700 rounded-lg">
-          <Send className="h-8 w-8 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mx-auto mb-2" />
-          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <Send className="h-8 w-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {searchTerm ? 'Geen resultaten.' : 'Maak uw eerste factuur aan.'}
           </p>
           {!searchTerm && (
@@ -1222,12 +1216,12 @@ const OutgoingInvoices: React.FC = () => {
               return (
                 <div key={invoice.id}>
                   {/* Desktop Row */}
-                  <div className="hidden md:grid grid-cols-12 gap-2 items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:bg-gray-900 hover:shadow-sm transition-all cursor-pointer"
+                  <div className="hidden md:grid grid-cols-12 gap-2 items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-sm transition-all cursor-pointer"
                     onClick={() => setExpandedInvoice(isExpanded ? null : invoice.id)}>
                     <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</div>
                     <div className="col-span-4 text-xs text-gray-700 dark:text-gray-300">{invoice.clientName}</div>
                     <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">€{invoice.totalAmount.toFixed(2)}</div>
-                    <div className="col-span-2 text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div>
+                    <div className="col-span-2 text-xs text-gray-600 dark:text-gray-400">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div>
                     <div className="col-span-1">
                       <span className={`inline-flex items-center gap-0.5 px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(invoice.status)}`}>
                         <StatusIcon className="h-3 w-3" />
@@ -1242,28 +1236,18 @@ const OutgoingInvoices: React.FC = () => {
                   <div className="md:hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                     <button
                       onClick={() => setExpandedInvoice(isExpanded ? null : invoice.id)}
-                      className="w-full p-3 flex items-center gap-2 hover:bg-gray-50 dark:bg-gray-900"
+                      className="w-full p-3 flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900"
                     >
-                      <div className={`p-2 rounded flex-shrink-0 ${
-                        invoice.status === 'paid' ? 'bg-green-100' :
-                        invoice.status === 'sent' ? 'bg-primary-100' :
-                        invoice.status === 'overdue' ? 'bg-red-100' :
-                        'bg-gray-100 dark:bg-gray-800'
-                      }`}>
-                        <StatusIcon className={`h-4 w-4 ${
-                          invoice.status === 'paid' ? 'text-green-600' :
-                          invoice.status === 'sent' ? 'text-primary-600' :
-                          invoice.status === 'overdue' ? 'text-red-600' :
-                          'text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                        }`} />
+                      <div className={`p-2 rounded flex-shrink-0 ${ invoice.status === 'paid' ? 'bg-green-100' : invoice.status === 'sent' ? 'bg-primary-100' : invoice.status === 'overdue' ? 'bg-red-100' : 'bg-gray-100 dark:bg-gray-800' }`}>
+                        <StatusIcon className={`h-4 w-4 ${ invoice.status === 'paid' ? 'text-green-600' : invoice.status === 'sent' ? 'text-primary-600' : invoice.status === 'overdue' ? 'text-red-600' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500' }`} />
                       </div>
                       <div className="flex-1 text-left min-w-0">
                         <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{invoice.clientName}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{invoice.clientName}</div>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">€{invoice.totalAmount.toFixed(2)}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{getStatusText(invoice.status)}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{getStatusText(invoice.status)}</div>
                       </div>
                       <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                     </button>
@@ -1279,13 +1263,13 @@ const OutgoingInvoices: React.FC = () => {
                             <div key={i} className="text-gray-700 dark:text-gray-300">
                               <div className="font-medium">{item.title || 'Item'}</div>
                               {item.description && (
-                                <div className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 whitespace-pre-wrap font-mono text-xs mt-0.5">{item.description.substring(0, 80)}...</div>
+                                <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono text-xs mt-0.5">{item.description.substring(0, 80)}...</div>
                               )}
-                              <div className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{item.quantity}x €{item.rate.toFixed(2)} = €{item.amount.toFixed(2)}</div>
+                              <div className="text-gray-600 dark:text-gray-400">{item.quantity}x €{item.rate.toFixed(2)} = €{item.amount.toFixed(2)}</div>
                             </div>
                           ))}
                           {invoice.items.length > 3 && (
-                            <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 italic">+{invoice.items.length - 3} meer</p>
+                            <p className="text-gray-500 dark:text-gray-400 italic">+{invoice.items.length - 3} meer</p>
                           )}
                           <div className="border-t border-gray-200 dark:border-gray-700 pt-1 mt-1 font-semibold text-gray-900 dark:text-gray-100 flex justify-between">
                             <span>Totaal:</span>
@@ -1361,11 +1345,11 @@ const OutgoingInvoices: React.FC = () => {
           {/* Compact Summary Footer */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs">
             <div>
-              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">Totaal</p>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">Totaal</p>
               <p className="font-bold text-gray-900 dark:text-gray-100">€{totalAmount.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">Concept</p>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">Concept</p>
               <p className="font-bold text-gray-900 dark:text-gray-100">{draftCount}</p>
             </div>
             <div>

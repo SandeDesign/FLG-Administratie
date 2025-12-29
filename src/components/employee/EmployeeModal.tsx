@@ -322,7 +322,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
               </label>
               <select
                 {...register('companyId', { required: 'Selecteer een bedrijf' })}
-                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="">Selecteer bedrijf...</option>
                 {companies.map((company) => (
@@ -342,7 +342,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
               </label>
               <select
                 {...register('branchId', { required: 'Selecteer een vestiging' })}
-                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 disabled={!selectedCompanyId}
               >
                 <option value="">Selecteer vestiging...</option>
@@ -364,7 +364,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Projectbedrijven</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Selecteer optioneel voor welke projectbedrijven deze werknemer kan werken
               </p>
             </div>
@@ -373,11 +373,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
               {projectCompanies.map((projectCompany) => (
                 <label 
                   key={projectCompany.id}
-                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedProjectCompanies.includes(projectCompany.id)
-                      ? 'bg-primary-50 border-primary-300 dark:bg-primary-900/20 dark:border-primary-600'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${ selectedProjectCompanies.includes(projectCompany.id) ? 'bg-primary-50 border-primary-300 dark:bg-primary-900/20 dark:border-primary-600' : 'hover:bg-gray-50 dark:hover:bg-gray-700' }`}
                 >
                   <input
                     type="checkbox"
@@ -389,7 +385,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
                     <div className="font-medium text-gray-900 dark:text-gray-100">
                       {projectCompany.name}
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Project bedrijf
                     </div>
                   </div>
@@ -398,7 +394,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
             </div>
             
             {selectedProjectCompanies.length > 0 && (
-              <div className="text-sm text-primary-600 dark:text-primary-400">
+              <div className="text-sm text-primary-600">
                 ✓ {selectedProjectCompanies.length} projectbedri{selectedProjectCompanies.length === 1 ? 'jf' : 'jven'} geselecteerd
               </div>
             )}
@@ -434,7 +430,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
               </label>
               <select
                 {...register('contractType', { required: 'Selecteer een contracttype' })}
-                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
                 <option value="permanent">Vast contract</option>
                 <option value="temporary">Tijdelijk contract</option>
@@ -478,7 +474,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
             </label>
             <select
               {...register('paymentType', { required: 'Selecteer een betalingstype' })}
-              className="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               <option value="hourly">Uurloon</option>
               <option value="monthly">Maandloon</option>
@@ -521,7 +517,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900 font-medium transition-colors"
           >
             Annuleren
           </button>

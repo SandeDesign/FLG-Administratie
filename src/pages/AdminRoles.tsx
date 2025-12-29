@@ -269,7 +269,7 @@ const AdminRoles: React.FC = () => {
       case 'invoices': return 'text-cyan-600 bg-cyan-100';
       case 'reports': return 'text-indigo-600 bg-indigo-100';
       case 'system': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 dark:text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
     }
   };
 
@@ -285,7 +285,7 @@ const AdminRoles: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Rollen & Rechten</h1>
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Beheer gebruikersrollen en hun toegangsrechten
           </p>
         </div>
@@ -306,7 +306,7 @@ const AdminRoles: React.FC = () => {
               <Shield className="h-6 w-6 text-primary-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Totaal Rollen</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totaal Rollen</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{roles.length}</p>
             </div>
           </div>
@@ -317,7 +317,7 @@ const AdminRoles: React.FC = () => {
               <ShieldCheck className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Systeem Rollen</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Systeem Rollen</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {roles.filter(r => r.isSystem).length}
               </p>
@@ -330,7 +330,7 @@ const AdminRoles: React.FC = () => {
               <Settings className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Aangepaste Rollen</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Aangepaste Rollen</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {roles.filter(r => !r.isSystem).length}
               </p>
@@ -353,29 +353,29 @@ const AdminRoles: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{role.description}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{role.description}</p>
                 
                 <div className="mt-4">
-                  <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                     <Users className="h-4 w-4" />
                     <span>{role.userCount} gebruikers</span>
                   </div>
                   
                   <div className="mt-2">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                       {role.permissions.length} rechten toegekend
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {role.permissions.slice(0, 3).map((permissionId) => (
                         <span
                           key={permissionId}
-                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800"
+                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800"
                         >
                           {getPermissionName(permissionId)}
                         </span>
                       ))}
                       {role.permissions.length > 3 && (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800">
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800">
                           +{role.permissions.length - 3} meer
                         </span>
                       )}
@@ -449,7 +449,7 @@ const AdminRoles: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">{permission.name}</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{permission.description}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{permission.description}</p>
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${getCategoryColor(permission.category)}`}>
                     {permission.category}
                   </span>
@@ -587,7 +587,7 @@ const RoleModal: React.FC<{
                         <label htmlFor={permission.id} className="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer">
                           {permission.name}
                         </label>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{permission.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{permission.description}</p>
                       </div>
                     </div>
                   ))}

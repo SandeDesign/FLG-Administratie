@@ -39,7 +39,7 @@ export const MobileNavigationGroup: React.FC<MobileNavigationGroupProps> = ({
     <div className="space-y-1">
       <button
         onClick={toggleOpen}
-        className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hover:text-gray-700 dark:text-gray-300 transition-colors"
+        className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-gray-700 transition-colors"
       >
         <span>{title}</span>
         {isOpen ? (

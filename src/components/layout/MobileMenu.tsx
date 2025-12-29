@@ -125,9 +125,9 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <X className="h-6 w-6 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+            <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -184,19 +184,19 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                 {/* Section Header */}
                 <button
                   onClick={() => toggleCategory(section.title)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-100 dark:bg-gray-800 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 ${section.color} rounded-lg`}>
                       <section.icon className="h-5 w-5 text-white" />
                     </div>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{section.title}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">({section.items.length})</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">({section.items.length})</span>
                   </div>
                   {expandedCategories.includes(section.title) ? (
-                    <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                   ) : (
-                    <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                   )}
                 </button>
 

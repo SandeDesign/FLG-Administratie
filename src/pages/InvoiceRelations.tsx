@@ -229,7 +229,7 @@ const InvoiceRelations: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Relaties (Klanten)</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Beheer klanten voor {selectedCompany.name}
           </p>
         </div>
@@ -245,7 +245,7 @@ const InvoiceRelations: React.FC = () => {
       <Card>
         <div className="p-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               placeholder="Zoek op naam of email..."
@@ -277,7 +277,7 @@ const InvoiceRelations: React.FC = () => {
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{relation.name}</h3>
                     {relation.kvk && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">KvK: {relation.kvk}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">KvK: {relation.kvk}</p>
                     )}
                   </div>
                   <div className="flex space-x-2">
@@ -298,7 +298,7 @@ const InvoiceRelations: React.FC = () => {
 
                 <div className="space-y-2 text-sm">
                   {relation.email && (
-                    <div className="flex items-center text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
                       <a href={`mailto:${relation.email}`} className="hover:text-primary-600">
                         {relation.email}
@@ -306,7 +306,7 @@ const InvoiceRelations: React.FC = () => {
                     </div>
                   )}
                   {relation.phone && (
-                    <div className="flex items-center text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
                       <a href={`tel:${relation.phone}`} className="hover:text-primary-600">
                         {relation.phone}
@@ -314,7 +314,7 @@ const InvoiceRelations: React.FC = () => {
                     </div>
                   )}
                   {relation.address && (relation.address.street || relation.address.city) && (
-                    <div className="flex items-start text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    <div className="flex items-start text-gray-600 dark:text-gray-400">
                       <MapPin className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
                       <div>
                         {relation.address.street && <div>{relation.address.street}</div>}
@@ -328,8 +328,8 @@ const InvoiceRelations: React.FC = () => {
 
                 {relation.notes && (
                   <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Notities:</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{relation.notes}</p>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Notities:</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{relation.notes}</p>
                   </div>
                 )}
               </div>
@@ -348,7 +348,7 @@ const InvoiceRelations: React.FC = () => {
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
