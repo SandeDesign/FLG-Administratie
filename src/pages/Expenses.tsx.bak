@@ -189,7 +189,7 @@ const Expenses: React.FC = () => {
               Mijn Declaraties
             </h2>
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Filter className="h-4 w-4 text-gray-500" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -271,7 +271,7 @@ const Expenses: React.FC = () => {
                         </Button>
                       )}
                       {expense.status !== 'draft' && (
-                        <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-xs">
+                        <span className="text-gray-400 dark:text-gray-500 text-xs">
                           {expense.status === 'submitted' ? 'In behandeling' :
                            expense.status === 'approved' ? 'Goedgekeurd' :
                            expense.status === 'rejected' ? 'Afgewezen' :

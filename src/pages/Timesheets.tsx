@@ -623,7 +623,7 @@ export default function Timesheets() {
   if (!selectedCompany) {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Urenregistratie</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
         <EmptyState
           icon={Clock}
           title="Geen bedrijf geselecteerd"
@@ -639,7 +639,7 @@ export default function Timesheets() {
   if (!effectiveEmployeeId) {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Urenregistratie</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
         {userRole === 'admin' && companyEmployees.length === 0 ? (
           <EmptyState
             icon={Clock}
@@ -678,9 +678,9 @@ export default function Timesheets() {
       {/* Header */}
       <div className="space-y-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Urenregistratie</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
           {employeeData && (
-            <p className="text-xs sm:text-sm text-gray-600 mt-2 flex items-center gap-2">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 flex items-center gap-2">
               <User className="h-4 w-4" />
               {employeeData.personalInfo.firstName} {employeeData.personalInfo.lastName}
             </p>
@@ -689,24 +689,24 @@ export default function Timesheets() {
 
         {/* Week Navigation + Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
             <button
               onClick={() => changeWeek(-1)}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
               title="Vorige week"
             >
-              <ChevronLeft className="h-5 w-5 text-gray-600" />
+              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div className="text-center px-4 min-w-[120px]">
-              <p className="text-sm font-semibold text-gray-900">Week {selectedWeek}</p>
-              <p className="text-xs text-gray-500">{selectedYear}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Week {selectedWeek}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{selectedYear}</p>
             </div>
             <button
               onClick={() => changeWeek(1)}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
               title="Volgende week"
             >
-              <ChevronRight className="h-5 w-5 text-gray-600" />
+              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
 
@@ -715,7 +715,7 @@ export default function Timesheets() {
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Selecteer werknemer</option>
               {companyEmployees.map(emp => (
@@ -793,7 +793,7 @@ export default function Timesheets() {
       {currentTimesheet && (
         <Card className="bg-gradient-to-r from-primary-50 to-indigo-50 border-primary-200 p-4 sm:p-6">
           <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900">Week {selectedWeek} Overzicht</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Week {selectedWeek} Overzicht</h3>
 
             {isUnderContract && (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700 flex gap-2">
@@ -808,20 +808,20 @@ export default function Timesheets() {
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
-                <p className="text-xs text-gray-600 mb-1">Totaal</p>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal</p>
                 <p className="text-xl sm:text-2xl font-bold text-primary-600">{currentTimesheet.totalRegularHours}u</p>
               </div>
-              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
-                <p className="text-xs text-gray-600 mb-1">Kilometers</p>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Kilometers</p>
                 <p className="text-xl sm:text-2xl font-bold text-green-600">{currentTimesheet.totalTravelKilometers}km</p>
               </div>
-              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
-                <p className="text-xs text-gray-600 mb-1">Werkdagen</p>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Werkdagen</p>
                 <p className="text-xl sm:text-2xl font-bold text-purple-600">{workDays}d</p>
               </div>
-              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
-                <p className="text-xs text-gray-600 mb-1">Gem./dag</p>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Gem./dag</p>
                 <p className={`text-xl sm:text-2xl font-bold ${avgHours < 7 ? 'text-yellow-600' : 'text-orange-600'}`}>
                   {avgHours.toFixed(1)}u
                 </p>
@@ -831,7 +831,7 @@ export default function Timesheets() {
             {/* Verlof & Ziekte Overzicht */}
             {(weekLeaveRequests.length > 0 || weekSickLeaves.length > 0) && (
               <div className="border-t border-primary-200 pt-3 mt-3">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Verlof & Verzuim deze week</h4>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Verlof & Verzuim deze week</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {calculateWeekLeaveHours() > 0 && (
                     <div className="flex items-center gap-2 p-2 bg-emerald-50 rounded-lg">
@@ -896,10 +896,10 @@ export default function Timesheets() {
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm sm:text-base text-gray-900">
+                    <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100">
                       {getDayName(entry.date)}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
                       {entry.date.toLocaleDateString('nl-NL')}
                     </p>
                   </div>
@@ -980,7 +980,7 @@ export default function Timesheets() {
                   {/* Input Fields */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Uren</label>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Uren</label>
                       <Input
                         type="number"
                         min="0"
@@ -994,7 +994,7 @@ export default function Timesheets() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Kilometers</label>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kilometers</label>
                       <Input
                         type="number"
                         min="0"
@@ -1010,7 +1010,7 @@ export default function Timesheets() {
 
                   {/* Notes */}
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Notities</label>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notities</label>
                     <Input
                       type="text"
                       value={entry.notes || ''}
@@ -1024,7 +1024,7 @@ export default function Timesheets() {
                   {/* Work Activities */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700">Werkzaamheden</label>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Werkzaamheden</label>
                       {!isReadOnly && (
                         <Button
                           onClick={() => addWorkActivity(index)}

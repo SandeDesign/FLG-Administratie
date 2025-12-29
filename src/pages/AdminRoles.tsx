@@ -284,8 +284,8 @@ const AdminRoles: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Rollen & Rechten</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Rollen & Rechten</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Beheer gebruikersrollen en hun toegangsrechten
           </p>
         </div>
@@ -306,8 +306,8 @@ const AdminRoles: React.FC = () => {
               <Shield className="h-6 w-6 text-primary-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Totaal Rollen</p>
-              <p className="text-2xl font-bold text-gray-900">{roles.length}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totaal Rollen</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{roles.length}</p>
             </div>
           </div>
         </Card>
@@ -317,8 +317,8 @@ const AdminRoles: React.FC = () => {
               <ShieldCheck className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Systeem Rollen</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Systeem Rollen</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {roles.filter(r => r.isSystem).length}
               </p>
             </div>
@@ -330,8 +330,8 @@ const AdminRoles: React.FC = () => {
               <Settings className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Aangepaste Rollen</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Aangepaste Rollen</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {roles.filter(r => !r.isSystem).length}
               </p>
             </div>
@@ -346,36 +346,36 @@ const AdminRoles: React.FC = () => {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-2">
-                  <h3 className="text-lg font-medium text-gray-900">{role.name}</h3>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{role.name}</h3>
                   {role.isSystem && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-primary-800 bg-primary-100">
                       Systeem
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-600 mt-1">{role.description}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{role.description}</p>
                 
                 <div className="mt-4">
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                     <Users className="h-4 w-4" />
                     <span>{role.userCount} gebruikers</span>
                   </div>
                   
                   <div className="mt-2">
-                    <p className="text-xs text-gray-500 mb-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                       {role.permissions.length} rechten toegekend
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {role.permissions.slice(0, 3).map((permissionId) => (
                         <span
                           key={permissionId}
-                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-gray-600 bg-gray-100"
+                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800"
                         >
                           {getPermissionName(permissionId)}
                         </span>
                       ))}
                       {role.permissions.length > 3 && (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-gray-600 bg-gray-100">
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800">
                           +{role.permissions.length - 3} meer
                         </span>
                       )}
@@ -430,7 +430,7 @@ const AdminRoles: React.FC = () => {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="all">Alle categorieën</option>
               {categories.map((category) => (
@@ -443,13 +443,13 @@ const AdminRoles: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {getPermissionsByCategory(selectedCategory).map((permission) => (
-              <div key={permission.id} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg">
+              <div key={permission.id} className="flex items-start space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <div className={`p-2 rounded-lg ${getCategoryColor(permission.category)}`}>
                   <Shield className="h-4 w-4" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-gray-900">{permission.name}</h4>
-                  <p className="text-xs text-gray-500">{permission.description}</p>
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">{permission.name}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{permission.description}</p>
                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${getCategoryColor(permission.category)}`}>
                     {permission.category}
                   </span>
@@ -536,7 +536,7 @@ const RoleModal: React.FC<{
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Rolnaam
             </label>
             <input
@@ -544,12 +544,12 @@ const RoleModal: React.FC<{
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Beschrijving
             </label>
             <input
@@ -557,20 +557,20 @@ const RoleModal: React.FC<{
               required
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             Rechten ({formData.permissions.length} geselecteerd)
           </label>
           
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
-              <div key={category} className="border border-gray-200 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-3 capitalize">
+              <div key={category} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 capitalize">
                   {category}
                 </h4>
                 <div className="space-y-2">
@@ -581,13 +581,13 @@ const RoleModal: React.FC<{
                         id={permission.id}
                         checked={formData.permissions.includes(permission.id)}
                         onChange={() => togglePermission(permission.id)}
-                        className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        className="mt-1 h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
                       />
                       <div className="flex-1">
-                        <label htmlFor={permission.id} className="text-sm font-medium text-gray-900 cursor-pointer">
+                        <label htmlFor={permission.id} className="text-sm font-medium text-gray-900 dark:text-gray-100 cursor-pointer">
                           {permission.name}
                         </label>
-                        <p className="text-xs text-gray-500">{permission.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{permission.description}</p>
                       </div>
                     </div>
                   ))}

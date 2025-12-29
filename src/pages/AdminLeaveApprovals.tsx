@@ -136,13 +136,13 @@ const AdminLeaveApprovals: React.FC = () => {
       {/* Header with Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Verlof Goedkeuren</h1>
-          <p className="text-sm text-gray-600 mt-1">{filteredRequests.length} aanvraag{filteredRequests.length !== 1 ? 'en' : ''} wachten</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Verlof Goedkeuren</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{filteredRequests.length} aanvraag{filteredRequests.length !== 1 ? 'en' : ''} wachten</p>
         </div>
         <select
           value={filterCompany}
           onChange={(e) => setFilterCompany(e.target.value)}
-          className="px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 font-medium hover:border-gray-400 transition-colors"
+          className="px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium hover:border-gray-400 transition-colors"
         >
           <option value="all">Alle bedrijven</option>
           {companies.map(company => (
@@ -186,14 +186,14 @@ const AdminLeaveApprovals: React.FC = () => {
 
       {/* Requests List */}
       {filteredRequests.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-12 text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-gray-100 rounded-full">
+            <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full">
               <Calendar className="h-6 w-6 text-gray-400" />
             </div>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Geen openstaande aanvragen</h3>
-          <p className="text-sm text-gray-600 mt-2">Alle verlofaanvragen zijn afgehandeld!</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Geen openstaande aanvragen</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Alle verlofaanvragen zijn afgehandeld!</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -204,14 +204,14 @@ const AdminLeaveApprovals: React.FC = () => {
             return (
               <div
                 key={request.id}
-                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all"
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-md transition-all"
               >
                 {/* Main Row */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : request.id)}
                   className="w-full"
                 >
-                  <div className="p-4 sm:p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-4 sm:p-5 flex items-center gap-4 hover:bg-gray-50 dark:bg-gray-900 transition-colors">
                     {/* Status Icon */}
                     <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex-shrink-0">
                       <Clock className="h-5 w-5 text-orange-600" />
@@ -220,14 +220,14 @@ const AdminLeaveApprovals: React.FC = () => {
                     {/* Info - Desktop & Mobile */}
                     <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">
                           {getEmployeeName(request.employeeId)}
                         </h3>
                         <span className="px-2.5 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
                           {request.totalDays}d
                         </span>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         <span className="font-medium">{formatLeaveType(request.type)}</span>
                         <span className="hidden sm:inline text-gray-400">•</span>
                         <span>{formatDate(request.startDate)} → {formatDate(request.endDate)}</span>
@@ -241,36 +241,36 @@ const AdminLeaveApprovals: React.FC = () => {
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="border-t border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4 sm:p-5 space-y-4">
+                  <div className="border-t border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 to-white p-4 sm:p-5 space-y-4">
                     {/* Company & Type */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs font-semibold text-gray-700 mb-1.5">Bedrijf</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-900">
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Bedrijf</p>
+                        <div className="flex items-center gap-2 text-sm text-gray-900 dark:text-gray-100">
                           <Building2 className="h-4 w-4 text-gray-400" />
                           {getCompanyName(request.companyId)}
                         </div>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-gray-700 mb-1.5">Type Verlof</p>
-                        <div className="text-sm font-medium text-gray-900">
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Type Verlof</p>
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {formatLeaveType(request.type)}
                         </div>
                       </div>
                     </div>
 
                     {/* Dates */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-gray-600">Startdatum:</span>
-                        <span className="text-sm font-semibold text-gray-900">{formatDate(request.startDate)}</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Startdatum:</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatDate(request.startDate)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-gray-600">Einddatum:</span>
-                        <span className="text-sm font-semibold text-gray-900">{formatDate(request.endDate)}</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Einddatum:</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatDate(request.endDate)}</span>
                       </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                        <span className="text-xs font-medium text-gray-600">Totaal:</span>
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Totaal:</span>
                         <span className="text-base font-bold text-orange-600">{request.totalDays} dagen</span>
                       </div>
                     </div>

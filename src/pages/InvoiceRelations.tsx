@@ -228,8 +228,8 @@ const InvoiceRelations: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Relaties (Klanten)</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Relaties (Klanten)</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Beheer klanten voor {selectedCompany.name}
           </p>
         </div>
@@ -251,7 +251,7 @@ const InvoiceRelations: React.FC = () => {
               placeholder="Zoek op naam of email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
         </div>
@@ -275,9 +275,9 @@ const InvoiceRelations: React.FC = () => {
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900">{relation.name}</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{relation.name}</h3>
                     {relation.kvk && (
-                      <p className="text-sm text-gray-500">KvK: {relation.kvk}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">KvK: {relation.kvk}</p>
                     )}
                   </div>
                   <div className="flex space-x-2">
@@ -298,7 +298,7 @@ const InvoiceRelations: React.FC = () => {
 
                 <div className="space-y-2 text-sm">
                   {relation.email && (
-                    <div className="flex items-center text-gray-600">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
                       <a href={`mailto:${relation.email}`} className="hover:text-primary-600">
                         {relation.email}
@@ -306,7 +306,7 @@ const InvoiceRelations: React.FC = () => {
                     </div>
                   )}
                   {relation.phone && (
-                    <div className="flex items-center text-gray-600">
+                    <div className="flex items-center text-gray-600 dark:text-gray-400">
                       <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
                       <a href={`tel:${relation.phone}`} className="hover:text-primary-600">
                         {relation.phone}
@@ -314,7 +314,7 @@ const InvoiceRelations: React.FC = () => {
                     </div>
                   )}
                   {relation.address && (relation.address.street || relation.address.city) && (
-                    <div className="flex items-start text-gray-600">
+                    <div className="flex items-start text-gray-600 dark:text-gray-400">
                       <MapPin className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
                       <div>
                         {relation.address.street && <div>{relation.address.street}</div>}
@@ -327,9 +327,9 @@ const InvoiceRelations: React.FC = () => {
                 </div>
 
                 {relation.notes && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-xs font-medium text-gray-600 mb-1">Notities:</p>
-                    <p className="text-sm text-gray-600">{relation.notes}</p>
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Notities:</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{relation.notes}</p>
                   </div>
                 )}
               </div>
@@ -341,14 +341,14 @@ const InvoiceRelations: React.FC = () => {
       {/* MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                 {editingRelation ? 'Relatie Bewerken' : 'Nieuwe Relatie'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -359,7 +359,7 @@ const InvoiceRelations: React.FC = () => {
                 {/* Naam & Email */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Naam / Bedrijf *
                     </label>
                     <input
@@ -367,12 +367,12 @@ const InvoiceRelations: React.FC = () => {
                       required
                       value={formData.name || ''}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="Bedrijfsnaam"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Email *
                     </label>
                     <input
@@ -380,7 +380,7 @@ const InvoiceRelations: React.FC = () => {
                       required
                       value={formData.email || ''}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="email@bedrijf.nl"
                     />
                   </div>
@@ -389,26 +389,26 @@ const InvoiceRelations: React.FC = () => {
                 {/* Telefoon & Website */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Telefoon
                     </label>
                     <input
                       type="tel"
                       value={formData.phone || ''}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="+31 6 12345678"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Website
                     </label>
                     <input
                       type="url"
                       value={formData.website || ''}
                       onChange={(e) => setFormData({...formData, website: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="https://example.com"
                     />
                   </div>
@@ -417,26 +417,26 @@ const InvoiceRelations: React.FC = () => {
                 {/* KvK & Belasting nummer */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       KvK Nummer
                     </label>
                     <input
                       type="text"
                       value={formData.kvk || ''}
                       onChange={(e) => setFormData({...formData, kvk: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="12345678"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Belasting Nummer (VAT)
                     </label>
                     <input
                       type="text"
                       value={formData.taxNumber || ''}
                       onChange={(e) => setFormData({...formData, taxNumber: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="NL123456789B01"
                     />
                   </div>
@@ -444,10 +444,10 @@ const InvoiceRelations: React.FC = () => {
 
                 {/* Adres */}
                 <div>
-                  <h3 className="text-sm font-medium text-gray-900 mb-4">Adres</h3>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Adres</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Straat
                       </label>
                       <input
@@ -457,13 +457,13 @@ const InvoiceRelations: React.FC = () => {
                           ...formData,
                           address: {...formData.address, street: e.target.value}
                         })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         placeholder="Straat en huisnummer"
                       />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Postcode
                         </label>
                         <input
@@ -473,12 +473,12 @@ const InvoiceRelations: React.FC = () => {
                             ...formData,
                             address: {...formData.address, zipCode: e.target.value}
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                           placeholder="1234 AB"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Plaats
                         </label>
                         <input
@@ -488,12 +488,12 @@ const InvoiceRelations: React.FC = () => {
                             ...formData,
                             address: {...formData.address, city: e.target.value}
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                           placeholder="Amsterdam"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Land
                         </label>
                         <input
@@ -503,7 +503,7 @@ const InvoiceRelations: React.FC = () => {
                             ...formData,
                             address: {...formData.address, country: e.target.value}
                           })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                           placeholder="Nederland"
                         />
                       </div>
@@ -513,21 +513,21 @@ const InvoiceRelations: React.FC = () => {
 
                 {/* Notities */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Notities
                   </label>
                   <textarea
                     value={formData.notes || ''}
                     onChange={(e) => setFormData({...formData, notes: e.target.value})}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     placeholder="Interne notities..."
                   />
                 </div>
               </form>
             </div>
 
-            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+            <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
               <Button 
                 type="button" 
                 variant="ghost" 

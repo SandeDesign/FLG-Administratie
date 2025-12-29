@@ -234,7 +234,7 @@ const AdminExpenses: React.FC = () => {
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -249,7 +249,7 @@ const AdminExpenses: React.FC = () => {
               </select>
             </div>
             <div className="flex items-center space-x-2">
-              <User className="h-4 w-4 text-gray-500" />
+              <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
               <select
                 value={filterEmployee}
                 onChange={(e) => setFilterEmployee(e.target.value)}

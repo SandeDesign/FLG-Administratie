@@ -184,7 +184,7 @@ const EmployeeDashboard: React.FC = () => {
               </p>
             )}
           </div>
-          <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center">
+          <div className="h-16 w-16 rounded-full bg-white dark:bg-gray-800/20 flex items-center justify-center">
             <User className="h-8 w-8 text-white" />
           </div>
         </div>
@@ -199,7 +199,7 @@ const EmployeeDashboard: React.FC = () => {
           ].map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <div key={index} className="bg-white dark:bg-gray-800/10 backdrop-blur-sm rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Icon className="h-4 w-4 text-primary-100" />
                   <p className="text-xs text-primary-100">{stat.label}</p>
@@ -213,7 +213,7 @@ const EmployeeDashboard: React.FC = () => {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
           <Zap className="h-6 w-6 text-amber-500" />
           Snelle Acties
         </h2>
@@ -245,13 +245,13 @@ const EmployeeDashboard: React.FC = () => {
       {hoursChartData.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Hours Chart */}
-          <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary-600" />
                 Uren overzicht
               </h3>
-              <span className="text-xs text-gray-600 bg-gray-100 px-3 py-1 rounded-full">Deze maand</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">Deze maand</span>
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={hoursChartData}>
@@ -273,23 +273,23 @@ const EmployeeDashboard: React.FC = () => {
           </div>
 
           {/* Info Card */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
               <Award className="h-5 w-5 text-amber-600" />
               Informatie
             </h3>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Totale uren</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalHours}u</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Totale uren</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalHours}u</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Reiskilometers</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalKm}km</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Reiskilometers</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalKm}km</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Weken ingediend</p>
-                <p className="text-2xl font-bold text-gray-900">{timesheets.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Weken ingediend</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{timesheets.length}</p>
               </div>
             </div>
           </div>
@@ -298,7 +298,7 @@ const EmployeeDashboard: React.FC = () => {
 
       {/* Status Cards */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
           <Target className="h-6 w-6 text-primary-600" />
           Huidige Status
         </h2>
@@ -338,8 +338,8 @@ const EmployeeDashboard: React.FC = () => {
               <div key={index} className={`bg-gradient-to-br ${item.color} rounded-xl p-6 border border-gray-200`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-900 text-sm">{item.title}</p>
-                    <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{item.description}</p>
                   </div>
                   <div className={`flex-shrink-0 p-3 rounded-lg bg-white`}>
                     <Icon className={`h-5 w-5 ${item.iconColor}`} />

@@ -628,7 +628,7 @@ const OutgoingInvoices: React.FC = () => {
     return (
       <div className="space-y-6 px-4 sm:px-0">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Facturen</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Facturen</h1>
         </div>
         <EmptyState
           icon={Building2}
@@ -645,16 +645,16 @@ const OutgoingInvoices: React.FC = () => {
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => setView('list')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
             title="Terug"
           >
-            <ArrowLeft className="h-5 w-5 text-gray-600" />
+            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           </button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
               {editingInvoice ? 'Factuur bewerken' : 'Nieuwe factuur'}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">{invoiceNumber}</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">{invoiceNumber}</p>
           </div>
         </div>
 
@@ -665,16 +665,16 @@ const OutgoingInvoices: React.FC = () => {
               <div className="p-2 bg-primary-100 rounded-lg">
                 <User className="h-4 w-4 text-primary-600" />
               </div>
-              <h2 className="text-sm font-semibold text-gray-900">Klantgegevens</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Klantgegevens</h2>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">Klant selecteren</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Klant selecteren</label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsRelationsOpen(!isRelationsOpen)}
-                  className="w-full flex items-center justify-between p-3 border-2 border-gray-200 rounded-lg bg-white text-sm hover:border-gray-300 transition-colors"
+                  className="w-full flex items-center justify-between p-3 border-2 border-gray-200 rounded-lg bg-white dark:bg-gray-800 text-sm hover:border-gray-300 dark:border-gray-600 transition-colors"
                 >
                   <span className={formData.clientName ? 'text-gray-900 font-medium' : 'text-gray-500'}>
                     {formData.clientName || 'Kies een klant...'}
@@ -682,9 +682,9 @@ const OutgoingInvoices: React.FC = () => {
                   <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isRelationsOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isRelationsOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
                     {relations.length === 0 ? (
-                      <div className="p-4 text-xs text-gray-500 text-center">Geen relaties beschikbaar</div>
+                      <div className="p-4 text-xs text-gray-500 dark:text-gray-400 text-center">Geen relaties beschikbaar</div>
                     ) : (
                       relations.map(rel => (
                         <button
@@ -693,8 +693,8 @@ const OutgoingInvoices: React.FC = () => {
                           onClick={() => handleSelectRelation(rel)}
                           className="w-full text-left px-4 py-3 hover:bg-primary-50 border-b border-gray-100 last:border-b-0 transition-colors"
                         >
-                          <div className="font-medium text-gray-900 text-sm">{rel.name}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{rel.email}</div>
+                          <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{rel.name}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{rel.email}</div>
                         </button>
                       ))
                     )}
@@ -705,43 +705,43 @@ const OutgoingInvoices: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">Naam</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Naam</label>
                 <input
                   type="text"
                   value={formData.clientName}
                   onChange={e => setFormData({ ...formData, clientName: e.target.value })}
                   placeholder="Bedrijfsnaam"
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">E-mail</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">E-mail</label>
                 <input
                   type="email"
                   value={formData.clientEmail}
                   onChange={e => setFormData({ ...formData, clientEmail: e.target.value })}
                   placeholder="klant@bedrijf.nl"
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">Telefoonnummer</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Telefoonnummer</label>
                 <input
                   type="tel"
                   value={formData.clientPhone}
                   onChange={e => setFormData({ ...formData, clientPhone: e.target.value })}
                   placeholder="+31 6 12345678"
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">KvK-nummer</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">KvK-nummer</label>
                 <input
                   type="text"
                   value={formData.clientKvk}
                   onChange={e => setFormData({ ...formData, clientKvk: e.target.value })}
                   placeholder="12345678"
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
             </div>
@@ -753,32 +753,32 @@ const OutgoingInvoices: React.FC = () => {
               <div className="p-2 bg-orange-100 rounded-lg">
                 <Calendar className="h-4 w-4 text-orange-600" />
               </div>
-              <h2 className="text-sm font-semibold text-gray-900">Datums & BTW</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Datums & BTW</h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">Factuurdatum</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Factuurdatum</label>
                 <input
                   type="date"
                   value={formData.invoiceDate}
                   onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">Vervaldatum</label>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Vervaldatum</label>
                 <input
                   type="date"
                   value={formData.dueDate}
                   onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">BTW Tarief</label>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">BTW Tarief</label>
               <div className="grid grid-cols-3 gap-2">
                 {[0, 9, 21].map((rate) => (
                   <button
@@ -806,7 +806,7 @@ const OutgoingInvoices: React.FC = () => {
                 <div className="p-2 bg-green-100 rounded-lg">
                   <TrendingUp className="h-4 w-4 text-green-600" />
                 </div>
-                <h2 className="text-sm font-semibold text-gray-900">Factuurregels</h2>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Factuurregels</h2>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -855,7 +855,7 @@ const OutgoingInvoices: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="bg-white rounded-lg p-3 space-y-3">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 space-y-3">
                   {/* Step 1: Employee Selector */}
                   <div>
                     <label className="block text-xs font-semibold text-amber-900 mb-2">STAP 1: Selecteer medewerker</label>
@@ -868,7 +868,7 @@ const OutgoingInvoices: React.FC = () => {
                         setSelectedProductionWeekIds([]);
                         setInvoicedWeekIds(new Set());
                       }}
-                      className="w-full px-3 py-2 border-2 border-amber-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                      className="w-full px-3 py-2 border-2 border-amber-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white dark:bg-gray-800"
                     >
                       <option value="">-- Kies medewerker --</option>
                       {employees.map((emp) => (
@@ -915,7 +915,7 @@ const OutgoingInvoices: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      <div className="max-h-48 overflow-y-auto border-2 border-amber-300 rounded bg-white">
+                      <div className="max-h-48 overflow-y-auto border-2 border-amber-300 rounded bg-white dark:bg-gray-800">
                         {productionWeeks.map((week) => {
                           const invoiced = isWeekInvoiced(week);
                           const isSelected = selectedProductionWeekIds.includes(week.id);
@@ -964,7 +964,7 @@ const OutgoingInvoices: React.FC = () => {
                   {selectedProductionWeeks.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-amber-900">STAP 3: Preview geselecteerde weken</p>
-                      <div className="bg-white border-2 border-amber-200 rounded p-2 max-h-48 overflow-y-auto space-y-3">
+                      <div className="bg-white dark:bg-gray-800 border-2 border-amber-200 rounded p-2 max-h-48 overflow-y-auto space-y-3">
                         {selectedProductionWeeks.map((week) => (
                           <div key={week.id} className="border-b border-amber-200 pb-2 last:border-0 last:pb-0">
                             <div className="text-xs font-bold text-amber-900 mb-1">
@@ -1013,54 +1013,54 @@ const OutgoingInvoices: React.FC = () => {
 
             <div className="space-y-3">
               {items.map((item, i) => (
-                <div key={i} className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+                <div key={i} className="bg-gray-50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Titel</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Titel</label>
                     <input
                       placeholder="Bijv: Week 40 Jan Jansen"
                       value={item.title}
                       onChange={e => updateItem(i, 'title', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Beschrijving</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Beschrijving</label>
                     <textarea
                       placeholder="Monteur	Datum	Uren	Opdrachtgever	Locaties"
                       value={item.description}
                       onChange={e => updateItem(i, 'description', e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none font-mono"
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none font-mono"
                     />
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Uren</label>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Uren</label>
                       <input
                         type="number"
                         value={item.quantity}
                         onChange={e => updateItem(i, 'quantity', Number(e.target.value))}
                         min="0.1"
                         step="0.1"
-                        className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full px-2 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">€/uur</label>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">€/uur</label>
                       <input
                         type="number"
                         value={item.rate}
                         onChange={e => updateItem(i, 'rate', Number(e.target.value))}
                         min="0"
                         step="0.01"
-                        className="w-full px-2 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full px-2 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Bedrag</label>
-                      <div className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-right text-gray-900">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrag</label>
+                      <div className="w-full px-2 py-2 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg text-xs font-semibold text-right text-gray-900 dark:text-gray-100">
                         €{item.amount.toFixed(2)}
                       </div>
                     </div>
@@ -1083,15 +1083,15 @@ const OutgoingInvoices: React.FC = () => {
           <Card className="p-5 sm:p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-primary-200">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Subtotaal:</span>
-                <span className="text-lg font-semibold text-gray-900">€{subtotal.toFixed(2)}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Subtotaal:</span>
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">€{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">BTW ({vatRate}%):</span>
-                <span className="text-lg font-semibold text-gray-900">€{vatAmount.toFixed(2)}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">BTW ({vatRate}%):</span>
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">€{vatAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t border-primary-200">
-                <span className="text-sm font-semibold text-gray-900">Totaal:</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Totaal:</span>
                 <span className="text-2xl font-bold text-primary-600">€{total.toFixed(2)}</span>
               </div>
             </div>
@@ -1099,13 +1099,13 @@ const OutgoingInvoices: React.FC = () => {
 
           {/* Notes */}
           <Card className="p-5 sm:p-6 space-y-4">
-            <label className="block text-xs font-medium text-gray-700">Opmerkingen</label>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Opmerkingen</label>
             <textarea
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
               placeholder="Eventuele opmerkingen op deze factuur..."
-              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors resize-none"
+              className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors resize-none"
             />
           </Card>
 
@@ -1136,8 +1136,8 @@ const OutgoingInvoices: React.FC = () => {
     <div className="space-y-3 px-4 sm:px-0 pb-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Facturen</h1>
-          <p className="text-xs text-gray-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Facturen</h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {filteredInvoices.length} stuks
           </p>
         </div>
@@ -1157,7 +1157,7 @@ const OutgoingInvoices: React.FC = () => {
       </div>
 
       {showFilters && (
-        <div className="flex flex-col sm:flex-row gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
             <input
@@ -1165,12 +1165,12 @@ const OutgoingInvoices: React.FC = () => {
               placeholder="Zoeken..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-7 pr-8 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-primary-500"
+              className="w-full pl-7 pr-8 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:border-primary-500"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -1179,7 +1179,7 @@ const OutgoingInvoices: React.FC = () => {
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="px-2 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-primary-500 bg-white"
+            className="px-2 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-primary-500 bg-white dark:bg-gray-800"
           >
             <option value="all">Alle</option>
             <option value="draft">Concept</option>
@@ -1191,9 +1191,9 @@ const OutgoingInvoices: React.FC = () => {
       )}
 
       {filteredInvoices.length === 0 ? (
-        <div className="p-6 text-center border border-gray-200 rounded-lg">
+        <div className="p-6 text-center border border-gray-200 dark:border-gray-700 rounded-lg">
           <Send className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {searchTerm ? 'Geen resultaten.' : 'Maak uw eerste factuur aan.'}
           </p>
           {!searchTerm && (
@@ -1205,7 +1205,7 @@ const OutgoingInvoices: React.FC = () => {
       ) : (
         <>
           {/* Compact Table Header */}
-          <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 bg-gray-100 rounded-lg text-xs font-semibold text-gray-700 sticky top-0 z-10">
+          <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 bg-gray-100 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 sticky top-0 z-10">
             <div className="col-span-2">Nummer</div>
             <div className="col-span-4">Klant</div>
             <div className="col-span-2">Bedrag</div>
@@ -1222,12 +1222,12 @@ const OutgoingInvoices: React.FC = () => {
               return (
                 <div key={invoice.id}>
                   {/* Desktop Row */}
-                  <div className="hidden md:grid grid-cols-12 gap-2 items-center p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-sm transition-all cursor-pointer"
+                  <div className="hidden md:grid grid-cols-12 gap-2 items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:bg-gray-900 hover:shadow-sm transition-all cursor-pointer"
                     onClick={() => setExpandedInvoice(isExpanded ? null : invoice.id)}>
-                    <div className="col-span-2 text-xs font-semibold text-gray-900">{invoice.invoiceNumber}</div>
-                    <div className="col-span-4 text-xs text-gray-700">{invoice.clientName}</div>
-                    <div className="col-span-2 text-xs font-semibold text-gray-900">€{invoice.totalAmount.toFixed(2)}</div>
-                    <div className="col-span-2 text-xs text-gray-600">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div>
+                    <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</div>
+                    <div className="col-span-4 text-xs text-gray-700 dark:text-gray-300">{invoice.clientName}</div>
+                    <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">€{invoice.totalAmount.toFixed(2)}</div>
+                    <div className="col-span-2 text-xs text-gray-600 dark:text-gray-400">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div>
                     <div className="col-span-1">
                       <span className={`inline-flex items-center gap-0.5 px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(invoice.status)}`}>
                         <StatusIcon className="h-3 w-3" />
@@ -1239,10 +1239,10 @@ const OutgoingInvoices: React.FC = () => {
                   </div>
 
                   {/* Mobile Card */}
-                  <div className="md:hidden bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="md:hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                     <button
                       onClick={() => setExpandedInvoice(isExpanded ? null : invoice.id)}
-                      className="w-full p-3 flex items-center gap-2 hover:bg-gray-50"
+                      className="w-full p-3 flex items-center gap-2 hover:bg-gray-50 dark:bg-gray-900"
                     >
                       <div className={`p-2 rounded flex-shrink-0 ${
                         invoice.status === 'paid' ? 'bg-green-100' :
@@ -1258,12 +1258,12 @@ const OutgoingInvoices: React.FC = () => {
                         }`} />
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <div className="text-xs font-semibold text-gray-900">{invoice.invoiceNumber}</div>
-                        <div className="text-xs text-gray-600 truncate">{invoice.clientName}</div>
+                        <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{invoice.clientName}</div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <div className="text-xs font-semibold text-gray-900">€{invoice.totalAmount.toFixed(2)}</div>
-                        <div className="text-xs text-gray-500">{getStatusText(invoice.status)}</div>
+                        <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">€{invoice.totalAmount.toFixed(2)}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{getStatusText(invoice.status)}</div>
                       </div>
                       <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                     </button>
@@ -1271,23 +1271,23 @@ const OutgoingInvoices: React.FC = () => {
 
                   {/* Expanded Details */}
                   {isExpanded && (
-                    <div className="bg-gray-50 border-t border-gray-200 p-3 space-y-3">
+                    <div className="bg-gray-50 border-t border-gray-200 dark:border-gray-700 p-3 space-y-3">
                       {invoice.items.length > 0 && (
-                        <div className="bg-white rounded p-3 space-y-1 text-xs">
-                          <p className="font-semibold text-gray-900 mb-2">Regels:</p>
+                        <div className="bg-white dark:bg-gray-800 rounded p-3 space-y-1 text-xs">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Regels:</p>
                           {invoice.items.slice(0, 3).map((item, i) => (
-                            <div key={i} className="text-gray-700">
+                            <div key={i} className="text-gray-700 dark:text-gray-300">
                               <div className="font-medium">{item.title || 'Item'}</div>
                               {item.description && (
-                                <div className="text-gray-600 whitespace-pre-wrap font-mono text-xs mt-0.5">{item.description.substring(0, 80)}...</div>
+                                <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono text-xs mt-0.5">{item.description.substring(0, 80)}...</div>
                               )}
-                              <div className="text-gray-600">{item.quantity}x €{item.rate.toFixed(2)} = €{item.amount.toFixed(2)}</div>
+                              <div className="text-gray-600 dark:text-gray-400">{item.quantity}x €{item.rate.toFixed(2)} = €{item.amount.toFixed(2)}</div>
                             </div>
                           ))}
                           {invoice.items.length > 3 && (
-                            <p className="text-gray-500 italic">+{invoice.items.length - 3} meer</p>
+                            <p className="text-gray-500 dark:text-gray-400 italic">+{invoice.items.length - 3} meer</p>
                           )}
-                          <div className="border-t border-gray-200 pt-1 mt-1 font-semibold text-gray-900 flex justify-between">
+                          <div className="border-t border-gray-200 pt-1 mt-1 font-semibold text-gray-900 dark:text-gray-100 flex justify-between">
                             <span>Totaal:</span>
                             <span>€{invoice.totalAmount.toFixed(2)}</span>
                           </div>
@@ -1359,14 +1359,14 @@ const OutgoingInvoices: React.FC = () => {
           </div>
 
           {/* Compact Summary Footer */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-100 rounded-lg text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs">
             <div>
-              <p className="text-gray-600 font-medium">Totaal</p>
-              <p className="font-bold text-gray-900">€{totalAmount.toFixed(2)}</p>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">Totaal</p>
+              <p className="font-bold text-gray-900 dark:text-gray-100">€{totalAmount.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-gray-600 font-medium">Concept</p>
-              <p className="font-bold text-gray-900">{draftCount}</p>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">Concept</p>
+              <p className="font-bold text-gray-900 dark:text-gray-100">{draftCount}</p>
             </div>
             <div>
               <p className="text-primary-600 font-medium">Verstuurd</p>

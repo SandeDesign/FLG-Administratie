@@ -315,7 +315,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                 {thisWeekTasks.length} {thisWeekTasks.length === 1 ? 'taak' : 'taken'} deze week
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 {selectedCompany?.name}
               </p>
             </div>
@@ -351,7 +351,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
                       <p className="text-sm text-red-600 dark:text-red-400">{formatDate(task.dueDate)}</p>
                       {task.isRecurring && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                           🔄 Terugkerend ({task.frequency})
                         </p>
                       )}
@@ -405,7 +405,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
                       <p className="text-sm text-orange-600 dark:text-orange-400">Vandaag</p>
                       {task.isRecurring && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                           🔄 Terugkerend ({task.frequency})
                         </p>
                       )}
@@ -459,7 +459,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
                       <p className="text-sm text-blue-600 dark:text-blue-400">{formatDate(task.dueDate)}</p>
                       {task.isRecurring && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                           🔄 Terugkerend ({task.frequency})
                         </p>
                       )}
@@ -481,7 +481,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                 </div>
               ))}
               {upcomingTasks.length > 5 && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-2">
                   + {upcomingTasks.length - 5} meer
                 </p>
               )}

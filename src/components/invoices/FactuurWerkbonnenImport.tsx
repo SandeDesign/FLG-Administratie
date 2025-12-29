@@ -82,7 +82,7 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
           value={selectedWeek}
           onChange={(e) => setSelectedWeek(Number(e.target.value))}
           disabled={loading || showPreview}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 dark:bg-gray-800"
         >
           {weekOptions.map(opt => (
             <option key={opt.week} value={opt.week}>
@@ -104,13 +104,13 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
       {/* Preview Modal */}
       {showPreview && weekData.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-bold">Werkbonnen Factuurgegevens - Week {selectedWeek}</h3>
               <button
                 onClick={handleClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -119,14 +119,14 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
             {/* Content */}
             <div className="overflow-y-auto max-h-[calc(80vh-140px)] p-4 space-y-4">
               {weekData.map((week, weekIdx) => (
-                <div key={weekIdx} className="border border-gray-200 rounded p-3">
+                <div key={weekIdx} className="border border-gray-200 dark:border-gray-700 rounded p-3">
                   <h4 className="font-semibold mb-2">
                     Week {week.week} - {week.monteur}
                   </h4>
                   
                   <div className="space-y-1 text-sm">
                     {week.regels.map((regel, rIdx) => (
-                      <div key={rIdx} className="text-gray-700 p-2 bg-gray-50 rounded">
+                      <div key={rIdx} className="text-gray-700 dark:text-gray-300 p-2 bg-gray-50 dark:bg-gray-900 rounded">
                         <div className="font-mono">
                           "{regel.datum}" {regel.uren} {regel.opdrachtgever} "{regel.locaties}"
                         </div>
@@ -134,7 +134,7 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
                     ))}
                   </div>
 
-                  <div className="mt-2 text-right text-sm font-semibold text-gray-600">
+                  <div className="mt-2 text-right text-sm font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-500">
                     Totaal: {week.totalUren} uren
                   </div>
                 </div>
@@ -150,7 +150,7 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="flex gap-2 p-4 border-t border-gray-200 justify-end">
+            <div className="flex gap-2 p-4 border-t border-gray-200 dark:border-gray-700 justify-end">
               <Button
                 variant="ghost"
                 onClick={handleClose}

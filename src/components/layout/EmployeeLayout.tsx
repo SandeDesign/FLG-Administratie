@@ -56,18 +56,18 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-50">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 z-50">
         <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-8 w-auto" />
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
         >
           {mobileMenuOpen ? (
-            <X className="h-6 w-6 text-gray-600" />
+            <X className="h-6 w-6 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
           ) : (
-            <Menu className="h-6 w-6 text-gray-600" />
+            <Menu className="h-6 w-6 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
           )}
         </button>
       </div>
@@ -80,11 +80,11 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
           }`}
         >
           {/* Logo */}
-          <div className="hidden md:flex items-center gap-3 px-6 py-6 border-b border-gray-200 flex-shrink-0">
+          <div className="hidden md:flex items-center gap-3 px-6 py-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-8 w-auto" />
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Administratie</h1>
-              <p className="text-xs text-gray-500">{selectedCompany?.name || 'Dashboard'}</p>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Administratie</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedCompany?.name || 'Dashboard'}</p>
             </div>
           </div>
 
@@ -112,16 +112,16 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
           </nav>
 
           {/* User Info & Logout - STICKY BOTTOM */}
-          <div className="border-t border-gray-200 p-4 space-y-3 flex-shrink-0 bg-white">
+          <div className="border-t border-gray-200 p-4 space-y-3 flex-shrink-0 bg-white dark:bg-gray-800">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0">
                 <User className="h-6 w-6 text-white" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-gray-900 truncate">
+                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
                   {getFirstName()}
                 </p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{user?.email}</p>
               </div>
             </div>
             <Button
@@ -153,7 +153,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40">
-        <div className="bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-2xl">
+        <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 shadow-2xl">
           <div className="flex justify-around items-center px-2 py-3">
             {bottomNavItems.map(({ href, icon: Icon, name }) => {
               const isActive = location.pathname === href;

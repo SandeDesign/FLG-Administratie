@@ -991,7 +991,7 @@ const Dashboard: React.FC = () => {
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{ts.totalRegularHours}u • Ingediend op {new Date(ts.submittedAt).toLocaleDateString('nl-NL')}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-400 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               ))}
             </div>
