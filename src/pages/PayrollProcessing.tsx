@@ -322,11 +322,7 @@ export default function PayrollProcessing() {
                 <div
                   key={period.id}
                   onClick={() => setSelectedPeriod(period)}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                    selectedPeriod?.id === period.id
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
-                  }`}
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${ selectedPeriod?.id === period.id ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }`}
                 >
                   <div className="flex justify-between items-center">
                     <div>
@@ -338,12 +334,7 @@ export default function PayrollProcessing() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        period.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' :
-                        period.status === 'approved' ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300' :
-                        period.status === 'calculated' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300' :
-                        'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${ period.status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' : period.status === 'approved' ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300' : period.status === 'calculated' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }`}>
                         {period.status === 'paid' ? 'Betaald' :
                          period.status === 'approved' ? 'Goedgekeurd' :
                          period.status === 'calculated' ? 'Berekend' :

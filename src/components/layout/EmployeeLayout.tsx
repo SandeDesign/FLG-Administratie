@@ -75,9 +75,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
       <div className="flex h-screen md:h-auto md:min-h-screen">
         {/* Desktop Sidebar */}
         <div
-          className={`fixed md:fixed left-0 top-16 md:top-0 h-[calc(100vh-64px)] md:h-screen w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 z-50 md:z-0 overflow-hidden shadow-lg md:shadow-none ${
-            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          }`}
+          className={`fixed md:fixed left-0 top-16 md:top-0 h-[calc(100vh-64px)] md:h-screen w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 z-50 md:z-0 overflow-hidden shadow-lg md:shadow-none ${ mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0' }`}
         >
           {/* Logo */}
           <div className="hidden md:flex items-center gap-3 px-6 py-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -98,11 +96,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold text-base transition-all duration-200 ${
-                    isActive
-                      ? 'bg-primary-50 text-primary-600 border-l-4 border-primary-600 shadow-sm'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900 border-l-4 border-transparent hover:text-gray-900 dark:text-gray-100'
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold text-base transition-all duration-200 ${ isActive ? 'bg-primary-50 text-primary-600 border-l-4 border-primary-600 shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900 border-l-4 border-transparent hover:text-gray-900 dark:text-gray-100' }`}
                 >
                   <Icon className="h-5 w-5 flex-shrink-0" />
                   <span>{item.name}</span>
@@ -163,16 +157,10 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
                   to={href}
                   className="flex flex-col items-center justify-center flex-1 transition-all duration-300"
                 >
-                  <div className={`p-3 rounded-2xl transition-all duration-300 ${
-                    isActive
-                      ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg'
-                      : 'bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                  }`}>
+                  <div className={`p-3 rounded-2xl transition-all duration-300 ${ isActive ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 dark:text-gray-500' }`}>
                     <Icon size={20} strokeWidth={2.2} />
                   </div>
-                  <span className={`text-xs font-semibold mt-1.5 ${
-                    isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                  }`}>
+                  <span className={`text-xs font-semibold mt-1.5 ${ isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500' }`}>
                     {name}
                   </span>
                 </NavLink>

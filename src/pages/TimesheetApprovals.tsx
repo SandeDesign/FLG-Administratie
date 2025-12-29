@@ -249,11 +249,7 @@ export default function TimesheetApprovals() {
             return (
               <div key={summary.employeeId} className="space-y-2">
                 {/* Employee Card - ALTIJD MET DASHBOARD BUTTON */}
-                <div className={`w-full p-4 sm:p-5 rounded-lg border-2 transition-all text-left ${
-                  summary.hasPending 
-                    ? 'border-orange-300 bg-white dark:bg-gray-800 hover:bg-orange-50' 
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                }`}>
+                <div className={`w-full p-4 sm:p-5 rounded-lg border-2 transition-all text-left ${ summary.hasPending ? 'border-orange-300 bg-white dark:bg-gray-800 hover:bg-orange-50' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }`}>
                   <div className="flex items-center justify-between gap-3">
                     {/* Left section - expandable */}
                     <button

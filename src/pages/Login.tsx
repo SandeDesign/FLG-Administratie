@@ -62,9 +62,7 @@ const Login: React.FC = () => {
                 })}
                 type="email"
                 placeholder="E-mailadres"
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.email ? 'border-red-300' : 'border-gray-300 dark:border-gray-600'
-                }`}
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${ errors.email ? 'border-red-300' : 'border-gray-300 dark:border-gray-600' }`}
               />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">
@@ -85,14 +83,12 @@ const Login: React.FC = () => {
                 })}
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Wachtwoord"
-                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                  errors.password ? 'border-red-300' : 'border-gray-300 dark:border-gray-600'
-                }`}
+                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${ errors.password ? 'border-red-300' : 'border-gray-300 dark:border-gray-600' }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>

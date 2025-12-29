@@ -406,11 +406,7 @@ const Settings: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`${
-                  activeTab === tab.id
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-gray-600'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
+                className={`${ activeTab === tab.id ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-gray-600' } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
               >
                 <Icon className="h-5 w-5 mr-2" />
                 {tab.name}
@@ -496,14 +492,10 @@ const Settings: React.FC = () => {
                 </div>
                 <button
                   onClick={toggleDarkMode}
-                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                    isDarkMode ? 'bg-primary-600' : 'bg-gray-300'
-                  }`}
+                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${ isDarkMode ? 'bg-primary-600' : 'bg-gray-300' }`}
                 >
                   <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-800 shadow-lg transition-transform ${
-                      isDarkMode ? 'translate-x-8' : 'translate-x-1'
-                    }`}
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-800 shadow-lg transition-transform ${ isDarkMode ? 'translate-x-8' : 'translate-x-1' }`}
                   >
                     {isDarkMode ? (
                       <Moon className="h-5 w-5 text-primary-600 p-0.5" />
@@ -814,23 +806,13 @@ const Settings: React.FC = () => {
                         <button
                           key={item.href}
                           onClick={() => handleToggleFavorite(item.href)}
-                          className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
-                            isFavorite
-                              ? 'border-amber-400 bg-amber-50 hover:bg-amber-100'
-                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-900'
-                          }`}
+                          className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${ isFavorite ? 'border-amber-400 bg-amber-50 hover:bg-amber-100' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-900' }`}
                         >
-                          <div className={`p-2 rounded-lg ${
-                            isFavorite ? 'bg-amber-100' : 'bg-gray-100 dark:bg-gray-800'
-                          }`}>
-                            <Icon className={`h-4 w-4 ${
-                              isFavorite ? 'text-amber-600' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                            }`} />
+                          <div className={`p-2 rounded-lg ${ isFavorite ? 'bg-amber-100' : 'bg-gray-100 dark:bg-gray-800' }`}>
+                            <Icon className={`h-4 w-4 ${ isFavorite ? 'text-amber-600' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500' }`} />
                           </div>
                           <div className="flex-1">
-                            <p className={`text-sm font-medium ${
-                              isFavorite ? 'text-amber-900' : 'text-gray-900 dark:text-gray-100'
-                            }`}>
+                            <p className={`text-sm font-medium ${ isFavorite ? 'text-amber-900' : 'text-gray-900 dark:text-gray-100' }`}>
                               {item.name}
                             </p>
                             {item.section && (

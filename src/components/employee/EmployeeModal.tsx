@@ -373,11 +373,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
               {projectCompanies.map((projectCompany) => (
                 <label 
                   key={projectCompany.id}
-                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedProjectCompanies.includes(projectCompany.id)
-                      ? 'bg-primary-50 border-primary-300 dark:bg-primary-900/20 dark:border-primary-600'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
+                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${ selectedProjectCompanies.includes(projectCompany.id) ? 'bg-primary-50 border-primary-300 dark:bg-primary-900/20 dark:border-primary-600' : 'hover:bg-gray-50 dark:hover:bg-gray-700' }`}
                 >
                   <input
                     type="checkbox"
@@ -521,7 +517,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900 font-medium transition-colors"
           >
             Annuleren
           </button>

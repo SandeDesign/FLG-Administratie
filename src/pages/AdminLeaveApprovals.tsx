@@ -211,7 +211,7 @@ const AdminLeaveApprovals: React.FC = () => {
                   onClick={() => setExpandedId(isExpanded ? null : request.id)}
                   className="w-full"
                 >
-                  <div className="p-4 sm:p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                  <div className="p-4 sm:p-5 flex items-center gap-4 hover:bg-gray-50 dark:bg-gray-900 transition-colors">
                     {/* Status Icon */}
                     <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex-shrink-0">
                       <Clock className="h-5 w-5 text-orange-600" />

@@ -509,7 +509,7 @@ const IncomingInvoicesStats: React.FC = () => {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredInvoices.map(invoice => (
                   <React.Fragment key={invoice.id}>
-                    <tr className="hover:bg-gray-50 transition-colors">
+                    <tr className="hover:bg-gray-50 dark:bg-gray-900 transition-colors">
                       <td className="px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
                         {invoice.supplierName}
                       </td>

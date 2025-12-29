@@ -204,7 +204,7 @@ const Absence: React.FC = () => {
                       );
 
                   return (
-                    <tr key={record.id} className="hover:bg-gray-50">
+                    <tr key={record.id} className="hover:bg-gray-50 dark:bg-gray-900">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {new Date(record.startDate).toLocaleDateString('nl-NL')}
                       </td>

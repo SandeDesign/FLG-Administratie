@@ -167,12 +167,8 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600'
-                    }`}>
-                      <LayoutDashboard className={`h-5 w-5 ${
-                        isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300'
-                      }`} />
+                    <div className={`p-3 rounded-xl transition-all duration-300 ${ isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600' }`}>
+                      <LayoutDashboard className={`h-5 w-5 ${ isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300' }`} />
                     </div>
                     <span className="flex-1">Dashboard</span>
                     {isActive && (
@@ -197,9 +193,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                   </div>
                   <span className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">Favorieten</span>
                 </div>
-                <ChevronDown className={`h-5 w-5 text-amber-600 dark:text-amber-400 transition-transform duration-300 ${
-                  expandedSections.includes('Favorieten') ? 'rotate-180' : ''
-                }`} />
+                <ChevronDown className={`h-5 w-5 text-amber-600 dark:text-amber-400 transition-transform duration-300 ${ expandedSections.includes('Favorieten') ? 'rotate-180' : '' }`} />
               </button>
 
               {expandedSections.includes('Favorieten') && (
@@ -221,12 +215,8 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                       >
                         {({ isActive }) => (
                           <>
-                            <div className={`p-2 rounded-lg transition-all duration-200 ${
-                              isActive ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-white dark:bg-gray-800/70 dark:bg-gray-700/70'
-                            }`}>
-                              <ItemIcon className={`h-4 w-4 ${
-                                isActive ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                              }`} />
+                            <div className={`p-2 rounded-lg transition-all duration-200 ${ isActive ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-white dark:bg-gray-800/70 dark:bg-gray-700/70' }`}>
+                              <ItemIcon className={`h-4 w-4 ${ isActive ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500' }`} />
                             </div>
                             <span className="flex-1">{item.name}</span>
                           </>
@@ -247,7 +237,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
               <div key={section.title} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <button
                   onClick={() => toggleSection(section.title)}
-                  className="w-full flex items-center justify-between p-4 group hover:bg-gray-50 transition-colors duration-200"
+                  className="w-full flex items-center justify-between p-4 group hover:bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 shadow-lg group-hover:shadow-xl transition-shadow">
@@ -255,9 +245,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                     </div>
                     <span className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">{section.title}</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform duration-300 ${
-                    isExpanded ? 'rotate-180 text-primary-600 dark:text-primary-400' : ''
-                  }`} />
+                  <ChevronDown className={`h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 transition-transform duration-300 ${ isExpanded ? 'rotate-180 text-primary-600 dark:text-primary-400' : '' }`} />
                 </button>
 
                 {isExpanded && (
@@ -279,12 +267,8 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                         >
                           {({ isActive }) => (
                             <>
-                              <div className={`p-2 rounded-lg transition-all duration-200 ${
-                                isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600'
-                              }`}>
-                                <ItemIcon className={`h-4 w-4 ${
-                                  isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                                }`} />
+                              <div className={`p-2 rounded-lg transition-all duration-200 ${ isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600' }`}>
+                                <ItemIcon className={`h-4 w-4 ${ isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500' }`} />
                               </div>
                               <span className="flex-1">{item.name}</span>
                               {isActive && (

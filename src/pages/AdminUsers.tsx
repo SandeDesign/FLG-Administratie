@@ -344,7 +344,7 @@ const AdminUsers: React.FC = () => {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredUsers.map((systemUser) => (
-                  <tr key={systemUser.id} className="hover:bg-gray-50">
+                  <tr key={systemUser.id} className="hover:bg-gray-50 dark:bg-gray-900">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">

@@ -200,7 +200,7 @@ const Companies: React.FC = () => {
                       {companyBranches.map((branch) => (
                         <div
                           key={branch.id}
-                          className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:bg-gray-900 transition-colors"
                         >
                           <div className="flex items-center justify-between">
                             <div>

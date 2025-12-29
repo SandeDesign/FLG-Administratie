@@ -151,21 +151,13 @@ export const NotificationCenter: React.FC = () => {
             <div className="flex space-x-2">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                  filter === 'all'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ filter === 'all' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700' }`}
               >
                 Alle
               </button>
               <button
                 onClick={() => setFilter('unread')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                  filter === 'unread'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ filter === 'unread' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700' }`}
               >
                 Ongelezen ({unreadCount})
               </button>
@@ -199,11 +191,7 @@ export const NotificationCenter: React.FC = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 rounded-lg ${getPriorityColor(notification.priority)} ${
-                    notification.status === 'read' || notification.status === 'archived'
-                      ? 'bg-gray-50 dark:bg-gray-800/50'
-                      : 'bg-white dark:bg-gray-800'
-                  } hover:shadow-md transition-shadow`}
+                  className={`p-4 rounded-lg ${getPriorityColor(notification.priority)} ${ notification.status === 'read' || notification.status === 'archived' ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-800' } hover:shadow-md transition-shadow`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3 flex-1">
@@ -250,7 +238,7 @@ export const NotificationCenter: React.FC = () => {
                       )}
                       <button
                         onClick={() => handleArchive(notification.id)}
-                        className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition-colors"
+                        className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
                         title="Archiveer"
                       >
                         <Archive className="h-4 w-4" />

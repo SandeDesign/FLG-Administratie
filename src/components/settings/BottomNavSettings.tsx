@@ -273,11 +273,7 @@ export const BottomNavSettings: React.FC = () => {
                           key={iconConfig.name}
                           type="button"
                           onClick={() => handleIconSelect(iconConfig.name, index)}
-                          className={`p-3 rounded-lg border-2 transition-all ${
-                            isSelected
-                              ? 'border-primary-500 bg-primary-50'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
-                          }`}
+                          className={`p-3 rounded-lg border-2 transition-all ${ isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800' }`}
                         >
                           <div className={`w-full aspect-square rounded-lg bg-gradient-to-br ${iconConfig.gradient} flex items-center justify-center text-white mb-2`}>
                             <Icon size={20} />

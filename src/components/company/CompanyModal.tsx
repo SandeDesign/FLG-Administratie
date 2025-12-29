@@ -518,11 +518,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
                     className="sr-only"
                   />
                   <div
-                    className={`w-full h-12 rounded-lg transition-all ${
-                      isSelected
-                        ? 'ring-2 ring-offset-2 ring-gray-900 scale-110'
-                        : 'hover:scale-105'
-                    }`}
+                    className={`w-full h-12 rounded-lg transition-all ${ isSelected ? 'ring-2 ring-offset-2 ring-gray-900 scale-110' : 'hover:scale-105' }`}
                     style={{ backgroundColor: preset.primaryHex }}
                   >
                     {isSelected && (

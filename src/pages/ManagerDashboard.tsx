@@ -316,7 +316,7 @@ const ManagerDashboard: React.FC = () => {
           </div>
           <Card className="divide-y divide-gray-100 dark:divide-gray-700">
             {incomingInvoices.map((invoice) => (
-              <div key={invoice.id} className="p-4 hover:bg-gray-50 transition flex items-center justify-between">
+              <div key={invoice.id} className="p-4 hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-primary-100 rounded-lg">
                     <Upload className="h-4 w-4 text-primary-600" />
@@ -328,11 +328,7 @@ const ManagerDashboard: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-gray-900 dark:text-gray-100">€{(invoice.totalAmount || 0).toFixed(2)}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    invoice.status === 'approved' ? 'bg-green-100 text-green-700' :
-                    invoice.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                    'bg-yellow-100 text-yellow-700'
-                  }`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${ invoice.status === 'approved' ? 'bg-green-100 text-green-700' : invoice.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700' }`}>
                     {invoice.status === 'approved' ? 'Goedgekeurd' : invoice.status === 'rejected' ? 'Afgewezen' : 'In behandeling'}
                   </span>
                 </div>

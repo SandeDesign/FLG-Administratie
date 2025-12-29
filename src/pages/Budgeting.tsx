@@ -945,11 +945,7 @@ const Budgeting: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:bg-gray-800'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${ activeTab === tab.id ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:bg-gray-800' }`}
           >
             <tab.icon className="h-4 w-4" />
             {tab.label}
@@ -1024,9 +1020,7 @@ const Budgeting: React.FC = () => {
               </div>
             </Card>
 
-            <Card className={`p-6 ${monthlyProfit >= 0
-              ? 'bg-gradient-to-br from-primary-50 to-indigo-50 border-primary-200'
-              : 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200'}`}>
+            <Card className={`p-6 ${monthlyProfit >= 0 ? 'bg-gradient-to-br from-primary-50 to-indigo-50 border-primary-200' : 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200'}`}>
               <div className="flex items-start justify-between">
                 <div>
                   <p className={`text-sm font-medium ${monthlyProfit >= 0 ? 'text-primary-600' : 'text-orange-600'}`}>
@@ -1055,7 +1049,7 @@ const Budgeting: React.FC = () => {
                 </h2>
                 <button
                   onClick={() => setShowActualData(!showActualData)}
-                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 rounded-lg hover:bg-gray-100"
                 >
                   {showActualData ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -1232,7 +1226,7 @@ const Budgeting: React.FC = () => {
                                     <div className="flex gap-1">
                                       <button
                                         onClick={() => handleOpenModal(item)}
-                                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"
                                         title="Bewerken"
                                       >
                                         <Pencil className="h-4 w-4" />
@@ -1558,7 +1552,7 @@ const Budgeting: React.FC = () => {
                                       <div className="flex gap-1">
                                         <button
                                           onClick={() => handleOpenModal(item)}
-                                          className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                          className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"
                                           title="Bewerken"
                                         >
                                           <Pencil className="h-4 w-4" />
@@ -1657,11 +1651,7 @@ const Budgeting: React.FC = () => {
                                           {inv.status && (
                                             <>
                                               <span>•</span>
-                                              <span className={`font-medium ${
-                                                inv.status === 'paid' ? 'text-green-600' :
-                                                inv.status === 'sent' ? 'text-blue-600' :
-                                                'text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                                              }`}>
+                                              <span className={`font-medium ${ inv.status === 'paid' ? 'text-green-600' : inv.status === 'sent' ? 'text-blue-600' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500' }`}>
                                                 {inv.status === 'paid' ? 'Betaald' :
                                                  inv.status === 'sent' ? 'Verzonden' :
                                                  inv.status === 'draft' ? 'Concept' : inv.status}
@@ -1706,11 +1696,7 @@ const Budgeting: React.FC = () => {
                   <button
                     key={years}
                     onClick={() => setProjectionYears(years)}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                      projectionYears === years
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-200'
-                    }`}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${ projectionYears === years ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:bg-gray-200' }`}
                   >
                     {years}
                   </button>
@@ -1997,11 +1983,7 @@ const Budgeting: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, type: 'cost', category: 'software' })}
-                      className={`p-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
-                        formData.type === 'cost'
-                          ? 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                      }`}
+                      className={`p-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${ formData.type === 'cost' ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 dark:text-gray-500' }`}
                     >
                       <TrendingDown className="h-4 w-4" />
                       Kost
@@ -2009,11 +1991,7 @@ const Budgeting: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, type: 'income', category: 'services' })}
-                      className={`p-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
-                        formData.type === 'income'
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                      }`}
+                      className={`p-3 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${ formData.type === 'income' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 dark:text-gray-500' }`}
                     >
                       <TrendingUp className="h-4 w-4" />
                       Inkomst

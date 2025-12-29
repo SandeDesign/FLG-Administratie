@@ -785,11 +785,7 @@ const OutgoingInvoices: React.FC = () => {
                     key={rate}
                     type="button"
                     onClick={() => setVatRate(rate as 0 | 9 | 21)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                      vatRate === rate
-                        ? 'bg-primary-600 text-white border-2 border-primary-600'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 hover:border-primary-300'
-                    }`}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ vatRate === rate ? 'bg-primary-600 text-white border-2 border-primary-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 hover:border-primary-300' }`}
                   >
                     {rate}%
                     {rate === 0 && <span className="block text-xs mt-0.5">Verlegd</span>}
@@ -922,9 +918,7 @@ const OutgoingInvoices: React.FC = () => {
                           return (
                             <label
                               key={week.id}
-                              className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-amber-100 last:border-0 transition-colors ${
-                                isSelected ? 'bg-amber-100' : invoiced ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-amber-50'
-                              }`}
+                              className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-amber-100 last:border-0 transition-colors ${ isSelected ? 'bg-amber-100' : invoiced ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-amber-50' }`}
                             >
                               <input
                                 type="checkbox"
@@ -1170,7 +1164,7 @@ const OutgoingInvoices: React.FC = () => {
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -1222,7 +1216,7 @@ const OutgoingInvoices: React.FC = () => {
               return (
                 <div key={invoice.id}>
                   {/* Desktop Row */}
-                  <div className="hidden md:grid grid-cols-12 gap-2 items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 hover:shadow-sm transition-all cursor-pointer"
+                  <div className="hidden md:grid grid-cols-12 gap-2 items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-sm transition-all cursor-pointer"
                     onClick={() => setExpandedInvoice(isExpanded ? null : invoice.id)}>
                     <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</div>
                     <div className="col-span-4 text-xs text-gray-700 dark:text-gray-300">{invoice.clientName}</div>
@@ -1242,20 +1236,10 @@ const OutgoingInvoices: React.FC = () => {
                   <div className="md:hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                     <button
                       onClick={() => setExpandedInvoice(isExpanded ? null : invoice.id)}
-                      className="w-full p-3 flex items-center gap-2 hover:bg-gray-50"
+                      className="w-full p-3 flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900"
                     >
-                      <div className={`p-2 rounded flex-shrink-0 ${
-                        invoice.status === 'paid' ? 'bg-green-100' :
-                        invoice.status === 'sent' ? 'bg-primary-100' :
-                        invoice.status === 'overdue' ? 'bg-red-100' :
-                        'bg-gray-100 dark:bg-gray-800'
-                      }`}>
-                        <StatusIcon className={`h-4 w-4 ${
-                          invoice.status === 'paid' ? 'text-green-600' :
-                          invoice.status === 'sent' ? 'text-primary-600' :
-                          invoice.status === 'overdue' ? 'text-red-600' :
-                          'text-gray-600 dark:text-gray-400 dark:text-gray-500'
-                        }`} />
+                      <div className={`p-2 rounded flex-shrink-0 ${ invoice.status === 'paid' ? 'bg-green-100' : invoice.status === 'sent' ? 'bg-primary-100' : invoice.status === 'overdue' ? 'bg-red-100' : 'bg-gray-100 dark:bg-gray-800' }`}>
+                        <StatusIcon className={`h-4 w-4 ${ invoice.status === 'paid' ? 'text-green-600' : invoice.status === 'sent' ? 'text-primary-600' : invoice.status === 'overdue' ? 'text-red-600' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500' }`} />
                       </div>
                       <div className="flex-1 text-left min-w-0">
                         <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</div>

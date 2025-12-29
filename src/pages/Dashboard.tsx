@@ -983,7 +983,7 @@ const Dashboard: React.FC = () => {
                 <button
                   key={ts.id}
                   onClick={() => navigate('/timesheet-approvals')}
-                  className="w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-start justify-between group"
+                  className="w-full p-4 text-left hover:bg-gray-50 dark:bg-gray-900 transition-colors flex items-start justify-between group"
                 >
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">

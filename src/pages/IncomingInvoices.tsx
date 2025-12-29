@@ -276,11 +276,7 @@ const IncomingInvoices: React.FC = () => {
 
       {/* Upload Zone */}
       <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          isDragOver 
-            ? 'border-primary-400 bg-primary-50' 
-            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
-        }`}
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${ isDragOver ? 'border-primary-400 bg-primary-50' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400' }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}

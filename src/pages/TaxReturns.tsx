@@ -310,7 +310,7 @@ const TaxReturns: React.FC = () => {
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {taxReturns.map((taxReturn) => (
-                    <tr key={taxReturn.id} className="hover:bg-gray-50">
+                    <tr key={taxReturn.id} className="hover:bg-gray-50 dark:bg-gray-900">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {getPeriodLabel(taxReturn.period)}
@@ -320,9 +320,7 @@ const TaxReturns: React.FC = () => {
                         <div className="flex items-center space-x-2">
                           {getStatusIcon(taxReturn.status)}
                           <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                              taxReturn.status
-                            )}`}
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor( taxReturn.status )}`}
                           >
                             {getStatusLabel(taxReturn.status)}
                           </span>

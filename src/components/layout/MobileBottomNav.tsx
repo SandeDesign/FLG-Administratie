@@ -204,7 +204,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
                   <div className={`relative p-3 rounded-2xl transition-all duration-300 ${
                     isActive
                       ? `bg-gradient-to-br ${gradient} text-white shadow-lg shadow-${gradient.split('-')[1]}-500/50`
-                      : 'bg-gray-100 dark:bg-gray-800/50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 group-hover:bg-gray-200/50 dark:group-hover:bg-gray-600/50 group-hover:text-gray-800 dark:group-hover:text-gray-100'
+                      : 'bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 group-hover:bg-gray-200/50 dark:group-hover:bg-gray-600/50 group-hover:text-gray-800 dark:group-hover:text-gray-100'
                   }`}>
                     <Icon 
                       size={20} 
@@ -214,11 +214,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
                   </div>
                   
                   {/* Label */}
-                  <span className={`text-xs font-semibold mt-1.5 transition-all duration-300 ${
-                    isActive
-                      ? 'text-gray-900 dark:text-gray-100 scale-100 opacity-100'
-                      : 'text-gray-600 dark:text-gray-400 dark:text-gray-500 scale-95 opacity-75 group-hover:opacity-100'
-                  }`}>
+                  <span className={`text-xs font-semibold mt-1.5 transition-all duration-300 ${ isActive ? 'text-gray-900 dark:text-gray-100 scale-100 opacity-100' : 'text-gray-600 dark:text-gray-400 scale-95 opacity-75 group-hover:opacity-100' }`}>
                     {label}
                   </span>
                 </>
@@ -232,7 +228,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
             title="Menu"
             className="flex flex-col items-center justify-center flex-1 transition-all duration-300 group hover:scale-105"
           >
-            <div className="relative p-3 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 group-hover:bg-gray-200/50 group-hover:text-gray-800 transition-all duration-300">
+            <div className="relative p-3 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 group-hover:bg-gray-200/50 dark:group-hover:bg-gray-700/50 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-all duration-300">
               <MoreVertical
                 size={20}
                 strokeWidth={2.2}

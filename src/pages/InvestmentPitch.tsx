@@ -369,7 +369,7 @@ const InvestmentPitch: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setView('preview')}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900"
             >
               Preview
             </button>
@@ -738,7 +738,7 @@ const InvestmentPitch: React.FC = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setView('editor')}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50"
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900"
               >
                 <Edit2 className="h-4 w-4" />
                 Edit
@@ -936,11 +936,7 @@ const InvestmentPitch: React.FC = () => {
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">{risk.risk}</h3>
                       <p className="text-sm text-gray-700 dark:text-gray-300 mt-1"><strong>Mitigation:</strong> {risk.mitigation}</p>
-                      <span className={`text-xs font-semibold mt-2 inline-block px-2 py-1 rounded ${
-                        risk.probability === 'high' ? 'bg-red-200 text-red-800' :
-                        risk.probability === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                        'bg-green-200 text-green-800'
-                      }`}>
+                      <span className={`text-xs font-semibold mt-2 inline-block px-2 py-1 rounded ${ risk.probability === 'high' ? 'bg-red-200 text-red-800' : risk.probability === 'medium' ? 'bg-yellow-200 text-yellow-800' : 'bg-green-200 text-green-800' }`}>
                         {risk.probability.charAt(0).toUpperCase() + risk.probability.slice(1)} Probability
                       </span>
                     </div>

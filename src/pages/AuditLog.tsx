@@ -275,7 +275,7 @@ const AuditLogPage: React.FC = () => {
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {auditLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
+                    <tr key={log.id} className="hover:bg-gray-50 dark:bg-gray-900">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {log.createdAt.toLocaleString('nl-NL')}
                       </td>
@@ -298,9 +298,7 @@ const AuditLogPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(
-                            log.severity
-                          )}`}
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor( log.severity )}`}
                         >
                           {log.severity}
                         </span>

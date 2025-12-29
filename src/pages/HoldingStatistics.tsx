@@ -401,16 +401,12 @@ const HoldingStatistics: React.FC = () => {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {companyStats.map((stat) => (
-                <tr key={stat.companyId} className="hover:bg-gray-50">
+                <tr key={stat.companyId} className="hover:bg-gray-50 dark:bg-gray-900">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                     {stat.companyName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      stat.companyType === 'employer' ? 'bg-blue-100 text-blue-800' :
-                      stat.companyType === 'project' ? 'bg-purple-100 text-purple-800' :
-                      'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${ stat.companyType === 'employer' ? 'bg-blue-100 text-blue-800' : stat.companyType === 'project' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200' }`}>
                       {stat.companyType === 'employer' ? 'Werkgever' :
                        stat.companyType === 'project' ? 'Project' : 'Holding'}
                     </span>
@@ -429,9 +425,7 @@ const HoldingStatistics: React.FC = () => {
                       <span className="text-green-600 ml-2">+€{stat.budgetIncomeMonthly.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</span>
                     )}
                   </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${
-                    stat.profit >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm text-right font-bold ${ stat.profit >= 0 ? 'text-green-600' : 'text-red-600' }`}>
                     €{stat.profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
                   </td>
                 </tr>

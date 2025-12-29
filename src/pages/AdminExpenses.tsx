@@ -304,7 +304,7 @@ const AdminExpenses: React.FC = () => {
                 {filteredExpenses.map((expense) => {
                   const employee = getEmployee(expense.employeeId);
                   return (
-                    <tr key={expense.id} className="hover:bg-gray-50">
+                    <tr key={expense.id} className="hover:bg-gray-50 dark:bg-gray-900">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {employee ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}` : 'Onbekend'}

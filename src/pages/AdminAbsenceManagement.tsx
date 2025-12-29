@@ -218,7 +218,7 @@ const AdminAbsenceManagement: React.FC = () => {
                   const isLongTerm = daysSick > 42;
 
                   return (
-                    <tr key={sickLeave.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={sickLeave.id} className="hover:bg-gray-50 dark:bg-gray-900 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <User className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-2" />

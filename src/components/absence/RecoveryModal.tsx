@@ -114,7 +114,7 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
               required: 'Arbeidsgeschiktheid is verplicht',
               valueAsNumber: true,
             })}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
           />
           <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
             <span>0%</span>
