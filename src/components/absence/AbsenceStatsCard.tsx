@@ -40,7 +40,7 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
 
     if (diff > 0) return 'text-red-600';
     if (diff < 0) return 'text-green-600';
-    return 'text-gray-600 dark:text-gray-400 dark:text-gray-500';
+    return 'text-gray-600 dark:text-gray-400';
   };
 
   const getStatusColor = () => {

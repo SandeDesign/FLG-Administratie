@@ -162,7 +162,7 @@ const AdminUsers: React.FC = () => {
       case 'admin': return 'text-red-600 bg-red-100';
       case 'manager': return 'text-primary-600 bg-primary-100';
       case 'employee': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 dark:text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
     }
   };
 

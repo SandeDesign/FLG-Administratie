@@ -196,7 +196,7 @@ const TimesheetExport: React.FC = () => {
       case 'pending': return 'text-orange-600 bg-orange-100';
       case 'exported': return 'text-green-600 bg-green-100';
       case 'processed': return 'text-primary-600 bg-primary-100';
-      default: return 'text-gray-600 dark:text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
     }
   };
 

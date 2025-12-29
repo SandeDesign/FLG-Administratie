@@ -34,15 +34,15 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
   const getColorClasses = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800';
+        return 'bg-green-50 border-green-200';
       case 'error':
-        return 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800';
+        return 'bg-red-50 border-red-200';
       case 'warning':
-        return 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800';
+        return 'bg-orange-50 border-orange-200';
       case 'info':
-        return 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800';
+        return 'bg-primary-50 border-primary-200';
       default:
-        return 'bg-white dark:bg-gray-800 border-gray-200 dark:bg-gray-800 dark:border-gray-700';
+        return 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700';
     }
   };
 

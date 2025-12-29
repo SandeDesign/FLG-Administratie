@@ -236,7 +236,7 @@ const DriveFiles: React.FC = () => {
       case 'invoice': return 'text-primary-600 bg-primary-100';
       case 'export': return 'text-green-600 bg-green-100';
       case 'document': return 'text-purple-600 bg-purple-100';
-      default: return 'text-gray-600 dark:text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
     }
   };
 
@@ -245,7 +245,7 @@ const DriveFiles: React.FC = () => {
       case 'synced': return 'text-green-600 bg-green-100';
       case 'syncing': return 'text-primary-600 bg-primary-100';
       case 'error': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 dark:text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
     }
   };
 

@@ -269,7 +269,7 @@ const AdminRoles: React.FC = () => {
       case 'invoices': return 'text-cyan-600 bg-cyan-100';
       case 'reports': return 'text-indigo-600 bg-indigo-100';
       case 'system': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 dark:text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800';
+      default: return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
     }
   };
 
