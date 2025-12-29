@@ -351,7 +351,7 @@ const Tasks: React.FC = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as TaskStatus | 'all')}
-                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="all">Alle statussen</option>
                 {Object.entries(STATUS_CONFIG).map(([status, config]) => (
@@ -369,7 +369,7 @@ const Tasks: React.FC = () => {
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value as TaskCategory | 'all')}
-                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="all">Alle categorieën</option>
                 {Object.entries(CATEGORY_CONFIG).map(([category, config]) => (
@@ -387,7 +387,7 @@ const Tasks: React.FC = () => {
               <select
                 value={filterPriority}
                 onChange={(e) => setFilterPriority(e.target.value as TaskPriority | 'all')}
-                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="all">Alle prioriteiten</option>
                 {Object.entries(PRIORITY_CONFIG).map(([priority, config]) => (
@@ -542,7 +542,7 @@ const Tasks: React.FC = () => {
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="Bijv. Facturen versturen"
             />
           </div>
@@ -555,7 +555,7 @@ const Tasks: React.FC = () => {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="Optionele beschrijving..."
             />
           </div>
@@ -570,7 +570,7 @@ const Tasks: React.FC = () => {
                 <p className="text-sm text-gray-500 dark:text-gray-400">Geen gebruikers beschikbaar</p>
               ) : (
                 companyUsers.map((companyUser) => (
-                  <label key={companyUser.uid} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900 p-2 rounded">
+                  <label key={companyUser.uid} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
                     <input
                       type="checkbox"
                       checked={formData.assignedTo.includes(companyUser.uid)}
@@ -608,7 +608,7 @@ const Tasks: React.FC = () => {
                 required
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value as TaskCategory })}
-                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
               >
                 {Object.entries(CATEGORY_CONFIG).map(([category, config]) => (
                   <option key={category} value={category}>
@@ -626,7 +626,7 @@ const Tasks: React.FC = () => {
                 required
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value as TaskPriority })}
-                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
               >
                 {Object.entries(PRIORITY_CONFIG).map(([priority, config]) => (
                   <option key={priority} value={priority}>
@@ -646,7 +646,7 @@ const Tasks: React.FC = () => {
               required
               value={formData.dueDate}
               onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
 
@@ -672,7 +672,7 @@ const Tasks: React.FC = () => {
                   <select
                     value={formData.frequency}
                     onChange={(e) => setFormData({ ...formData, frequency: e.target.value as TaskFrequency })}
-                    className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                   >
                     {Object.entries(FREQUENCY_LABELS).map(([freq, label]) => (
                       <option key={freq} value={freq}>
@@ -693,7 +693,7 @@ const Tasks: React.FC = () => {
                       max="31"
                       value={formData.recurrenceDay}
                       onChange={(e) => setFormData({ ...formData, recurrenceDay: parseInt(e.target.value) })}
-                      className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                      className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                     />
                   </div>
                 )}

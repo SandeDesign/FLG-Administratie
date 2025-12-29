@@ -836,11 +836,11 @@ const Dashboard: React.FC = () => {
 
         {/* Alert Banner */}
         {totalPending > 0 && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-700 p-4 rounded-lg flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-red-900">{totalPending} items wachten!</h3>
-              <p className="text-xs text-red-700 mt-1">
+              <h3 className="text-sm font-semibold text-red-900 dark:text-red-200">{totalPending} items wachten!</h3>
+              <p className="text-xs text-red-700 dark:text-red-300 mt-1">
                 {pendingTimesheets.length} uren • {pendingLeave.length} verlof • {pendingExpenses.length} onkosten
               </p>
             </div>
@@ -849,7 +849,7 @@ const Dashboard: React.FC = () => {
                 if (pendingTimesheets.length > 0) navigate('/timesheet-approvals');
                 else if (pendingLeave.length > 0) navigate('/admin/leave-approvals');
               }}
-              className="text-red-600 hover:text-red-700 font-semibold text-sm"
+              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-semibold text-sm"
             >
               Bekijk →
             </button>
@@ -870,38 +870,38 @@ const Dashboard: React.FC = () => {
           </Card>
 
           {/* Verkoop */}
-          <Card className="p-4 bg-green-50 border-green-200">
+          <Card className="p-4 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-green-700">Verkoop</p>
-                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-green-600 mt-2">{stats.outgoingInvoices} facturen</p>
+                <p className="text-xs font-medium text-green-700 dark:text-green-400">Verkoop</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-200 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2">{stats.outgoingInvoices} facturen</p>
               </div>
-              <Send className="h-8 w-8 text-green-300" />
+              <Send className="h-8 w-8 text-green-300 dark:text-green-500" />
             </div>
           </Card>
 
           {/* Inkoop */}
-          <Card className="p-4 bg-purple-50 border-purple-200">
+          <Card className="p-4 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-purple-700">Inkoop</p>
-                <p className="text-2xl font-bold text-purple-900 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
-                <p className="text-xs text-purple-600 mt-2">{stats.incomingInvoices} facturen</p>
+                <p className="text-xs font-medium text-purple-700 dark:text-purple-400">Inkoop</p>
+                <p className="text-2xl font-bold text-purple-900 dark:text-purple-200 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">{stats.incomingInvoices} facturen</p>
               </div>
-              <Upload className="h-8 w-8 text-purple-300" />
+              <Upload className="h-8 w-8 text-purple-300 dark:text-purple-500" />
             </div>
           </Card>
 
           {/* Pending Expenses */}
-          <Card className="p-4 bg-orange-50 border-orange-200">
+          <Card className="p-4 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-orange-700">Onkosten</p>
-                <p className="text-2xl font-bold text-orange-900 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
-                <p className="text-xs text-orange-600 mt-2">{pendingExpenses.length} wachten</p>
+                <p className="text-xs font-medium text-orange-700 dark:text-orange-400">Onkosten</p>
+                <p className="text-2xl font-bold text-orange-900 dark:text-orange-200 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">{pendingExpenses.length} wachten</p>
               </div>
-              <ArrowUpRight className="h-8 w-8 text-orange-300" />
+              <ArrowUpRight className="h-8 w-8 text-orange-300 dark:text-orange-500" />
             </div>
           </Card>
         </div>
