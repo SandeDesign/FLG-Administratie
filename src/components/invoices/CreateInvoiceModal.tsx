@@ -261,9 +261,9 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5 text-gray-600 dark:text-gray-300" />
           </button>
         </div>
 
@@ -288,9 +288,9 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsRelationsOpen(!isRelationsOpen)}
-                  className="w-full flex items-center justify-between p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800"
+                  className="w-full flex items-center justify-between p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                 >
-                  <span className={formData.clientName ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}>
+                  <span className={formData.clientName ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}>
                     {formData.clientName || 'Selecteer een klant...'}
                   </span>
                   <ChevronDown className={`h-4 w-4 transition-transform ${isRelationsOpen ? 'rotate-180' : ''}`} />
@@ -309,7 +309,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                             key={relation.id}
                             type="button"
                             onClick={() => handleSelectRelation(relation)}
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors"
+                            className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                           >
                             <div className="font-medium text-gray-900 dark:text-gray-100">{relation.name}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">{relation.email}</div>
@@ -324,8 +324,8 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
 
             {/* WERKBONNEN SECTION - ALLEEN VOOR SPECIFIEKE BEDRIJF/KLANT */}
             {isWerkbonnenFactuur && (
-              <div className="border-l-4 border-primary-500 bg-primary-50 p-4 rounded">
-                <h3 className="font-semibold text-primary-900 mb-3">
+              <div className="border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-900/20 p-4 rounded">
+                <h3 className="font-semibold text-primary-900 dark:text-primary-200 mb-3">
                   Werkbonnen Factuurgegevens
                 </h3>
                 <FactuurWerkbonnenImport
@@ -345,7 +345,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                   type="date"
                   value={formData.invoiceDate}
                   onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
               <div>
@@ -356,7 +356,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
             </div>
@@ -384,21 +384,21 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                       placeholder="Beschrijving"
                       value={item.description}
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm"
                     />
                     <input
                       type="number"
                       placeholder="Hoeveelheid"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                      className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                      className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm"
                     />
                     <input
                       type="number"
                       placeholder="Tarief"
                       value={item.rate}
                       onChange={(e) => updateItem(index, 'rate', Number(e.target.value))}
-                      className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+                      className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm"
                     />
                     <div className="w-24 px-3 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm font-medium">
                       €{item.amount.toFixed(2)}
@@ -406,7 +406,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                     <button
                       type="button"
                       onClick={() => removeItem(index)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -442,7 +442,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
           </form>
