@@ -38,7 +38,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* Desktop Sidebar */}
-      <Sidebar />
+      <Sidebar onLogoClick={() => tasksReminderRef.current?.openManually()} />
 
       {/* Mobile Full Screen Menu */}
       <MobileFullScreenMenu

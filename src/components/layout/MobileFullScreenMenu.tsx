@@ -83,7 +83,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       />
 
       {/* Modern Menu Content */}
-      <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-gradient-to-br from-white via-gray-50/95 to-white/90 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ease-out overflow-hidden flex flex-col">
+      <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-gradient-to-br from-white via-gray-50/95 to-white/90 dark:from-gray-900 dark:via-gray-800/95 dark:to-gray-900/90 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ease-out overflow-hidden flex flex-col">
 
         {/* Modern Header with Gradient */}
         <div className="relative p-6 border-b border-white/20 bg-gradient-to-br from-primary-600 via-primary-500 to-indigo-600 flex-shrink-0 shadow-lg">
@@ -106,8 +106,8 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                   />
                 </div>
               ) : (
-                <div className="w-14 h-14 bg-gradient-to-br from-white to-gray-100 rounded-2xl flex items-center justify-center shadow-xl shadow-black/20 ring-2 ring-white/30">
-                  <Sparkles className="w-7 h-7 text-primary-600" />
+                <div className="w-14 h-14 bg-gradient-to-br from-white to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center shadow-xl shadow-black/20 ring-2 ring-white/30 dark:ring-gray-600/30">
+                  <Sparkles className="w-7 h-7 text-primary-600 dark:text-primary-400" />
                 </div>
               )}
               <div>
@@ -117,7 +117,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
             </div>
             <button
               onClick={onClose}
-              className="p-2.5 rounded-xl text-white/90 hover:bg-white hover:text-white transition-all duration-200 backdrop-blur-sm shadow-lg"
+              className="p-2.5 rounded-xl text-white/90 hover:bg-white/20 dark:hover:bg-gray-700/50 hover:text-white transition-all duration-200 backdrop-blur-sm shadow-lg"
             >
               <X className="h-5 w-5" />
             </button>
@@ -182,7 +182,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
           {/* Favorites Card */}
           {favoriteItems.length > 0 && (
-            <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl p-4 mb-4 shadow-lg border border-amber-100">
+            <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/20 dark:via-yellow-900/20 dark:to-orange-900/20 rounded-2xl p-4 mb-4 shadow-lg border border-amber-100 dark:border-amber-800">
               <button
                 onClick={() => toggleSection('Favorieten')}
                 className="w-full flex items-center justify-between mb-3 group"
@@ -209,14 +209,14 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                           `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                             isActive
                               ? 'bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 shadow-md'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:bg-gray-800/60 dark:hover:bg-gray-800/60'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/60'
                           }`
                         }
                       >
                         {({ isActive }) => (
                           <>
-                            <div className={`p-2 rounded-lg transition-all duration-200 ${ isActive ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-white dark:bg-gray-800/70 dark:bg-gray-700/70' }`}>
-                              <ItemIcon className={`h-4 w-4 ${ isActive ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500' }`} />
+                            <div className={`p-2 rounded-lg transition-all duration-200 ${ isActive ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-white dark:bg-gray-700/70' }`}>
+                              <ItemIcon className={`h-4 w-4 ${ isActive ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400' }`} />
                             </div>
                             <span className="flex-1">{item.name}</span>
                           </>
@@ -234,10 +234,10 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
             const SectionIcon = section.icon;
             const isExpanded = expandedSections.includes(section.title);
             return (
-              <div key={section.title} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+              <div key={section.title} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <button
                   onClick={() => toggleSection(section.title)}
-                  className="w-full flex items-center justify-between p-4 group hover:bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
+                  className="w-full flex items-center justify-between p-4 group hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 shadow-lg group-hover:shadow-xl transition-shadow">
@@ -245,11 +245,11 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                     </div>
                     <span className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">{section.title}</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 transition-transform duration-300 ${ isExpanded ? 'rotate-180 text-primary-600 dark:text-primary-400' : '' }`} />
+                  <ChevronDown className={`h-5 w-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 ${ isExpanded ? 'rotate-180 text-primary-600 dark:text-primary-400' : '' }`} />
                 </button>
 
                 {isExpanded && (
-                  <div className="px-3 pb-3 space-y-1 bg-gradient-to-br from-gray-50 to-white">
+                  <div className="px-3 pb-3 space-y-1 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
                     {section.items.map((item) => {
                       const ItemIcon = item.icon;
                       return (
@@ -268,7 +268,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                           {({ isActive }) => (
                             <>
                               <div className={`p-2 rounded-lg transition-all duration-200 ${ isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600' }`}>
-                                <ItemIcon className={`h-4 w-4 ${ isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500' }`} />
+                                <ItemIcon className={`h-4 w-4 ${ isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400' }`} />
                               </div>
                               <span className="flex-1">{item.name}</span>
                               {isActive && (
@@ -287,13 +287,13 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         </nav>
 
         {/* Modern Footer */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-5 bg-gradient-to-br from-gray-50 via-white to-gray-50 flex-shrink-0 shadow-inner">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-5 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex-shrink-0 shadow-inner">
           <button
             onClick={() => {
               signOut();
               onClose();
             }}
-            className="w-full flex items-center justify-center space-x-3 px-5 py-3.5 text-sm font-bold text-red-700 bg-white dark:bg-gray-800 hover:bg-red-50 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl border border-red-100 hover:border-red-200"
+            className="w-full flex items-center justify-center space-x-3 px-5 py-3.5 text-sm font-bold text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl border border-red-100 dark:border-red-800 hover:border-red-200 dark:hover:border-red-700"
           >
             <LogOut className="h-5 w-5" />
             <span>Uitloggen</span>
