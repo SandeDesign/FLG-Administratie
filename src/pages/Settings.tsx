@@ -391,14 +391,14 @@ const Settings: React.FC = () => {
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Instellingen</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Instellingen</h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Beheer je account en voorkeuren
           </p>
         </div>
       </div>
 
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8 overflow-x-auto">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -425,7 +425,7 @@ const Settings: React.FC = () => {
           {/* Profile Photo */}
           <Card>
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 Profielfoto
               </h2>
               <div className="flex items-center gap-6">
@@ -434,10 +434,10 @@ const Settings: React.FC = () => {
                     <img
                       src={photoPreview}
                       alt="Profile"
-                      className="h-24 w-24 rounded-full object-cover border-4 border-gray-200"
+                      className="h-24 w-24 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
                     />
                   ) : (
-                    <div className="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center border-4 border-gray-200">
+                    <div className="h-24 w-24 rounded-full bg-primary-100 flex items-center justify-center border-4 border-gray-200 dark:border-gray-700">
                       <User className="h-12 w-12 text-primary-600" />
                     </div>
                   )}
@@ -456,7 +456,7 @@ const Settings: React.FC = () => {
                   </label>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                     Upload een profielfoto (max 2MB)
                   </p>
                   {profilePhotoBase64 && profilePhotoBase64 !== photoPreview && (
@@ -508,7 +508,7 @@ const Settings: React.FC = () => {
                     {isDarkMode ? (
                       <Moon className="h-5 w-5 text-primary-600 p-0.5" />
                     ) : (
-                      <Sun className="h-5 w-5 text-gray-500 p-0.5" />
+                      <Sun className="h-5 w-5 text-gray-500 dark:text-gray-400 p-0.5" />
                     )}
                   </span>
                 </button>
@@ -519,12 +519,12 @@ const Settings: React.FC = () => {
           {/* Change Email */}
           <Card>
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 E-mailadres wijzigen
               </h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Nieuw e-mailadres
                   </label>
                   <div className="relative">
@@ -533,14 +533,14 @@ const Settings: React.FC = () => {
                       type="email"
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="nieuw@email.com"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Huidig wachtwoord (ter bevestiging)
                   </label>
                   <div className="relative">
@@ -549,7 +549,7 @@ const Settings: React.FC = () => {
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="••••••••"
                     />
                   </div>
@@ -569,12 +569,12 @@ const Settings: React.FC = () => {
           {/* Change Password */}
           <Card>
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 Wachtwoord wijzigen
               </h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Huidig wachtwoord
                   </label>
                   <div className="relative">
@@ -583,14 +583,14 @@ const Settings: React.FC = () => {
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="••••••••"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Nieuw wachtwoord
                   </label>
                   <div className="relative">
@@ -599,15 +599,15 @@ const Settings: React.FC = () => {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="••••••••"
                     />
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">Minimaal 6 tekens</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Minimaal 6 tekens</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Bevestig nieuw wachtwoord
                   </label>
                   <div className="relative">
@@ -616,7 +616,7 @@ const Settings: React.FC = () => {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="••••••••"
                     />
                   </div>
@@ -647,22 +647,22 @@ const Settings: React.FC = () => {
           {/* Default Company */}
           <Card>
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 Standaard Bedrijf
               </h2>
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Kies welk bedrijf standaard wordt geselecteerd wanneer je inlogt
                 </p>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Selecteer bedrijf
                   </label>
                   <select
                     value={selectedDefaultCompanyId}
                     onChange={(e) => setSelectedDefaultCompanyId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white border rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">Geen standaard (eerste bedrijf)</option>
                     {companies.map((company) => (
@@ -688,12 +688,12 @@ const Settings: React.FC = () => {
           {/* Co-Admins */}
           <Card>
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-primary-600" />
                 Co-Admins Beheren
               </h2>
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Voeg andere gebruikers toe die toegang hebben tot <strong>al jouw bedrijven</strong> met dezelfde rechten als jij.
                 </p>
 
@@ -705,7 +705,7 @@ const Settings: React.FC = () => {
                       value={coAdminEmail}
                       onChange={(e) => setCoAdminEmail(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleAddCoAdmin()}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="email@voorbeeld.nl"
                     />
                   </div>
@@ -721,15 +721,15 @@ const Settings: React.FC = () => {
 
                 {coAdmins.length > 0 && (
                   <div className="mt-4 space-y-2">
-                    <p className="text-sm font-medium text-gray-700">Huidige co-admins:</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Huidige co-admins:</p>
                     {coAdmins.map((email) => (
                       <div
                         key={email}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 dark:border-gray-700"
                       >
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-900">{email}</span>
+                          <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          <span className="text-sm text-gray-900 dark:text-gray-100">{email}</span>
                         </div>
                         <button
                           onClick={() => handleRemoveCoAdmin(email)}
@@ -745,8 +745,8 @@ const Settings: React.FC = () => {
                 )}
 
                 {coAdmins.length === 0 && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg text-center">
-                    <p className="text-sm text-gray-500">
+                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-center">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       Nog geen co-admins toegevoegd
                     </p>
                   </div>
@@ -764,7 +764,7 @@ const Settings: React.FC = () => {
           {/* Favorite Pages */}
           <Card>
             <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <Star className="h-5 w-5 text-amber-500" />
                 Favoriete Pagina's
               </h2>
@@ -783,7 +783,7 @@ const Settings: React.FC = () => {
                     </p>
                   </div>
                 )}
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Selecteer je favoriete pagina's om ze bovenaan het menu weer te geven voor snelle toegang.
                 </p>
 
@@ -834,7 +834,7 @@ const Settings: React.FC = () => {
                               {item.name}
                             </p>
                             {item.section && (
-                              <p className="text-xs text-gray-500">{item.section}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{item.section}</p>
                             )}
                           </div>
                           {isFavorite && (

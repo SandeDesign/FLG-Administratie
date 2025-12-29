@@ -175,7 +175,7 @@ const AdminDashboard: React.FC = () => {
     return (
       <div className="text-center py-12">
         <AlertCircle className="mx-auto h-12 w-12 text-red-600" />
-        <h3 className="mt-2 text-sm font-medium text-gray-900">Selecteer een bedrijf</h3>
+        <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">Selecteer een bedrijf</h3>
       </div>
     );
   }
@@ -290,7 +290,7 @@ const AdminDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-blue-600" />
             Pending Items Overzicht
           </h2>
@@ -325,7 +325,7 @@ const AdminDashboard: React.FC = () => {
         </Card>
 
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
             <Wallet className="h-5 w-5 text-green-600" />
             Maandelijkse Begroting
           </h2>
@@ -353,15 +353,15 @@ const AdminDashboard: React.FC = () => {
           )}
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div className="text-center">
-              <p className="text-xs text-gray-600">Inkomsten</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Inkomsten</p>
               <p className="text-lg font-bold text-green-600">€{stats.monthlyBudgetIncome.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-600">Kosten</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Kosten</p>
               <p className="text-lg font-bold text-red-600">€{stats.monthlyBudgetCosts.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-gray-600">Winst</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Winst</p>
               <p className={`text-lg font-bold ${stats.monthlyBudgetProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                 {stats.monthlyBudgetProfit >= 0 ? '+' : ''}€{stats.monthlyBudgetProfit.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}
               </p>
@@ -371,7 +371,7 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Snelle Acties</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Snelle Acties</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             {

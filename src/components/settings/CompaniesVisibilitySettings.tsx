@@ -113,17 +113,17 @@ const CompaniesVisibilitySettings: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="text-sm text-gray-500">Laden...</div>;
+    return <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">Laden...</div>;
   }
 
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-2">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 mb-2">
           <Building2 className="h-5 w-5 text-primary-600" />
           Bedrijven Zichtbaarheid (Persoonlijk)
         </h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
           Kies welke bedrijven <strong>voor jou</strong> zichtbaar zijn in de bedrijfenkeuze. Deze instelling is persoonlijk - andere gebruikers (admin/co-admin) kunnen hun eigen voorkeuren instellen.
         </p>
       </div>
@@ -138,12 +138,12 @@ const CompaniesVisibilitySettings: React.FC = () => {
       {/* Visible Companies */}
       {visibleCompanies.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-700">Zichtbare bedrijven</h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Zichtbare bedrijven</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {visibleCompanies.map(company => (
               <div
                 key={company.id}
-                className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 hover:border-green-300 transition-colors"
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-green-200 hover:border-green-300 transition-colors"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {company.logoUrl ? (
@@ -153,13 +153,13 @@ const CompaniesVisibilitySettings: React.FC = () => {
                       className="h-8 w-8 object-contain rounded"
                     />
                   ) : (
-                    <div className="h-8 w-8 bg-gray-100 rounded flex items-center justify-center">
-                      <Building2 className="h-4 w-4 text-gray-400" />
+                    <div className="h-8 w-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
+                      <Building2 className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{company.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{company.companyType}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{company.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 capitalize">{company.companyType}</p>
                   </div>
                 </div>
                 <button
@@ -183,12 +183,12 @@ const CompaniesVisibilitySettings: React.FC = () => {
       {/* Hidden Companies */}
       {hiddenCompanies.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-700">Verborgen bedrijven</h3>
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Verborgen bedrijven</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {hiddenCompanies.map(company => (
               <div
                 key={company.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors opacity-75"
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-300 dark:border-gray-600 hover:border-gray-400 transition-colors opacity-75"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {company.logoUrl ? (
@@ -199,18 +199,18 @@ const CompaniesVisibilitySettings: React.FC = () => {
                     />
                   ) : (
                     <div className="h-8 w-8 bg-gray-200 rounded flex items-center justify-center">
-                      <Building2 className="h-4 w-4 text-gray-400" />
+                      <Building2 className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-700 truncate">{company.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{company.companyType}</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{company.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 capitalize">{company.companyType}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => handleToggleCompanyVisibility(company.id, false)}
                   disabled={loadingCompanyId !== null}
-                  className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                  className="p-2 text-gray-400 dark:text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
                   title="Tonen"
                 >
                   {loadingCompanyId === company.id ? (

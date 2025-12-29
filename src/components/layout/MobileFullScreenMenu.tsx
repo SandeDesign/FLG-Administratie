@@ -98,7 +98,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
           <div className="relative flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {selectedCompany?.logoUrl ? (
-                <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center bg-white shadow-xl shadow-black/20 ring-2 ring-white/30">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 shadow-xl shadow-black/20 ring-2 ring-white/30">
                   <img
                     src={selectedCompany.logoUrl}
                     alt={selectedCompany.name}
@@ -117,7 +117,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
             </div>
             <button
               onClick={onClose}
-              className="p-2.5 rounded-xl text-white/90 hover:bg-white/20 hover:text-white transition-all duration-200 backdrop-blur-sm shadow-lg"
+              className="p-2.5 rounded-xl text-white/90 hover:bg-white dark:bg-gray-800/20 hover:text-white transition-all duration-200 backdrop-blur-sm shadow-lg"
             >
               <X className="h-5 w-5" />
             </button>
@@ -127,7 +127,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         {/* Modern Company Selector */}
         {userRole === 'admin' && companies && companies.length > 0 && (
           <div className="p-5 border-b border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm">
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2.5">
+            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2.5">
               Bedrijf Selecteren
             </label>
             <select
@@ -176,7 +176,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                     </div>
                     <span className="flex-1">Dashboard</span>
                     {isActive && (
-                      <div className="w-2 h-2 rounded-full bg-white shadow-sm"></div>
+                      <div className="w-2 h-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"></div>
                     )}
                   </>
                 )}
@@ -288,7 +288,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                               </div>
                               <span className="flex-1">{item.name}</span>
                               {isActive && (
-                                <div className="w-2 h-2 rounded-full bg-white shadow-sm"></div>
+                                <div className="w-2 h-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"></div>
                               )}
                             </>
                           )}

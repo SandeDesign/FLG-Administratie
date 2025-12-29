@@ -280,7 +280,7 @@ const InvestmentPitch: React.FC = () => {
     return (
       <div className="p-8 text-center">
         <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-500">Geen pitch decks beschikbaar</p>
+        <p className="text-gray-500 dark:text-gray-400">Geen pitch decks beschikbaar</p>
       </div>
     );
   }
@@ -290,7 +290,7 @@ const InvestmentPitch: React.FC = () => {
     return (
       <div className="p-8 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">💼 Investment Pitch Decks</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">💼 Investment Pitch Decks</h1>
           <button
             onClick={createNewPitch}
             className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
@@ -303,7 +303,7 @@ const InvestmentPitch: React.FC = () => {
         {pitches.length === 0 ? (
           <div className="text-center py-12">
             <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">Geen pitch decks gevonden</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Geen pitch decks gevonden</p>
             <button
               onClick={createNewPitch}
               className="text-primary-600 hover:text-primary-700 font-medium"
@@ -314,15 +314,15 @@ const InvestmentPitch: React.FC = () => {
         ) : (
           <div className="grid gap-4">
             {pitches.map(pitch => (
-              <div key={pitch.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition">
+              <div key={pitch.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 hover:shadow-lg transition">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900">{pitch.companyName}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{pitch.elevatorPitch}</p>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{pitch.companyName}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{pitch.elevatorPitch}</p>
                     <div className="flex gap-4 mt-3 text-sm">
                       <span className="text-primary-600 font-semibold">Ask: €{(pitch.askingAmount / 1000).toFixed(0)}k</span>
-                      <span className="text-gray-500">ARR: €{(pitch.currentARR / 1000).toFixed(0)}k</span>
-                      <span className="text-gray-500">Updated: {pitch.updatedAt?.toLocaleDateString('nl-NL')}</span>
+                      <span className="text-gray-500 dark:text-gray-400">ARR: €{(pitch.currentARR / 1000).toFixed(0)}k</span>
+                      <span className="text-gray-500 dark:text-gray-400">Updated: {pitch.updatedAt?.toLocaleDateString('nl-NL')}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -340,7 +340,7 @@ const InvestmentPitch: React.FC = () => {
                         setCurrentPitch(pitch);
                         setView('editor');
                       }}
-                      className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      className="px-3 py-1 text-sm bg-gray-100 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200"
                     >
                       Edit
                     </button>
@@ -365,11 +365,11 @@ const InvestmentPitch: React.FC = () => {
     return (
       <div className="p-8 space-y-6 max-w-6xl mx-auto">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Edit: {currentPitch.companyName}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Edit: {currentPitch.companyName}</h1>
           <div className="flex gap-3">
             <button
               onClick={() => setView('preview')}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900"
             >
               Preview
             </button>
@@ -387,146 +387,146 @@ const InvestmentPitch: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Problem & Solution */}
           <div className="space-y-4">
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="font-semibold text-lg mb-4 text-gray-900">🎯 Problem Statement</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-gray-100">🎯 Problem Statement</h2>
               <textarea
                 value={currentPitch.problemStatement}
                 onChange={(e) => setCurrentPitch({ ...currentPitch, problemStatement: e.target.value })}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="Welk probleem los je op? Wees specifiek en data-driven."
               />
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="font-semibold text-lg mb-4 text-gray-900">💡 Solution Statement</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-gray-100">💡 Solution Statement</h2>
               <textarea
                 value={currentPitch.solutionStatement}
                 onChange={(e) => setCurrentPitch({ ...currentPitch, solutionStatement: e.target.value })}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="Hoe los je het op? Wat maakt je uniek en waarom nu?"
               />
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="font-semibold text-lg mb-4 text-gray-900">⚡ Differentiator</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-gray-100">⚡ Differentiator</h2>
               <textarea
                 value={currentPitch.differentiator}
                 onChange={(e) => setCurrentPitch({ ...currentPitch, differentiator: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                 placeholder="Waarom jij en niet de concurrent? Unique value proposition."
               />
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="font-semibold text-lg mb-4 text-gray-900">Elevator Pitch (30 sec)</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-gray-100">Elevator Pitch (30 sec)</h2>
               <textarea
                 value={currentPitch.elevatorPitch}
                 onChange={(e) => setCurrentPitch({ ...currentPitch, elevatorPitch: e.target.value })}
                 rows={3}
                 maxLength={280}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
-              <p className="text-xs text-gray-500 mt-1">{currentPitch.elevatorPitch.length}/280</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{currentPitch.elevatorPitch.length}/280</p>
             </div>
           </div>
 
           {/* Market & Financials */}
           <div className="space-y-4">
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="font-semibold text-lg mb-4 text-gray-900">🌍 Market Opportunity</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-gray-100">🌍 Market Opportunity</h2>
               <input
                 type="text"
                 value={currentPitch.targetMarket}
                 onChange={(e) => setCurrentPitch({ ...currentPitch, targetMarket: e.target.value })}
                 placeholder="Target Market"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-3"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3"
               />
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-xs font-medium text-gray-700">TAM €</label>
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">TAM €</label>
                   <input
                     type="number"
                     value={currentPitch.tam}
                     onChange={(e) => setCurrentPitch({ ...currentPitch, tam: Number(e.target.value) })}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700">SAM €</label>
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">SAM €</label>
                   <input
                     type="number"
                     value={currentPitch.sam}
                     onChange={(e) => setCurrentPitch({ ...currentPitch, sam: Number(e.target.value) })}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700">SOM €</label>
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">SOM €</label>
                   <input
                     type="number"
                     value={currentPitch.som}
                     onChange={(e) => setCurrentPitch({ ...currentPitch, som: Number(e.target.value) })}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="font-semibold text-lg mb-4 text-gray-900">💰 Investment Ask</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-gray-100">💰 Investment Ask</h2>
               <div className="space-y-3">
                 <div>
-                  <label className="text-xs font-medium text-gray-700">Amount €</label>
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Amount €</label>
                   <input
                     type="number"
                     value={currentPitch.askingAmount}
                     onChange={(e) => setCurrentPitch({ ...currentPitch, askingAmount: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700">Runway (months)</label>
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Runway (months)</label>
                   <input
                     type="number"
                     value={currentPitch.runway}
                     onChange={(e) => setCurrentPitch({ ...currentPitch, runway: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="font-semibold text-lg mb-4 text-gray-900">📊 Revenue Projections</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-gray-100">📊 Revenue Projections</h2>
               <div className="space-y-2 text-sm">
                 <div>
-                  <label className="text-xs font-medium text-gray-700">Year 1 Revenue €</label>
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Year 1 Revenue €</label>
                   <input
                     type="number"
                     value={currentPitch.projectedYear1Revenue}
                     onChange={(e) => setCurrentPitch({ ...currentPitch, projectedYear1Revenue: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700">Year 2 Revenue €</label>
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Year 2 Revenue €</label>
                   <input
                     type="number"
                     value={currentPitch.projectedYear2Revenue}
                     onChange={(e) => setCurrentPitch({ ...currentPitch, projectedYear2Revenue: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-700">Year 3 Revenue €</label>
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Year 3 Revenue €</label>
                   <input
                     type="number"
                     value={currentPitch.projectedYear3Revenue}
                     onChange={(e) => setCurrentPitch({ ...currentPitch, projectedYear3Revenue: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg"
                   />
                 </div>
               </div>
@@ -535,9 +535,9 @@ const InvestmentPitch: React.FC = () => {
         </div>
 
         {/* Use of Funds */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-lg text-gray-900">💸 Use of Funds</h2>
+            <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">💸 Use of Funds</h2>
             <button
               onClick={() => setCurrentPitch({
                 ...currentPitch,
@@ -550,7 +550,7 @@ const InvestmentPitch: React.FC = () => {
           </div>
           <div className="space-y-3">
             {currentPitch.useOfFunds.map((item, idx) => (
-              <div key={item.id} className="p-4 bg-gray-50 rounded-lg space-y-2">
+              <div key={item.id} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg space-y-2">
                 <div className="grid grid-cols-3 gap-2">
                   <input
                     type="text"
@@ -561,7 +561,7 @@ const InvestmentPitch: React.FC = () => {
                       setCurrentPitch({ ...currentPitch, useOfFunds: updated });
                     }}
                     placeholder="Category"
-                    className="px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                   />
                   <input
                     type="number"
@@ -572,7 +572,7 @@ const InvestmentPitch: React.FC = () => {
                       setCurrentPitch({ ...currentPitch, useOfFunds: updated });
                     }}
                     placeholder="€"
-                    className="px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                   />
                   <button
                     onClick={() => {
@@ -593,7 +593,7 @@ const InvestmentPitch: React.FC = () => {
                     setCurrentPitch({ ...currentPitch, useOfFunds: updated });
                   }}
                   placeholder="What will this fund?"
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                 />
                 <input
                   type="text"
@@ -604,7 +604,7 @@ const InvestmentPitch: React.FC = () => {
                     setCurrentPitch({ ...currentPitch, useOfFunds: updated });
                   }}
                   placeholder="Expected outcome (e.g., +€500k revenue)"
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                 />
               </div>
             ))}
@@ -612,9 +612,9 @@ const InvestmentPitch: React.FC = () => {
         </div>
 
         {/* Team */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-lg text-gray-900">👥 Team</h2>
+            <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">👥 Team</h2>
             <button
               onClick={() => setCurrentPitch({
                 ...currentPitch,
@@ -627,7 +627,7 @@ const InvestmentPitch: React.FC = () => {
           </div>
           <div className="space-y-3">
             {currentPitch.team.map((member, idx) => (
-              <div key={member.id} className="p-4 bg-gray-50 rounded-lg space-y-2">
+              <div key={member.id} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="text"
@@ -638,7 +638,7 @@ const InvestmentPitch: React.FC = () => {
                       setCurrentPitch({ ...currentPitch, team: updated });
                     }}
                     placeholder="Name"
-                    className="px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                   />
                   <input
                     type="text"
@@ -649,7 +649,7 @@ const InvestmentPitch: React.FC = () => {
                       setCurrentPitch({ ...currentPitch, team: updated });
                     }}
                     placeholder="Role"
-                    className="px-2 py-1 border border-gray-300 rounded text-sm"
+                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                   />
                 </div>
                 <textarea
@@ -661,7 +661,7 @@ const InvestmentPitch: React.FC = () => {
                   }}
                   placeholder="Bio / Background"
                   rows={2}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                 />
               </div>
             ))}
@@ -669,9 +669,9 @@ const InvestmentPitch: React.FC = () => {
         </div>
 
         {/* Risks */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-lg text-gray-900">⚠️ Risks & Mitigations</h2>
+            <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">⚠️ Risks & Mitigations</h2>
             <button
               onClick={() => setCurrentPitch({
                 ...currentPitch,
@@ -694,7 +694,7 @@ const InvestmentPitch: React.FC = () => {
                     setCurrentPitch({ ...currentPitch, risks: updated });
                   }}
                   placeholder="What could go wrong?"
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                 />
                 <input
                   type="text"
@@ -705,7 +705,7 @@ const InvestmentPitch: React.FC = () => {
                     setCurrentPitch({ ...currentPitch, risks: updated });
                   }}
                   placeholder="How will we mitigate this?"
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                 />
                 <select
                   value={item.probability}
@@ -714,7 +714,7 @@ const InvestmentPitch: React.FC = () => {
                     updated[idx].probability = e.target.value as 'high' | 'medium' | 'low';
                     setCurrentPitch({ ...currentPitch, risks: updated });
                   }}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm"
                 >
                   <option value="low">Low Probability</option>
                   <option value="medium">Medium Probability</option>
@@ -734,11 +734,11 @@ const InvestmentPitch: React.FC = () => {
       <div className={isFrameMode ? "space-y-6 p-4" : "p-8 space-y-8 max-w-7xl mx-auto"}>
         {!isFrameMode && (
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-900">{currentPitch.companyName}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{currentPitch.companyName}</h1>
             <div className="flex gap-3">
               <button
                 onClick={() => setView('editor')}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-900"
               >
                 <Edit2 className="h-4 w-4" />
                 Edit
@@ -773,7 +773,7 @@ const InvestmentPitch: React.FC = () => {
 
         {isFrameMode && currentPitch.companyName && (
           <div className="mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">{currentPitch.companyName}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{currentPitch.companyName}</h1>
           </div>
         )}
 
@@ -804,13 +804,13 @@ const InvestmentPitch: React.FC = () => {
 
         {/* Problem & Solution */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">🎯 The Problem</h2>
-            <p className="text-gray-700 leading-relaxed">{currentPitch.problemStatement}</p>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">🎯 The Problem</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{currentPitch.problemStatement}</p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">💡 Our Solution</h2>
-            <p className="text-gray-700 leading-relaxed">{currentPitch.solutionStatement}</p>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💡 Our Solution</h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{currentPitch.solutionStatement}</p>
             <div className="mt-4 p-3 bg-primary-50 rounded-lg">
               <p className="text-sm text-primary-900 font-semibold">{currentPitch.differentiator}</p>
             </div>
@@ -818,8 +818,8 @@ const InvestmentPitch: React.FC = () => {
         </div>
 
         {/* Revenue Projection */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">📈 Revenue Projection</h2>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">📈 Revenue Projection</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={getRevenueProjection()}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -841,8 +841,8 @@ const InvestmentPitch: React.FC = () => {
         {/* Use of Funds */}
         {currentPitch.useOfFunds.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">💸 Use of Funds - Allocation</h2>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">💸 Use of Funds - Allocation</h2>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -864,16 +864,16 @@ const InvestmentPitch: React.FC = () => {
               </ResponsiveContainer>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Expected Outcomes</h2>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">Expected Outcomes</h2>
               <div className="space-y-4">
                 {currentPitch.useOfFunds.map((item, idx) => (
-                  <div key={item.id} className="p-4 bg-gray-50 rounded-lg border-l-4" style={{ borderColor: colors[idx % colors.length] }}>
+                  <div key={item.id} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border-l-4" style={{ borderColor: colors[idx % colors.length] }}>
                     <div className="flex items-baseline justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900">{item.category}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">{item.category}</h3>
                       <span className="text-lg font-bold text-primary-600">€{(item.amount / 1000).toFixed(0)}k</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{item.description}</p>
                     <p className="text-sm font-semibold text-green-700 flex items-center gap-1">
                       <CheckCircle className="h-4 w-4" />
                       {item.expectedOutcome}
@@ -886,38 +886,38 @@ const InvestmentPitch: React.FC = () => {
         )}
 
         {/* Market Opportunity */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">🌍 Market Opportunity</h2>
-          <p className="text-gray-700 mb-6">{currentPitch.targetMarket}</p>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">🌍 Market Opportunity</h2>
+          <p className="text-gray-700 dark:text-gray-300 mb-6">{currentPitch.targetMarket}</p>
           <div className="grid grid-cols-3 gap-4">
             <div className="p-4 bg-blue-50 rounded-lg text-center">
-              <p className="text-sm text-gray-600 mb-1">TAM</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">TAM</p>
               <p className="text-2xl font-bold text-blue-600">€{(currentPitch.tam / 1000000).toFixed(0)}M</p>
-              <p className="text-xs text-gray-500 mt-1">Total Addressable</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Addressable</p>
             </div>
             <div className="p-4 bg-cyan-50 rounded-lg text-center">
-              <p className="text-sm text-gray-600 mb-1">SAM</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">SAM</p>
               <p className="text-2xl font-bold text-cyan-600">€{(currentPitch.sam / 1000000).toFixed(0)}M</p>
-              <p className="text-xs text-gray-500 mt-1">Serviceable</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Serviceable</p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg text-center">
-              <p className="text-sm text-gray-600 mb-1">SOM</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">SOM</p>
               <p className="text-2xl font-bold text-green-600">€{(currentPitch.som / 1000000).toFixed(1)}M</p>
-              <p className="text-xs text-gray-500 mt-1">Obtainable (5yr)</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Obtainable (5yr)</p>
             </div>
           </div>
         </div>
 
         {/* Team */}
         {currentPitch.team.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">👥 Leadership Team</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">👥 Leadership Team</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {currentPitch.team.map(member => (
                 <div key={member.id} className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg">
-                  <h3 className="font-bold text-gray-900">{member.name}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100">{member.name}</h3>
                   <p className="text-sm font-semibold text-primary-600 mb-2">{member.role}</p>
-                  <p className="text-sm text-gray-600">{member.bio}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{member.bio}</p>
                 </div>
               ))}
             </div>
@@ -926,16 +926,16 @@ const InvestmentPitch: React.FC = () => {
 
         {/* Risks */}
         {currentPitch.risks.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">⚠️ Risk Mitigation Strategy</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">⚠️ Risk Mitigation Strategy</h2>
             <div className="space-y-3">
               {currentPitch.risks.map(risk => (
                 <div key={risk.id} className="p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
                   <div className="flex items-start gap-3">
                     <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{risk.risk}</h3>
-                      <p className="text-sm text-gray-700 mt-1"><strong>Mitigation:</strong> {risk.mitigation}</p>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">{risk.risk}</h3>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mt-1"><strong>Mitigation:</strong> {risk.mitigation}</p>
                       <span className={`text-xs font-semibold mt-2 inline-block px-2 py-1 rounded ${
                         risk.probability === 'high' ? 'bg-red-200 text-red-800' :
                         risk.probability === 'medium' ? 'bg-yellow-200 text-yellow-800' :
@@ -952,8 +952,8 @@ const InvestmentPitch: React.FC = () => {
         )}
 
         {/* Footer */}
-        <div className="text-center py-8 border-t border-gray-200">
-          <p className="text-sm text-gray-500">Investment Pitch Deck | {currentPitch.companyName} | {new Date().toLocaleDateString('nl-NL')}</p>
+        <div className="text-center py-8 border-t border-gray-200 dark:border-gray-700">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Investment Pitch Deck | {currentPitch.companyName} | {new Date().toLocaleDateString('nl-NL')}</p>
         </div>
       </div>
     );

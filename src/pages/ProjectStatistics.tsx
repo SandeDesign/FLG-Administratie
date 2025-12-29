@@ -139,7 +139,7 @@ const ProjectStatistics: React.FC = () => {
   if (!selectedCompany) {
     return (
       <div className="p-6">
-        <p className="text-gray-500">Selecteer een project bedrijf om statistieken te bekijken.</p>
+        <p className="text-gray-500 dark:text-gray-400">Selecteer een project bedrijf om statistieken te bekijken.</p>
       </div>
     );
   }
@@ -147,7 +147,7 @@ const ProjectStatistics: React.FC = () => {
   if (selectedCompany.companyType !== 'project') {
     return (
       <div className="p-6">
-        <p className="text-gray-500">Deze pagina is alleen beschikbaar voor project bedrijven.</p>
+        <p className="text-gray-500 dark:text-gray-400">Deze pagina is alleen beschikbaar voor project bedrijven.</p>
       </div>
     );
   }
@@ -166,8 +166,8 @@ const ProjectStatistics: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Project Statistieken</h1>
-        <p className="text-gray-600 mt-1">Overzicht van {selectedCompany.name}</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Project Statistieken</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>
 
       {/* Key Metrics */}
@@ -175,11 +175,11 @@ const ProjectStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Productie Uren</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Productie Uren</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 {stats.totalProductionHours.toLocaleString('nl-NL')}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {stats.totalOvertime > 0 && `+${stats.totalOvertime.toFixed(0)} overuren`}
               </p>
             </div>
@@ -190,11 +190,11 @@ const ProjectStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Totale Omzet</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totale Omzet</p>
               <p className="text-2xl font-bold text-green-600 mt-1">
                 €{stats.totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-xs text-gray-500 mt-1">{stats.totalInvoices} facturen</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stats.totalInvoices} facturen</p>
             </div>
             <TrendingUp className="h-8 w-8 text-green-600" />
           </div>
@@ -203,11 +203,11 @@ const ProjectStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Winstmarge</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Winstmarge</p>
               <p className={`text-2xl font-bold mt-1 ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {profitMargin.toFixed(1)}%
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 €{profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} winst
               </p>
             </div>
@@ -220,7 +220,7 @@ const ProjectStatistics: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <div>
-            <p className="text-sm font-medium text-gray-600">Verkoop (Omzet)</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Verkoop (Omzet)</p>
             <p className="text-2xl font-bold text-green-600 mt-1">
               €{stats.totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
@@ -229,7 +229,7 @@ const ProjectStatistics: React.FC = () => {
 
         <Card>
           <div>
-            <p className="text-sm font-medium text-gray-600">Inkoop (Kosten)</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Inkoop (Kosten)</p>
             <p className="text-2xl font-bold text-red-600 mt-1">
               €{stats.totalCosts.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
@@ -238,7 +238,7 @@ const ProjectStatistics: React.FC = () => {
 
         <Card>
           <div>
-            <p className="text-sm font-medium text-gray-600">Netto Winst</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Netto Winst</p>
             <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               €{profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
@@ -249,7 +249,7 @@ const ProjectStatistics: React.FC = () => {
       {/* Maandelijkse Omzet vs Kosten */}
       {monthlyData.length > 0 && (
         <Card>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Maandelijkse Omzet vs Kosten</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Maandelijkse Omzet vs Kosten</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -267,7 +267,7 @@ const ProjectStatistics: React.FC = () => {
       {/* Maandelijkse Productie Uren */}
       {monthlyData.length > 0 && (
         <Card>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Maandelijkse Productie Uren</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Maandelijkse Productie Uren</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -283,7 +283,7 @@ const ProjectStatistics: React.FC = () => {
 
       {/* Project Performance Indicatoren */}
       <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Indicatoren</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Performance Indicatoren</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-blue-50 p-4 rounded-lg">
             <p className="text-sm font-medium text-blue-900">Omzet per Uur</p>
@@ -306,7 +306,7 @@ const ProjectStatistics: React.FC = () => {
 
       {/* Geen werknemers notitie */}
       <Card>
-        <div className="flex items-center gap-3 text-gray-600">
+        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
           <Package className="h-5 w-5" />
           <p className="text-sm">
             <strong>Let op:</strong> Project bedrijven hebben geen eigen personeel in dienst.

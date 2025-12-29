@@ -238,7 +238,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
 
         {calculatedDays > 0 && (
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
               Aantal werkdagen: <span className="font-semibold text-gray-900 dark:text-white">{calculatedDays}</span>
             </p>
           </div>

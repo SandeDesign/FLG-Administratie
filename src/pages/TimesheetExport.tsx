@@ -227,8 +227,8 @@ const TimesheetExport: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Uren Export</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Uren Export</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Exporteer urenregistraties naar loonadministratie voor {selectedCompany.name}
         </p>
       </div>
@@ -236,41 +236,41 @@ const TimesheetExport: React.FC = () => {
       {/* Export Generator */}
       <Card>
         <div className="p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Nieuwe Export Genereren</h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Nieuwe Export Genereren</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Startdatum
               </label>
               <input
                 type="date"
                 value={selectedPeriod.startDate}
                 onChange={(e) => setSelectedPeriod(prev => ({...prev, startDate: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Einddatum
               </label>
               <input
                 type="date"
                 value={selectedPeriod.endDate}
                 onChange={(e) => setSelectedPeriod(prev => ({...prev, endDate: e.target.value}))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Formaat
               </label>
               <select
                 value={exportFormat}
                 onChange={(e) => setExportFormat(e.target.value as 'csv' | 'excel')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="excel">Excel (.xlsx)</option>
                 <option value="csv">CSV (.csv)</option>
@@ -305,7 +305,7 @@ const TimesheetExport: React.FC = () => {
       {/* Export History */}
       <Card>
         <div className="p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Export Geschiedenis</h2>
+          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Export Geschiedenis</h2>
           
           {exportPeriods.length === 0 ? (
             <EmptyState
@@ -318,7 +318,7 @@ const TimesheetExport: React.FC = () => {
               {exportPeriods.map((period) => {
                 const StatusIcon = getStatusIcon(period.status);
                 return (
-                  <div key={period.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={period.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="flex-shrink-0">
@@ -328,7 +328,7 @@ const TimesheetExport: React.FC = () => {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center space-x-2">
-                            <h3 className="text-sm font-medium text-gray-900">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                               {period.startDate.toLocaleDateString('nl-NL')} - {period.endDate.toLocaleDateString('nl-NL')}
                             </h3>
                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(period.status)}`}>
@@ -338,7 +338,7 @@ const TimesheetExport: React.FC = () => {
                               {period.status === 'processed' && 'Verwerkt'}
                             </span>
                           </div>
-                          <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                             <div className="flex items-center">
                               <Users className="h-4 w-4 mr-1" />
                               {period.employeeCount} werknemers
@@ -359,7 +359,7 @@ const TimesheetExport: React.FC = () => {
                             )}
                           </div>
                           {period.notes && (
-                            <p className="mt-1 text-sm text-gray-600">{period.notes}</p>
+                            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{period.notes}</p>
                           )}
                         </div>
                       </div>
@@ -387,8 +387,8 @@ const TimesheetExport: React.FC = () => {
       {/* Instructions */}
       <Card>
         <div className="p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Instructies voor Loonadministratie</h3>
-          <div className="space-y-3 text-sm text-gray-600">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Instructies voor Loonadministratie</h3>
+          <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
             <p>
               <strong>Stap 1:</strong> Selecteer de gewenste periode en genereer de export
             </p>

@@ -273,8 +273,8 @@ const DriveFiles: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Drive Bestanden</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Drive Bestanden</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Centraal overzicht van alle Google Drive bestanden en gearchiveerde facturen
           </p>
         </div>
@@ -292,7 +292,7 @@ const DriveFiles: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-4 border-b border-gray-200">
+      <div className="flex space-x-4 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setActiveTab('files')}
           className={`px-4 py-2 font-medium transition-colors ${
@@ -320,7 +320,7 @@ const DriveFiles: React.FC = () => {
         <>
           <Card>
             <div className="p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Bedrijfs Mappen</h2>
+              <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Bedrijfs Mappen</h2>
               
               {folders.length === 0 ? (
                 <EmptyState
@@ -331,11 +331,11 @@ const DriveFiles: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {folders.map((folder) => (
-                    <div key={folder.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                    <div key={folder.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
                           <FolderOpen className="h-5 w-5 text-primary-600" />
-                          <span className="font-medium text-gray-900 truncate">{folder.companyName}</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100 truncate">{folder.companyName}</span>
                         </div>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSyncStatusColor(folder.syncStatus)}`}>
                           {folder.syncStatus === 'synced' && 'Gesynchroniseerd'}
@@ -344,7 +344,7 @@ const DriveFiles: React.FC = () => {
                         </span>
                       </div>
                       
-                      <div className="text-sm text-gray-500 mb-3">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                         <div>{folder.fileCount} bestanden</div>
                         <div>Laatst gewijzigd: {folder.lastModified.toLocaleDateString('nl-NL')}</div>
                       </div>
@@ -387,7 +387,7 @@ const DriveFiles: React.FC = () => {
                       placeholder="Zoek bestanden..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -396,7 +396,7 @@ const DriveFiles: React.FC = () => {
                   <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
                     <option value="all">Alle categorieën</option>
                     <option value="invoice">Facturen</option>
@@ -408,7 +408,7 @@ const DriveFiles: React.FC = () => {
                   <select
                     value={companyFilter}
                     onChange={(e) => setCompanyFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
                     <option value="all">Alle bedrijven</option>
                     {companies.map(company => (
@@ -437,20 +437,20 @@ const DriveFiles: React.FC = () => {
           ) : (
             <Card>
               <div className="p-6">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Bestanden</h2>
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Bestanden</h2>
                 
                 <div className="space-y-3">
                   {filteredFiles.map((file) => {
                     const FileIcon = getFileIcon(file);
                     return (
-                      <div key={file.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                      <div key={file.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-sm transition-shadow">
                         <div className="flex items-center space-x-3 min-w-0 flex-1">
                           <div className="flex-shrink-0">
                             <FileIcon className="h-8 w-8 text-gray-400" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center space-x-2">
-                              <h3 className="text-sm font-medium text-gray-900 truncate">
+                              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                 {file.name}
                               </h3>
                               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(file.category)}`}>
@@ -460,7 +460,7 @@ const DriveFiles: React.FC = () => {
                                 {file.category === 'other' && 'Overig'}
                               </span>
                             </div>
-                            <div className="mt-1 flex items-center space-x-4 text-xs text-gray-500">
+                            <div className="mt-1 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
                               <span>{file.companyName}</span>
                               <span>{file.path}</span>
                               {file.size && (
@@ -516,7 +516,7 @@ const DriveFiles: React.FC = () => {
                       placeholder="Zoek gearchiveerde facturen..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -524,7 +524,7 @@ const DriveFiles: React.FC = () => {
                 <select
                   value={companyFilter}
                   onChange={(e) => setCompanyFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="all">Alle bedrijven</option>
                   {companies.map(company => (
@@ -558,7 +558,7 @@ const DriveFiles: React.FC = () => {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center space-x-2">
-                            <h3 className="text-lg font-medium text-gray-900">
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                               {invoice.invoiceNumber}
                             </h3>
                             <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
@@ -572,7 +572,7 @@ const DriveFiles: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                          <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                             <div className="flex items-center">
                               <User className="h-4 w-4 mr-1" />
                               {invoice.supplierName}
@@ -628,8 +628,8 @@ const DriveFiles: React.FC = () => {
       {/* Instructions */}
       <Card>
         <div className="p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Google Drive Integratie</h3>
-          <div className="space-y-3 text-sm text-gray-600">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Google Drive Integratie</h3>
+          <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
             <p>
               <strong>Bestanden:</strong> Overzicht van alle bestanden in je Google Drive gestructureerd per bedrijf
             </p>

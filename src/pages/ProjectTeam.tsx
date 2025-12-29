@@ -71,8 +71,8 @@ const ProjectTeam: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Project Team</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Project Team</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Team voor project: <span className="font-medium">{selectedCompany.name}</span>
           </p>
         </div>
@@ -91,8 +91,8 @@ const ProjectTeam: React.FC = () => {
               <Users className="h-6 w-6 text-primary-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Team Leden</p>
-              <p className="text-2xl font-bold text-gray-900">{projectEmployees.length}</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Team Leden</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{projectEmployees.length}</p>
             </div>
           </div>
         </Card>
@@ -103,8 +103,8 @@ const ProjectTeam: React.FC = () => {
               <Clock className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Deze Week</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Deze Week</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {recentTimeEntries
                   .filter(entry => {
                     const entryDate = new Date(entry.date);
@@ -125,8 +125,8 @@ const ProjectTeam: React.FC = () => {
               <Target className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Actieve Project</p>
-              <p className="text-lg font-bold text-gray-900 truncate">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Actieve Project</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">
                 {selectedCompany.name}
               </p>
             </div>
@@ -136,8 +136,8 @@ const ProjectTeam: React.FC = () => {
 
       {/* Team Members */}
       <Card>
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Toegewezen Teamleden</h2>
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Toegewezen Teamleden</h2>
         </div>
 
         {projectEmployees.length === 0 ? (
@@ -152,19 +152,19 @@ const ProjectTeam: React.FC = () => {
               <div key={employee.id} className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <div className="h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-gray-600" />
+                    <div className="h-10 w-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                      <User className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </div>
                     
                     <div>
-                      <h3 className="text-sm font-medium text-gray-900">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {employee.personalInfo.firstName} {employee.personalInfo.lastName}
                       </h3>
-                      <p className="text-sm text-gray-500">{employee.contractInfo.position}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{employee.contractInfo.position}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-6 text-sm text-gray-500">
+                  <div className="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center space-x-1">
                       <Mail className="h-4 w-4" />
                       <span>{employee.personalInfo.contactInfo.email}</span>
@@ -194,8 +194,8 @@ const ProjectTeam: React.FC = () => {
 
       {/* Recent Activity */}
       <Card>
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Recente Projectactiviteit</h2>
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recente Projectactiviteit</h2>
         </div>
 
         {recentTimeEntries.length === 0 ? (
@@ -212,22 +212,22 @@ const ProjectTeam: React.FC = () => {
                 <div key={entry.id} className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {employee ? 
                           `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}` : 
                           'Onbekende werknemer'
                         }
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         {new Date(entry.date).toLocaleDateString('nl-NL')} - {entry.project || 'Algemeen werk'}
                       </p>
                     </div>
                     
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {(entry.regularHours + entry.overtimeHours).toFixed(1)}h
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {entry.regularHours}h normaal
                         {entry.overtimeHours > 0 && ` + ${entry.overtimeHours}h overwerk`}
                       </p>

@@ -221,7 +221,7 @@ export default function PayrollProcessing() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Loonverwerking</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loonverwerking</h1>
         </div>
         <EmptyState
           icon={Building2}
@@ -236,8 +236,8 @@ export default function PayrollProcessing() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Loonverwerking</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loonverwerking</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Bereken en verwerk salarissen
           </p>
         </div>
@@ -266,8 +266,8 @@ export default function PayrollProcessing() {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Werknemers</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Werknemers</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {selectedPeriod?.employeeCount || 0}
               </p>
             </div>
@@ -277,8 +277,8 @@ export default function PayrollProcessing() {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Bruto totaal</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Bruto totaal</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 €{(selectedPeriod?.totalGross || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -288,8 +288,8 @@ export default function PayrollProcessing() {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Loonheffing</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Loonheffing</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 €{(selectedPeriod?.totalTax || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -299,8 +299,8 @@ export default function PayrollProcessing() {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Netto totaal</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Netto totaal</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 €{(selectedPeriod?.totalNet || 0).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -311,9 +311,9 @@ export default function PayrollProcessing() {
 
       <Card>
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Loonperiodes</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Loonperiodes</h2>
           {payrollPeriods.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">
+            <p className="text-gray-600 dark:text-gray-400 text-center py-8">
               Geen loonperiodes gevonden. Maak een nieuwe periode aan.
             </p>
           ) : (
@@ -361,44 +361,44 @@ export default function PayrollProcessing() {
       {calculations.length > 0 && (
         <Card>
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Loonberekeningen</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Loonberekeningen</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Werknemer
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Normale uren
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Overuren
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Bruto loon
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Loonheffing
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Netto loon
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200">
                   {calculations.map((calc) => (
                     <tr key={calc.id}>
-                      <td className="px-4 py-3 text-sm text-gray-900">{calc.employeeId}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{calc.regularHours}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{calc.overtimeHours}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{calc.employeeId}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{calc.regularHours}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{calc.overtimeHours}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                         €{calc.grossPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
                         €{calc.taxes.incomeTax.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
                         €{calc.netPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
                       </td>
                     </tr>

@@ -861,8 +861,8 @@ const Budgeting: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Begroting & Projecties</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Begroting & Projecties</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Financieel overzicht voor {selectedCompany.name}
           </p>
         </div>
@@ -905,7 +905,7 @@ const Budgeting: React.FC = () => {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
             title="Ververs"
           >
             <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
@@ -919,10 +919,10 @@ const Budgeting: React.FC = () => {
           </button>
           <button
             onClick={handleExport}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
             title="Exporteer"
           >
-            <Download className="h-5 w-5 text-gray-600" />
+            <Download className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           </button>
           <button
             onClick={() => handleOpenModal(undefined, activeTab === 'income' ? 'income' : 'cost')}
@@ -935,7 +935,7 @@ const Budgeting: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-200 pb-2 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
         {[
           { id: 'overview' as ViewTab, label: 'Overzicht', icon: PieChart },
           { id: 'costs' as ViewTab, label: `Kosten (${costItems.length})`, icon: TrendingDown },
@@ -1050,12 +1050,12 @@ const Budgeting: React.FC = () => {
           {showActualData && (actualYTDIncome > 0 || actualYTDCosts > 0) && (
             <Card className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   Realiteit vs Projectie ({currentYear} YTD)
                 </h2>
                 <button
                   onClick={() => setShowActualData(!showActualData)}
-                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-100 dark:bg-gray-800"
                 >
                   {showActualData ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -1072,11 +1072,11 @@ const Budgeting: React.FC = () => {
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Geprojecteerd</span>
+                      <span className="text-gray-600 dark:text-gray-400">Geprojecteerd</span>
                       <span className="font-medium">{formatCurrency(projectedYTDIncome)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Werkelijk</span>
+                      <span className="text-gray-600 dark:text-gray-400">Werkelijk</span>
                       <span className="font-medium text-emerald-700">{formatCurrency(actualYTDIncome)}</span>
                     </div>
                   </div>
@@ -1098,11 +1098,11 @@ const Budgeting: React.FC = () => {
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Geprojecteerd</span>
+                      <span className="text-gray-600 dark:text-gray-400">Geprojecteerd</span>
                       <span className="font-medium">{formatCurrency(projectedYTDCosts)}</span>
                     </div>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Werkelijk</span>
+                      <span className="text-gray-600 dark:text-gray-400">Werkelijk</span>
                       <span className="font-medium text-red-700">{formatCurrency(actualYTDCosts)}</span>
                     </div>
                   </div>
@@ -1154,8 +1154,8 @@ const Budgeting: React.FC = () => {
               {costItems.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">📋 Geplande Kosten (Budget Items)</h2>
-                    <div className="text-sm text-gray-500">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">📋 Geplande Kosten (Budget Items)</h2>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Totaal: <span className="font-bold text-red-600">{formatCurrency(monthlyCosts)}/mnd</span>
                     </div>
                   </div>
@@ -1184,7 +1184,7 @@ const Budgeting: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <Icon className={`h-5 w-5 ${config.textColor}`} />
                               <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
-                              <span className="text-xs text-gray-500">({items.length} items)</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">({items.length} items)</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="text-right">
@@ -1211,14 +1211,14 @@ const Budgeting: React.FC = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2">
-                                        <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                                        <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">{item.name}</h4>
                                         {!item.isActive && (
-                                          <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                                          <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 dark:text-gray-400 rounded">
                                             Inactief
                                           </span>
                                         )}
                                       </div>
-                                      <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                                      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                         {item.supplier && <span>{item.supplier}</span>}
                                         {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
                                       </div>
@@ -1227,12 +1227,12 @@ const Budgeting: React.FC = () => {
                                       <p className="text-lg font-bold text-red-600">
                                         -{formatCurrencyDetailed(item.amount)}
                                       </p>
-                                      <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">{FREQUENCY_LABELS[item.frequency]}</p>
                                     </div>
                                     <div className="flex gap-1">
                                       <button
                                         onClick={() => handleOpenModal(item)}
-                                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
                                         title="Bewerken"
                                       >
                                         <Pencil className="h-4 w-4" />
@@ -1262,10 +1262,10 @@ const Budgeting: React.FC = () => {
                 const calcDate = calc.periodStartDate instanceof Date ? calc.periodStartDate : new Date(calc.periodStartDate);
                 return calcDate.getFullYear() === currentYear;
               }).length > 0 && (
-                <div className="mt-8 pt-8 border-t-4 border-gray-200">
+                <div className="mt-8 pt-8 border-t-4 border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">💼 Personeelskosten (uit Salarisverwerking {currentYear})</h2>
-                    <div className="text-sm text-gray-500">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">💼 Personeelskosten (uit Salarisverwerking {currentYear})</h2>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Totaal YTD: <span className="font-bold text-red-600">{formatCurrency(actualYTDPersonnelCosts)}</span>
                     </div>
                   </div>
@@ -1301,14 +1301,14 @@ const Budgeting: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <Icon className={`h-5 w-5 ${config.textColor}`} />
                               <h3 className={`font-semibold ${config.textColor}`}>{monthName}</h3>
-                              <span className="text-xs text-gray-500">({calcs.length} medewerker{calcs.length !== 1 ? 's' : ''})</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">({calcs.length} medewerker{calcs.length !== 1 ? 's' : ''})</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="text-right">
                                 <p className={`text-sm font-bold ${config.textColor}`}>
                                   {formatCurrency(monthTotal)}
                                 </p>
-                                <p className="text-xs text-gray-500">Bruto Loon</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Bruto Loon</p>
                               </div>
                               {isExpanded ? (
                                 <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
@@ -1321,11 +1321,11 @@ const Budgeting: React.FC = () => {
                           {isExpanded && (
                             <div className="space-y-2 pl-2">
                               {calcs.map((calc: any) => (
-                                <Card key={calc.id} className="p-3 bg-white">
+                                <Card key={calc.id} className="p-3 bg-white dark:bg-gray-800">
                                   <div className="flex items-center justify-between">
                                     <div className="flex-1">
-                                      <p className="font-medium text-gray-900">{calc.employeeName || 'Medewerker'}</p>
-                                      <p className="text-xs text-gray-500">
+                                      <p className="font-medium text-gray-900 dark:text-gray-100">{calc.employeeName || 'Medewerker'}</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
                                         Periode: {calc.periodStartDate instanceof Date
                                           ? calc.periodStartDate.toLocaleDateString('nl-NL')
                                           : new Date(calc.periodStartDate).toLocaleDateString('nl-NL')} - {calc.periodEndDate instanceof Date
@@ -1337,7 +1337,7 @@ const Budgeting: React.FC = () => {
                                       <p className="font-bold text-red-600 text-lg">
                                         {formatCurrency(calc.grossPay || 0)}
                                       </p>
-                                      <p className="text-xs text-gray-500">Bruto</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">Bruto</p>
                                     </div>
                                   </div>
                                 </Card>
@@ -1356,10 +1356,10 @@ const Budgeting: React.FC = () => {
                 const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
                 return invDate.getFullYear() === currentYear;
               }).length > 0 && (
-                <div className="mt-8 pt-8 border-t-4 border-gray-200">
+                <div className="mt-8 pt-8 border-t-4 border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">💰 Werkelijke Kosten (Inkomende Facturen {currentYear})</h2>
-                    <div className="text-sm text-gray-500">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">💰 Werkelijke Kosten (Inkomende Facturen {currentYear})</h2>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Totaal YTD: <span className="font-bold text-red-600">{formatCurrency(actualYTDCosts)}</span>
                     </div>
                   </div>
@@ -1392,14 +1392,14 @@ const Budgeting: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <Icon className={`h-5 w-5 ${config.textColor}`} />
                               <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
-                              <span className="text-xs text-gray-500">({invoices.length} facturen)</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">({invoices.length} facturen)</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="text-right">
                                 <p className={`text-sm font-bold ${config.textColor}`}>
                                   {formatCurrency(categoryTotal)}
                                 </p>
-                                <p className="text-xs text-gray-500">YTD</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">YTD</p>
                               </div>
                               {isExpanded ? (
                                 <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
@@ -1414,11 +1414,11 @@ const Budgeting: React.FC = () => {
                               {invoices.map((inv: any) => {
                                 const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
                                 return (
-                                  <Card key={inv.id} className="p-3 bg-white">
+                                  <Card key={inv.id} className="p-3 bg-white dark:bg-gray-800">
                                     <div className="flex items-center justify-between">
                                       <div className="flex-1">
-                                        <p className="font-medium text-gray-900">{inv.supplier || inv.description || 'Onbekend'}</p>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="font-medium text-gray-900 dark:text-gray-100">{inv.supplier || inv.description || 'Onbekend'}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
                                           {invDate.toLocaleDateString('nl-NL')} • {inv.invoiceNumber || 'Geen nr'}
                                         </p>
                                       </div>
@@ -1459,8 +1459,8 @@ const Budgeting: React.FC = () => {
               {incomeItems.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">📋 Geplande Inkomsten (Budget Items)</h2>
-                    <div className="text-sm text-gray-500">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">📋 Geplande Inkomsten (Budget Items)</h2>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Totaal: <span className="font-bold text-emerald-600">{formatCurrency(monthlyIncome)}/mnd</span>
                       <span className="mx-2">•</span>
                       Gewogen: <span className="font-bold text-emerald-600">{formatCurrency(weightedMonthlyIncome)}/mnd</span>
@@ -1496,14 +1496,14 @@ const Budgeting: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <Icon className={`h-5 w-5 ${config.textColor}`} />
                               <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
-                              <span className="text-xs text-gray-500">({items.length} items)</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">({items.length} items)</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="text-right">
                                 <p className={`text-sm font-bold ${config.textColor}`}>
                                   {formatCurrency(categoryTotal)}/mnd
                                 </p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
                                   Gewogen: {formatCurrency(weightedTotal)}/mnd
                                 </p>
                               </div>
@@ -1530,18 +1530,18 @@ const Budgeting: React.FC = () => {
                                       </div>
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                          <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                                          <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">{item.name}</h4>
                                           <span className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${confConfig.bgColor} ${confConfig.color}`}>
                                             <ConfIcon className="h-3 w-3" />
                                             {confConfig.label}
                                           </span>
                                           {!item.isActive && (
-                                            <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                                            <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 dark:text-gray-400 rounded">
                                               Inactief
                                             </span>
                                           )}
                                         </div>
-                                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                           {item.supplier && <span>{item.supplier}</span>}
                                           {item.contractNumber && <span>• Contract: {item.contractNumber}</span>}
                                           {item.growthRate && item.growthRate > 0 && (
@@ -1553,12 +1553,12 @@ const Budgeting: React.FC = () => {
                                         <p className="text-lg font-bold text-emerald-600">
                                           +{formatCurrencyDetailed(item.amount)}
                                         </p>
-                                        <p className="text-xs text-gray-500">{FREQUENCY_LABELS[item.frequency]}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{FREQUENCY_LABELS[item.frequency]}</p>
                                       </div>
                                       <div className="flex gap-1">
                                         <button
                                           onClick={() => handleOpenModal(item)}
-                                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                          className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
                                           title="Bewerken"
                                         >
                                           <Pencil className="h-4 w-4" />
@@ -1589,10 +1589,10 @@ const Budgeting: React.FC = () => {
                 const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
                 return invDate.getFullYear() === currentYear && inv.status !== 'cancelled';
               }).length > 0 && (
-                <div className="mt-8 pt-8 border-t-4 border-gray-200">
+                <div className="mt-8 pt-8 border-t-4 border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">💰 Werkelijke Inkomsten (Uitgaande Facturen {currentYear})</h2>
-                    <div className="text-sm text-gray-500">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">💰 Werkelijke Inkomsten (Uitgaande Facturen {currentYear})</h2>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
                       Totaal YTD: <span className="font-bold text-emerald-600">{formatCurrency(actualYTDIncome)}</span>
                     </div>
                   </div>
@@ -1625,14 +1625,14 @@ const Budgeting: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <Icon className={`h-5 w-5 ${config.textColor}`} />
                               <h3 className={`font-semibold ${config.textColor}`}>{config.label}</h3>
-                              <span className="text-xs text-gray-500">({invoices.length} facturen)</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">({invoices.length} facturen)</span>
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="text-right">
                                 <p className={`text-sm font-bold ${config.textColor}`}>
                                   {formatCurrency(categoryTotal)}
                                 </p>
-                                <p className="text-xs text-gray-500">YTD</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">YTD</p>
                               </div>
                               {isExpanded ? (
                                 <ChevronUp className={`h-4 w-4 ${config.textColor}`} />
@@ -1647,11 +1647,11 @@ const Budgeting: React.FC = () => {
                               {invoices.map((inv: any) => {
                                 const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
                                 return (
-                                  <Card key={inv.id} className="p-3 bg-white">
+                                  <Card key={inv.id} className="p-3 bg-white dark:bg-gray-800">
                                     <div className="flex items-center justify-between">
                                       <div className="flex-1">
-                                        <p className="font-medium text-gray-900">{inv.clientName || inv.description || 'Onbekend'}</p>
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        <p className="font-medium text-gray-900 dark:text-gray-100">{inv.clientName || inv.description || 'Onbekend'}</p>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                                           <span>{invDate.toLocaleDateString('nl-NL')}</span>
                                           <span>• {inv.invoiceNumber || 'Geen nr'}</span>
                                           {inv.status && (
@@ -1697,11 +1697,11 @@ const Budgeting: React.FC = () => {
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Meerjarenprojecties</h2>
-                <p className="text-sm text-gray-500 mt-1">Vergelijk werkelijke cijfers met budget prognoses</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Meerjarenprojecties</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Vergelijk werkelijke cijfers met budget prognoses</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Jaren:</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Jaren:</span>
                 {[1, 3, 5].map(years => (
                   <button
                     key={years}
@@ -1754,12 +1754,12 @@ const Budgeting: React.FC = () => {
                 </span>
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 text-sm font-medium">Inkomsten</span>
+                <div className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400 text-sm font-medium">Inkomsten</span>
                   <span className="font-bold text-emerald-600">{formatCurrency(actualYTDIncome)}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 text-sm font-medium">Kosten</span>
+                <div className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400 text-sm font-medium">Kosten</span>
                   <span className="font-bold text-red-600">{formatCurrency(actualYTDCosts)}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-emerald-100 rounded-lg border-2 border-emerald-300">
@@ -1768,7 +1768,7 @@ const Budgeting: React.FC = () => {
                     {formatCurrency(actualYTDIncome - actualYTDCosts)}
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 text-center mt-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
                   Werkelijk tot vandaag
                 </div>
               </div>
@@ -1784,12 +1784,12 @@ const Budgeting: React.FC = () => {
                 </span>
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 text-sm font-medium">Inkomsten</span>
+                <div className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400 text-sm font-medium">Inkomsten</span>
                   <span className="font-bold text-emerald-600">{formatCurrency(forecastFullYearIncome)}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 text-sm font-medium">Kosten</span>
+                <div className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400 text-sm font-medium">Kosten</span>
                   <span className="font-bold text-red-600">{formatCurrency(forecastFullYearCosts)}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-blue-100 rounded-lg border-2 border-blue-300">
@@ -1798,7 +1798,7 @@ const Budgeting: React.FC = () => {
                     {formatCurrency(forecastFullYearIncome - forecastFullYearCosts)}
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 text-center mt-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
                   Werkelijk + Gepland restant
                 </div>
               </div>
@@ -1814,12 +1814,12 @@ const Budgeting: React.FC = () => {
                 </span>
               </div>
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 text-sm font-medium">Inkomsten</span>
+                <div className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400 text-sm font-medium">Inkomsten</span>
                   <span className="font-bold text-emerald-600">{formatCurrency(projectedFullYearIncome)}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                  <span className="text-gray-600 text-sm font-medium">Kosten</span>
+                <div className="flex justify-between items-center p-3 bg-white dark:bg-gray-800 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400 text-sm font-medium">Kosten</span>
                   <span className="font-bold text-red-600">{formatCurrency(projectedFullYearCosts)}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-primary-100 rounded-lg border-2 border-primary-300">
@@ -1828,7 +1828,7 @@ const Budgeting: React.FC = () => {
                     {formatCurrency(projectedFullYearIncome - projectedFullYearCosts)}
                   </span>
                 </div>
-                <div className="text-xs text-gray-500 text-center mt-2">
+                <div className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
                   Budget items gewogen
                 </div>
               </div>
@@ -1838,10 +1838,10 @@ const Budgeting: React.FC = () => {
           {/* Variantie analyse */}
           {yearProgress > 0.1 && (
             <Card className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-l-orange-500">
-              <h4 className="font-bold text-gray-900 mb-3">📊 Analyse vs Budget</h4>
+              <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-3">📊 Analyse vs Budget</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-600 mb-1">Inkomsten YTD</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-1">Inkomsten YTD</p>
                   <div className="flex items-center gap-2">
                     <span className={`font-bold ${incomeVariance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {incomeVariance >= 0 ? '+' : ''}{formatCurrency(incomeVariance)}
@@ -1852,7 +1852,7 @@ const Budgeting: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <p className="text-gray-600 mb-1">Kosten YTD</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-1">Kosten YTD</p>
                   <div className="flex items-center gap-2">
                     <span className={`font-bold ${costVariance <= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {costVariance >= 0 ? '+' : ''}{formatCurrency(costVariance)}
@@ -1863,7 +1863,7 @@ const Budgeting: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-3 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
                 Vergelijking van werkelijke cijfers met budget verwachting tot nu toe
               </p>
             </Card>
@@ -1884,14 +1884,14 @@ const Budgeting: React.FC = () => {
                       <th className="px-4 py-3 text-right text-xs font-semibold text-emerald-700 uppercase">Inkomsten</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-red-700 uppercase">Kosten</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-primary-700 uppercase">Resultaat</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Marge</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Marge</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {generateRealityProjections().map((proj, idx) => (
                       <tr key={proj.year} className={idx === 0 ? 'bg-emerald-50' : ''}>
                         <td className="px-4 py-4">
-                          <span className="font-semibold text-gray-900">{proj.year}</span>
+                          <span className="font-semibold text-gray-900 dark:text-gray-100">{proj.year}</span>
                           {idx === 0 && (
                             <span className="ml-2 px-2 py-0.5 text-xs bg-emerald-100 text-emerald-700 rounded">
                               Actueel
@@ -1920,7 +1920,7 @@ const Budgeting: React.FC = () => {
                 </table>
               </div>
             </Card>
-            <p className="text-xs text-gray-500 mt-2">Gebaseerd op werkelijke uitgaande facturen (inkomsten) en inkomende facturen (kosten)</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Gebaseerd op werkelijke uitgaande facturen (inkomsten) en inkomende facturen (kosten)</p>
           </div>
 
           {/* BUDGET PROJECTIONS - Compacter */}
@@ -1938,14 +1938,14 @@ const Budgeting: React.FC = () => {
                       <th className="px-4 py-3 text-right text-xs font-semibold text-emerald-700 uppercase">Inkomsten</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-red-700 uppercase">Kosten</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-primary-700 uppercase">Resultaat</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Marge</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Marge</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {generateBudgetProjections().map((proj, idx) => (
                       <tr key={proj.year} className={idx === 0 ? 'bg-primary-50' : ''}>
                         <td className="px-4 py-4">
-                          <span className="font-semibold text-gray-900">{proj.year}</span>
+                          <span className="font-semibold text-gray-900 dark:text-gray-100">{proj.year}</span>
                           {idx === 0 && (
                             <span className="ml-2 px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded">
                               Huidig
@@ -1974,7 +1974,7 @@ const Budgeting: React.FC = () => {
                 </table>
               </div>
             </Card>
-            <p className="text-xs text-gray-500 mt-2">Gebaseerd op budget items met gewogen zekerheid en groeipercentages</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Gebaseerd op budget items met gewogen zekerheid en groeipercentages</p>
           </div>
         </div>
       )}
@@ -1984,15 +1984,15 @@ const Budgeting: React.FC = () => {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <div className="fixed inset-0 bg-black/50" onClick={handleCloseModal} />
-            <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">
                 {editingItem ? 'Item Bewerken' : `Nieuw ${formData.type === 'income' ? 'Inkomst' : 'Kost'}`}
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Type Toggle */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -2023,14 +2023,14 @@ const Budgeting: React.FC = () => {
 
                 {/* Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Naam *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     placeholder={formData.type === 'income' ? 'bijv. Enterprise Klant A' : 'bijv. Microsoft 365'}
                     required
                   />
@@ -2038,7 +2038,7 @@ const Budgeting: React.FC = () => {
 
                 {/* Category */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Categorie</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categorie</label>
                   <div className="grid grid-cols-4 gap-2">
                     {(formData.type === 'cost'
                       ? Object.keys(COST_CATEGORY_CONFIG) as BudgetCostCategory[]
@@ -2073,27 +2073,27 @@ const Budgeting: React.FC = () => {
                 {/* Amount & Frequency */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Bedrag *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrag *</label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">€</span>
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         value={formData.amount}
                         onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                         placeholder="0.00"
                         required
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Frequentie</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Frequentie</label>
                     <select
                       value={formData.frequency}
                       onChange={(e) => setFormData({ ...formData, frequency: e.target.value as BudgetFrequency })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="monthly">Maandelijks</option>
                       <option value="quarterly">Per kwartaal</option>
@@ -2106,7 +2106,7 @@ const Budgeting: React.FC = () => {
                 {formData.type === 'income' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Zekerheid</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Zekerheid</label>
                       <div className="grid grid-cols-4 gap-2">
                         {(Object.keys(CONFIDENCE_CONFIG) as ProjectionConfidence[]).map((conf) => {
                           const config = CONFIDENCE_CONFIG[conf];
@@ -2134,7 +2134,7 @@ const Budgeting: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Verwachte Groei per Jaar (%)
                       </label>
                       <input
@@ -2142,7 +2142,7 @@ const Budgeting: React.FC = () => {
                         step="1"
                         value={formData.growthRate}
                         onChange={(e) => setFormData({ ...formData, growthRate: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                         placeholder="0"
                       />
                     </div>
@@ -2151,26 +2151,26 @@ const Budgeting: React.FC = () => {
 
                 {/* Supplier/Client */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {formData.type === 'income' ? 'Klant' : 'Leverancier'}
                   </label>
                   <input
                     type="text"
                     value={formData.supplier}
                     onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder={formData.type === 'income' ? 'bijv. ACME Corp' : 'bijv. Microsoft'}
                   />
                 </div>
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notities</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notities</label>
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="Eventuele opmerkingen..."
                   />
                 </div>
@@ -2182,9 +2182,9 @@ const Budgeting: React.FC = () => {
                     id="isActive"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                   />
-                  <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">
+                  <label htmlFor="isActive" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                     Actief (meerekenen in totalen)
                   </label>
                 </div>
@@ -2209,16 +2209,16 @@ const Budgeting: React.FC = () => {
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div className="flex min-h-full items-center justify-center">
             <div className="fixed inset-0 bg-black/50" onClick={() => setIsPitchDeckOpen(false)} />
-            <div className="relative bg-white rounded-xl shadow-xl w-full h-full md:w-[95vw] md:h-[95vh] md:max-w-7xl overflow-hidden flex flex-col">
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full h-full md:w-[95vw] md:h-[95vh] md:max-w-7xl overflow-hidden flex flex-col">
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-                <h2 className="text-xl font-bold text-gray-900">Investment Pitch Deck</h2>
+              <div className="flex items-center justify-between p-4 border-b bg-gray-50 dark:bg-gray-900">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Investment Pitch Deck</h2>
                 <button
                   onClick={() => setIsPitchDeckOpen(false)}
                   className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                   title="Sluiten"
                 >
-                  <svg className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-6 w-6 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>

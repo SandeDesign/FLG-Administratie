@@ -487,7 +487,7 @@ const ProjectProduction: React.FC = () => {
   if (!selectedCompany) {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Productie Verwerking</h1>
         <EmptyState
           icon={Building2}
           title="Geen bedrijf geselecteerd"
@@ -500,7 +500,7 @@ const ProjectProduction: React.FC = () => {
   if (selectedCompany.companyType !== 'project') {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Productie Verwerking</h1>
         <EmptyState
           icon={Factory}
           title="Dit is geen projectbedrijf"
@@ -513,7 +513,7 @@ const ProjectProduction: React.FC = () => {
   if (linkedEmployees.length === 0) {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Productie Verwerking</h1>
         <EmptyState
           icon={UserIcon}
           title="Geen medewerkers gekoppeld"
@@ -530,8 +530,8 @@ const ProjectProduction: React.FC = () => {
       {/* Header */}
       <div className="space-y-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Productie Verwerking</h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Productie Verwerking</h1>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
             Beheer productie voor {selectedCompany.name}
           </p>
         </div>
@@ -539,24 +539,24 @@ const ProjectProduction: React.FC = () => {
         {/* Week Navigation + Employee Selector + Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           {/* Week Selector */}
-          <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
             <button
               onClick={() => changeWeek(-1)}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
               title="Vorige week"
             >
-              <ChevronLeft className="h-5 w-5 text-gray-600" />
+              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div className="text-center px-4 min-w-[120px]">
-              <p className="text-sm font-semibold text-gray-900">Week {selectedWeek}</p>
-              <p className="text-xs text-gray-500">{selectedYear}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Week {selectedWeek}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{selectedYear}</p>
             </div>
             <button
               onClick={() => changeWeek(1)}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
               title="Volgende week"
             >
-              <ChevronRight className="h-5 w-5 text-gray-600" />
+              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
 
@@ -565,7 +565,7 @@ const ProjectProduction: React.FC = () => {
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800"
             >
               <option value="">Selecteer medewerker...</option>
               {linkedEmployees.map((emp) => (
@@ -608,7 +608,7 @@ const ProjectProduction: React.FC = () => {
             </div>
             <div>
               <p className="text-xs text-primary-600 font-medium">Geselecteerde medewerker</p>
-              <p className="font-semibold text-gray-900">
+              <p className="font-semibold text-gray-900 dark:text-gray-100">
                 {selectedEmployee.personalInfo.firstName} {selectedEmployee.personalInfo.lastName}
               </p>
             </div>
@@ -620,24 +620,24 @@ const ProjectProduction: React.FC = () => {
       {productionData && (
         <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 p-4 sm:p-6">
           <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900">Week {selectedWeek} Samenvatting</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Week {selectedWeek} Samenvatting</h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
-                <p className="text-xs text-gray-600 mb-1">Totaal Uren</p>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal Uren</p>
                 <p className="text-xl sm:text-2xl font-bold text-green-600">
                   {productionData.totalHours}u
                 </p>
               </div>
-              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
-                <p className="text-xs text-gray-600 mb-1">Entries</p>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Entries</p>
                 <p className="text-xl sm:text-2xl font-bold text-primary-600">
                   {productionData.totalEntries}
                 </p>
               </div>
-              <div className="p-2 sm:p-3 bg-white rounded-lg text-center">
-                <p className="text-xs text-gray-600 mb-1">Status</p>
-                <p className="text-xs font-bold text-gray-600 capitalize">
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Status</p>
+                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 capitalize">
                   {productionData.status}
                 </p>
               </div>
@@ -651,7 +651,7 @@ const ProjectProduction: React.FC = () => {
         <Card className="p-3 sm:p-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Productie Entries</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Productie Entries</h3>
               <Button
                 onClick={addEntry}
                 size="sm"
@@ -667,7 +667,7 @@ const ProjectProduction: React.FC = () => {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b-2 border-gray-200">
+                  <tr className="border-b-2 border-gray-200 dark:border-gray-700">
                     <th className="text-left py-2 px-3">Monteur</th>
                     <th className="text-left py-2 px-3">Datum</th>
                     <th className="text-left py-2 px-3">Uren</th>
@@ -678,7 +678,7 @@ const ProjectProduction: React.FC = () => {
                 </thead>
                 <tbody>
                   {entries.map((entry, index) => (
-                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                    <tr key={index} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-900">
                       <td className="py-2 px-3">
                         <Input
                           type="text"
@@ -742,11 +742,11 @@ const ProjectProduction: React.FC = () => {
             {/* Mobile Card View */}
             <div className="md:hidden space-y-2">
               {entries.map((entry, index) => (
-                <Card key={index} className="p-3 bg-gray-50">
+                <Card key={index} className="p-3 bg-gray-50 dark:bg-gray-900">
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-gray-600 font-medium">Monteur</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Monteur</label>
                         <Input
                           type="text"
                           value={entry.monteur}
@@ -756,7 +756,7 @@ const ProjectProduction: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-gray-600 font-medium">Datum</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Datum</label>
                         <Input
                           type="date"
                           value={entry.datum}
@@ -767,7 +767,7 @@ const ProjectProduction: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-gray-600 font-medium">Uren</label>
+                        <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Uren</label>
                         <Input
                           type="number"
                           min="0"
@@ -788,7 +788,7 @@ const ProjectProduction: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600 font-medium">Opdrachtgever</label>
+                      <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Opdrachtgever</label>
                       <Input
                         type="text"
                         value={entry.opdrachtgever}
@@ -798,7 +798,7 @@ const ProjectProduction: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-600 font-medium">Locaties</label>
+                      <label className="text-xs text-gray-600 dark:text-gray-400 font-medium">Locaties</label>
                       <Input
                         type="text"
                         value={entry.locaties}
@@ -817,7 +817,7 @@ const ProjectProduction: React.FC = () => {
         <Card className="p-8">
           <div className="text-center">
             <Factory className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-4">Geen productie entries beschikbaar</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Geen productie entries beschikbaar</p>
             <Button onClick={addEntry} size="sm">
               <Plus className="h-4 w-4 mr-2" />
               Eerste Entry Toevoegen

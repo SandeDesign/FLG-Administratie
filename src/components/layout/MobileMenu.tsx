@@ -111,10 +111,10 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
   };
 
   return (
-    <div className="lg:hidden fixed inset-0 z-50 bg-white">
+    <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-gray-800">
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white dark:bg-gray-800">
           <div className="flex items-center space-x-3">
             {selectedCompany?.logoUrl ? (
               <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="h-10 w-auto max-w-[150px] object-contain" />
@@ -125,24 +125,24 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
           >
-            <X className="h-6 w-6 text-gray-500" />
+            <X className="h-6 w-6 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
           </button>
         </div>
 
         {/* Company Selector - Admin only */}
         {userRole === 'admin' && companies && companies.length > 0 && (
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Geselecteerd bedrijf:</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Geselecteerd bedrijf:</label>
               <select
                 value={selectedCompany?.id || ''}
                 onChange={(e) => {
                   const company = companies.find(c => c.id === e.target.value);
                   if (company) setSelectedCompany(company);
                 }}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               >
                 <option value="">Selecteer bedrijf...</option>
                 {companies.map((company) => (
@@ -180,23 +180,23 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
             {/* Sections */}
             {menuSections.map((section) => (
-              <div key={section.title} className="bg-gray-50 rounded-xl overflow-hidden">
+              <div key={section.title} className="bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden">
                 {/* Section Header */}
                 <button
                   onClick={() => toggleCategory(section.title)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-100 dark:bg-gray-800 transition-colors"
                 >
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 ${section.color} rounded-lg`}>
                       <section.icon className="h-5 w-5 text-white" />
                     </div>
-                    <span className="font-semibold text-gray-900">{section.title}</span>
-                    <span className="text-xs text-gray-500">({section.items.length})</span>
+                    <span className="font-semibold text-gray-900 dark:text-gray-100">{section.title}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">({section.items.length})</span>
                   </div>
                   {expandedCategories.includes(section.title) ? (
-                    <ChevronDown className="h-5 w-5 text-gray-500" />
+                    <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   ) : (
-                    <ChevronRight className="h-5 w-5 text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   )}
                 </button>
 
@@ -228,7 +228,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-4 bg-white">
+        <div className="border-t border-gray-200 p-4 bg-white dark:bg-gray-800">
           <button
             onClick={() => {
               signOut();

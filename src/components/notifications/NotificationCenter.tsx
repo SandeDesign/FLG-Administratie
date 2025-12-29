@@ -95,7 +95,7 @@ export const NotificationCenter: React.FC = () => {
       case 'medium':
         return <Info className="h-5 w-5 text-primary-500" />;
       default:
-        return <Info className="h-5 w-5 text-gray-500" />;
+        return <Info className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -189,8 +189,8 @@ export const NotificationCenter: React.FC = () => {
             </div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-12">
-              <Bell className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">
+              <Bell className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-4" />
+              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
                 {filter === 'unread' ? 'Geen ongelezen meldingen' : 'Geen meldingen'}
               </p>
             </div>
@@ -217,7 +217,7 @@ export const NotificationCenter: React.FC = () => {
                             <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 mb-2">
                           {notification.message}
                         </p>
                         <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-500">

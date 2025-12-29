@@ -76,7 +76,7 @@ const TaxReturns: React.FC = () => {
       case 'validated':
         return <CheckCircle className="h-5 w-5 text-primary-500" />;
       case 'draft':
-        return <FileText className="h-5 w-5 text-gray-500" />;
+        return <FileText className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
       case 'corrected':
         return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       default:

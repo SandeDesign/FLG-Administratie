@@ -206,8 +206,8 @@ export const BottomNavSettings: React.FC = () => {
     <Card>
       <div className="space-y-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Mobiele Bottom Navigatie</h3>
-          <p className="text-sm text-gray-600 mt-1">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mobiele Bottom Navigatie</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 mt-1">
             Kies 3 iconen voor de mobiele bottom navigatie. Dashboard en Menu zijn altijd zichtbaar.
           </p>
         </div>
@@ -219,16 +219,16 @@ export const BottomNavSettings: React.FC = () => {
         ) : (
           <>
             {/* Preview */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm font-medium text-gray-700 mb-3">Preview:</p>
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Preview:</p>
               <div className="flex items-center justify-around gap-2">
                 {/* Dashboard - altijd fixed */}
                 <div className="text-center">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white mb-1">
                     <Home size={20} />
                   </div>
-                  <span className="text-xs text-gray-600 font-semibold">Dashboard</span>
-                  <span className="text-xs text-gray-400 block">(fixed)</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 font-semibold">Dashboard</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 block">(fixed)</span>
                 </div>
 
                 {/* 3 custom iconen */}
@@ -240,18 +240,18 @@ export const BottomNavSettings: React.FC = () => {
                       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${iconConfig?.gradient} flex items-center justify-center text-white mb-1`}>
                         {Icon && <Icon size={20} />}
                       </div>
-                      <span className="text-xs text-gray-600">{iconConfig?.label}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">{iconConfig?.label}</span>
                     </div>
                   );
                 })}
 
                 {/* Menu - altijd fixed */}
                 <div className="text-center">
-                  <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center text-gray-600 mb-1">
+                  <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center text-gray-600 dark:text-gray-400 dark:text-gray-500 mb-1">
                     <MoreVertical size={20} />
                   </div>
-                  <span className="text-xs text-gray-600 font-semibold">Menu</span>
-                  <span className="text-xs text-gray-400 block">(fixed)</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 font-semibold">Menu</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 block">(fixed)</span>
                 </div>
               </div>
             </div>
@@ -260,7 +260,7 @@ export const BottomNavSettings: React.FC = () => {
             <div className="space-y-4">
               {[0, 1, 2].map((index) => (
                 <div key={index}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Icon {index + 1}
                   </label>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
@@ -282,7 +282,7 @@ export const BottomNavSettings: React.FC = () => {
                           <div className={`w-full aspect-square rounded-lg bg-gradient-to-br ${iconConfig.gradient} flex items-center justify-center text-white mb-2`}>
                             <Icon size={20} />
                           </div>
-                          <p className="text-xs text-center font-medium text-gray-700">
+                          <p className="text-xs text-center font-medium text-gray-700 dark:text-gray-300">
                             {iconConfig.label}
                           </p>
                         </button>

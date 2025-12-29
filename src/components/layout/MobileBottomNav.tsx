@@ -238,7 +238,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
                 strokeWidth={2.2}
               />
             </div>
-            <span className="text-xs font-semibold mt-1.5 text-gray-600 dark:text-gray-400 scale-95 opacity-75 group-hover:opacity-100 transition-all duration-300">
+            <span className="text-xs font-semibold mt-1.5 text-gray-600 dark:text-gray-400 dark:text-gray-500 scale-95 opacity-75 group-hover:opacity-100 transition-all duration-300">
               Menu
             </span>
           </button>

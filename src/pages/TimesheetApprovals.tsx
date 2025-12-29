@@ -210,24 +210,24 @@ export default function TimesheetApprovals() {
     <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Uren goedkeuren</h1>
-        <p className="text-sm text-gray-600 mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Uren goedkeuren</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
           {pendingCount} aanvraag{pendingCount !== 1 ? 'en' : ''} wachtend op goedkeuring
         </p>
       </div>
 
       {/* Minimale Stats Cards - Veel kleiner */}
       <div className="grid grid-cols-3 gap-2">
-        <Card className="p-3 bg-white">
-          <p className="text-xs font-medium text-gray-600">Wachten</p>
+        <Card className="p-3 bg-white dark:bg-gray-800">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Wachten</p>
           <p className="text-xl font-bold text-orange-600 mt-1">{pendingCount}</p>
         </Card>
-        <Card className="p-3 bg-white">
-          <p className="text-xs font-medium text-gray-600">Medewerkers</p>
+        <Card className="p-3 bg-white dark:bg-gray-800">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Medewerkers</p>
           <p className="text-xl font-bold text-primary-600 mt-1">{employeesWithPending}</p>
         </Card>
-        <Card className="p-3 bg-white">
-          <p className="text-xs font-medium text-gray-600">Klaar</p>
+        <Card className="p-3 bg-white dark:bg-gray-800">
+          <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Klaar</p>
           <p className="text-xl font-bold text-green-600 mt-1">{approvedCount}</p>
         </Card>
       </div>
@@ -268,7 +268,7 @@ export default function TimesheetApprovals() {
                         <User className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
                           {summary.firstName} {summary.lastName}
                         </p>
                         {/* Info sous le nom - TOUJOURS visible */}
@@ -291,7 +291,7 @@ export default function TimesheetApprovals() {
                               </>
                             ) : (
                               <>
-                                <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-semibold whitespace-nowrap">
+                                <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:text-gray-300 font-semibold whitespace-nowrap">
                                   {summary.allTimesheets.length} weken
                                 </span>
                                 <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold whitespace-nowrap flex items-center gap-1">
@@ -350,17 +350,17 @@ export default function TimesheetApprovals() {
                             setSelectedTimesheet(timesheet);
                             setShowDetailsModal(true);
                           }}
-                          className="w-full p-4 bg-white border-2 border-orange-200 rounded-lg hover:shadow-md active:shadow-sm transition-all text-left"
+                          className="w-full p-4 bg-white dark:bg-gray-800 border-2 border-orange-200 rounded-lg hover:shadow-md active:shadow-sm transition-all text-left"
                         >
                           <div className="space-y-3">
                             {/* Week Header */}
                             <div className="flex items-start justify-between gap-3">
                               <div>
-                                <p className="font-semibold text-gray-900 text-sm sm:text-base">
+                                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base">
                                   Week {timesheet.weekNumber}, {timesheet.year}
                                 </p>
                                 {timesheet.submittedAt && (
-                                  <p className="text-xs text-gray-500 mt-1">
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     Ingediend: {
                                       typeof timesheet.submittedAt === 'string'
                                         ? new Date(timesheet.submittedAt).toLocaleDateString('nl-NL')
@@ -381,12 +381,12 @@ export default function TimesheetApprovals() {
                             {/* Hours Info */}
                             <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 space-y-2">
                               <div className="flex items-baseline justify-between">
-                                <span className="text-xs text-gray-600 font-medium">Uren geregistreerd</span>
+                                <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Uren geregistreerd</span>
                                 <span className={`text-lg sm:text-xl font-bold ${isUnder ? 'text-red-600' : 'text-green-600'}`}>
                                   {timesheet.totalRegularHours}u
                                 </span>
                               </div>
-                              <div className="flex items-baseline justify-between text-xs text-gray-600">
+                              <div className="flex items-baseline justify-between text-xs text-gray-600 dark:text-gray-400">
                                 <span>Contract: {summary.contractHoursPerWeek}u/week</span>
                                 <span className="font-semibold">{hoursPercentage.toFixed(0)}%</span>
                               </div>
@@ -409,17 +409,17 @@ export default function TimesheetApprovals() {
 
                             {/* Quick Stats */}
                             <div className="grid grid-cols-3 gap-2 text-center">
-                              <div className="p-2 bg-gray-50 rounded">
-                                <p className="text-xs text-gray-600">Werkdagen</p>
-                                <p className="font-bold text-gray-900 text-sm">{workDays}</p>
+                              <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                <p className="text-xs text-gray-600 dark:text-gray-400">Werkdagen</p>
+                                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{workDays}</p>
                               </div>
-                              <div className="p-2 bg-gray-50 rounded">
-                                <p className="text-xs text-gray-600">Gem./dag</p>
-                                <p className="font-bold text-gray-900 text-sm">{avgPerDay}u</p>
+                              <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                <p className="text-xs text-gray-600 dark:text-gray-400">Gem./dag</p>
+                                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{avgPerDay}u</p>
                               </div>
-                              <div className="p-2 bg-gray-50 rounded">
-                                <p className="text-xs text-gray-600">Kilometer</p>
-                                <p className="font-bold text-gray-900 text-sm">{timesheet.totalTravelKilometers}</p>
+                              <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                <p className="text-xs text-gray-600 dark:text-gray-400">Kilometer</p>
+                                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{timesheet.totalTravelKilometers}</p>
                               </div>
                             </div>
 
@@ -461,28 +461,28 @@ export default function TimesheetApprovals() {
                     <User className="h-6 w-6 text-primary-600" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg text-gray-900">{emp.firstName} {emp.lastName}</h3>
-                    <p className="text-sm text-gray-600">Contract: {emp.contractHoursPerWeek}u/week</p>
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{emp.firstName} {emp.lastName}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Contract: {emp.contractHoursPerWeek}u/week</p>
                   </div>
                 </div>
               </div>
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-3">
-                <Card className="p-3 bg-white">
-                  <p className="text-xs text-gray-600">Totaal weken</p>
+                <Card className="p-3 bg-white dark:bg-gray-800">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Totaal weken</p>
                   <p className="text-2xl font-bold text-primary-600">{emp.allTimesheets.length}</p>
                 </Card>
-                <Card className="p-3 bg-white">
-                  <p className="text-xs text-gray-600">Totaal uren</p>
+                <Card className="p-3 bg-white dark:bg-gray-800">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Totaal uren</p>
                   <p className="text-2xl font-bold text-green-600">{emp.totalAllHours || 0}u</p>
                 </Card>
-                <Card className="p-3 bg-white">
-                  <p className="text-xs text-gray-600">Wachten</p>
+                <Card className="p-3 bg-white dark:bg-gray-800">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Wachten</p>
                   <p className="text-2xl font-bold text-orange-600">{emp.pendingTimesheets.length}</p>
                 </Card>
-                <Card className="p-3 bg-white">
-                  <p className="text-xs text-gray-600">Gemiddeld/week</p>
+                <Card className="p-3 bg-white dark:bg-gray-800">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Gemiddeld/week</p>
                   <p className="text-2xl font-bold text-indigo-600">
                     {emp.allTimesheets.length > 0 
                       ? (emp.totalAllHours! / emp.allTimesheets.length).toFixed(1)
@@ -496,7 +496,7 @@ export default function TimesheetApprovals() {
                 <h4 className="font-semibold text-sm mb-2">Alle Ingevoerde Weken</h4>
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {emp.allTimesheets.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">Geen weken ingevoerd</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">Geen weken ingevoerd</p>
                   ) : (
                     emp.allTimesheets.map((timesheet) => {
                       const percentage = (timesheet.totalRegularHours / emp.contractHoursPerWeek) * 100;
@@ -533,7 +533,7 @@ export default function TimesheetApprovals() {
                               style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
                           </div>
-                          <div className="text-xs text-gray-600 mt-1 flex justify-between">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex justify-between">
                             <span>{percentage.toFixed(0)}% van contract ({emp.contractHoursPerWeek}u)</span>
                             <span>{timesheet.totalTravelKilometers}km</span>
                           </div>
@@ -575,22 +575,22 @@ export default function TimesheetApprovals() {
             {/* Summary Stats */}
             <div className="grid grid-cols-2 gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg">
               <div className="text-center">
-                <p className="text-xs text-gray-600 mb-1">Totaal uren</p>
-                <p className="text-2xl font-bold text-gray-900">{selectedTimesheet.totalRegularHours}u</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal uren</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{selectedTimesheet.totalRegularHours}u</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-gray-600 mb-1">Reiskilometers</p>
-                <p className="text-2xl font-bold text-gray-900">{selectedTimesheet.totalTravelKilometers}km</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Reiskilometers</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{selectedTimesheet.totalTravelKilometers}km</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-gray-600 mb-1">Werkdagen</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Werkdagen</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {selectedTimesheet.entries.filter(e => e.regularHours > 0).length}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-gray-600 mb-1">Gemiddeld/dag</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Gemiddeld/dag</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {(() => {
                     const workDays = selectedTimesheet.entries.filter(e => e.regularHours > 0).length;
                     return workDays > 0 ? (selectedTimesheet.totalRegularHours / workDays).toFixed(1) : '0';
@@ -634,9 +634,9 @@ export default function TimesheetApprovals() {
               <h4 className="font-semibold text-sm mb-3">Dagelijkse details</h4>
               <div className="space-y-2">
                 {selectedTimesheet.entries.map((entry, idx) => (
-                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="flex justify-between items-baseline mb-2">
-                      <span className="font-medium text-sm text-gray-900">
+                      <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
                         {
                           typeof entry.date === 'string'
                             ? new Date(entry.date).toLocaleDateString('nl-NL', { weekday: 'short', day: '2-digit', month: 'short' })
@@ -647,12 +647,12 @@ export default function TimesheetApprovals() {
                                 : 'onbekende datum'
                         }
                       </span>
-                      <span className="text-lg font-bold text-gray-900">{entry.regularHours}u</span>
+                      <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{entry.regularHours}u</span>
                     </div>
                     {entry.workActivities && entry.workActivities.length > 0 && (
-                      <div className="space-y-1 mt-2 pl-3 border-l-2 border-gray-300">
+                      <div className="space-y-1 mt-2 pl-3 border-l-2 border-gray-300 dark:border-gray-600">
                         {entry.workActivities.map((activity, actIdx) => (
-                          <div key={actIdx} className="flex justify-between text-xs text-gray-600">
+                          <div key={actIdx} className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
                             <span>{activity.description}</span>
                             <span className="font-semibold ml-2">{activity.hours}u</span>
                           </div>

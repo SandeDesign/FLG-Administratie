@@ -40,13 +40,13 @@ export const NavigationGroup: React.FC<NavigationGroupProps> = ({
       {/* Group Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full px-4 py-2.5 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200"
+        className="flex items-center justify-between w-full px-4 py-2.5 text-sm font-semibold text-gray-700 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:bg-gray-900 rounded-xl transition-all duration-200"
       >
         <span>{title}</span>
         {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-gray-400" />
+          <ChevronDown className="h-4 w-4 text-gray-400 dark:text-gray-500" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-gray-400" />
+          <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500" />
         )}
       </button>
 

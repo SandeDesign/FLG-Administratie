@@ -181,7 +181,7 @@ export default function Payslips() {
   if (!selectedCompany) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">Loonstroken</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
         <EmptyState
           icon={Building2}
           title="Geen bedrijf geselecteerd"
@@ -196,7 +196,7 @@ export default function Payslips() {
   if (userRole === 'admin' && !selectedEmployeeId && companyEmployees.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">Loonstroken</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
         <EmptyState
           icon={FileText}
           title="Geen werknemers gevonden"
@@ -210,8 +210,8 @@ export default function Payslips() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Loonstroken</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             {userRole === 'admin' ? 'Bekijk en beheer loonstroken' : 'Bekijk en download uw loonstroken'}
           </p>
         </div>
@@ -220,7 +220,7 @@ export default function Payslips() {
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white shadow-sm"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 shadow-sm"
             >
               <option value="">Selecteer werknemer</option>
               {companyEmployees.map(emp => (
@@ -235,7 +235,7 @@ export default function Payslips() {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white shadow-sm"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 shadow-sm"
             >
               {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -272,10 +272,10 @@ export default function Payslips() {
                       <FileText className="h-6 w-6 text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         {getMonthName(payslip.periodStartDate)}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         {payslip.periodStartDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })} - {payslip.periodEndDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
                       </p>
                     </div>
@@ -284,14 +284,14 @@ export default function Payslips() {
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Gegenereerd:</span>
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-gray-500 dark:text-gray-400">Gegenereerd:</span>
+                    <span className="text-gray-900 dark:text-gray-100 font-medium">
                       {payslip.generatedAt.toLocaleDateString('nl-NL')}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Uitbetaling:</span>
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-gray-500 dark:text-gray-400">Uitbetaling:</span>
+                    <span className="text-gray-900 dark:text-gray-100 font-medium">
                       {payslip.paymentDate.toLocaleDateString('nl-NL')}
                     </span>
                   </div>
