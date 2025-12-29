@@ -194,7 +194,7 @@ const EmployerStatistics: React.FC = () => {
   if (!selectedCompany) {
     return (
       <div className="p-6">
-        <p className="text-gray-500 dark:text-gray-400">Selecteer een employer bedrijf om statistieken te bekijken.</p>
+        <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Selecteer een employer bedrijf om statistieken te bekijken.</p>
       </div>
     );
   }
@@ -202,7 +202,7 @@ const EmployerStatistics: React.FC = () => {
   if (selectedCompany.companyType !== 'employer') {
     return (
       <div className="p-6">
-        <p className="text-gray-500 dark:text-gray-400">Deze pagina is alleen beschikbaar voor employer bedrijven.</p>
+        <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Deze pagina is alleen beschikbaar voor employer bedrijven.</p>
       </div>
     );
   }
@@ -222,7 +222,7 @@ const EmployerStatistics: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Employer Statistieken</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Overzicht van {selectedCompany.name}</p>
+        <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>
 
       {/* Key Metrics */}
@@ -230,9 +230,9 @@ const EmployerStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Werknemers</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Werknemers</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{stats.activeEmployees}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">van {stats.totalEmployees} totaal</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">van {stats.totalEmployees} totaal</p>
             </div>
             <Users className="h-8 w-8 text-blue-600" />
           </div>
@@ -241,11 +241,11 @@ const EmployerStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totaal Uren</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Totaal Uren</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 {stats.totalHours.toLocaleString('nl-NL')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                 {stats.totalOvertime > 0 && `+${stats.totalOvertime.toFixed(0)} overuren`}
               </p>
             </div>
@@ -256,7 +256,7 @@ const EmployerStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Loonkosten</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Loonkosten</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 €{stats.totalGrossPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
               </p>
@@ -268,9 +268,9 @@ const EmployerStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ziekteverzuim</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Ziekteverzuim</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{stats.totalSickDays}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">dagen totaal</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">dagen totaal</p>
             </div>
             <HeartPulse className="h-8 w-8 text-red-600" />
           </div>
@@ -281,7 +281,7 @@ const EmployerStatistics: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totale Omzet</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Totale Omzet</p>
             <p className="text-2xl font-bold text-green-600 mt-1">
               €{stats.totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
@@ -290,7 +290,7 @@ const EmployerStatistics: React.FC = () => {
 
         <Card>
           <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totale Kosten</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Totale Kosten</p>
             <p className="text-2xl font-bold text-red-600 mt-1">
               €{stats.totalCosts.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
@@ -299,7 +299,7 @@ const EmployerStatistics: React.FC = () => {
 
         <Card>
           <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Winst</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Winst</p>
             <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               €{profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
@@ -346,11 +346,11 @@ const EmployerStatistics: React.FC = () => {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Verlof & Verzuim Overzicht</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Verlofaanvragen</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Verlofaanvragen</p>
             <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{stats.totalLeaveRequests}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ziektedagen</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Ziektedagen</p>
             <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{stats.totalSickDays}</p>
           </div>
         </div>

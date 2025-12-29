@@ -39,7 +39,7 @@ export const MobileNavigationGroup: React.FC<MobileNavigationGroupProps> = ({
     <div className="space-y-1">
       <button
         onClick={toggleOpen}
-        className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-700 dark:text-gray-300 transition-colors"
+        className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider hover:text-gray-700 dark:text-gray-300 transition-colors"
       >
         <span>{title}</span>
         {isOpen ? (
@@ -59,7 +59,7 @@ export const MobileNavigationGroup: React.FC<MobileNavigationGroupProps> = ({
                 `flex items-center px-3 py-2 pl-6 text-sm font-medium rounded-lg transition-colors ${
                   isActive
                     ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    : 'text-gray-600 dark:text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:bg-gray-900'
                 }`
               }
             >

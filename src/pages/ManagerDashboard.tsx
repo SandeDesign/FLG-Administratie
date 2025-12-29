@@ -138,7 +138,7 @@ const ManagerDashboard: React.FC = () => {
   useEffect(() => { loadData(); }, [loadData]);
 
   if (!selectedCompany) {
-    return <div className="text-center py-12"><p className="text-gray-600 dark:text-gray-400">Selecteer een bedrijf</p></div>;
+    return <div className="text-center py-12"><p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Selecteer een bedrijf</p></div>;
   }
 
   if (loading) {
@@ -288,11 +288,11 @@ const ManagerDashboard: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Geproduceerd:</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Geproduceerd:</span>
                     <span className="font-medium">{week.totalProduced || 0} stuks</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Waarde:</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Waarde:</span>
                     <span className="font-medium text-emerald-600">€{(week.totalValue || 0).toLocaleString()}</span>
                   </div>
                 </div>
@@ -314,7 +314,7 @@ const ManagerDashboard: React.FC = () => {
               Alles bekijken →
             </button>
           </div>
-          <Card className="divide-y divide-gray-100">
+          <Card className="divide-y divide-gray-100 dark:divide-gray-700">
             {incomingInvoices.map((invoice) => (
               <div key={invoice.id} className="p-4 hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -323,7 +323,7 @@ const ManagerDashboard: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 dark:text-gray-100">{invoice.supplierName || 'Onbekend'}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{invoice.invoiceNumber}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{invoice.invoiceNumber}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -372,7 +372,7 @@ const ManagerDashboard: React.FC = () => {
                     <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
                       {member.personalInfo?.firstName} {member.personalInfo?.lastName}
                     </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{member.status === 'active' ? '✓ Actief' : 'Inactief'}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{member.status === 'active' ? '✓ Actief' : 'Inactief'}</p>
                   </div>
                 </div>
               </Card>
@@ -384,9 +384,9 @@ const ManagerDashboard: React.FC = () => {
       {/* Empty State */}
       {!loading && productionWeeks.length === 0 && incomingInvoices.length === 0 && teamMembers.length === 0 && (
         <Card className="p-8 text-center">
-          <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <FileText className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Nog geen data</h3>
-          <p className="text-gray-500 dark:text-gray-400">Begin met het uploaden van facturen of het registreren van productie.</p>
+          <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Begin met het uploaden van facturen of het registreren van productie.</p>
         </Card>
       )}
     </div>

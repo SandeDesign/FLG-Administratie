@@ -573,11 +573,11 @@ const OutgoingInvoices: React.FC = () => {
 
   const getStatusColor = (status: OutgoingInvoice['status']) => {
     const colors = {
-      draft: 'bg-gray-100 text-gray-800 border-gray-200',
+      draft: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700',
       sent: 'bg-primary-50 text-primary-700 border-primary-200',
       paid: 'bg-green-50 text-green-700 border-green-200',
       overdue: 'bg-red-50 text-red-700 border-red-200',
-      cancelled: 'bg-gray-100 text-gray-800 border-gray-200'
+      cancelled: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700'
     };
     return colors[status] || colors.draft;
   };
@@ -648,13 +648,13 @@ const OutgoingInvoices: React.FC = () => {
             className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
             title="Terug"
           >
-            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
           </button>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
               {editingInvoice ? 'Factuur bewerken' : 'Nieuwe factuur'}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">{invoiceNumber}</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{invoiceNumber}</p>
           </div>
         </div>
 
@@ -674,17 +674,17 @@ const OutgoingInvoices: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsRelationsOpen(!isRelationsOpen)}
-                  className="w-full flex items-center justify-between p-3 border-2 border-gray-200 rounded-lg bg-white dark:bg-gray-800 text-sm hover:border-gray-300 dark:border-gray-600 transition-colors"
+                  className="w-full flex items-center justify-between p-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm hover:border-gray-300 dark:border-gray-600 transition-colors"
                 >
-                  <span className={formData.clientName ? 'text-gray-900 font-medium' : 'text-gray-500'}>
+                  <span className={formData.clientName ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-500 dark:text-gray-400 dark:text-gray-500'}>
                     {formData.clientName || 'Kies een klant...'}
                   </span>
-                  <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isRelationsOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${isRelationsOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isRelationsOpen && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
                     {relations.length === 0 ? (
-                      <div className="p-4 text-xs text-gray-500 dark:text-gray-400 text-center">Geen relaties beschikbaar</div>
+                      <div className="p-4 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center">Geen relaties beschikbaar</div>
                     ) : (
                       relations.map(rel => (
                         <button
@@ -694,7 +694,7 @@ const OutgoingInvoices: React.FC = () => {
                           className="w-full text-left px-4 py-3 hover:bg-primary-50 border-b border-gray-100 last:border-b-0 transition-colors"
                         >
                           <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{rel.name}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{rel.email}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{rel.email}</div>
                         </button>
                       ))
                     )}
@@ -788,7 +788,7 @@ const OutgoingInvoices: React.FC = () => {
                     className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                       vatRate === rate
                         ? 'bg-primary-600 text-white border-2 border-primary-600'
-                        : 'bg-gray-100 text-gray-700 border-2 border-gray-200 hover:border-primary-300'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 hover:border-primary-300'
                     }`}
                   >
                     {rate}%
@@ -923,7 +923,7 @@ const OutgoingInvoices: React.FC = () => {
                             <label
                               key={week.id}
                               className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-amber-100 last:border-0 transition-colors ${
-                                isSelected ? 'bg-amber-100' : invoiced ? 'bg-gray-100' : 'hover:bg-amber-50'
+                                isSelected ? 'bg-amber-100' : invoiced ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-amber-50'
                               }`}
                             >
                               <input
@@ -934,7 +934,7 @@ const OutgoingInvoices: React.FC = () => {
                               />
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-xs font-medium ${invoiced ? 'text-gray-500' : 'text-amber-900'}`}>
+                                  <span className={`text-xs font-medium ${invoiced ? 'text-gray-500 dark:text-gray-400 dark:text-gray-500' : 'text-amber-900'}`}>
                                     Week {week.week} ({week.year})
                                   </span>
                                   {invoiced && (
@@ -943,7 +943,7 @@ const OutgoingInvoices: React.FC = () => {
                                     </span>
                                   )}
                                 </div>
-                                <span className={`text-xs ${invoiced ? 'text-gray-400' : 'text-amber-600'}`}>
+                                <span className={`text-xs ${invoiced ? 'text-gray-400 dark:text-gray-500' : 'text-amber-600'}`}>
                                   {week.entries.length} entries - {week.totalHours}u
                                 </span>
                               </div>
@@ -1013,7 +1013,7 @@ const OutgoingInvoices: React.FC = () => {
 
             <div className="space-y-3">
               {items.map((item, i) => (
-                <div key={i} className="bg-gray-50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
+                <div key={i} className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Titel</label>
                     <input
@@ -1060,7 +1060,7 @@ const OutgoingInvoices: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrag</label>
-                      <div className="w-full px-2 py-2 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg text-xs font-semibold text-right text-gray-900 dark:text-gray-100">
+                      <div className="w-full px-2 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-right text-gray-900 dark:text-gray-100">
                         €{item.amount.toFixed(2)}
                       </div>
                     </div>
@@ -1083,11 +1083,11 @@ const OutgoingInvoices: React.FC = () => {
           <Card className="p-5 sm:p-6 bg-gradient-to-br from-primary-50 to-indigo-50 border-primary-200">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Subtotaal:</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Subtotaal:</span>
                 <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">€{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">BTW ({vatRate}%):</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">BTW ({vatRate}%):</span>
                 <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">€{vatAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t border-primary-200">
@@ -1137,7 +1137,7 @@ const OutgoingInvoices: React.FC = () => {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Facturen</h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
             {filteredInvoices.length} stuks
           </p>
         </div>
@@ -1157,9 +1157,9 @@ const OutgoingInvoices: React.FC = () => {
       </div>
 
       {showFilters && (
-        <div className="flex flex-col sm:flex-row gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="relative flex-1">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               placeholder="Zoeken..."
@@ -1170,7 +1170,7 @@ const OutgoingInvoices: React.FC = () => {
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -1179,7 +1179,7 @@ const OutgoingInvoices: React.FC = () => {
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="px-2 py-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-primary-500 bg-white dark:bg-gray-800"
+            className="px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded focus:outline-none focus:border-primary-500 bg-white dark:bg-gray-800"
           >
             <option value="all">Alle</option>
             <option value="draft">Concept</option>
@@ -1192,8 +1192,8 @@ const OutgoingInvoices: React.FC = () => {
 
       {filteredInvoices.length === 0 ? (
         <div className="p-6 text-center border border-gray-200 dark:border-gray-700 rounded-lg">
-          <Send className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <Send className="h-8 w-8 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
             {searchTerm ? 'Geen resultaten.' : 'Maak uw eerste factuur aan.'}
           </p>
           {!searchTerm && (
@@ -1205,7 +1205,7 @@ const OutgoingInvoices: React.FC = () => {
       ) : (
         <>
           {/* Compact Table Header */}
-          <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 bg-gray-100 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 sticky top-0 z-10">
+          <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 sticky top-0 z-10">
             <div className="col-span-2">Nummer</div>
             <div className="col-span-4">Klant</div>
             <div className="col-span-2">Bedrag</div>
@@ -1227,14 +1227,14 @@ const OutgoingInvoices: React.FC = () => {
                     <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</div>
                     <div className="col-span-4 text-xs text-gray-700 dark:text-gray-300">{invoice.clientName}</div>
                     <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">€{invoice.totalAmount.toFixed(2)}</div>
-                    <div className="col-span-2 text-xs text-gray-600 dark:text-gray-400">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div>
+                    <div className="col-span-2 text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div>
                     <div className="col-span-1">
                       <span className={`inline-flex items-center gap-0.5 px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(invoice.status)}`}>
                         <StatusIcon className="h-3 w-3" />
                       </span>
                     </div>
                     <div className="col-span-1 text-right">
-                      <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
                   </div>
 
@@ -1248,30 +1248,30 @@ const OutgoingInvoices: React.FC = () => {
                         invoice.status === 'paid' ? 'bg-green-100' :
                         invoice.status === 'sent' ? 'bg-primary-100' :
                         invoice.status === 'overdue' ? 'bg-red-100' :
-                        'bg-gray-100'
+                        'bg-gray-100 dark:bg-gray-800'
                       }`}>
                         <StatusIcon className={`h-4 w-4 ${
                           invoice.status === 'paid' ? 'text-green-600' :
                           invoice.status === 'sent' ? 'text-primary-600' :
                           invoice.status === 'overdue' ? 'text-red-600' :
-                          'text-gray-600'
+                          'text-gray-600 dark:text-gray-400 dark:text-gray-500'
                         }`} />
                       </div>
                       <div className="flex-1 text-left min-w-0">
                         <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">{invoice.clientName}</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{invoice.clientName}</div>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">€{invoice.totalAmount.toFixed(2)}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{getStatusText(invoice.status)}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{getStatusText(invoice.status)}</div>
                       </div>
-                      <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                     </button>
                   </div>
 
                   {/* Expanded Details */}
                   {isExpanded && (
-                    <div className="bg-gray-50 border-t border-gray-200 dark:border-gray-700 p-3 space-y-3">
+                    <div className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3 space-y-3">
                       {invoice.items.length > 0 && (
                         <div className="bg-white dark:bg-gray-800 rounded p-3 space-y-1 text-xs">
                           <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Regels:</p>
@@ -1279,15 +1279,15 @@ const OutgoingInvoices: React.FC = () => {
                             <div key={i} className="text-gray-700 dark:text-gray-300">
                               <div className="font-medium">{item.title || 'Item'}</div>
                               {item.description && (
-                                <div className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono text-xs mt-0.5">{item.description.substring(0, 80)}...</div>
+                                <div className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 whitespace-pre-wrap font-mono text-xs mt-0.5">{item.description.substring(0, 80)}...</div>
                               )}
-                              <div className="text-gray-600 dark:text-gray-400">{item.quantity}x €{item.rate.toFixed(2)} = €{item.amount.toFixed(2)}</div>
+                              <div className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{item.quantity}x €{item.rate.toFixed(2)} = €{item.amount.toFixed(2)}</div>
                             </div>
                           ))}
                           {invoice.items.length > 3 && (
-                            <p className="text-gray-500 dark:text-gray-400 italic">+{invoice.items.length - 3} meer</p>
+                            <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 italic">+{invoice.items.length - 3} meer</p>
                           )}
-                          <div className="border-t border-gray-200 pt-1 mt-1 font-semibold text-gray-900 dark:text-gray-100 flex justify-between">
+                          <div className="border-t border-gray-200 dark:border-gray-700 pt-1 mt-1 font-semibold text-gray-900 dark:text-gray-100 flex justify-between">
                             <span>Totaal:</span>
                             <span>€{invoice.totalAmount.toFixed(2)}</span>
                           </div>
@@ -1361,11 +1361,11 @@ const OutgoingInvoices: React.FC = () => {
           {/* Compact Summary Footer */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs">
             <div>
-              <p className="text-gray-600 dark:text-gray-400 font-medium">Totaal</p>
+              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">Totaal</p>
               <p className="font-bold text-gray-900 dark:text-gray-100">€{totalAmount.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-gray-600 dark:text-gray-400 font-medium">Concept</p>
+              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-medium">Concept</p>
               <p className="font-bold text-gray-900 dark:text-gray-100">{draftCount}</p>
             </div>
             <div>

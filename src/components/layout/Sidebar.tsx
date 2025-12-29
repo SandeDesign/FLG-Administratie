@@ -117,7 +117,7 @@ const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean }> = ({ item,
     {({ isActive }) => (
       <>
         <item.icon className={`h-5 w-5 flex-shrink-0 ${
-          isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+          isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
         } ${collapsed ? '' : 'mr-3'}`} />
         {!collapsed && (
           <>
@@ -162,7 +162,7 @@ const SectionHeader: React.FC<{
       <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide flex-1 text-left">
         {title}
       </span>
-      <ChevronRight className={`h-3.5 w-3.5 text-gray-400 dark:text-gray-500 transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}`} />
+      <ChevronRight className={`h-3.5 w-3.5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform duration-150 ${isExpanded ? 'rotate-90' : ''}`} />
     </button>
   );
 };
@@ -335,7 +335,7 @@ const Sidebar: React.FC = () => {
           onClick={handleToggleCollapsed}
           className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm z-10"
         >
-          <ChevronLeft className={`h-3 w-3 text-gray-500 dark:text-gray-400 transition-transform duration-150 ${collapsed ? 'rotate-180' : ''}`} />
+          <ChevronLeft className={`h-3 w-3 text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform duration-150 ${collapsed ? 'rotate-180' : ''}`} />
         </button>
       </div>
 

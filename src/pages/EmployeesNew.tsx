@@ -134,13 +134,13 @@ const EmployeesNew: React.FC = () => {
       case 'active':
         return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
       case 'inactive':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
       case 'on_leave':
         return 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300';
       case 'sick':
         return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
 
@@ -164,7 +164,7 @@ const EmployeesNew: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Werknemers</h1>
-          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1 md:mt-2">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 md:mt-2">
             Beheer je werknemers en hun gegevens
           </p>
         </div>
@@ -182,11 +182,11 @@ const EmployeesNew: React.FC = () => {
       {companies.length === 0 ? (
         <Card className="p-6 md:p-8">
           <div className="text-center">
-            <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <Building2 className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               Geen bedrijven gevonden
             </h3>
-            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">
               Je moet eerst een bedrijf aanmaken voordat je werknemers kunt toevoegen.
             </p>
             <Button onClick={() => window.location.href = '/companies'}>
@@ -217,7 +217,7 @@ const EmployeesNew: React.FC = () => {
                     <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white truncate">
                       {employee.personalInfo.firstName} {employee.personalInfo.lastName}
                     </h3>
-                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">
+                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">
                       {employee.contractInfo.position}
                     </p>
                   </div>
@@ -229,7 +229,7 @@ const EmployeesNew: React.FC = () => {
 
               {/* Contact & Contract Info */}
               <div className="space-y-2 mb-4 text-xs md:text-sm flex-1">
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 truncate">
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">
                   <Mail className="h-4 w-4 flex-shrink-0" />
                   <span className="truncate" title={employee.personalInfo.contactInfo.email}>
                     {employee.personalInfo.contactInfo.email}
@@ -237,17 +237,17 @@ const EmployeesNew: React.FC = () => {
                 </div>
                 
                 {employee.personalInfo.contactInfo.phone && (
-                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 truncate">
+                  <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">
                     <Phone className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate">{employee.personalInfo.contactInfo.phone}</span>
                   </div>
                 )}
                 
-                <div className="text-gray-600 dark:text-gray-400">
+                <div className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   <span className="font-medium">Contract:</span> {employee.contractInfo.type}
                 </div>
                 
-                <div className="text-gray-600 dark:text-gray-400">
+                <div className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   <span className="font-medium">Uren/week:</span> {employee.contractInfo.hoursPerWeek}
                 </div>
               </div>

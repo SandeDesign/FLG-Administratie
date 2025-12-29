@@ -72,7 +72,7 @@ const AdminExpenses: React.FC = () => {
       case 'paid':
         return 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
 
@@ -191,7 +191,7 @@ const AdminExpenses: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Declaraties Goedkeuring</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
             Beheer en keur declaraties goed van werknemers
           </p>
         </div>
@@ -205,25 +205,25 @@ const AdminExpenses: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Concept</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Concept</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {formatCurrency(totalByStatus.draft)}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Ingediend</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Ingediend</p>
           <p className="text-2xl font-bold text-yellow-600">
             {formatCurrency(totalByStatus.submitted)}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Goedgekeurd</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Goedgekeurd</p>
           <p className="text-2xl font-bold text-green-600">
             {formatCurrency(totalByStatus.approved)}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Uitbetaald</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Uitbetaald</p>
           <p className="text-2xl font-bold text-primary-600">
             {formatCurrency(totalByStatus.paid)}
           </p>
@@ -234,7 +234,7 @@ const AdminExpenses: React.FC = () => {
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -249,7 +249,7 @@ const AdminExpenses: React.FC = () => {
               </select>
             </div>
             <div className="flex items-center space-x-2">
-              <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <User className="h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
               <select
                 value={filterEmployee}
                 onChange={(e) => setFilterEmployee(e.target.value)}
@@ -277,25 +277,25 @@ const AdminExpenses: React.FC = () => {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Werknemer
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Datum
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Beschrijving
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Bedrag
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Acties
                   </th>
                 </tr>
@@ -310,7 +310,7 @@ const AdminExpenses: React.FC = () => {
                           {employee ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}` : 'Onbekend'}
                         </div>
                         {employee && (
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                             {employee.contractInfo.position}
                           </div>
                         )}
@@ -321,7 +321,7 @@ const AdminExpenses: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {formatExpenseType(expense.type)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 max-w-xs truncate">
                         {expense.description}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
@@ -365,7 +365,7 @@ const AdminExpenses: React.FC = () => {
                           <div className="text-xs text-red-600 dark:text-red-400">
                             <div>Afgewezen</div>
                             {expense.approvals[expense.approvals.length - 1].comment && (
-                              <div className="text-gray-500 dark:text-gray-400 italic mt-1">
+                              <div className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 italic mt-1">
                                 "{expense.approvals[expense.approvals.length - 1].comment}"
                               </div>
                             )}
@@ -397,7 +397,7 @@ const AdminExpenses: React.FC = () => {
         size="md"
       >
         <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
             Geef een reden op waarom deze declaratie wordt afgewezen:
           </p>
           {selectedExpense && (
@@ -406,7 +406,7 @@ const AdminExpenses: React.FC = () => {
                 <div className="font-medium text-gray-900 dark:text-white mb-2">
                   {formatExpenseType(selectedExpense.type)} - {formatCurrency(selectedExpense.amount)}
                 </div>
-                <div className="text-gray-600 dark:text-gray-400">
+                <div className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   {selectedExpense.description}
                 </div>
               </div>
@@ -420,7 +420,7 @@ const AdminExpenses: React.FC = () => {
               value={rejectComment}
               onChange={(e) => setRejectComment(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               placeholder="Bijvoorbeeld: Ontbrekende bonnen, verkeerd bedrag, niet zakelijk..."
             />
           </div>

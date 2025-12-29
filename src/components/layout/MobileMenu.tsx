@@ -114,7 +114,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
     <div className="lg:hidden fixed inset-0 z-50 bg-white dark:bg-gray-800">
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white dark:bg-gray-800">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center space-x-3">
             {selectedCompany?.logoUrl ? (
               <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="h-10 w-auto max-w-[150px] object-contain" />
@@ -127,7 +127,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors"
           >
-            <X className="h-6 w-6 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+            <X className="h-6 w-6 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
           </button>
         </div>
 
@@ -168,7 +168,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                     `flex items-center space-x-3 p-3 rounded-lg transition-all ${
                       isActive
                         ? 'bg-primary-600 text-white shadow-lg'
-                        : 'bg-white text-gray-700 hover:shadow-sm'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:shadow-sm'
                     }`
                   }
                 >
@@ -191,12 +191,12 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                       <section.icon className="h-5 w-5 text-white" />
                     </div>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{section.title}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">({section.items.length})</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">({section.items.length})</span>
                   </div>
                   {expandedCategories.includes(section.title) ? (
-                    <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   ) : (
-                    <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                   )}
                 </button>
 
@@ -212,7 +212,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                           `flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
                             isActive
                               ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                              : 'text-gray-700 hover:bg-white hover:shadow-sm'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:bg-gray-800 hover:shadow-sm'
                           }`
                         }
                       >
@@ -228,7 +228,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-4 bg-white dark:bg-gray-800">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
           <button
             onClick={() => {
               signOut();

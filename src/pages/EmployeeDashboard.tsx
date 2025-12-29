@@ -251,7 +251,7 @@ const EmployeeDashboard: React.FC = () => {
                 <TrendingUp className="h-5 w-5 text-primary-600" />
                 Uren overzicht
               </h3>
-              <span className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">Deze maand</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">Deze maand</span>
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={hoursChartData}>
@@ -280,15 +280,15 @@ const EmployeeDashboard: React.FC = () => {
             </h3>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Totale uren</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Totale uren</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalHours}u</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Reiskilometers</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Reiskilometers</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.totalKm}km</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Weken ingediend</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Weken ingediend</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{timesheets.length}</p>
               </div>
             </div>
@@ -335,13 +335,13 @@ const EmployeeDashboard: React.FC = () => {
           ].map((item, index) => {
             const Icon = item.icon;
             return (
-              <div key={index} className={`bg-gradient-to-br ${item.color} rounded-xl p-6 border border-gray-200`}>
+              <div key={index} className={`bg-gradient-to-br ${item.color} rounded-xl p-6 border border-gray-200 dark:border-gray-700`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{item.description}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{item.description}</p>
                   </div>
-                  <div className={`flex-shrink-0 p-3 rounded-lg bg-white`}>
+                  <div className={`flex-shrink-0 p-3 rounded-lg bg-white dark:bg-gray-800`}>
                     <Icon className={`h-5 w-5 ${item.iconColor}`} />
                   </div>
                 </div>

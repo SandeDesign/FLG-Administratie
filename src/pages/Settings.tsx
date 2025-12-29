@@ -392,7 +392,7 @@ const Settings: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Instellingen</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
             Beheer je account en voorkeuren
           </p>
         </div>
@@ -409,7 +409,7 @@ const Settings: React.FC = () => {
                 className={`${
                   activeTab === tab.id
                     ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:border-gray-600'
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
               >
                 <Icon className="h-5 w-5 mr-2" />
@@ -456,7 +456,7 @@ const Settings: React.FC = () => {
                   </label>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-3">
                     Upload een profielfoto (max 2MB)
                   </p>
                   {profilePhotoBase64 && profilePhotoBase64 !== photoPreview && (
@@ -490,7 +490,7 @@ const Settings: React.FC = () => {
                   <p className="font-medium text-gray-900 dark:text-gray-100">
                     Dark Mode
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     {isDarkMode ? 'Donkere modus ingeschakeld' : 'Lichte modus ingeschakeld'}
                   </p>
                 </div>
@@ -501,14 +501,14 @@ const Settings: React.FC = () => {
                   }`}
                 >
                   <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-800 shadow-lg transition-transform ${
                       isDarkMode ? 'translate-x-8' : 'translate-x-1'
                     }`}
                   >
                     {isDarkMode ? (
                       <Moon className="h-5 w-5 text-primary-600 p-0.5" />
                     ) : (
-                      <Sun className="h-5 w-5 text-gray-500 dark:text-gray-400 p-0.5" />
+                      <Sun className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 p-0.5" />
                     )}
                   </span>
                 </button>
@@ -528,7 +528,7 @@ const Settings: React.FC = () => {
                     Nieuw e-mailadres
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                     <input
                       type="email"
                       value={newEmail}
@@ -544,7 +544,7 @@ const Settings: React.FC = () => {
                     Huidig wachtwoord (ter bevestiging)
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                     <input
                       type="password"
                       value={currentPassword}
@@ -578,7 +578,7 @@ const Settings: React.FC = () => {
                     Huidig wachtwoord
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                     <input
                       type="password"
                       value={currentPassword}
@@ -594,7 +594,7 @@ const Settings: React.FC = () => {
                     Nieuw wachtwoord
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                     <input
                       type="password"
                       value={newPassword}
@@ -603,7 +603,7 @@ const Settings: React.FC = () => {
                       placeholder="••••••••"
                     />
                   </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Minimaal 6 tekens</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Minimaal 6 tekens</p>
                 </div>
 
                 <div>
@@ -611,7 +611,7 @@ const Settings: React.FC = () => {
                     Bevestig nieuw wachtwoord
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                     <input
                       type="password"
                       value={confirmPassword}
@@ -651,7 +651,7 @@ const Settings: React.FC = () => {
                 Standaard Bedrijf
               </h2>
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">
                   Kies welk bedrijf standaard wordt geselecteerd wanneer je inlogt
                 </p>
 
@@ -662,7 +662,7 @@ const Settings: React.FC = () => {
                   <select
                     value={selectedDefaultCompanyId}
                     onChange={(e) => setSelectedDefaultCompanyId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm text-gray-900 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">Geen standaard (eerste bedrijf)</option>
                     {companies.map((company) => (
@@ -693,13 +693,13 @@ const Settings: React.FC = () => {
                 Co-Admins Beheren
               </h2>
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   Voeg andere gebruikers toe die toegang hebben tot <strong>al jouw bedrijven</strong> met dezelfde rechten als jij.
                 </p>
 
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                     <input
                       type="email"
                       value={coAdminEmail}
@@ -725,15 +725,15 @@ const Settings: React.FC = () => {
                     {coAdmins.map((email) => (
                       <div
                         key={email}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 dark:border-gray-700"
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
                       >
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          <User className="h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                           <span className="text-sm text-gray-900 dark:text-gray-100">{email}</span>
                         </div>
                         <button
                           onClick={() => handleRemoveCoAdmin(email)}
-                          className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                          className="p-1 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors"
                           disabled={saving}
                           title="Verwijderen"
                         >
@@ -746,7 +746,7 @@ const Settings: React.FC = () => {
 
                 {coAdmins.length === 0 && (
                   <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       Nog geen co-admins toegevoegd
                     </p>
                   </div>
@@ -783,7 +783,7 @@ const Settings: React.FC = () => {
                     </p>
                   </div>
                 )}
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   Selecteer je favoriete pagina's om ze bovenaan het menu weer te geven voor snelle toegang.
                 </p>
 
@@ -817,24 +817,24 @@ const Settings: React.FC = () => {
                           className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
                             isFavorite
                               ? 'border-amber-400 bg-amber-50 hover:bg-amber-100'
-                              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:bg-gray-900'
                           }`}
                         >
                           <div className={`p-2 rounded-lg ${
-                            isFavorite ? 'bg-amber-100' : 'bg-gray-100'
+                            isFavorite ? 'bg-amber-100' : 'bg-gray-100 dark:bg-gray-800'
                           }`}>
                             <Icon className={`h-4 w-4 ${
-                              isFavorite ? 'text-amber-600' : 'text-gray-600'
+                              isFavorite ? 'text-amber-600' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500'
                             }`} />
                           </div>
                           <div className="flex-1">
                             <p className={`text-sm font-medium ${
-                              isFavorite ? 'text-amber-900' : 'text-gray-900'
+                              isFavorite ? 'text-amber-900' : 'text-gray-900 dark:text-gray-100'
                             }`}>
                               {item.name}
                             </p>
                             {item.section && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400">{item.section}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{item.section}</p>
                             )}
                           </div>
                           {isFavorite && (

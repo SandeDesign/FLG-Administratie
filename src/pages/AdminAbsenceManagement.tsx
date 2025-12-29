@@ -70,7 +70,7 @@ const AdminAbsenceManagement: React.FC = () => {
       case 'long_term':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
 
@@ -107,7 +107,7 @@ const AdminAbsenceManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Verzuim Beheren
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
             Overzicht van actief verzuim en re-integratie
           </p>
         </div>
@@ -121,7 +121,7 @@ const AdminAbsenceManagement: React.FC = () => {
               <HeartPulse className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Actief Verzuim</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Actief Verzuim</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {activeSickLeave.length}
               </p>
@@ -134,7 +134,7 @@ const AdminAbsenceManagement: React.FC = () => {
               <AlertTriangle className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Langdurig (&gt;6 weken)</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Langdurig (&gt;6 weken)</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {longTermCases.length}
               </p>
@@ -147,7 +147,7 @@ const AdminAbsenceManagement: React.FC = () => {
               <Clock className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Poortwachter</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Poortwachter</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {poortwachterCases.length}
               </p>
@@ -160,7 +160,7 @@ const AdminAbsenceManagement: React.FC = () => {
               <User className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Werknemers</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Werknemers</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {employees.length}
               </p>
@@ -189,30 +189,30 @@ const AdminAbsenceManagement: React.FC = () => {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Werknemer
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Bedrijf
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Start Datum
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Dagen Ziek
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Arbeidsgeschiktheid
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Poortwachter
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
                 {activeSickLeave.map((sickLeave) => {
                   const daysSick = getDaysSick(sickLeave.startDate, sickLeave.endDate);
                   const isLongTerm = daysSick > 42;
@@ -221,21 +221,21 @@ const AdminAbsenceManagement: React.FC = () => {
                     <tr key={sickLeave.id} className="hover:bg-gray-50 dark:bg-gray-900 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <User className="h-5 w-5 text-gray-400 mr-2" />
+                          <User className="h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mr-2" />
                           <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {getEmployeeName(sickLeave.employeeId)}
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         {getCompanyName(sickLeave.companyId)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         {new Date(sickLeave.startDate).toLocaleDateString('nl-NL')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <span className={`text-sm font-medium ${isLongTerm ? 'text-orange-600' : 'text-gray-900'}`}>
+                          <span className={`text-sm font-medium ${isLongTerm ? 'text-orange-600' : 'text-gray-900 dark:text-gray-100'}`}>
                             {daysSick} dagen
                           </span>
                           {isLongTerm && (
@@ -243,7 +243,7 @@ const AdminAbsenceManagement: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         {sickLeave.workCapacityPercentage}%
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -258,7 +258,7 @@ const AdminAbsenceManagement: React.FC = () => {
                             Actief
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                             Niet actief
                           </span>
                         )}

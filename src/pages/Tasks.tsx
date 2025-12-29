@@ -57,7 +57,7 @@ const CATEGORY_CONFIG: Record<TaskCategory, {
   sales: { icon: Briefcase, label: 'Verkoop', color: 'bg-pink-100 text-pink-700' },
   contracts: { icon: FileText, label: 'Contracten', color: 'bg-orange-100 text-orange-700' },
   administration: { icon: Folder, label: 'Administratie', color: 'bg-teal-100 text-teal-700' },
-  other: { icon: MoreHorizontal, label: 'Overig', color: 'bg-gray-100 text-gray-700' },
+  other: { icon: MoreHorizontal, label: 'Overig', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' },
 };
 
 // Priority configuratie
@@ -66,7 +66,7 @@ const PRIORITY_CONFIG: Record<TaskPriority, {
   color: string;
   icon: React.ComponentType<{ className?: string }>;
 }> = {
-  low: { label: 'Laag', color: 'bg-gray-100 text-gray-700', icon: Circle },
+  low: { label: 'Laag', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300', icon: Circle },
   medium: { label: 'Normaal', color: 'bg-blue-100 text-blue-700', icon: Circle },
   high: { label: 'Hoog', color: 'bg-orange-100 text-orange-700', icon: AlertCircle },
   urgent: { label: 'Urgent', color: 'bg-red-100 text-red-700', icon: AlertCircle },
@@ -82,7 +82,7 @@ const STATUS_CONFIG: Record<TaskStatus, {
   in_progress: { label: 'Bezig', color: 'bg-blue-100 text-blue-700', icon: PlayCircle },
   completed: { label: 'Voltooid', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
   overdue: { label: 'Te laat', color: 'bg-red-100 text-red-700', icon: AlertCircle },
-  cancelled: { label: 'Geannuleerd', color: 'bg-gray-100 text-gray-700', icon: XCircle },
+  cancelled: { label: 'Geannuleerd', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300', icon: XCircle },
 };
 
 // Frequency labels
@@ -316,7 +316,7 @@ const Tasks: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Taken</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
             {selectedCompany?.name} - {tasks.length} taken
           </p>
         </div>
@@ -441,15 +441,15 @@ const Tasks: React.FC = () => {
                         {task.status === 'completed' ? (
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
                         ) : (
-                          <Circle className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-400" />
+                          <Circle className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                         )}
                       </button>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3
-                            className={`font-semibold text-gray-900 ${
-                              task.status === 'completed' ? 'line-through text-gray-500' : ''
+                            className={`font-semibold text-gray-900 dark:text-gray-100 ${
+                              task.status === 'completed' ? 'line-through text-gray-500 dark:text-gray-400 dark:text-gray-500' : ''
                             }`}
                           >
                             {task.title}
@@ -478,7 +478,7 @@ const Tasks: React.FC = () => {
                           </span>
 
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
-                            isOverdue(task) ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                            isOverdue(task) ? 'bg-red-100 text-red-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                           }`}>
                             <Calendar className="h-3 w-3" />
                             {formatDate(task.dueDate)}
@@ -493,16 +493,16 @@ const Tasks: React.FC = () => {
                         className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                       >
                         {isExpanded ? (
-                          <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                          <ChevronDown className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                         ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                          <ChevronRight className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                         )}
                       </button>
                       <button
                         onClick={() => openEditModal(task)}
                         className="p-1 hover:bg-gray-100 dark:bg-gray-800 rounded"
                       >
-                        <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                        <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
                       </button>
                       <button
                         onClick={() => handleDeleteTask(task.id)}
@@ -516,7 +516,7 @@ const Tasks: React.FC = () => {
                   {/* Expanded content */}
                   {isExpanded && task.description && (
                     <div className="pl-8 pt-2 border-t border-gray-100">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{task.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{task.description}</p>
                     </div>
                   )}
                 </div>
@@ -571,7 +571,7 @@ const Tasks: React.FC = () => {
             </label>
             <div className="max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3 space-y-2">
               {companyUsers.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">Geen gebruikers beschikbaar</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Geen gebruikers beschikbaar</p>
               ) : (
                 companyUsers.map((companyUser) => (
                   <label key={companyUser.uid} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:bg-gray-900 p-2 rounded">
@@ -592,7 +592,7 @@ const Tasks: React.FC = () => {
                         {companyUser.displayName || companyUser.email}
                       </span>
                       {companyUser.displayName && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 ml-2">
                           ({companyUser.email})
                         </span>
                       )}

@@ -97,7 +97,7 @@ const Companies: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bedrijven</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
             Beheer je bedrijven en vestigingen
           </p>
         </div>
@@ -134,7 +134,7 @@ const Companies: React.FC = () => {
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                         {company.name}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                         KvK: {company.kvk} | BTW: {company.taxNumber}
                       </p>
                     </div>
@@ -160,17 +160,17 @@ const Companies: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <MapPin className="h-4 w-4" />
                     <span>
                       {company.address.street}, {company.address.zipCode} {company.address.city}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <Mail className="h-4 w-4" />
                     <span>{company.contactInfo.email}</span>
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <Phone className="h-4 w-4" />
                     <span>{company.contactInfo.phone}</span>
                   </div>
@@ -192,7 +192,7 @@ const Companies: React.FC = () => {
                   </div>
 
                   {companyBranches.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 italic">
                       Nog geen vestigingen toegevoegd
                     </p>
                   ) : (
@@ -207,10 +207,10 @@ const Companies: React.FC = () => {
                               <h5 className="font-medium text-gray-900 dark:text-white">
                                 {branch.name}
                               </h5>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                                 {branch.location}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-500">
+                              <p className="text-xs text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                                 Kostenplaats: {branch.costCenter}
                               </p>
                             </div>

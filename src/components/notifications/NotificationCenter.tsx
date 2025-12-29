@@ -95,7 +95,7 @@ export const NotificationCenter: React.FC = () => {
       case 'medium':
         return <Info className="h-5 w-5 text-primary-500" />;
       default:
-        return <Info className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500" />;
+        return <Info className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -108,7 +108,7 @@ export const NotificationCenter: React.FC = () => {
       case 'medium':
         return 'border-l-4 border-primary-500';
       default:
-        return 'border-l-4 border-gray-300';
+        return 'border-l-4 border-gray-300 dark:border-gray-600';
     }
   };
 
@@ -130,7 +130,7 @@ export const NotificationCenter: React.FC = () => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="relative p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="relative p-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       >
         <Bell className="h-6 w-6" />
         {unreadCount > 0 && (
@@ -154,7 +154,7 @@ export const NotificationCenter: React.FC = () => {
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                   filter === 'all'
                     ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 Alle
@@ -164,7 +164,7 @@ export const NotificationCenter: React.FC = () => {
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                   filter === 'unread'
                     ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 Ongelezen ({unreadCount})
@@ -189,8 +189,8 @@ export const NotificationCenter: React.FC = () => {
             </div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-12">
-              <Bell className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500">
+              <Bell className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4" />
+              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 {filter === 'unread' ? 'Geen ongelezen meldingen' : 'Geen meldingen'}
               </p>
             </div>
@@ -217,10 +217,10 @@ export const NotificationCenter: React.FC = () => {
                             <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 mb-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">
                           {notification.message}
                         </p>
-                        <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-500">
+                        <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                           <span className="flex items-center">
                             <Clock className="h-3 w-3 mr-1" />
                             {notification.createdAt ? formatDate(notification.createdAt) : 'Onbekend'}
@@ -242,7 +242,7 @@ export const NotificationCenter: React.FC = () => {
                       {(notification.status === 'pending' || notification.status === 'sent') && (
                         <button
                           onClick={() => handleMarkAsRead(notification.id)}
-                          className="p-1 text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                          className="p-1 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                           title="Markeer als gelezen"
                         >
                           <Check className="h-4 w-4" />
@@ -250,7 +250,7 @@ export const NotificationCenter: React.FC = () => {
                       )}
                       <button
                         onClick={() => handleArchive(notification.id)}
-                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="p-1 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                         title="Archiveer"
                       >
                         <Archive className="h-4 w-4" />

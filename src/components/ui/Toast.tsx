@@ -42,7 +42,7 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
       case 'info':
         return 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800';
       default:
-        return 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700';
+        return 'bg-white dark:bg-gray-800 border-gray-200 dark:bg-gray-800 dark:border-gray-700';
     }
   };
 
@@ -61,13 +61,13 @@ const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
                 {toast.title}
               </p>
             )}
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
               {toast.message}
             </p>
           </div>
           <div className="ml-4 flex-shrink-0 flex">
             <button
-              className="bg-transparent rounded-md inline-flex text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
+              className="bg-transparent rounded-md inline-flex text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors"
               onClick={() => onRemove(toast.id)}
             >
               <span className="sr-only">Close</span>

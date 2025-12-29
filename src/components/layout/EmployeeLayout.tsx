@@ -65,9 +65,9 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
           className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
         >
           {mobileMenuOpen ? (
-            <X className="h-6 w-6 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
+            <X className="h-6 w-6 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
           ) : (
-            <Menu className="h-6 w-6 text-gray-600 dark:text-gray-400 dark:text-gray-500" />
+            <Menu className="h-6 w-6 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
           )}
         </button>
       </div>
@@ -75,7 +75,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
       <div className="flex h-screen md:h-auto md:min-h-screen">
         {/* Desktop Sidebar */}
         <div
-          className={`fixed md:fixed left-0 top-16 md:top-0 h-[calc(100vh-64px)] md:h-screen w-80 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-50 md:z-0 overflow-hidden shadow-lg md:shadow-none ${
+          className={`fixed md:fixed left-0 top-16 md:top-0 h-[calc(100vh-64px)] md:h-screen w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 z-50 md:z-0 overflow-hidden shadow-lg md:shadow-none ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
         >
@@ -84,7 +84,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
             <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-8 w-auto" />
             <div>
               <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Administratie</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedCompany?.name || 'Dashboard'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedCompany?.name || 'Dashboard'}</p>
             </div>
           </div>
 
@@ -101,7 +101,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
                   className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold text-base transition-all duration-200 ${
                     isActive
                       ? 'bg-primary-50 text-primary-600 border-l-4 border-primary-600 shadow-sm'
-                      : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent hover:text-gray-900'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-900 border-l-4 border-transparent hover:text-gray-900 dark:text-gray-100'
                   }`}
                 >
                   <Icon className="h-5 w-5 flex-shrink-0" />
@@ -112,7 +112,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
           </nav>
 
           {/* User Info & Logout - STICKY BOTTOM */}
-          <div className="border-t border-gray-200 p-4 space-y-3 flex-shrink-0 bg-white dark:bg-gray-800">
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-3 flex-shrink-0 bg-white dark:bg-gray-800">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0">
                 <User className="h-6 w-6 text-white" />
@@ -121,7 +121,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
                 <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
                   {getFirstName()}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{user?.email}</p>
               </div>
             </div>
             <Button
@@ -166,12 +166,12 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
                   <div className={`p-3 rounded-2xl transition-all duration-300 ${
                     isActive
                       ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg'
-                      : 'bg-gray-100/50 text-gray-600'
+                      : 'bg-gray-100 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 dark:text-gray-500'
                   }`}>
                     <Icon size={20} strokeWidth={2.2} />
                   </div>
                   <span className={`text-xs font-semibold mt-1.5 ${
-                    isActive ? 'text-gray-900' : 'text-gray-600'
+                    isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500'
                   }`}>
                     {name}
                   </span>

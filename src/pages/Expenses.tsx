@@ -65,7 +65,7 @@ const Expenses: React.FC = () => {
       case 'paid':
         return 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
 
@@ -145,7 +145,7 @@ const Expenses: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Declaraties</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
             Beheer je onkostendeclaraties
           </p>
         </div>
@@ -157,25 +157,25 @@ const Expenses: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Concept</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Concept</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {formatCurrency(totalByStatus.draft)}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Ingediend</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Ingediend</p>
           <p className="text-2xl font-bold text-yellow-600">
             {formatCurrency(totalByStatus.submitted)}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Goedgekeurd</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Goedgekeurd</p>
           <p className="text-2xl font-bold text-green-600">
             {formatCurrency(totalByStatus.approved)}
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Uitbetaald</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Uitbetaald</p>
           <p className="text-2xl font-bold text-primary-600">
             {formatCurrency(totalByStatus.paid)}
           </p>
@@ -189,7 +189,7 @@ const Expenses: React.FC = () => {
               Mijn Declaraties
             </h2>
             <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -218,22 +218,22 @@ const Expenses: React.FC = () => {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Datum
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Beschrijving
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Bedrag
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Acties
                   </th>
                 </tr>
@@ -247,7 +247,7 @@ const Expenses: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {formatExpenseType(expense.type)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       {expense.description}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
@@ -271,7 +271,7 @@ const Expenses: React.FC = () => {
                         </Button>
                       )}
                       {expense.status !== 'draft' && (
-                        <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-xs">
+                        <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 text-xs">
                           {expense.status === 'submitted' ? 'In behandeling' :
                            expense.status === 'approved' ? 'Goedgekeurd' :
                            expense.status === 'rejected' ? 'Afgewezen' :
