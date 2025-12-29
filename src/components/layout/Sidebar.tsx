@@ -146,7 +146,7 @@ const SectionHeader: React.FC<{
   if (collapsed) {
     return (
       <div className="flex justify-center py-1.5">
-        <div className="w-6 h-px bg-gray-200 dark:bg-gray-700"></div>
+        <div className="w-6 h-px bg-gray-200"></div>
       </div>
     );
   }
@@ -154,7 +154,7 @@ const SectionHeader: React.FC<{
   return (
     <button
       onClick={onToggle}
-      className="flex items-center w-full px-3 py-2 mt-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
+      className="flex items-center w-full px-3 py-2 mt-1 rounded-lg hover:bg-gray-50 transition-colors group"
     >
       <div className={`p-1.5 rounded-md ${color} mr-2`}>
         <Icon className="h-3.5 w-3.5 text-white" />
@@ -311,7 +311,7 @@ const Sidebar: React.FC = () => {
       collapsed ? 'lg:w-16' : 'lg:w-64'
     }`}>
       {/* Header - Logo */}
-      <div className="flex h-16 items-center justify-center border-b border-gray-100 dark:border-gray-700 px-3 relative">
+      <div className="flex h-16 items-center justify-center border-b border-gray-100 px-3 relative">
         {!collapsed && (
           selectedCompany?.logoUrl ? (
             <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="h-10 w-auto max-w-[200px] object-contain" />
@@ -333,7 +333,7 @@ const Sidebar: React.FC = () => {
 
         <button
           onClick={handleToggleCollapsed}
-          className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm z-10"
+          className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-sm z-10"
         >
           <ChevronLeft className={`h-3 w-3 text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform duration-150 ${collapsed ? 'rotate-180' : ''}`} />
         </button>
@@ -343,7 +343,7 @@ const Sidebar: React.FC = () => {
       <nav className="flex-1 px-2 py-4 overflow-y-auto space-y-1">
         {/* Dashboard - Solo */}
         {dashboardItem && (
-          <div className="pb-3 mb-2 border-b border-gray-100 dark:border-gray-700">
+          <div className="pb-3 mb-2 border-b border-gray-100">
             <NavItem item={dashboardItem} collapsed={collapsed} />
           </div>
         )}
@@ -404,7 +404,7 @@ const Sidebar: React.FC = () => {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-gray-100 dark:border-gray-700 p-2">
+      <div className="border-t border-gray-100 p-2">
         <button
           onClick={signOut}
           className={`flex w-full items-center px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ${

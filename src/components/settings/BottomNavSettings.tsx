@@ -207,7 +207,7 @@ export const BottomNavSettings: React.FC = () => {
       <div className="space-y-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mobiele Bottom Navigatie</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Kies 3 iconen voor de mobiele bottom navigatie. Dashboard en Menu zijn altijd zichtbaar.
           </p>
         </div>
@@ -227,8 +227,8 @@ export const BottomNavSettings: React.FC = () => {
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white mb-1">
                     <Home size={20} />
                   </div>
-                  <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-semibold">Dashboard</span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 block">(fixed)</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Dashboard</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 block">(fixed)</span>
                 </div>
 
                 {/* 3 custom iconen */}
@@ -240,18 +240,18 @@ export const BottomNavSettings: React.FC = () => {
                       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${iconConfig?.gradient} flex items-center justify-center text-white mb-1`}>
                         {Icon && <Icon size={20} />}
                       </div>
-                      <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{iconConfig?.label}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{iconConfig?.label}</span>
                     </div>
                   );
                 })}
 
                 {/* Menu - altijd fixed */}
                 <div className="text-center">
-                  <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">
+                  <div className="w-12 h-12 rounded-xl bg-gray-200 flex items-center justify-center text-gray-600 dark:text-gray-400 mb-1">
                     <MoreVertical size={20} />
                   </div>
-                  <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 font-semibold">Menu</span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 block">(fixed)</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 font-semibold">Menu</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 block">(fixed)</span>
                 </div>
               </div>
             </div>

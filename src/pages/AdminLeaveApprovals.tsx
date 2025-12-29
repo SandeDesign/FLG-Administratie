@@ -137,7 +137,7 @@ const AdminLeaveApprovals: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Verlof Goedkeuren</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{filteredRequests.length} aanvraag{filteredRequests.length !== 1 ? 'en' : ''} wachten</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{filteredRequests.length} aanvraag{filteredRequests.length !== 1 ? 'en' : ''} wachten</p>
         </div>
         <select
           value={filterCompany}
@@ -189,11 +189,11 @@ const AdminLeaveApprovals: React.FC = () => {
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-12 text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full">
-              <Calendar className="h-6 w-6 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <Calendar className="h-6 w-6 text-gray-400 dark:text-gray-500" />
             </div>
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Geen openstaande aanvragen</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">Alle verlofaanvragen zijn afgehandeld!</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Alle verlofaanvragen zijn afgehandeld!</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -211,7 +211,7 @@ const AdminLeaveApprovals: React.FC = () => {
                   onClick={() => setExpandedId(isExpanded ? null : request.id)}
                   className="w-full"
                 >
-                  <div className="p-4 sm:p-5 flex items-center gap-4 hover:bg-gray-50 dark:bg-gray-900 transition-colors">
+                  <div className="p-4 sm:p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors">
                     {/* Status Icon */}
                     <div className="p-3 bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg flex-shrink-0">
                       <Clock className="h-5 w-5 text-orange-600" />
@@ -227,9 +227,9 @@ const AdminLeaveApprovals: React.FC = () => {
                           {request.totalDays}d
                         </span>
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                         <span className="font-medium">{formatLeaveType(request.type)}</span>
-                        <span className="hidden sm:inline text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">•</span>
+                        <span className="hidden sm:inline text-gray-400 dark:text-gray-500">•</span>
                         <span>{formatDate(request.startDate)} → {formatDate(request.endDate)}</span>
                       </div>
                     </div>
@@ -247,7 +247,7 @@ const AdminLeaveApprovals: React.FC = () => {
                       <div>
                         <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Bedrijf</p>
                         <div className="flex items-center gap-2 text-sm text-gray-900 dark:text-gray-100">
-                          <Building2 className="h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                          <Building2 className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                           {getCompanyName(request.companyId)}
                         </div>
                       </div>
@@ -262,15 +262,15 @@ const AdminLeaveApprovals: React.FC = () => {
                     {/* Dates */}
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Startdatum:</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Startdatum:</span>
                         <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatDate(request.startDate)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Einddatum:</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Einddatum:</span>
                         <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatDate(request.endDate)}</span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Totaal:</span>
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Totaal:</span>
                         <span className="text-base font-bold text-orange-600">{request.totalDays} dagen</span>
                       </div>
                     </div>

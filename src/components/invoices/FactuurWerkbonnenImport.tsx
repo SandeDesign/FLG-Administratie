@@ -82,7 +82,7 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
           value={selectedWeek}
           onChange={(e) => setSelectedWeek(Number(e.target.value))}
           disabled={loading || showPreview}
-          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 dark:bg-gray-800"
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
         >
           {weekOptions.map(opt => (
             <option key={opt.week} value={opt.week}>
@@ -110,7 +110,7 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
               <h3 className="text-lg font-bold">Werkbonnen Factuurgegevens - Week {selectedWeek}</h3>
               <button
                 onClick={handleClose}
-                className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -134,7 +134,7 @@ const FactuurWerkbonnenImport: React.FC<FactuurWerkbonnenImportProps> = ({
                     ))}
                   </div>
 
-                  <div className="mt-2 text-right text-sm font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <div className="mt-2 text-right text-sm font-semibold text-gray-600 dark:text-gray-400">
                     Totaal: {week.totalUren} uren
                   </div>
                 </div>

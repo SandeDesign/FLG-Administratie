@@ -95,7 +95,7 @@ export const NotificationCenter: React.FC = () => {
       case 'medium':
         return <Info className="h-5 w-5 text-primary-500" />;
       default:
-        return <Info className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />;
+        return <Info className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
     }
   };
 
@@ -130,7 +130,7 @@ export const NotificationCenter: React.FC = () => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="relative p-2 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors"
       >
         <Bell className="h-6 w-6" />
         {unreadCount > 0 && (
@@ -189,8 +189,8 @@ export const NotificationCenter: React.FC = () => {
             </div>
           ) : notifications.length === 0 ? (
             <div className="text-center py-12">
-              <Bell className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4" />
-              <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+              <Bell className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+              <p className="text-gray-600 dark:text-gray-400">
                 {filter === 'unread' ? 'Geen ongelezen meldingen' : 'Geen meldingen'}
               </p>
             </div>
@@ -210,17 +210,17 @@ export const NotificationCenter: React.FC = () => {
                       {getPriorityIcon(notification.priority)}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                             {notification.title}
                           </h4>
                           {(notification.status === 'pending' || notification.status === 'sent') && (
                             <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-2">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                           {notification.message}
                         </p>
-                        <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                        <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
                           <span className="flex items-center">
                             <Clock className="h-3 w-3 mr-1" />
                             {notification.createdAt ? formatDate(notification.createdAt) : 'Onbekend'}
@@ -228,7 +228,7 @@ export const NotificationCenter: React.FC = () => {
                           {notification.actionUrl && (
                             <a
                               href={notification.actionUrl}
-                              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
+                              className="text-primary-600 hover:text-primary-700 font-medium"
                               onClick={() => setIsOpen(false)}
                             >
                               {notification.actionLabel || 'Bekijk'}
@@ -242,7 +242,7 @@ export const NotificationCenter: React.FC = () => {
                       {(notification.status === 'pending' || notification.status === 'sent') && (
                         <button
                           onClick={() => handleMarkAsRead(notification.id)}
-                          className="p-1 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                          className="p-1 text-gray-400 dark:text-gray-500 hover:text-green-600 transition-colors"
                           title="Markeer als gelezen"
                         >
                           <Check className="h-4 w-4" />
@@ -250,7 +250,7 @@ export const NotificationCenter: React.FC = () => {
                       )}
                       <button
                         onClick={() => handleArchive(notification.id)}
-                        className="p-1 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition-colors"
                         title="Archiveer"
                       >
                         <Archive className="h-4 w-4" />

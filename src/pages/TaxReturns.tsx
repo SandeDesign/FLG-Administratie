@@ -76,7 +76,7 @@ const TaxReturns: React.FC = () => {
       case 'validated':
         return <CheckCircle className="h-5 w-5 text-primary-500" />;
       case 'draft':
-        return <FileText className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />;
+        return <FileText className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
       case 'corrected':
         return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       default:
@@ -140,8 +140,8 @@ const TaxReturns: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Loonaangiftes</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonaangiftes</h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Beheer uw loonaangiftes naar de Belastingdienst
           </p>
         </div>
@@ -160,7 +160,7 @@ const TaxReturns: React.FC = () => {
             id="company-select"
             value={selectedCompanyId}
             onChange={(e) => setSelectedCompanyId(e.target.value)}
-            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500"
           >
             {appCompanies.map((company) => (
               <option key={company.id} value={company.id}>
@@ -176,12 +176,12 @@ const TaxReturns: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Concepten</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Concepten</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
                   {taxReturns.filter(tr => tr.status === 'draft').length}
                 </p>
               </div>
-              <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500" />
             </div>
           </div>
         </Card>
@@ -190,8 +190,8 @@ const TaxReturns: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Ingediend</p>
-                <p className="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ingediend</p>
+                <p className="mt-2 text-3xl font-bold text-primary-600">
                   {taxReturns.filter(tr => tr.status === 'submitted').length}
                 </p>
               </div>
@@ -204,10 +204,10 @@ const TaxReturns: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   Geaccepteerd
                 </p>
-                <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">
+                <p className="mt-2 text-3xl font-bold text-green-600">
                   {taxReturns.filter(tr => tr.status === 'accepted').length}
                 </p>
               </div>
@@ -220,8 +220,8 @@ const TaxReturns: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Afgewezen</p>
-                <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Afgewezen</p>
+                <p className="mt-2 text-3xl font-bold text-red-600">
                   {taxReturns.filter(tr => tr.status === 'rejected').length}
                 </p>
               </div>
@@ -234,30 +234,30 @@ const TaxReturns: React.FC = () => {
       <Card>
         <div className="p-6">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
               Komende deadlines
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Zorg ervoor dat u uw loonaangiftes op tijd indient
             </p>
           </div>
 
           <div className="space-y-4">
             {/* Placeholder for actual deadline data */}
-            <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-center space-x-4">
-                <AlertTriangle className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                <AlertTriangle className="h-6 w-6 text-yellow-600" />
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
+                  <p className="font-medium text-gray-900 dark:text-gray-100">
                     Loonaangifte December 2025
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Deadline: 31 januari 2026
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-full">
+                <span className="px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded-full">
                   15 dagen resterend
                 </span>
                 <Button variant="primary" size="sm" onClick={() => showError('Indienen', 'Deze functionaliteit wordt nog geïmplementeerd.')}>
@@ -271,7 +271,7 @@ const TaxReturns: React.FC = () => {
 
       <Card>
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
             Ingediende aangiftes
           </h2>
 
@@ -288,31 +288,31 @@ const TaxReturns: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Periode
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Werknemers
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Totaal loon
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Ingediend op
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Acties
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {taxReturns.map((taxReturn) => (
-                    <tr key={taxReturn.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <tr key={taxReturn.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {getPeriodLabel(taxReturn.period)}
                         </div>
                       </td>
@@ -328,26 +328,26 @@ const TaxReturns: React.FC = () => {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {taxReturn.totals.numberOfEmployees}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         €{taxReturn.totals.totalGrossWages.toFixed(2)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                         {taxReturn.submissionData.submittedAt?.toLocaleDateString('nl-NL') || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
                           <button
-                            className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+                            className="text-primary-600 hover:text-primary-900"
                             title="Bekijk"
                             onClick={() => showError('Bekijken', 'Deze functionaliteit wordt nog geïmplementeerd.')}
                           >
                             <Eye className="h-5 w-5" />
                           </button>
                           <button
-                            className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                            className="text-gray-600 dark:text-gray-400 hover:text-gray-900"
                             title="Download XML"
                             onClick={() => showError('Download XML', 'Deze functionaliteit wordt nog geïmplementeerd.')}
                           >

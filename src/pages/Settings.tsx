@@ -392,7 +392,7 @@ const Settings: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Instellingen</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Beheer je account en voorkeuren
           </p>
         </div>
@@ -456,7 +456,7 @@ const Settings: React.FC = () => {
                   </label>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                     Upload een profielfoto (max 2MB)
                   </p>
                   {profilePhotoBase64 && profilePhotoBase64 !== photoPreview && (
@@ -479,18 +479,18 @@ const Settings: React.FC = () => {
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                 {isDarkMode ? (
-                  <Moon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                  <Moon className="h-5 w-5 text-primary-600" />
                 ) : (
                   <Sun className="h-5 w-5 text-primary-600" />
                 )}
                 Weergave
               </h2>
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div>
                   <p className="font-medium text-gray-900 dark:text-gray-100">
                     Dark Mode
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {isDarkMode ? 'Donkere modus ingeschakeld' : 'Lichte modus ingeschakeld'}
                   </p>
                 </div>
@@ -508,7 +508,7 @@ const Settings: React.FC = () => {
                     {isDarkMode ? (
                       <Moon className="h-5 w-5 text-primary-600 p-0.5" />
                     ) : (
-                      <Sun className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 p-0.5" />
+                      <Sun className="h-5 w-5 text-gray-500 dark:text-gray-400 p-0.5" />
                     )}
                   </span>
                 </button>
@@ -528,7 +528,7 @@ const Settings: React.FC = () => {
                     Nieuw e-mailadres
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="email"
                       value={newEmail}
@@ -544,7 +544,7 @@ const Settings: React.FC = () => {
                     Huidig wachtwoord (ter bevestiging)
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="password"
                       value={currentPassword}
@@ -578,7 +578,7 @@ const Settings: React.FC = () => {
                     Huidig wachtwoord
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="password"
                       value={currentPassword}
@@ -594,7 +594,7 @@ const Settings: React.FC = () => {
                     Nieuw wachtwoord
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="password"
                       value={newPassword}
@@ -603,7 +603,7 @@ const Settings: React.FC = () => {
                       placeholder="••••••••"
                     />
                   </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Minimaal 6 tekens</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Minimaal 6 tekens</p>
                 </div>
 
                 <div>
@@ -611,7 +611,7 @@ const Settings: React.FC = () => {
                     Bevestig nieuw wachtwoord
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="password"
                       value={confirmPassword}
@@ -651,7 +651,7 @@ const Settings: React.FC = () => {
                 Standaard Bedrijf
               </h2>
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Kies welk bedrijf standaard wordt geselecteerd wanneer je inlogt
                 </p>
 
@@ -693,13 +693,13 @@ const Settings: React.FC = () => {
                 Co-Admins Beheren
               </h2>
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Voeg andere gebruikers toe die toegang hebben tot <strong>al jouw bedrijven</strong> met dezelfde rechten als jij.
                 </p>
 
                 <div className="flex gap-2">
                   <div className="flex-1 relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                     <input
                       type="email"
                       value={coAdminEmail}
@@ -728,12 +728,12 @@ const Settings: React.FC = () => {
                         className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
                       >
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+                          <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                           <span className="text-sm text-gray-900 dark:text-gray-100">{email}</span>
                         </div>
                         <button
                           onClick={() => handleRemoveCoAdmin(email)}
-                          className="p-1 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors"
+                          className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors"
                           disabled={saving}
                           title="Verwijderen"
                         >
@@ -746,7 +746,7 @@ const Settings: React.FC = () => {
 
                 {coAdmins.length === 0 && (
                   <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       Nog geen co-admins toegevoegd
                     </p>
                   </div>
@@ -783,7 +783,7 @@ const Settings: React.FC = () => {
                     </p>
                   </div>
                 )}
-                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Selecteer je favoriete pagina's om ze bovenaan het menu weer te geven voor snelle toegang.
                 </p>
 
@@ -834,7 +834,7 @@ const Settings: React.FC = () => {
                               {item.name}
                             </p>
                             {item.section && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{item.section}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{item.section}</p>
                             )}
                           </div>
                           {isFavorite && (

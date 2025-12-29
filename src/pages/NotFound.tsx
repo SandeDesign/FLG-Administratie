@@ -8,13 +8,13 @@ const NotFound: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center items-center px-4">
       <div className="text-center">
         <div className="mb-8">
-          <h1 className="text-6xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="text-6xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             404
           </h1>
           <h2 className="text-3xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Pagina niet gevonden
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 max-w-md mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md mx-auto">
             Sorry, de pagina die je zoekt bestaat niet of is verplaatst.
           </p>
         </div>

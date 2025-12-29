@@ -139,7 +139,7 @@ const ProjectStatistics: React.FC = () => {
   if (!selectedCompany) {
     return (
       <div className="p-6">
-        <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Selecteer een project bedrijf om statistieken te bekijken.</p>
+        <p className="text-gray-500 dark:text-gray-400">Selecteer een project bedrijf om statistieken te bekijken.</p>
       </div>
     );
   }
@@ -147,7 +147,7 @@ const ProjectStatistics: React.FC = () => {
   if (selectedCompany.companyType !== 'project') {
     return (
       <div className="p-6">
-        <p className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Deze pagina is alleen beschikbaar voor project bedrijven.</p>
+        <p className="text-gray-500 dark:text-gray-400">Deze pagina is alleen beschikbaar voor project bedrijven.</p>
       </div>
     );
   }
@@ -167,7 +167,7 @@ const ProjectStatistics: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Project Statistieken</h1>
-        <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Overzicht van {selectedCompany.name}</p>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>
 
       {/* Key Metrics */}
@@ -175,11 +175,11 @@ const ProjectStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Productie Uren</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Productie Uren</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 {stats.totalProductionHours.toLocaleString('nl-NL')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {stats.totalOvertime > 0 && `+${stats.totalOvertime.toFixed(0)} overuren`}
               </p>
             </div>
@@ -190,11 +190,11 @@ const ProjectStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Totale Omzet</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totale Omzet</p>
               <p className="text-2xl font-bold text-green-600 mt-1">
                 €{stats.totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{stats.totalInvoices} facturen</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{stats.totalInvoices} facturen</p>
             </div>
             <TrendingUp className="h-8 w-8 text-green-600" />
           </div>
@@ -203,11 +203,11 @@ const ProjectStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Winstmarge</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Winstmarge</p>
               <p className={`text-2xl font-bold mt-1 ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {profitMargin.toFixed(1)}%
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 €{profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} winst
               </p>
             </div>
@@ -220,7 +220,7 @@ const ProjectStatistics: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Verkoop (Omzet)</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Verkoop (Omzet)</p>
             <p className="text-2xl font-bold text-green-600 mt-1">
               €{stats.totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
@@ -229,7 +229,7 @@ const ProjectStatistics: React.FC = () => {
 
         <Card>
           <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Inkoop (Kosten)</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Inkoop (Kosten)</p>
             <p className="text-2xl font-bold text-red-600 mt-1">
               €{stats.totalCosts.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
@@ -238,7 +238,7 @@ const ProjectStatistics: React.FC = () => {
 
         <Card>
           <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Netto Winst</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Netto Winst</p>
             <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               €{profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
@@ -306,7 +306,7 @@ const ProjectStatistics: React.FC = () => {
 
       {/* Geen werknemers notitie */}
       <Card>
-        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
           <Package className="h-5 w-5" />
           <p className="text-sm">
             <strong>Let op:</strong> Project bedrijven hebben geen eigen personeel in dienst.

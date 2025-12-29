@@ -59,7 +59,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               onClick={handleBackClick}
               className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${canGoBack ? '' : 'opacity-0 pointer-events-none'}`}
             >
-              <ArrowLeft className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+              <ArrowLeft className="h-6 w-6 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
 
@@ -80,9 +80,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="relative">
               <button
                 onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
-                className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                <Building2 className="h-5 w-5 text-primary-600" />
                 <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -129,14 +129,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Desktop Header */}
-        <header className="hidden lg:flex lg:items-center lg:justify-end lg:px-6 lg:py-4 lg:bg-white dark:bg-gray-800 lg:border-b lg:border-gray-200 dark:border-gray-700">
+        <header className="hidden lg:flex lg:items-center lg:justify-end lg:px-6 lg:py-4 lg:bg-white lg:border-b lg:border-gray-200">
           {/* RIGHT: Company Selector */}
           <div className="relative">
             <button
               onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
-              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              <Building2 className="h-5 w-5 text-primary-600" />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{selectedCompany?.name || 'Selecteer bedrijf'}</span>
               <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
             </button>

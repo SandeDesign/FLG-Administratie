@@ -62,12 +62,12 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
         <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-8 w-auto" />
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           {mobileMenuOpen ? (
-            <X className="h-6 w-6 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+            <X className="h-6 w-6 text-gray-600 dark:text-gray-400" />
           ) : (
-            <Menu className="h-6 w-6 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+            <Menu className="h-6 w-6 text-gray-600 dark:text-gray-400" />
           )}
         </button>
       </div>
@@ -84,7 +84,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
             <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-8 w-auto" />
             <div>
               <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">Administratie</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedCompany?.name || 'Dashboard'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{selectedCompany?.name || 'Dashboard'}</p>
             </div>
           </div>
 
@@ -121,7 +121,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
                 <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
                   {getFirstName()}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 truncate">{user?.email}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </div>
             </div>
             <Button
@@ -153,7 +153,7 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40">
-        <div className="bg-white dark:bg-gray-800/95 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 shadow-2xl">
+        <div className="bg-white dark:bg-gray-800 backdrop-blur-xl border-t border-gray-200 dark:border-gray-700 shadow-2xl">
           <div className="flex justify-around items-center px-2 py-3">
             {bottomNavItems.map(({ href, icon: Icon, name }) => {
               const isActive = location.pathname === href;

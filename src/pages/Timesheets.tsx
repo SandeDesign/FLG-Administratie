@@ -680,7 +680,7 @@ export default function Timesheets() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
           {employeeData && (
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-2">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 flex items-center gap-2">
               <User className="h-4 w-4" />
               {employeeData.personalInfo.firstName} {employeeData.personalInfo.lastName}
             </p>
@@ -692,21 +692,21 @@ export default function Timesheets() {
           <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
             <button
               onClick={() => changeWeek(-1)}
-              className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
               title="Vorige week"
             >
-              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div className="text-center px-4 min-w-[120px]">
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Week {selectedWeek}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedYear}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{selectedYear}</p>
             </div>
             <button
               onClick={() => changeWeek(1)}
-              className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 rounded transition-colors"
               title="Volgende week"
             >
-              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
+              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </button>
           </div>
 
@@ -809,19 +809,19 @@ export default function Timesheets() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Totaal</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal</p>
                 <p className="text-xl sm:text-2xl font-bold text-primary-600">{currentTimesheet.totalRegularHours}u</p>
               </div>
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Kilometers</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Kilometers</p>
                 <p className="text-xl sm:text-2xl font-bold text-green-600">{currentTimesheet.totalTravelKilometers}km</p>
               </div>
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Werkdagen</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Werkdagen</p>
                 <p className="text-xl sm:text-2xl font-bold text-purple-600">{workDays}d</p>
               </div>
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Gem./dag</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Gem./dag</p>
                 <p className={`text-xl sm:text-2xl font-bold ${avgHours < 7 ? 'text-yellow-600' : 'text-orange-600'}`}>
                   {avgHours.toFixed(1)}u
                 </p>
@@ -899,7 +899,7 @@ export default function Timesheets() {
                     <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100">
                       {getDayName(entry.date)}
                     </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
                       {entry.date.toLocaleDateString('nl-NL')}
                     </p>
                   </div>
