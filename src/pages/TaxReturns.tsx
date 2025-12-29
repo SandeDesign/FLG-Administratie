@@ -76,7 +76,7 @@ const TaxReturns: React.FC = () => {
       case 'validated':
         return <CheckCircle className="h-5 w-5 text-primary-500" />;
       case 'draft':
-        return <FileText className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
+        return <FileText className="h-5 w-5 text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />;
       case 'corrected':
         return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       default:
@@ -98,7 +98,7 @@ const TaxReturns: React.FC = () => {
 
   const getStatusColor = (status: TaxReturn['status']) => {
     const colors: Record<TaxReturn['status'], string> = {
-      draft: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+      draft: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
       validated: 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400',
       submitted: 'bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-400',
       accepted: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
@@ -141,7 +141,7 @@ const TaxReturns: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Loonaangiftes</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
             Beheer uw loonaangiftes naar de Belastingdienst
           </p>
         </div>
@@ -176,12 +176,12 @@ const TaxReturns: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Concepten</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Concepten</p>
                 <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
                   {taxReturns.filter(tr => tr.status === 'draft').length}
                 </p>
               </div>
-              <FileText className="h-8 w-8 text-gray-400" />
+              <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
             </div>
           </div>
         </Card>
@@ -190,7 +190,7 @@ const TaxReturns: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ingediend</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Ingediend</p>
                 <p className="mt-2 text-3xl font-bold text-primary-600 dark:text-primary-400">
                   {taxReturns.filter(tr => tr.status === 'submitted').length}
                 </p>
@@ -204,7 +204,7 @@ const TaxReturns: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                   Geaccepteerd
                 </p>
                 <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">
@@ -220,7 +220,7 @@ const TaxReturns: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Afgewezen</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Afgewezen</p>
                 <p className="mt-2 text-3xl font-bold text-red-600 dark:text-red-400">
                   {taxReturns.filter(tr => tr.status === 'rejected').length}
                 </p>
@@ -237,7 +237,7 @@ const TaxReturns: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               Komende deadlines
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
               Zorg ervoor dat u uw loonaangiftes op tijd indient
             </p>
           </div>
@@ -251,7 +251,7 @@ const TaxReturns: React.FC = () => {
                   <p className="font-medium text-gray-900 dark:text-white">
                     Loonaangifte December 2025
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     Deadline: 31 januari 2026
                   </p>
                 </div>
@@ -288,22 +288,22 @@ const TaxReturns: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                       Periode
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                       Werknemers
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                       Totaal loon
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                       Ingediend op
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                       Acties
                     </th>
                   </tr>
@@ -334,7 +334,7 @@ const TaxReturns: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         €{taxReturn.totals.totalGrossWages.toFixed(2)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         {taxReturn.submissionData.submittedAt?.toLocaleDateString('nl-NL') || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -347,7 +347,7 @@ const TaxReturns: React.FC = () => {
                             <Eye className="h-5 w-5" />
                           </button>
                           <button
-                            className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                            className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                             title="Download XML"
                             onClick={() => showError('Download XML', 'Deze functionaliteit wordt nog geïmplementeerd.')}
                           >

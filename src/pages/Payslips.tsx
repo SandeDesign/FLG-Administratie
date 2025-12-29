@@ -211,7 +211,7 @@ export default function Payslips() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
             {userRole === 'admin' ? 'Bekijk en beheer loonstroken' : 'Bekijk en download uw loonstroken'}
           </p>
         </div>
@@ -220,7 +220,7 @@ export default function Payslips() {
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 shadow-sm"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 shadow-sm"
             >
               <option value="">Selecteer werknemer</option>
               {companyEmployees.map(emp => (
@@ -231,11 +231,11 @@ export default function Payslips() {
             </select>
           )}
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-gray-400" />
+            <Calendar className="h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 shadow-sm"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 shadow-sm"
             >
               {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
                 <option key={year} value={year}>{year}</option>
@@ -275,7 +275,7 @@ export default function Payslips() {
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         {getMonthName(payslip.periodStartDate)}
                       </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         {payslip.periodStartDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })} - {payslip.periodEndDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
                       </p>
                     </div>
@@ -284,21 +284,21 @@ export default function Payslips() {
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Gegenereerd:</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Gegenereerd:</span>
                     <span className="text-gray-900 dark:text-gray-100 font-medium">
                       {payslip.generatedAt.toLocaleDateString('nl-NL')}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Uitbetaling:</span>
+                    <span className="text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Uitbetaling:</span>
                     <span className="text-gray-900 dark:text-gray-100 font-medium">
                       {payslip.paymentDate.toLocaleDateString('nl-NL')}
                     </span>
                   </div>
                   {payslip.downloadedAt && (
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-400">Gedownload:</span>
-                      <span className="text-gray-400">
+                      <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Gedownload:</span>
+                      <span className="text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         {payslip.downloadedAt.toLocaleDateString('nl-NL')}
                       </span>
                     </div>

@@ -83,7 +83,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Dropdown Menu - Opens LEFT on mobile */}
@@ -138,7 +138,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{selectedCompany?.name || 'Selecteer bedrijf'}</span>
-              <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {/* Dropdown Menu */}

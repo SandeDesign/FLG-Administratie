@@ -208,7 +208,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
           </label>
           <select
             {...register('type', { required: 'Type is verplicht' })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           >
             <option value="holiday">Vakantie</option>
             <option value="unpaid">Onbetaald</option>
@@ -238,7 +238,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
 
         {calculatedDays > 0 && (
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500">
+            <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
               Aantal werkdagen: <span className="font-semibold text-gray-900 dark:text-white">{calculatedDays}</span>
             </p>
           </div>
@@ -251,7 +251,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
           <textarea
             {...register('reason', { required: 'Reden is verplicht' })}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             placeholder="Geef een korte toelichting..."
           />
           {errors.reason && (

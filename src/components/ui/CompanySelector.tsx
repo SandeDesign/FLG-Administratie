@@ -20,7 +20,7 @@ export const CompanySelector: React.FC = () => {
 
   return (
     <div className="w-full">
-      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
         Bedrijf
       </label>
       <div className="relative">
@@ -38,11 +38,11 @@ export const CompanySelector: React.FC = () => {
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
+        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 pointer-events-none" />
       </div>
 
       {selectedCompany && (
-        <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-900 rounded text-xs text-gray-600 dark:text-gray-400">
+        <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-900 rounded text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
           <div className="flex items-center space-x-2">
             <Building2 className="h-3 w-3" />
             <span>{selectedCompany.name}</span>

@@ -126,8 +126,8 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
         {/* Modern Company Selector */}
         {userRole === 'admin' && companies && companies.length > 0 && (
-          <div className="p-5 border-b border-gray-200/50 dark:border-gray-700/50 flex-shrink-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm">
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2.5">
+          <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 dark:border-gray-700/50 flex-shrink-0 bg-white dark:bg-gray-800/60 dark:bg-gray-800/60 backdrop-blur-sm">
+            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2.5">
               Bedrijf Selecteren
             </label>
             <select
@@ -168,7 +168,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                 {({ isActive }) => (
                   <>
                     <div className={`p-3 rounded-xl transition-all duration-300 ${
-                      isActive ? 'bg-white/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600'
+                      isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600'
                     }`}>
                       <LayoutDashboard className={`h-5 w-5 ${
                         isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300'
@@ -215,17 +215,17 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                           `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
                             isActive
                               ? 'bg-white dark:bg-gray-800 text-amber-700 dark:text-amber-400 shadow-md'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-800/60'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-white dark:bg-gray-800/60 dark:hover:bg-gray-800/60'
                           }`
                         }
                       >
                         {({ isActive }) => (
                           <>
                             <div className={`p-2 rounded-lg transition-all duration-200 ${
-                              isActive ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-white/70 dark:bg-gray-700/70'
+                              isActive ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-white dark:bg-gray-800/70 dark:bg-gray-700/70'
                             }`}>
                               <ItemIcon className={`h-4 w-4 ${
-                                isActive ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'
+                                isActive ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500'
                               }`} />
                             </div>
                             <span className="flex-1">{item.name}</span>
@@ -255,7 +255,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                     </div>
                     <span className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">{section.title}</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 text-gray-400 dark:text-gray-500 transition-transform duration-300 ${
+                  <ChevronDown className={`h-5 w-5 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform duration-300 ${
                     isExpanded ? 'rotate-180 text-primary-600 dark:text-primary-400' : ''
                   }`} />
                 </button>
@@ -280,10 +280,10 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                           {({ isActive }) => (
                             <>
                               <div className={`p-2 rounded-lg transition-all duration-200 ${
-                                isActive ? 'bg-white/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600'
+                                isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600'
                               }`}>
                                 <ItemIcon className={`h-4 w-4 ${
-                                  isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'
+                                  isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400 dark:text-gray-500'
                                 }`} />
                               </div>
                               <span className="flex-1">{item.name}</span>
@@ -303,7 +303,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         </nav>
 
         {/* Modern Footer */}
-        <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-5 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex-shrink-0 shadow-inner">
+        <div className="border-t border-gray-200 dark:border-gray-700/50 dark:border-gray-700/50 p-5 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex-shrink-0 shadow-inner">
           <button
             onClick={() => {
               signOut();

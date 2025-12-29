@@ -364,7 +364,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Projectbedrijven</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">
                 Selecteer optioneel voor welke projectbedrijven deze werknemer kan werken
               </p>
             </div>
@@ -389,7 +389,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
                     <div className="font-medium text-gray-900 dark:text-gray-100">
                       {projectCompany.name}
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       Project bedrijf
                     </div>
                   </div>
@@ -521,7 +521,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({ isOpen, onClose, onSucces
           <button
             type="button"
             onClick={handleClose}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
           >
             Annuleren
           </button>

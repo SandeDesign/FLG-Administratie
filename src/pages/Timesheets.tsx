@@ -680,7 +680,7 @@ export default function Timesheets() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
           {employeeData && (
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 flex items-center gap-2">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-2">
               <User className="h-4 w-4" />
               {employeeData.personalInfo.firstName} {employeeData.personalInfo.lastName}
             </p>
@@ -695,18 +695,18 @@ export default function Timesheets() {
               className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
               title="Vorige week"
             >
-              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
             </button>
             <div className="text-center px-4 min-w-[120px]">
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Week {selectedWeek}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{selectedYear}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">{selectedYear}</p>
             </div>
             <button
               onClick={() => changeWeek(1)}
               className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
               title="Volgende week"
             >
-              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500" />
             </button>
           </div>
 
@@ -809,19 +809,19 @@ export default function Timesheets() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Totaal</p>
                 <p className="text-xl sm:text-2xl font-bold text-primary-600">{currentTimesheet.totalRegularHours}u</p>
               </div>
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Kilometers</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Kilometers</p>
                 <p className="text-xl sm:text-2xl font-bold text-green-600">{currentTimesheet.totalTravelKilometers}km</p>
               </div>
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Werkdagen</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Werkdagen</p>
                 <p className="text-xl sm:text-2xl font-bold text-purple-600">{workDays}d</p>
               </div>
               <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Gem./dag</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-1">Gem./dag</p>
                 <p className={`text-xl sm:text-2xl font-bold ${avgHours < 7 ? 'text-yellow-600' : 'text-orange-600'}`}>
                   {avgHours.toFixed(1)}u
                 </p>
@@ -891,7 +891,7 @@ export default function Timesheets() {
                     ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100'
                     : hasData
                     ? `border-orange-300 bg-orange-50 hover:bg-orange-100`
-                    : 'border-gray-200 bg-white hover:bg-gray-50'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-900'
                 }`}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -899,7 +899,7 @@ export default function Timesheets() {
                     <p className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100">
                       {getDayName(entry.date)}
                     </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                       {entry.date.toLocaleDateString('nl-NL')}
                     </p>
                   </div>
@@ -934,7 +934,7 @@ export default function Timesheets() {
                   </div>
                 </div>
 
-                <ChevronRight className={`h-5 w-5 text-gray-600 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-90' : ''}`} />
+                <ChevronRight className={`h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-90' : ''}`} />
               </button>
 
               {/* Expanded Day Content */}
@@ -1038,7 +1038,7 @@ export default function Timesheets() {
                     </div>
 
                     {(entry.workActivities || []).map((activity, actIdx) => (
-                      <div key={actIdx} className={`p-2 rounded flex gap-2 items-center ${activity.isITKnechtImport ? 'bg-primary-100' : 'bg-gray-100'}`}>
+                      <div key={actIdx} className={`p-2 rounded flex gap-2 items-center ${activity.isITKnechtImport ? 'bg-primary-100' : 'bg-gray-100 dark:bg-gray-800'}`}>
                         <Input
                           type="number"
                           min="0"

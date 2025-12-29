@@ -437,7 +437,7 @@ const Dashboard: React.FC = () => {
       <div className="space-y-6 pb-24 sm:pb-6 px-4 sm:px-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Welkom!</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Laten we beginnen met je loonadministratie</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Laten we beginnen met je loonadministratie</p>
         </div>
         <EmptyState
           icon={Briefcase}
@@ -527,7 +527,7 @@ const Dashboard: React.FC = () => {
               <ChevronRight className="h-5 w-5 text-green-400 dark:text-green-500 group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Facturatie</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Uitgaande facturen</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 text-left">Uitgaande facturen</p>
           </button>
 
           <button
@@ -541,7 +541,7 @@ const Dashboard: React.FC = () => {
               <ChevronRight className="h-5 w-5 text-purple-400 dark:text-purple-500 group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Inkoop</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Inkomende facturen</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 text-left">Inkomende facturen</p>
           </button>
 
           <button
@@ -555,7 +555,7 @@ const Dashboard: React.FC = () => {
               <ChevronRight className="h-5 w-5 text-blue-400 dark:text-blue-500 group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Begroting</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Budget beheren</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 text-left">Budget beheren</p>
           </button>
         </div>
       </div>
@@ -782,7 +782,7 @@ const Dashboard: React.FC = () => {
               <ChevronRight className="h-5 w-5 text-primary-400 group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Productie</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Projecten beheren</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 text-left">Projecten beheren</p>
           </button>
 
           <button
@@ -796,7 +796,7 @@ const Dashboard: React.FC = () => {
               <ChevronRight className="h-5 w-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Statistieken</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Uitgebreide analyse</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 text-left">Uitgebreide analyse</p>
           </button>
 
           <button
@@ -810,7 +810,7 @@ const Dashboard: React.FC = () => {
               <ChevronRight className="h-5 w-5 text-green-400 group-hover:translate-x-1 transition-transform" />
             </div>
             <p className="font-semibold text-gray-900 dark:text-gray-100 text-left">Facturatie</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-left">Omzet beheren</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 text-left">Omzet beheren</p>
           </button>
         </div>
       </div>
@@ -862,7 +862,7 @@ const Dashboard: React.FC = () => {
           <Card className="p-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Actieve Medewerkers</p>
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">Actieve Medewerkers</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2">{stats.activeEmployees}</p>
               </div>
               <Users className="h-8 w-8 text-primary-400" />
@@ -941,15 +941,15 @@ const Dashboard: React.FC = () => {
               blue: 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/30',
               purple: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30',
               green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30',
-              gray: 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700 hover:bg-gray-100',
+              gray: 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:bg-gray-800',
             }[action.color] || 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700';
 
             const iconColor = {
               blue: 'text-primary-600',
               purple: 'text-purple-600 dark:text-purple-400',
               green: 'text-green-600 dark:text-green-400',
-              gray: 'text-gray-600 dark:text-gray-400',
-            }[action.color] || 'text-gray-600 dark:text-gray-400';
+              gray: 'text-gray-600 dark:text-gray-400 dark:text-gray-500',
+            }[action.color] || 'text-gray-600 dark:text-gray-400 dark:text-gray-500';
 
             return (
               <button
@@ -989,9 +989,9 @@ const Dashboard: React.FC = () => {
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       📋 Week {ts.weekNumber} - {employees?.find((e: any) => e.id === ts.employeeId)?.personalInfo?.firstName}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{ts.totalRegularHours}u • Ingediend op {new Date(ts.submittedAt).toLocaleDateString('nl-NL')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">{ts.totalRegularHours}u • Ingediend op {new Date(ts.submittedAt).toLocaleDateString('nl-NL')}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               ))}
             </div>
@@ -1046,7 +1046,7 @@ const Dashboard: React.FC = () => {
           >
             <Clock className="h-6 w-6 text-primary-600 dark:text-primary-400 mb-2" />
             <p className="font-semibold text-gray-900 dark:text-gray-100">Uren Invoeren</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Jouw uren registreren</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Jouw uren registreren</p>
           </button>
 
           <button
@@ -1055,7 +1055,7 @@ const Dashboard: React.FC = () => {
           >
             <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400 mb-2" />
             <p className="font-semibold text-gray-900 dark:text-gray-100">Verlof Aanvragen</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Verlof indienen</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Verlof indienen</p>
           </button>
 
           <button
@@ -1064,7 +1064,7 @@ const Dashboard: React.FC = () => {
           >
             <AlertCircle className="h-6 w-6 text-green-600 dark:text-green-400 mb-2" />
             <p className="font-semibold text-gray-900 dark:text-gray-100">Onkosten</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Kosten indienen</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Kosten indienen</p>
           </button>
 
           <button
@@ -1073,7 +1073,7 @@ const Dashboard: React.FC = () => {
           >
             <FileText className="h-6 w-6 text-amber-600 dark:text-amber-400 mb-2" />
             <p className="font-semibold text-gray-900 dark:text-gray-100">Loonstroken</p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Jouw betalingen</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Jouw betalingen</p>
           </button>
         </div>
 
@@ -1084,7 +1084,7 @@ const Dashboard: React.FC = () => {
               <Target className="h-5 w-5 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Tips</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-2">
                   Zorg dat je uren op tijd indient en verlof vooraf aanvraagt. Je loonstroken zijn beschikbaar na verwerking.
                 </p>
               </div>
