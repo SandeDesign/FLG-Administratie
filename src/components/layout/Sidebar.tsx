@@ -165,7 +165,11 @@ const SectionHeader: React.FC<{
   );
 };
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onLogoClick?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
   const { signOut, userRole, user } = useAuth();
   const { selectedCompany } = useApp();
   const [collapsed, setCollapsed] = useState(true);
@@ -307,25 +311,31 @@ const Sidebar: React.FC = () => {
   return (
     <div className={`hidden lg:flex lg:flex-col lg:bg-white dark:bg-gray-800 lg:border-r lg:border-gray-200 dark:border-gray-700 transition-all duration-200 ${ collapsed ? 'lg:w-16' : 'lg:w-64' }`}>
       {/* Header - Logo */}
-      <div className="flex h-16 items-center justify-center border-b border-gray-100 px-3 relative">
-        {!collapsed && (
-          selectedCompany?.logoUrl ? (
-            <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="h-10 w-auto max-w-[200px] object-contain" />
-          ) : (
-            <img src="/Logo_1.png" alt="Logo" className="h-10 w-auto" />
-          )
-        )}
-        {collapsed && (
-          selectedCompany?.logoUrl ? (
-            <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center">
-              <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="w-full h-full object-contain p-0.5" />
-            </div>
-          ) : (
-            <div className="w-9 h-9 bg-primary-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">F</span>
-            </div>
-          )
-        )}
+      <div className="flex h-16 items-center justify-center border-b border-gray-100 dark:border-gray-700 px-3 relative">
+        <button
+          onClick={onLogoClick}
+          className="hover:opacity-80 transition-opacity focus:outline-none"
+          title="Open wekelijkse taken"
+        >
+          {!collapsed && (
+            selectedCompany?.logoUrl ? (
+              <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="h-10 w-auto max-w-[200px] object-contain" />
+            ) : (
+              <img src="/Logo_1.png" alt="Logo" className="h-10 w-auto" />
+            )
+          )}
+          {collapsed && (
+            selectedCompany?.logoUrl ? (
+              <div className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center">
+                <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="w-full h-full object-contain p-0.5" />
+              </div>
+            ) : (
+              <div className="w-9 h-9 bg-primary-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">F</span>
+              </div>
+            )
+          )}
+        </button>
 
         <button
           onClick={handleToggleCollapsed}
