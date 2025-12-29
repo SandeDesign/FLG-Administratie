@@ -20,14 +20,14 @@ export const CompanySelector: React.FC = () => {
 
   return (
     <div className="w-full">
-      <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
         Bedrijf
       </label>
       <div className="relative">
         <select
           value={selectedCompany?.id || ''}
           onChange={handleCompanyChange}
-          className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none"
+          className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 appearance-none dark:text-gray-100"
         >
           <option value="">Selecteer bedrijf...</option>
           {companies.map((company) => (
@@ -38,19 +38,19 @@ export const CompanySelector: React.FC = () => {
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
       </div>
-      
+
       {selectedCompany && (
-        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
+        <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-900 rounded text-xs text-gray-600 dark:text-gray-400">
           <div className="flex items-center space-x-2">
             <Building2 className="h-3 w-3" />
             <span>{selectedCompany.name}</span>
             {selectedCompany.companyType === 'payroll_company' && (
-              <span className="bg-green-100 text-green-800 px-1 rounded">Loon</span>
+              <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 px-1 rounded">Loon</span>
             )}
             {selectedCompany.companyType === 'work_company' && (
-              <span className="bg-primary-100 text-primary-800 px-1 rounded">Werk</span>
+              <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-400 px-1 rounded">Werk</span>
             )}
           </div>
         </div>
