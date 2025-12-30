@@ -485,7 +485,7 @@ const OutgoingInvoices: React.FC = () => {
         event: 'invoice.sent',
         timestamp: new Date().toISOString(),
         client: { name: invoice.clientName, email: invoice.clientEmail, phone: invoice.clientPhone || null },
-        invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, status: 'sent', totalAmount: invoice.totalAmount, items: invoice.items, ExtraOntvangers: invoice.ExtraOntvangers },
+        invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, status: 'sent', totalAmount: invoice.totalAmount, items: invoice.items, ExtraOntvangers: invoice.ExtraOntvangers, additionalRecipients: invoice.additionalRecipients || [] },
         company: { id: selectedCompany?.id, name: selectedCompany?.name },
         user: { id: user?.uid, email: user?.email },
         htmlContent: html
