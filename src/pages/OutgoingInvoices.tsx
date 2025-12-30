@@ -485,7 +485,15 @@ const OutgoingInvoices: React.FC = () => {
         event: 'invoice.sent',
         timestamp: new Date().toISOString(),
         client: { name: invoice.clientName, email: invoice.clientEmail, phone: invoice.clientPhone || null },
-        invoice: { id: invoice.id, invoiceNumber: invoice.invoiceNumber, status: 'sent', totalAmount: invoice.totalAmount, items: invoice.items, ExtraOntvangers: invoice.ExtraOntvangers, additionalRecipients: invoice.additionalRecipients || [] },
+        invoice: {
+          id: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          status: 'sent',
+          totalAmount: invoice.totalAmount,
+          items: invoice.items,
+          ExtraOntvangers: invoice.ExtraOntvangers || (invoice.additionalRecipients && invoice.additionalRecipients.length > 0 ? 'ja' : 'nee'),
+          additionalRecipients: invoice.additionalRecipients || []
+        },
         company: { id: selectedCompany?.id, name: selectedCompany?.name },
         user: { id: user?.uid, email: user?.email },
         htmlContent: html
@@ -531,10 +539,30 @@ const OutgoingInvoices: React.FC = () => {
   const handleDuplicateInvoice = async (invoice: OutgoingInvoice) => {
     try {
       setFormLoading(true);
-      
+
       // Generate new invoice number
       const newInvoiceNumber = await outgoingInvoiceService.getNextInvoiceNumber(queryUserId!, selectedCompany!.id);
-      
+
+      // Laad standaard extra ontvangers van de klant indien beschikbaar
+      let defaultRecipients: string[] = [];
+      if (invoice.clientId) {
+        try {
+          const relationDoc = await getDocs(
+            query(
+              collection(db, 'invoiceRelations'),
+              where('userId', '==', queryUserId),
+              where('companyId', '==', selectedCompany!.id)
+            )
+          );
+          const relation = relationDoc.docs.find(doc => doc.id === invoice.clientId);
+          if (relation) {
+            defaultRecipients = relation.data().defaultAdditionalRecipients || [];
+          }
+        } catch (err) {
+          console.log('Geen standaard ontvangers gevonden');
+        }
+      }
+
       // Copy invoice with fresh dates and status
       const newInvoice: Omit<OutgoingInvoice, 'id' | 'createdAt' | 'updatedAt'> = {
         userId: queryUserId!,
@@ -553,6 +581,8 @@ const OutgoingInvoices: React.FC = () => {
         description: invoice.description,
         purchaseOrder: invoice.purchaseOrder,
         projectCode: invoice.projectCode,
+        additionalRecipients: defaultRecipients.length > 0 ? defaultRecipients : undefined,
+        ExtraOntvangers: defaultRecipients.length > 0 ? 'ja' : 'nee',
         invoiceDate: new Date(),
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         status: 'draft',
@@ -711,7 +741,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientName}
                   onChange={e => setFormData({ ...formData, clientName: e.target.value })}
                   placeholder="Bedrijfsnaam"
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
               <div>
@@ -721,7 +751,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientEmail}
                   onChange={e => setFormData({ ...formData, clientEmail: e.target.value })}
                   placeholder="klant@bedrijf.nl"
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
               <div>
@@ -731,7 +761,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientPhone}
                   onChange={e => setFormData({ ...formData, clientPhone: e.target.value })}
                   placeholder="+31 6 12345678"
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
               <div>
@@ -741,7 +771,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientKvk}
                   onChange={e => setFormData({ ...formData, clientKvk: e.target.value })}
                   placeholder="12345678"
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
             </div>
@@ -763,7 +793,7 @@ const OutgoingInvoices: React.FC = () => {
                   type="date"
                   value={formData.invoiceDate}
                   onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
               <div>
@@ -772,7 +802,7 @@ const OutgoingInvoices: React.FC = () => {
                   type="date"
                   value={formData.dueDate}
                   onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
             </div>
