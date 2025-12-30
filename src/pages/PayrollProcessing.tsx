@@ -212,12 +212,12 @@ export default function PayrollProcessing() {
         calculation.id = calculationId;
         await createPayslipFromCalculation(adminUserId, calculation, employee, company);
 
-        totalGross += calculation.grossPay;
-        totalNet += calculation.netPay;
-        totalTax += calculation.taxes.incomeTax;
+        totalGross += Number(calculation.grossPay);
+        totalNet += Number(calculation.netPay);
+        totalTax += Number(calculation.taxes.incomeTax);
         processedEmployeeCount++;
 
-        console.log(`   ✅ PROCESSED - Gross: €${calculation.grossPay.toFixed(2)} | Net: €${calculation.netPay.toFixed(2)}`);
+        console.log(`   ✅ PROCESSED - Gross: €${Number(calculation.grossPay).toFixed(2)} | Net: €${Number(calculation.netPay).toFixed(2)}`);
       }
 
       console.log(`\n${'='.repeat(80)}`);
