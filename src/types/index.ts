@@ -65,11 +65,11 @@ export interface Branch {
 export interface Employee {
   id: string;
   userId: string;
-  payrollCompanyId: string; // ✅ AANGEPAST: Verwijst naar loonmaatschappij (Buddy)
+  companyId: string; // Refers to the employer company (payroll company)
   branchId: string;
-  
-  // ✅ AANGEPAST: Werkmaatschappijen waar employee voor werkt
-  workCompanies?: string[]; // Array van work company IDs
+
+  // Project/work companies where employee works
+  projectCompanies?: string[]; // Array of project company IDs
   
   personalInfo: {
     firstName: string;
