@@ -209,6 +209,13 @@ export const outgoingInvoiceService = {
       if (updates.paidAt) updateData.paidAt = Timestamp.fromDate(updates.paidAt);
       if (updates.sentAt) updateData.sentAt = Timestamp.fromDate(updates.sentAt);
 
+      // Verwijder undefined waarden (Firestore accepteert geen undefined)
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
+
       await updateDoc(docRef, updateData);
     } catch (error) {
       console.error('Error updating invoice:', error);
