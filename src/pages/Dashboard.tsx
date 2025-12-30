@@ -57,6 +57,9 @@ const Dashboard: React.FC = () => {
     outgoingTotal: 0,
     incomingInvoices: 0,
     incomingTotal: 0,
+    totalGrossPay: 0,
+    totalNetPay: 0,
+    payrollCount: 0,
   });
   const [projectStats, setProjectStats] = useState<any>(null);
   const [loadingProjectStats, setLoadingProjectStats] = useState(true);
@@ -257,6 +260,33 @@ const Dashboard: React.FC = () => {
         console.error('Error loading expenses:', error);
       }
 
+      // Payroll calculations (only for employer companies)
+      if (selectedCompany.companyType === 'employer') {
+        try {
+          const payroll = await getPayrollCalculations(adminUserId);
+
+          // Filter for this month
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const payrollThisMonth = payroll.filter((calc: any) => {
+            const calcDate = calc.calculatedAt?.toDate?.() || new Date(calc.calculatedAt);
+            return calcDate >= startOfMonth;
+          });
+
+          const totalGross = payrollThisMonth.reduce((sum: number, calc: any) => sum + (calc.grossPay || 0), 0);
+          const totalNet = payrollThisMonth.reduce((sum: number, calc: any) => sum + (calc.netPay || 0), 0);
+
+          setStats((prev) => ({
+            ...prev,
+            totalGrossPay: totalGross,
+            totalNetPay: totalNet,
+            payrollCount: payrollThisMonth.length,
+          }));
+        } catch (error) {
+          console.error('Error loading payroll data:', error);
+        }
+      }
+
       // Stats
       const activeEmps = employees?.filter((e: any) => e.status === 'active').length || 0;
       setStats((prev) => ({
@@ -272,7 +302,7 @@ const Dashboard: React.FC = () => {
     } finally {
       setDashLoading(false);
     }
-  }, [user, selectedCompany, userRole, employees, loadInvoiceStats]);
+  }, [user, selectedCompany, userRole, employees, loadInvoiceStats, adminUserId]);
 
   // ========== LOAD MANAGER DATA ==========
   const loadManagerData = useCallback(async () => {
@@ -286,6 +316,33 @@ const Dashboard: React.FC = () => {
       const leave = await getPendingLeaveApprovals(selectedCompany.id, adminUserId);
       setPendingLeave(leave.slice(0, 5));
 
+      // Payroll calculations (only for employer companies)
+      if (selectedCompany.companyType === 'employer') {
+        try {
+          const payroll = await getPayrollCalculations(adminUserId);
+
+          // Filter for this month
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const payrollThisMonth = payroll.filter((calc: any) => {
+            const calcDate = calc.calculatedAt?.toDate?.() || new Date(calc.calculatedAt);
+            return calcDate >= startOfMonth;
+          });
+
+          const totalGross = payrollThisMonth.reduce((sum: number, calc: any) => sum + (calc.grossPay || 0), 0);
+          const totalNet = payrollThisMonth.reduce((sum: number, calc: any) => sum + (calc.netPay || 0), 0);
+
+          setStats((prev) => ({
+            ...prev,
+            totalGrossPay: totalGross,
+            totalNetPay: totalNet,
+            payrollCount: payrollThisMonth.length,
+          }));
+        } catch (error) {
+          console.error('Error loading payroll data:', error);
+        }
+      }
+
       setStats((prev) => ({
         ...prev,
         pendingActions: (timesheets.length || 0) + (leave.length || 0),
@@ -298,7 +355,7 @@ const Dashboard: React.FC = () => {
     } finally {
       setDashLoading(false);
     }
-  }, [user, selectedCompany, userRole, loadInvoiceStats]);
+  }, [user, selectedCompany, userRole, loadInvoiceStats, adminUserId]);
 
   // ========== LOAD EMPLOYEE DATA ==========
   const loadEmployeeData = useCallback(async () => {
@@ -905,6 +962,47 @@ const Dashboard: React.FC = () => {
             </div>
           </Card>
         </div>
+
+        {/* Loonkosten Metrics - Only for employer companies */}
+        {selectedCompany?.companyType === 'employer' && stats.payrollCount > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Card className="p-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-blue-700 dark:text-blue-400">Loonkosten (bruto)</p>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-200 mt-2">€{(stats.totalGrossPay / 1000).toFixed(1)}k</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">deze maand</p>
+                </div>
+                <CreditCard className="h-8 w-8 text-blue-300 dark:text-blue-500" />
+              </div>
+            </Card>
+
+            <Card className="p-4 bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-cyan-700 dark:text-cyan-400">Netto Uitbetaald</p>
+                  <p className="text-2xl font-bold text-cyan-900 dark:text-cyan-200 mt-2">€{(stats.totalNetPay / 1000).toFixed(1)}k</p>
+                  <p className="text-xs text-cyan-600 dark:text-cyan-400 mt-2">{stats.payrollCount} salarissen</p>
+                </div>
+                <Wallet className="h-8 w-8 text-cyan-300 dark:text-cyan-500" />
+              </div>
+            </Card>
+
+            <Card
+              className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/payroll-processing')}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-indigo-700 dark:text-indigo-400">Loonverwerking</p>
+                  <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-200 mt-2">→</p>
+                  <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2">bekijk details</p>
+                </div>
+                <ChevronRight className="h-8 w-8 text-indigo-300 dark:text-indigo-500" />
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

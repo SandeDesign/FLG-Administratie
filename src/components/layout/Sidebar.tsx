@@ -53,6 +53,7 @@ export const navigation: NavigationItem[] = [
   // ADMIN - EMPLOYER (HR Beheer) - NIET voor holding
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['admin'], companyTypes: ['employer'] },
+  { name: 'Loonverwerking', href: '/payroll-processing', icon: CreditCard, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { name: 'Verlof Beheren', href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: Stethoscope, roles: ['admin'], companyTypes: ['employer'] },
 
@@ -264,7 +265,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
       color: 'bg-blue-500',
       defaultOpen: false,
       items: filteredNavigation.filter(i =>
-        ['Werknemers', 'Uren Goedkeuren', 'Verlof Beheren', 'Verzuim Beheren', 'Mijn Team'].includes(i.name)
+        ['Werknemers', 'Uren Goedkeuren', 'Loonverwerking', 'Verlof Beheren', 'Verzuim Beheren', 'Mijn Team'].includes(i.name)
       )
     },
     {

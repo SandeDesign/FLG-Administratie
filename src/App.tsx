@@ -51,6 +51,7 @@ import AuditLogPage from './pages/AuditLog';
 import Timesheets from './pages/Timesheets';
 import TimesheetApprovals from './pages/TimesheetApprovals';
 import Payslips from './pages/Payslips';
+import PayrollProcessing from './pages/PayrollProcessing';
 // ✅ INVOICE RELATIONS - NIEUW!
 import InvoiceRelations from './pages/InvoiceRelations';
 // ✅ FACTUREN IMPORTS
@@ -125,6 +126,7 @@ function App() {
                           {/* ✅ TIJD & UREN */}
                           <Route path="timesheets" element={<Timesheets />} />
                           <Route path="timesheet-approvals" element={<TimesheetApprovals />} />
+                          <Route path="payroll-processing" element={<PayrollProcessing />} />
                           <Route path="admin-expenses" element={<AdminExpenses />} />
                           
                           {/* ✅ VERLOF & VERZUIM */}
@@ -178,6 +180,7 @@ function App() {
                           {/* Manager kan uren beheren */}
                           <Route path="timesheets" element={<Timesheets />} />
                           <Route path="timesheet-approvals" element={<TimesheetApprovals />} />
+                          <Route path="payroll-processing" element={<PayrollProcessing />} />
 
                           {/* Manager kan verlof/verzuim goedkeuren */}
                           <Route path="admin/leave-approvals" element={<AdminLeaveApprovals />} />
