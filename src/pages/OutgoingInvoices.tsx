@@ -94,6 +94,7 @@ const OutgoingInvoices: React.FC = () => {
   });
 
   const [items, setItems] = useState<InvoiceItem[]>([{ title: '', description: '', quantity: 1, rate: 0, amount: 0 }]);
+  const [additionalRecipients, setAdditionalRecipients] = useState<string[]>([]);
 
   const loadInvoices = useCallback(async () => {
     if (!user || !selectedCompany || !queryUserId) {
@@ -383,6 +384,14 @@ const OutgoingInvoices: React.FC = () => {
       clientTaxNumber: rel.taxNumber || '',
       clientAddress: rel.address || { street: '', city: '', zipCode: '', country: 'Nederland' }
     });
+
+    // Laad standaard extra ontvangers
+    if (rel.defaultAdditionalRecipients && rel.defaultAdditionalRecipients.length > 0) {
+      setAdditionalRecipients(rel.defaultAdditionalRecipients);
+    } else {
+      setAdditionalRecipients([]);
+    }
+
     setIsRelationsOpen(false);
   };
 
@@ -440,6 +449,8 @@ const OutgoingInvoices: React.FC = () => {
         description: formData.description.trim(),
         purchaseOrder: formData.purchaseOrder.trim(),
         projectCode: formData.projectCode.trim(),
+        additionalRecipients: additionalRecipients.length > 0 ? additionalRecipients : undefined,
+        ExtraOntvangers: additionalRecipients.length > 0 ? 'ja' : 'nee',
         invoiceDate: new Date(formData.invoiceDate),
         dueDate: new Date(formData.dueDate),
         status: 'draft',
