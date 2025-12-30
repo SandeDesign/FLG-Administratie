@@ -283,12 +283,13 @@ export const calculatePayroll = async (
   const weekendRate = baseRate * (hourlyRate.weekendMultiplier / 100);
   const weekendPay = totalHours.weekend * weekendRate;
 
-  const travelRate = employee.salaryInfo.travelAllowance.amountPerKm || 0.23;
+  const travelRate = employee.salaryInfo.travelAllowancePerKm || 0.23;
   const travelAllowance = totalHours.travel * travelRate;
 
   const grossPay = regularPay + overtimePay + eveningPay + nightPay + weekendPay;
 
-  const vacationAccrual = (employee.salaryInfo.holidayAllowancePercentage / 100) * grossPay;
+  // Default 8% holiday allowance (vakantiegeld)
+  const vacationAccrual = (8 / 100) * grossPay;
 
   const taxes = calculateTaxes(grossPay, employee);
 
@@ -363,8 +364,9 @@ const calculateTaxes = (grossPay: number, employee: Employee): PayrollTaxes => {
 
   const socialSecurityEmployee = grossPay * (aowRate + wlzRate + wwRate + wiaRate);
 
-  const pensionEmployee = grossPay * (employee.salaryInfo.pensionContribution / 100);
-  const pensionEmployer = grossPay * (employee.salaryInfo.pensionEmployerContribution / 100);
+  // Default pension rates (5% employee, 10% employer)
+  const pensionEmployee = grossPay * 0.05;
+  const pensionEmployer = grossPay * 0.10;
 
   return {
     incomeTax,
