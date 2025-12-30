@@ -24,6 +24,7 @@ import {
   Euro,
   Upload,
   Wallet,
+  CreditCard,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';

@@ -142,14 +142,34 @@ export default function PayrollProcessing() {
         throw new Error('Company not found');
       }
 
-      console.log(`🔍 Processing ${employees.length} employees for payroll period ${selectedPeriod.id}`);
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`🔍 PAYROLL DIAGNOSTIC - Processing ${employees.length} employees for period ${selectedPeriod.id}`);
+      console.log(`📅 Period: ${selectedPeriod.startDate.toLocaleDateString()} - ${selectedPeriod.endDate.toLocaleDateString()}`);
+      console.log(`🏢 Company: ${selectedCompany.name} (${selectedCompany.id})`);
+      console.log(`${'='.repeat(80)}\n`);
+
+      // First, log all employees and their key attributes
+      employees.forEach((emp, idx) => {
+        const name = `${emp.personalInfo.firstName} ${emp.personalInfo.lastName}`;
+        console.log(`📋 Employee ${idx + 1}/${employees.length}: ${name}`);
+        console.log(`   • ID: ${emp.id}`);
+        console.log(`   • Status: ${emp.status}`);
+        console.log(`   • Payment Type: ${emp.salaryInfo?.paymentType || 'NOT SET'}`);
+        console.log(`   • Monthly Salary: €${emp.salaryInfo?.monthlySalary || 0}`);
+        console.log(`   • Annual Salary: €${emp.salaryInfo?.annualSalary || 0}`);
+        console.log(`   • Hourly Rate: €${emp.salaryInfo?.hourlyRate || 0}`);
+        console.log('');
+      });
+
+      console.log(`\n${'─'.repeat(80)}`);
+      console.log('🔄 Now processing each employee...\n');
 
       for (const employee of employees) {
         const employeeName = `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`;
 
         // Skip inactive employees
         if (employee.status !== 'active') {
-          console.log(`⏭️  Skipping inactive employee: ${employeeName} (${employee.status})`);
+          console.log(`⏭️  ${employeeName}: SKIPPED - Status is '${employee.status}' (not 'active')`);
           continue;
         }
 
@@ -163,15 +183,16 @@ export default function PayrollProcessing() {
         const paymentType = employee.salaryInfo?.paymentType;
 
         if (!paymentType) {
-          console.warn(`⚠️  Employee ${employeeName} has no paymentType set - SKIPPING`);
+          console.log(`⏭️  ${employeeName}: SKIPPED - No paymentType set in salaryInfo`);
+          console.log(`     salaryInfo structure:`, JSON.stringify(employee.salaryInfo, null, 2));
           continue;
         }
 
-        console.log(`👤 Processing: ${employeeName} | Type: ${paymentType} | Approved timesheets: ${approvedTimesheetsInPeriod.length}`);
+        console.log(`✅ ${employeeName}: Processing | Type: ${paymentType} | Timesheets: ${approvedTimesheetsInPeriod.length}`);
 
         // For hourly employees, skip if no approved timesheets
         if (paymentType === 'hourly' && approvedTimesheetsInPeriod.length === 0) {
-          console.log(`⏭️  Skipping hourly employee ${employeeName} - no approved timesheets in period`);
+          console.log(`   ⏭️  SKIPPED - Hourly employee with no approved timesheets in period`);
           continue;
         }
 
@@ -210,10 +231,19 @@ export default function PayrollProcessing() {
         totalTax += calculation.taxes.incomeTax;
         processedEmployeeCount++;
 
-        console.log(`✅ Successfully processed ${employeeName} | Gross: €${calculation.grossPay.toFixed(2)} | Net: €${calculation.netPay.toFixed(2)}`);
+        console.log(`   ✅ PROCESSED - Gross: €${calculation.grossPay.toFixed(2)} | Net: €${calculation.netPay.toFixed(2)}`);
       }
 
-      console.log(`\n📊 PAYROLL SUMMARY: Processed ${processedEmployeeCount} employees | Total Gross: €${totalGross.toFixed(2)} | Total Net: €${totalNet.toFixed(2)}\n`);
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`📊 PAYROLL SUMMARY`);
+      console.log(`${'='.repeat(80)}`);
+      console.log(`Total Employees Found: ${employees.length}`);
+      console.log(`Successfully Processed: ${processedEmployeeCount}`);
+      console.log(`Skipped: ${employees.length - processedEmployeeCount}`);
+      console.log(`Total Gross Pay: €${totalGross.toFixed(2)}`);
+      console.log(`Total Net Pay: €${totalNet.toFixed(2)}`);
+      console.log(`Total Tax: €${totalTax.toFixed(2)}`);
+      console.log(`${'='.repeat(80)}\n`);
 
       // Update the payroll period summary
       await updatePayrollPeriod(selectedPeriod.id!, adminUserId, {
