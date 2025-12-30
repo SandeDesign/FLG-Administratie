@@ -242,6 +242,25 @@ export default function PayrollProcessing() {
     );
   }
 
+  // Only allow payroll processing for employer companies
+  if (selectedCompany.companyType !== 'employer') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loonverwerking</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Bereken en verwerk salarissen
+          </p>
+        </div>
+        <EmptyState
+          icon={Building2}
+          title="Niet beschikbaar voor dit bedrijfstype"
+          description={`Loonverwerking is alleen beschikbaar voor werkgever bedrijven (employer). Het geselecteerde bedrijf "${selectedCompany.name}" is van het type "${selectedCompany.companyType}".`}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
