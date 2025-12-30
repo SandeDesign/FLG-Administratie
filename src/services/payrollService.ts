@@ -179,12 +179,13 @@ export const calculatePayroll = async (
     let grossPay = 0;
 
     if (paymentType === 'monthly' && employee.salaryInfo.monthlySalary) {
-      grossPay = employee.salaryInfo.monthlySalary;
+      grossPay = Number(employee.salaryInfo.monthlySalary);
     } else if (paymentType === 'annual' && employee.salaryInfo.annualSalary) {
-      grossPay = employee.salaryInfo.annualSalary / 12;
+      grossPay = Number(employee.salaryInfo.annualSalary) / 12;
     }
 
-    const vacationAccrual = (employee.salaryInfo.holidayAllowancePercentage / 100) * grossPay;
+    // Default 8% holiday allowance (vakantiegeld)
+    const vacationAccrual = (8 / 100) * grossPay;
     const taxes = calculateTaxes(grossPay, employee);
     const netPay = grossPay - taxes.incomeTax - taxes.socialSecurityEmployee - taxes.pensionEmployee;
 

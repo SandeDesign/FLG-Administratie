@@ -184,71 +184,72 @@ export const generatePayslipData = async (
   employee: Employee,
   calculation: PayrollCalculation
 ): Promise<PayslipData> => {
+  // Convert all values to numbers to handle Firebase string conversions
   const earnings = [
     {
       description: 'Normale uren',
-      quantity: calculation.regularHours,
-      rate: calculation.regularRate,
-      amount: calculation.regularPay,
+      quantity: Number(calculation.regularHours) || 0,
+      rate: Number(calculation.regularRate) || 0,
+      amount: Number(calculation.regularPay) || 0,
       ytdAmount: 0
     },
     {
       description: 'Overuren',
-      quantity: calculation.overtimeHours,
-      rate: calculation.overtimeRate,
-      amount: calculation.overtimePay,
+      quantity: Number(calculation.overtimeHours) || 0,
+      rate: Number(calculation.overtimeRate) || 0,
+      amount: Number(calculation.overtimePay) || 0,
       ytdAmount: 0
     },
     {
       description: 'Avonduren',
-      quantity: calculation.eveningHours,
-      rate: calculation.eveningRate,
-      amount: calculation.eveningPay,
+      quantity: Number(calculation.eveningHours) || 0,
+      rate: Number(calculation.eveningRate) || 0,
+      amount: Number(calculation.eveningPay) || 0,
       ytdAmount: 0
     },
     {
       description: 'Nachturen',
-      quantity: calculation.nightHours,
-      rate: calculation.nightRate,
-      amount: calculation.nightPay,
+      quantity: Number(calculation.nightHours) || 0,
+      rate: Number(calculation.nightRate) || 0,
+      amount: Number(calculation.nightPay) || 0,
       ytdAmount: 0
     },
     {
       description: 'Weekenduren',
-      quantity: calculation.weekendHours,
-      rate: calculation.weekendRate,
-      amount: calculation.weekendPay,
+      quantity: Number(calculation.weekendHours) || 0,
+      rate: Number(calculation.weekendRate) || 0,
+      amount: Number(calculation.weekendPay) || 0,
       ytdAmount: 0
     },
     {
       description: 'Reiskostenvergoeding',
-      quantity: calculation.travelKilometers,
-      rate: calculation.travelRate,
-      amount: calculation.travelAllowance,
+      quantity: Number(calculation.travelKilometers) || 0,
+      rate: Number(calculation.travelRate) || 0,
+      amount: Number(calculation.travelAllowance) || 0,
       ytdAmount: 0
     }
   ].filter(e => e.amount > 0);
 
   const deductions = calculation.deductions.map(d => ({
     description: d.description,
-    amount: d.amount,
+    amount: Number(d.amount) || 0,
     ytdAmount: 0
   }));
 
   const taxes = [
     {
       description: 'Loonheffing',
-      amount: calculation.taxes.incomeTax,
+      amount: Number(calculation.taxes.incomeTax) || 0,
       ytdAmount: 0
     },
     {
       description: 'Werknemersverzekeringen',
-      amount: calculation.taxes.socialSecurityEmployee,
+      amount: Number(calculation.taxes.socialSecurityEmployee) || 0,
       ytdAmount: 0
     },
     {
       description: 'Pensioenpremie werknemer',
-      amount: calculation.taxes.pensionEmployee,
+      amount: Number(calculation.taxes.pensionEmployee) || 0,
       ytdAmount: 0
     }
   ];
@@ -284,14 +285,14 @@ export const generatePayslipData = async (
     deductions,
     taxes,
     summary: {
-      grossPay: calculation.grossPay,
+      grossPay: Number(calculation.grossPay) || 0,
       totalDeductions: deductions.reduce((sum, d) => sum + d.amount, 0),
       totalTaxes: taxes.reduce((sum, t) => sum + t.amount, 0),
-      netPay: calculation.netPay,
-      ytdGross: calculation.ytdGross,
-      ytdDeductions: 0, // Placeholder
-      ytdTaxes: calculation.ytdTax,
-      ytdNet: calculation.ytdNet
+      netPay: Number(calculation.netPay) || 0,
+      ytdGross: Number(calculation.ytdGross) || 0,
+      ytdDeductions: 0,
+      ytdTaxes: Number(calculation.ytdTax) || 0,
+      ytdNet: Number(calculation.ytdNet) || 0
     },
     leave: {
       vacationDaysAccrued: employee.leaveInfo?.vacation?.accrued || 0,
@@ -299,10 +300,10 @@ export const generatePayslipData = async (
       vacationDaysBalance: employee.leaveInfo?.vacation?.remaining || 0
     },
     pension: {
-      employeeContribution: calculation.taxes.pensionEmployee,
-      employerContribution: calculation.taxes.pensionEmployer,
-      ytdEmployeeContribution: 0, // Placeholder
-      ytdEmployerContribution: 0 // Placeholder
+      employeeContribution: Number(calculation.taxes.pensionEmployee) || 0,
+      employerContribution: Number(calculation.taxes.pensionEmployer) || 0,
+      ytdEmployeeContribution: 0,
+      ytdEmployerContribution: 0
     }
   };
 };

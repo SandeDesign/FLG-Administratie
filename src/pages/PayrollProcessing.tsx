@@ -212,12 +212,12 @@ export default function PayrollProcessing() {
         calculation.id = calculationId;
         await createPayslipFromCalculation(adminUserId, calculation, employee, company);
 
-        totalGross += calculation.grossPay;
-        totalNet += calculation.netPay;
-        totalTax += calculation.taxes.incomeTax;
+        totalGross += Number(calculation.grossPay);
+        totalNet += Number(calculation.netPay);
+        totalTax += Number(calculation.taxes.incomeTax);
         processedEmployeeCount++;
 
-        console.log(`   ✅ PROCESSED - Gross: €${calculation.grossPay.toFixed(2)} | Net: €${calculation.netPay.toFixed(2)}`);
+        console.log(`   ✅ PROCESSED - Gross: €${Number(calculation.grossPay).toFixed(2)} | Net: €${Number(calculation.netPay).toFixed(2)}`);
       }
 
       console.log(`\n${'='.repeat(80)}`);
@@ -409,10 +409,12 @@ export default function PayrollProcessing() {
         </div>
       </Card>
 
-      {calculations.length > 0 && (
+      {selectedPeriod && calculations.filter(c => c.payrollPeriodId === selectedPeriod.id).length > 0 && (
         <Card>
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Loonberekeningen ({calculations.length})</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Loonberekeningen ({calculations.filter(c => c.payrollPeriodId === selectedPeriod.id).length})
+            </h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-900">
@@ -441,7 +443,7 @@ export default function PayrollProcessing() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {calculations.map((calc) => {
+                  {calculations.filter(c => c.payrollPeriodId === selectedPeriod.id).map((calc) => {
                     const employee = employees?.find((e: any) => e.id === calc.employeeId);
                     const employeeName = employee
                       ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
