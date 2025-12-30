@@ -741,7 +741,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientName}
                   onChange={e => setFormData({ ...formData, clientName: e.target.value })}
                   placeholder="Bedrijfsnaam"
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
               <div>
@@ -751,7 +751,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientEmail}
                   onChange={e => setFormData({ ...formData, clientEmail: e.target.value })}
                   placeholder="klant@bedrijf.nl"
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
               <div>
@@ -761,7 +761,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientPhone}
                   onChange={e => setFormData({ ...formData, clientPhone: e.target.value })}
                   placeholder="+31 6 12345678"
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
               <div>
@@ -771,7 +771,7 @@ const OutgoingInvoices: React.FC = () => {
                   value={formData.clientKvk}
                   onChange={e => setFormData({ ...formData, clientKvk: e.target.value })}
                   placeholder="12345678"
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                 />
               </div>
             </div>
@@ -793,7 +793,7 @@ const OutgoingInvoices: React.FC = () => {
                   type="date"
                   value={formData.invoiceDate}
                   onChange={e => setFormData({ ...formData, invoiceDate: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
               <div>
@@ -802,7 +802,7 @@ const OutgoingInvoices: React.FC = () => {
                   type="date"
                   value={formData.dueDate}
                   onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors"
+                  className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:border-primary-500 transition-colors bg-white dark:bg-gray-800 dark:text-gray-100"
                 />
               </div>
             </div>
