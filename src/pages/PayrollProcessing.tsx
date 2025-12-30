@@ -25,7 +25,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 
 export default function PayrollProcessing() {
   const { user, adminUserId } = useAuth();
-  const { selectedCompany } = useApp();
+  const { selectedCompany, employees: allEmployees } = useApp();
   const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -143,6 +143,12 @@ export default function PayrollProcessing() {
       }
 
       for (const employee of employees) {
+        // Skip inactive employees
+        if (employee.status !== 'active') {
+          console.log(`Skipping inactive employee ${employee.id}`);
+          continue;
+        }
+
         // Fetch timesheets for the specific employee within the payroll period
         const employeeTimesheets = await getWeeklyTimesheets(adminUserId, employee.id);
         const approvedTimesheetsInPeriod = employeeTimesheets.filter(
@@ -150,11 +156,15 @@ export default function PayrollProcessing() {
           ts.entries.some(entry => entry.date >= selectedPeriod.startDate && entry.date <= selectedPeriod.endDate)
         );
 
-        if (approvedTimesheetsInPeriod.length === 0) {
-          console.log(`No approved timesheets for employee ${employee.id} in period ${selectedPeriod.id}`);
+        const paymentType = employee.salaryInfo.paymentType;
+
+        // For hourly employees, skip if no approved timesheets
+        if (paymentType === 'hourly' && approvedTimesheetsInPeriod.length === 0) {
+          console.log(`No approved timesheets for hourly employee ${employee.id} in period ${selectedPeriod.id}`);
           continue;
         }
 
+        // For monthly/annual employees, process even without timesheets (they get paid anyway)
         const calculation = await calculatePayroll(
           employee,
           approvedTimesheetsInPeriod,
@@ -352,13 +362,16 @@ export default function PayrollProcessing() {
       {calculations.length > 0 && (
         <Card>
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Loonberekeningen</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Loonberekeningen ({calculations.length})</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Werknemer
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Type
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Normale uren
@@ -378,22 +391,40 @@ export default function PayrollProcessing() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {calculations.map((calc) => (
-                    <tr key={calc.id}>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{calc.employeeId}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{calc.regularHours}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{calc.overtimeHours}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                        €{calc.grossPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
-                        €{calc.taxes.incomeTax.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-                        €{calc.netPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  ))}
+                  {calculations.map((calc) => {
+                    const employee = allEmployees?.find((e: any) => e.id === calc.employeeId);
+                    const employeeName = employee
+                      ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
+                      : calc.employeeId;
+                    const paymentType = employee?.salaryInfo?.paymentType || 'unknown';
+                    const paymentTypeLabel = paymentType === 'hourly' ? 'Uurloon' : paymentType === 'monthly' ? 'Maand' : paymentType === 'annual' ? 'Jaar' : '?';
+
+                    return (
+                      <tr key={calc.id}>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{employeeName}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            paymentType === 'hourly' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' :
+                            paymentType === 'monthly' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' :
+                            'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300'
+                          }`}>
+                            {paymentTypeLabel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{calc.regularHours}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{calc.overtimeHours}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                          €{calc.grossPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                          €{calc.taxes.incomeTax.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                          €{calc.netPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

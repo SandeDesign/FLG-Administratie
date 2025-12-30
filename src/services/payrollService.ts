@@ -172,9 +172,69 @@ export const calculatePayroll = async (
   periodEndDate: Date,
   hourlyRate: HourlyRate
 ): Promise<Omit<PayrollCalculation, 'id' | 'userId' | 'createdAt' | 'updatedAt'>> => {
+  const paymentType = employee.salaryInfo.paymentType;
+
+  // For monthly/annual salaries, calculate based on contract
+  if (paymentType === 'monthly' || paymentType === 'annual') {
+    let grossPay = 0;
+
+    if (paymentType === 'monthly' && employee.salaryInfo.monthlySalary) {
+      grossPay = employee.salaryInfo.monthlySalary;
+    } else if (paymentType === 'annual' && employee.salaryInfo.annualSalary) {
+      grossPay = employee.salaryInfo.annualSalary / 12;
+    }
+
+    const vacationAccrual = (employee.salaryInfo.holidayAllowancePercentage / 100) * grossPay;
+    const taxes = calculateTaxes(grossPay, employee);
+    const netPay = grossPay - taxes.incomeTax - taxes.socialSecurityEmployee - taxes.pensionEmployee;
+
+    return {
+      employeeId: employee.id,
+      companyId: employee.companyId,
+      payrollPeriodId: '',
+      periodStartDate,
+      periodEndDate,
+      regularHours: 0,
+      regularRate: 0,
+      regularPay: grossPay,
+      overtimeHours: 0,
+      overtimeRate: 0,
+      overtimePay: 0,
+      eveningHours: 0,
+      eveningRate: 0,
+      eveningPay: 0,
+      nightHours: 0,
+      nightRate: 0,
+      nightPay: 0,
+      weekendHours: 0,
+      weekendRate: 0,
+      weekendPay: 0,
+      holidayHours: 0,
+      holidayRate: 0,
+      holidayPay: 0,
+      travelKilometers: 0,
+      travelRate: 0,
+      travelAllowance: 0,
+      otherEarnings: [],
+      grossPay,
+      taxes,
+      deductions: [],
+      netPay,
+      vacationAccrual,
+      vacationPay: vacationAccrual,
+      ytdGross: 0,
+      ytdNet: 0,
+      ytdTax: 0,
+      calculatedAt: new Date(),
+      calculatedBy: '',
+      status: 'draft'
+    };
+  }
+
+  // For hourly employees, calculate based on timesheets
   // Filter entries to only include those within the payroll period
-  const entriesInPeriod = timesheets.flatMap(ts => 
-    ts.entries.filter(entry => 
+  const entriesInPeriod = timesheets.flatMap(ts =>
+    ts.entries.filter(entry =>
       entry.date >= periodStartDate && entry.date <= periodEndDate
     )
   );
