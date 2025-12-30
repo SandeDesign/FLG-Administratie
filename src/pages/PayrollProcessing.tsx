@@ -142,10 +142,14 @@ export default function PayrollProcessing() {
         throw new Error('Company not found');
       }
 
+      console.log(`🔍 Processing ${employees.length} employees for payroll period ${selectedPeriod.id}`);
+
       for (const employee of employees) {
+        const employeeName = `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`;
+
         // Skip inactive employees
         if (employee.status !== 'active') {
-          console.log(`Skipping inactive employee ${employee.id}`);
+          console.log(`⏭️  Skipping inactive employee: ${employeeName} (${employee.status})`);
           continue;
         }
 
@@ -156,11 +160,18 @@ export default function PayrollProcessing() {
           ts.entries.some(entry => entry.date >= selectedPeriod.startDate && entry.date <= selectedPeriod.endDate)
         );
 
-        const paymentType = employee.salaryInfo.paymentType;
+        const paymentType = employee.salaryInfo?.paymentType;
+
+        if (!paymentType) {
+          console.warn(`⚠️  Employee ${employeeName} has no paymentType set - SKIPPING`);
+          continue;
+        }
+
+        console.log(`👤 Processing: ${employeeName} | Type: ${paymentType} | Approved timesheets: ${approvedTimesheetsInPeriod.length}`);
 
         // For hourly employees, skip if no approved timesheets
         if (paymentType === 'hourly' && approvedTimesheetsInPeriod.length === 0) {
-          console.log(`No approved timesheets for hourly employee ${employee.id} in period ${selectedPeriod.id}`);
+          console.log(`⏭️  Skipping hourly employee ${employeeName} - no approved timesheets in period`);
           continue;
         }
 
@@ -198,7 +209,11 @@ export default function PayrollProcessing() {
         totalNet += calculation.netPay;
         totalTax += calculation.taxes.incomeTax;
         processedEmployeeCount++;
+
+        console.log(`✅ Successfully processed ${employeeName} | Gross: €${calculation.grossPay.toFixed(2)} | Net: €${calculation.netPay.toFixed(2)}`);
       }
+
+      console.log(`\n📊 PAYROLL SUMMARY: Processed ${processedEmployeeCount} employees | Total Gross: €${totalGross.toFixed(2)} | Total Net: €${totalNet.toFixed(2)}\n`);
 
       // Update the payroll period summary
       await updatePayrollPeriod(selectedPeriod.id!, adminUserId, {
