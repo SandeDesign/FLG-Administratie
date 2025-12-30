@@ -132,11 +132,6 @@ export default function PayrollProcessing() {
       let totalTax = 0;
       let processedEmployeeCount = 0;
 
-      // Clear previous calculations for this period before recalculating
-      const existingCalculations = await getPayrollCalculations(adminUserId);
-      // In a real app, you might want to delete these or mark them as superseded
-      // For simplicity, we'll just overwrite/recreate
-
       const company = await getCompany(selectedCompany.id, adminUserId);
       if (!company) {
         throw new Error('Company not found');
@@ -209,18 +204,8 @@ export default function PayrollProcessing() {
         calculation.calculatedBy = user.uid;
         calculation.status = 'calculated';
 
-        let calculationId: string;
-
-        // Check if a calculation already exists for this employee and period
-        const existingCalc = existingCalculations.find(c => c.employeeId === employee.id);
-        if (existingCalc) {
-          // Update existing calculation
-          await updatePayrollPeriod(existingCalc.id!, adminUserId, calculation); // Reusing updatePayrollPeriod for calculation update
-          calculationId = existingCalc.id!;
-        } else {
-          // Create new calculation
-          calculationId = await createPayrollCalculation(adminUserId, calculation);
-        }
+        // Always create new calculation (old calculations remain in database for audit trail)
+        const calculationId = await createPayrollCalculation(adminUserId, calculation);
 
         // Create payslip for this calculation
         calculation.id = calculationId;
