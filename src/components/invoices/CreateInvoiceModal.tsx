@@ -36,6 +36,7 @@ interface InvoiceRelation {
   };
   kvk?: string;
   taxNumber?: string;
+  defaultAdditionalRecipients?: string[];
 }
 
 // HARDCODED CONFIG VOOR WERKBONNEN FACTUURATIE
@@ -194,6 +195,12 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
         country: 'Nederland'
       }
     });
+
+    // Automatisch de standaard extra ontvangers laden
+    if (relation.defaultAdditionalRecipients && relation.defaultAdditionalRecipients.length > 0) {
+      setAdditionalRecipients(relation.defaultAdditionalRecipients);
+    }
+
     setIsRelationsOpen(false);
   };
 

@@ -37,6 +37,7 @@ export interface InvoiceRelation {
   kvk?: string;
   website?: string;
   notes?: string;
+  defaultAdditionalRecipients?: string[]; // Standaard extra ontvangers voor facturen
   createdAt: Date;
   updatedAt: Date;
 }
@@ -66,8 +67,11 @@ const InvoiceRelations: React.FC = () => {
     taxNumber: '',
     kvk: '',
     website: '',
-    notes: ''
+    notes: '',
+    defaultAdditionalRecipients: []
   });
+
+  const [newDefaultRecipient, setNewDefaultRecipient] = useState('');
 
   // Load relations
   const loadRelations = useCallback(async () => {
@@ -123,15 +127,44 @@ const InvoiceRelations: React.FC = () => {
       taxNumber: '',
       kvk: '',
       website: '',
-      notes: ''
+      notes: '',
+      defaultAdditionalRecipients: []
     });
+    setNewDefaultRecipient('');
     setIsModalOpen(true);
   };
 
   const handleEdit = (relation: InvoiceRelation) => {
     setEditingRelation(relation);
     setFormData(relation);
+    setNewDefaultRecipient('');
     setIsModalOpen(true);
+  };
+
+  const addDefaultRecipient = () => {
+    const email = newDefaultRecipient.trim();
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      const currentRecipients = formData.defaultAdditionalRecipients || [];
+      if (!currentRecipients.includes(email)) {
+        setFormData({
+          ...formData,
+          defaultAdditionalRecipients: [...currentRecipients, email]
+        });
+        setNewDefaultRecipient('');
+      } else {
+        showError('Validatie fout', 'Dit email adres is al toegevoegd');
+      }
+    } else {
+      showError('Validatie fout', 'Voer een geldig email adres in');
+    }
+  };
+
+  const removeDefaultRecipient = (index: number) => {
+    const currentRecipients = formData.defaultAdditionalRecipients || [];
+    setFormData({
+      ...formData,
+      defaultAdditionalRecipients: currentRecipients.filter((_, i) => i !== index)
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -166,6 +199,7 @@ const InvoiceRelations: React.FC = () => {
         kvk: formData.kvk?.trim() || '',
         website: formData.website?.trim() || '',
         notes: formData.notes?.trim() || '',
+        defaultAdditionalRecipients: formData.defaultAdditionalRecipients || [],
         updatedAt: Timestamp.fromDate(now)
       };
 
@@ -520,9 +554,67 @@ const InvoiceRelations: React.FC = () => {
                     value={formData.notes || ''}
                     onChange={(e) => setFormData({...formData, notes: e.target.value})}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Interne notities..."
                   />
+                </div>
+
+                {/* Standaard extra ontvangers */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Standaard extra ontvangers (optioneel)
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    Deze email adressen ontvangen automatisch een kopie van elke factuur voor deze klant
+                  </p>
+                  <div className="space-y-2">
+                    {/* Input voor nieuw email adres */}
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={newDefaultRecipient}
+                        onChange={(e) => setNewDefaultRecipient(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addDefaultRecipient();
+                          }
+                        }}
+                        placeholder="email@example.com"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        onClick={addDefaultRecipient}
+                        size="sm"
+                        icon={Plus}
+                      >
+                        Toevoegen
+                      </Button>
+                    </div>
+
+                    {/* Lijst met toegevoegde standaard emails */}
+                    {formData.defaultAdditionalRecipients && formData.defaultAdditionalRecipients.length > 0 && (
+                      <div className="space-y-1">
+                        {formData.defaultAdditionalRecipients.map((email, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                          >
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{email}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeDefaultRecipient(index)}
+                              className="p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                              title="Verwijderen"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </form>
             </div>
