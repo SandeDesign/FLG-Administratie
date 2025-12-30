@@ -257,6 +257,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
         purchaseOrder: formData.purchaseOrder.trim(),
         projectCode: formData.projectCode.trim(),
         additionalRecipients: additionalRecipients.length > 0 ? additionalRecipients : undefined,
+        hasAdditionalRecipients: additionalRecipients.length > 0 ? 'ja' : 'nee',
 
         invoiceDate: new Date(formData.invoiceDate),
         dueDate: new Date(formData.dueDate),

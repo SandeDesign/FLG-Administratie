@@ -50,6 +50,7 @@ export interface OutgoingInvoice {
   }[];
   notes?: string;
   additionalRecipients?: string[]; // Extra email ontvangers
+  hasAdditionalRecipients: 'ja' | 'nee'; // Filter voor extra mail flow
   pdfUrl?: string;
   createdAt: Date;
   updatedAt: Date;
