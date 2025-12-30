@@ -1055,7 +1055,7 @@ const OutgoingInvoices: React.FC = () => {
                       placeholder="Bijv: Week 40 Jan Jansen"
                       value={item.title}
                       onChange={e => updateItem(i, 'title', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     />
                   </div>
 
@@ -1066,7 +1066,7 @@ const OutgoingInvoices: React.FC = () => {
                       value={item.description}
                       onChange={e => updateItem(i, 'description', e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none font-mono"
+                      className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none font-mono bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     />
                   </div>
 
@@ -1079,7 +1079,7 @@ const OutgoingInvoices: React.FC = () => {
                         onChange={e => updateItem(i, 'quantity', Number(e.target.value))}
                         min="0.1"
                         step="0.1"
-                        className="w-full px-2 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full px-2 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                       />
                     </div>
                     <div>
@@ -1090,7 +1090,7 @@ const OutgoingInvoices: React.FC = () => {
                         onChange={e => updateItem(i, 'rate', Number(e.target.value))}
                         min="0"
                         step="0.01"
-                        className="w-full px-2 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="w-full px-2 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                       />
                     </div>
                     <div>
