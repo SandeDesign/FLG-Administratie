@@ -19,13 +19,12 @@ import {
 import { createPayslipFromCalculation } from '../services/payslipService';
 import { getCompany } from '../services/firebase';
 import { getWeeklyTimesheets } from '../services/timesheetService';
-import { getEmployees } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 
 export default function PayrollProcessing() {
   const { user, adminUserId } = useAuth();
-  const { selectedCompany, employees: allEmployees } = useApp();
+  const { selectedCompany, employees } = useApp();
   const { success, error: showError } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -116,7 +115,9 @@ export default function PayrollProcessing() {
 
     setProcessing(true);
     try {
-      const employees = await getEmployees(adminUserId, selectedCompany.id);
+      // Filter employees for selected company (same as TimesheetApprovals does)
+      const companyEmployees = employees.filter(emp => emp.companyId === selectedCompany.id);
+
       const hourlyRates = await getHourlyRates(adminUserId, selectedCompany.id);
       const defaultRate = hourlyRates.length > 0 ? hourlyRates : {
         baseRate: 15, // Default if no rates are set
@@ -138,15 +139,15 @@ export default function PayrollProcessing() {
       }
 
       console.log(`\n${'='.repeat(80)}`);
-      console.log(`🔍 PAYROLL DIAGNOSTIC - Processing ${employees.length} employees for period ${selectedPeriod.id}`);
+      console.log(`🔍 PAYROLL DIAGNOSTIC - Processing ${companyEmployees.length} employees for period ${selectedPeriod.id}`);
       console.log(`📅 Period: ${selectedPeriod.startDate.toLocaleDateString()} - ${selectedPeriod.endDate.toLocaleDateString()}`);
       console.log(`🏢 Company: ${selectedCompany.name} (${selectedCompany.id})`);
       console.log(`${'='.repeat(80)}\n`);
 
       // First, log all employees and their key attributes
-      employees.forEach((emp, idx) => {
+      companyEmployees.forEach((emp, idx) => {
         const name = `${emp.personalInfo.firstName} ${emp.personalInfo.lastName}`;
-        console.log(`📋 Employee ${idx + 1}/${employees.length}: ${name}`);
+        console.log(`📋 Employee ${idx + 1}/${companyEmployees.length}: ${name}`);
         console.log(`   • ID: ${emp.id}`);
         console.log(`   • Status: ${emp.status}`);
         console.log(`   • Payment Type: ${emp.salaryInfo?.paymentType || 'NOT SET'}`);
@@ -159,7 +160,7 @@ export default function PayrollProcessing() {
       console.log(`\n${'─'.repeat(80)}`);
       console.log('🔄 Now processing each employee...\n');
 
-      for (const employee of employees) {
+      for (const employee of companyEmployees) {
         const employeeName = `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`;
 
         // Skip inactive employees
@@ -222,9 +223,9 @@ export default function PayrollProcessing() {
       console.log(`\n${'='.repeat(80)}`);
       console.log(`📊 PAYROLL SUMMARY`);
       console.log(`${'='.repeat(80)}`);
-      console.log(`Total Employees Found: ${employees.length}`);
+      console.log(`Total Employees Found: ${companyEmployees.length}`);
       console.log(`Successfully Processed: ${processedEmployeeCount}`);
-      console.log(`Skipped: ${employees.length - processedEmployeeCount}`);
+      console.log(`Skipped: ${companyEmployees.length - processedEmployeeCount}`);
       console.log(`Total Gross Pay: €${totalGross.toFixed(2)}`);
       console.log(`Total Net Pay: €${totalNet.toFixed(2)}`);
       console.log(`Total Tax: €${totalTax.toFixed(2)}`);
@@ -441,7 +442,7 @@ export default function PayrollProcessing() {
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {calculations.map((calc) => {
-                    const employee = allEmployees?.find((e: any) => e.id === calc.employeeId);
+                    const employee = employees?.find((e: any) => e.id === calc.employeeId);
                     const employeeName = employee
                       ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
                       : calc.employeeId;
