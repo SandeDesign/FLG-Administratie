@@ -108,7 +108,20 @@ export const createPayslip = async (
     updatedAt: new Date()
   });
 
+  console.log(`💾 Writing to Firestore collection "payslips":`, {
+    userId,
+    employeeId: payslip.employeeId,
+    companyId: payslip.companyId,
+    payrollPeriodId: payslip.payrollPeriodId,
+    payrollCalculationId: payslip.payrollCalculationId,
+    periodStartDate: payslip.periodStartDate,
+    periodEndDate: payslip.periodEndDate
+  });
+
   const docRef = await addDoc(collection(db, 'payslips'), payslipData);
+
+  console.log(`✅ Payslip record saved: ${docRef.id}`);
+
   return docRef.id;
 };
 
@@ -164,18 +177,29 @@ export const createPayslipFromCalculation = async (
   };
 
   const payslipId = await createPayslip(userId, payslipData);
-  
-  // Generate payslip data for PDF
-  const pdfData = await generatePayslipData(company, employee, calculation);
-  
-  // Generate and upload PDF
-  try {
-    await generateAndUploadPayslipPdf(pdfData, payslipId, userId);
-  } catch (error) {
-    console.error('Error generating PDF for payslip:', payslipId, error);
-    // Continue without PDF - can be regenerated later
-  }
-  
+
+  console.log(`📄 Payslip stored in Firestore:`, {
+    payslipId,
+    employeeId: calculation.employeeId,
+    periodId: calculation.payrollPeriodId,
+    grossPay: Number(calculation.grossPay),
+    netPay: Number(calculation.netPay)
+  });
+
+  // TEMPORARILY DISABLED: PDF generation fails due to Firebase Storage CORS
+  // The payslip record is created in Firestore, but PDF generation is skipped
+  //
+  // // Generate payslip data for PDF
+  // const pdfData = await generatePayslipData(company, employee, calculation);
+  //
+  // // Generate and upload PDF
+  // try {
+  //   await generateAndUploadPayslipPdf(pdfData, payslipId, userId);
+  // } catch (error) {
+  //   console.error('Error generating PDF for payslip:', payslipId, error);
+  //   // Continue without PDF - can be regenerated later
+  // }
+
   return payslipId;
 };
 

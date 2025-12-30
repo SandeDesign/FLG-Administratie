@@ -161,7 +161,21 @@ export const createPayrollCalculation = async (
     updatedAt: new Date()
   });
 
+  console.log(`💾 Writing to Firestore collection "payrollCalculations":`, {
+    employeeId: calculation.employeeId,
+    companyId: calculation.companyId,
+    payrollPeriodId: calculation.payrollPeriodId,
+    grossPay: Number(calculation.grossPay),
+    netPay: Number(calculation.netPay),
+    regularHours: calculation.regularHours,
+    overtimeHours: calculation.overtimeHours,
+    status: calculation.status
+  });
+
   const docRef = await addDoc(collection(db, 'payrollCalculations'), calculationData);
+
+  console.log(`✅ Payroll calculation saved: ${docRef.id}`);
+
   return docRef.id;
 };
 
