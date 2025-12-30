@@ -539,10 +539,30 @@ const OutgoingInvoices: React.FC = () => {
   const handleDuplicateInvoice = async (invoice: OutgoingInvoice) => {
     try {
       setFormLoading(true);
-      
+
       // Generate new invoice number
       const newInvoiceNumber = await outgoingInvoiceService.getNextInvoiceNumber(queryUserId!, selectedCompany!.id);
-      
+
+      // Laad standaard extra ontvangers van de klant indien beschikbaar
+      let defaultRecipients: string[] = [];
+      if (invoice.clientId) {
+        try {
+          const relationDoc = await getDocs(
+            query(
+              collection(db, 'invoiceRelations'),
+              where('userId', '==', queryUserId),
+              where('companyId', '==', selectedCompany!.id)
+            )
+          );
+          const relation = relationDoc.docs.find(doc => doc.id === invoice.clientId);
+          if (relation) {
+            defaultRecipients = relation.data().defaultAdditionalRecipients || [];
+          }
+        } catch (err) {
+          console.log('Geen standaard ontvangers gevonden');
+        }
+      }
+
       // Copy invoice with fresh dates and status
       const newInvoice: Omit<OutgoingInvoice, 'id' | 'createdAt' | 'updatedAt'> = {
         userId: queryUserId!,
@@ -561,6 +581,8 @@ const OutgoingInvoices: React.FC = () => {
         description: invoice.description,
         purchaseOrder: invoice.purchaseOrder,
         projectCode: invoice.projectCode,
+        additionalRecipients: defaultRecipients.length > 0 ? defaultRecipients : undefined,
+        ExtraOntvangers: defaultRecipients.length > 0 ? 'ja' : 'nee',
         invoiceDate: new Date(),
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         status: 'draft',
