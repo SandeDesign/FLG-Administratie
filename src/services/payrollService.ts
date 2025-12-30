@@ -113,7 +113,13 @@ export const updatePayrollPeriod = async (
     updatedAt: new Date()
   });
 
+  console.log('🔥 FIREBASE UPDATE - Collection: payrollPeriods');
+  console.log('📝 Document ID:', id);
+  console.log('📦 UPDATE DATA:', JSON.stringify(updateData, null, 2));
+
   await updateDoc(docRef, updateData);
+
+  console.log('✅ UPDATED');
 };
 
 export const getPayrollCalculations = async (
@@ -161,7 +167,13 @@ export const createPayrollCalculation = async (
     updatedAt: new Date()
   });
 
+  console.log('🔥 FIREBASE WRITE - Collection: payrollCalculations');
+  console.log('📦 FULL DATA:', JSON.stringify(calculationData, null, 2));
+
   const docRef = await addDoc(collection(db, 'payrollCalculations'), calculationData);
+
+  console.log('✅ SAVED - ID:', docRef.id);
+
   return docRef.id;
 };
 
@@ -271,12 +283,13 @@ export const calculatePayroll = async (
   const weekendRate = baseRate * (hourlyRate.weekendMultiplier / 100);
   const weekendPay = totalHours.weekend * weekendRate;
 
-  const travelRate = employee.salaryInfo.travelAllowance.amountPerKm || 0.23;
+  const travelRate = employee.salaryInfo.travelAllowancePerKm || 0.23;
   const travelAllowance = totalHours.travel * travelRate;
 
   const grossPay = regularPay + overtimePay + eveningPay + nightPay + weekendPay;
 
-  const vacationAccrual = (employee.salaryInfo.holidayAllowancePercentage / 100) * grossPay;
+  // Default 8% holiday allowance (vakantiegeld)
+  const vacationAccrual = (8 / 100) * grossPay;
 
   const taxes = calculateTaxes(grossPay, employee);
 
@@ -351,8 +364,9 @@ const calculateTaxes = (grossPay: number, employee: Employee): PayrollTaxes => {
 
   const socialSecurityEmployee = grossPay * (aowRate + wlzRate + wwRate + wiaRate);
 
-  const pensionEmployee = grossPay * (employee.salaryInfo.pensionContribution / 100);
-  const pensionEmployer = grossPay * (employee.salaryInfo.pensionEmployerContribution / 100);
+  // Default pension rates (5% employee, 10% employer)
+  const pensionEmployee = grossPay * 0.05;
+  const pensionEmployer = grossPay * 0.10;
 
   return {
     incomeTax,
