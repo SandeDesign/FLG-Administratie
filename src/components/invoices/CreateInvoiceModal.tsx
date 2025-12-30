@@ -36,6 +36,7 @@ interface InvoiceRelation {
   };
   kvk?: string;
   taxNumber?: string;
+  defaultAdditionalRecipients?: string[];
 }
 
 // HARDCODED CONFIG VOOR WERKBONNEN FACTUURATIE
@@ -78,6 +79,11 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
     purchaseOrder: editingInvoice?.purchaseOrder || '',
     projectCode: editingInvoice?.projectCode || ''
   });
+
+  const [additionalRecipients, setAdditionalRecipients] = useState<string[]>(
+    editingInvoice?.additionalRecipients || []
+  );
+  const [newRecipientEmail, setNewRecipientEmail] = useState('');
 
   const [items, setItems] = useState<InvoiceItem[]>(
     editingInvoice?.items?.length ? editingInvoice.items : [
@@ -155,6 +161,24 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
     }
   };
 
+  const addRecipient = () => {
+    const email = newRecipientEmail.trim();
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (!additionalRecipients.includes(email)) {
+        setAdditionalRecipients([...additionalRecipients, email]);
+        setNewRecipientEmail('');
+      } else {
+        error('Validatie fout', 'Dit email adres is al toegevoegd');
+      }
+    } else {
+      error('Validatie fout', 'Voer een geldig email adres in');
+    }
+  };
+
+  const removeRecipient = (index: number) => {
+    setAdditionalRecipients(additionalRecipients.filter((_, i) => i !== index));
+  };
+
   const handleSelectRelation = (relation: InvoiceRelation) => {
     setFormData({
       ...formData,
@@ -171,6 +195,12 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
         country: 'Nederland'
       }
     });
+
+    // Automatisch de standaard extra ontvangers laden
+    if (relation.defaultAdditionalRecipients && relation.defaultAdditionalRecipients.length > 0) {
+      setAdditionalRecipients(relation.defaultAdditionalRecipients);
+    }
+
     setIsRelationsOpen(false);
   };
 
@@ -208,7 +238,7 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
         userId: adminUserId!,
         companyId: selectedCompany.id,
         invoiceNumber: invoiceNumber,
-        
+
         // Client gegevens
         clientId: formData.clientId,
         clientName: formData.clientName.trim(),
@@ -217,16 +247,17 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
         clientKvk: formData.clientKvk.trim(),
         clientTaxNumber: formData.clientTaxNumber.trim(),
         clientAddress: formData.clientAddress,
-        
+
         amount: subtotal,
         vatAmount,
         totalAmount: total,
         description: formData.description.trim(),
-        
+
         // Extra velden
         purchaseOrder: formData.purchaseOrder.trim(),
         projectCode: formData.projectCode.trim(),
-        
+        additionalRecipients: additionalRecipients.length > 0 ? additionalRecipients : undefined,
+
         invoiceDate: new Date(formData.invoiceDate),
         dueDate: new Date(formData.dueDate),
         status: 'draft',
@@ -444,6 +475,65 @@ const CreateInvoiceModal: React.FC<CreateInvoiceModalProps> = ({
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               />
+            </div>
+
+            {/* EXTRA ONTVANGERS */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Extra ontvangers (optioneel)
+              </label>
+              <div className="space-y-2">
+                {/* Input voor nieuw email adres */}
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={newRecipientEmail}
+                    onChange={(e) => setNewRecipientEmail(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addRecipient();
+                      }
+                    }}
+                    placeholder="email@example.com"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={addRecipient}
+                    className="px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="text-sm">Toevoegen</span>
+                  </button>
+                </div>
+
+                {/* Lijst met toegevoegde emails */}
+                {additionalRecipients.length > 0 && (
+                  <div className="space-y-1">
+                    {additionalRecipients.map((email, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                      >
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{email}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeRecipient(index)}
+                          className="p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          title="Verwijderen"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Deze email adressen ontvangen ook een kopie van de factuur
+                </p>
+              </div>
             </div>
           </form>
         </div>

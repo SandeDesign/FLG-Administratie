@@ -49,6 +49,7 @@ export interface OutgoingInvoice {
     amount: number;
   }[];
   notes?: string;
+  additionalRecipients?: string[]; // Extra email ontvangers
   pdfUrl?: string;
   createdAt: Date;
   updatedAt: Date;
