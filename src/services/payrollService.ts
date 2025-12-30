@@ -354,29 +354,79 @@ export const calculatePayroll = async (
 };
 
 const calculateTaxes = (grossPay: number, employee: Employee): PayrollTaxes => {
-  const taxRate = employee.salaryInfo.taxTable === 'green' ? 0.36 : 0.37; // Simplified tax rate
-  const incomeTax = grossPay * taxRate * (employee.salaryInfo.taxCredit ? 0.9 : 1); // Simplified tax credit
+  // ===== STAP 1: Bereken pensioengrondslag en pensioenpremie =====
+  // Franchise 2025: €15.927 per jaar = €1.327,25 per maand
+  const franchisePerMonth = 15927 / 12; // €1.327,25
+  const pensionableSalary = Math.max(0, grossPay - franchisePerMonth);
 
-  const aowRate = 0.1795; // Example AOW rate
-  const wlzRate = 0.0945; // Example WLZ rate
-  const wwRate = 0.0282; // Example WW rate
-  const wiaRate = 0.0; // Example WIA rate
+  // Pensioenpremie (meestal 10-15% voor werknemer, hoger voor werkgever)
+  const pensionRateEmployee = 0.1028; // 10,28%
+  const pensionRateEmployer = 0.1542; // 15,42%
+  const pensionEmployee = pensionableSalary * pensionRateEmployee;
+  const pensionEmployer = pensionableSalary * pensionRateEmployer;
 
-  const socialSecurityEmployee = grossPay * (aowRate + wlzRate + wwRate + wiaRate);
+  // ===== STAP 2: Werknemersverzekeringen (betaald door werknemer) =====
+  // WW (Werkloosheidswet) - sector afhankelijk, ca. 0,26%
+  const wwRate = 0.0026; // 0,26%
+  const wwPremium = grossPay * wwRate;
 
-  // Default pension rates (5% employee, 10% employer)
-  const pensionEmployee = grossPay * 0.05;
-  const pensionEmployer = grossPay * 0.10;
+  // WGA (Werk en Inkomen naar Arbeidsvermogen) - sector afhankelijk, ca. 0,38%
+  const wgaRate = 0.0038; // 0,38%
+  const wgaPremium = grossPay * wgaRate;
+
+  const werknemersVerzekeringen = wwPremium + wgaPremium;
+
+  // ===== STAP 3: Loonheffing met Nederlandse tariefschijven 2025 =====
+  // Bereken jaarinkomen voor tabel
+  const yearlyGross = grossPay * 12;
+
+  let yearlyTax = 0;
+
+  // Tariefschijf 1: €0 - €38.441 → 36,97%
+  // Tariefschijf 2: €38.441 - €75.624 → 36,97%
+  // Tariefschijf 3: >€75.624 → 49,50%
+
+  if (yearlyGross <= 38441) {
+    yearlyTax = yearlyGross * 0.3697;
+  } else if (yearlyGross <= 75624) {
+    yearlyTax = (38441 * 0.3697) + ((yearlyGross - 38441) * 0.3697);
+  } else {
+    yearlyTax = (38441 * 0.3697) + ((75624 - 38441) * 0.3697) + ((yearlyGross - 75624) * 0.4950);
+  }
+
+  // Heffingskortingen 2025 (alleen bij witte tabel + taxCredit)
+  let yearlyTaxCredit = 0;
+  if (employee.salaryInfo.taxCredit && employee.salaryInfo.taxTable === 'white') {
+    // Algemene heffingskorting 2025: max €3.362
+    if (yearlyGross <= 24812) {
+      yearlyTaxCredit += 3362;
+    } else if (yearlyGross <= 75518) {
+      yearlyTaxCredit += Math.max(0, 3362 - (0.06630 * (yearlyGross - 24812)));
+    }
+
+    // Arbeidskorting 2025: max €5.552
+    if (yearlyGross >= 11491 && yearlyGross <= 24820) {
+      const arbeidskorting = 0.3192 * (yearlyGross - 11491);
+      yearlyTaxCredit += Math.min(5552, arbeidskorting);
+    } else if (yearlyGross > 24820 && yearlyGross <= 39958) {
+      yearlyTaxCredit += 5552 - (0.06510 * (yearlyGross - 24820));
+    } else if (yearlyGross > 39958 && yearlyGross <= 125250) {
+      yearlyTaxCredit += Math.max(0, 4567 - (0.06510 * (yearlyGross - 39958)));
+    }
+  }
+
+  // Netto loonheffing per maand
+  const monthlyTax = Math.max(0, (yearlyTax - yearlyTaxCredit) / 12);
 
   return {
-    incomeTax,
-    socialSecurityEmployee,
-    socialSecurityEmployer: socialSecurityEmployee,
-    healthInsurance: 0, // Placeholder
-    pensionEmployee,
-    pensionEmployer,
-    unemploymentInsurance: grossPay * wwRate,
-    disabilityInsurance: grossPay * wiaRate
+    incomeTax: monthlyTax,
+    socialSecurityEmployee: werknemersVerzekeringen,
+    socialSecurityEmployer: werknemersVerzekeringen,
+    healthInsurance: 0, // CAK moet apart ingesteld worden als deduction
+    pensionEmployee: pensionEmployee,
+    pensionEmployer: pensionEmployer,
+    unemploymentInsurance: wwPremium,
+    disabilityInsurance: wgaPremium
   };
 };
 
