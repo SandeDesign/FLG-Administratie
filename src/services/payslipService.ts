@@ -294,9 +294,9 @@ export const generatePayslipData = async (
       ytdNet: calculation.ytdNet
     },
     leave: {
-      vacationDaysAccrued: employee.leaveInfo.holidayDays.accumulated,
-      vacationDaysUsed: employee.leaveInfo.holidayDays.taken,
-      vacationDaysBalance: employee.leaveInfo.holidayDays.remaining
+      vacationDaysAccrued: employee.leaveInfo?.vacation?.accrued || 0,
+      vacationDaysUsed: employee.leaveInfo?.vacation?.taken || 0,
+      vacationDaysBalance: employee.leaveInfo?.vacation?.remaining || 0
     },
     pension: {
       employeeContribution: calculation.taxes.pensionEmployee,
