@@ -113,7 +113,13 @@ export const updatePayrollPeriod = async (
     updatedAt: new Date()
   });
 
+  console.log('🔥 FIREBASE UPDATE - Collection: payrollPeriods');
+  console.log('📝 Document ID:', id);
+  console.log('📦 UPDATE DATA:', JSON.stringify(updateData, null, 2));
+
   await updateDoc(docRef, updateData);
+
+  console.log('✅ UPDATED');
 };
 
 export const getPayrollCalculations = async (
@@ -161,20 +167,12 @@ export const createPayrollCalculation = async (
     updatedAt: new Date()
   });
 
-  console.log(`💾 Writing to Firestore collection "payrollCalculations":`, {
-    employeeId: calculation.employeeId,
-    companyId: calculation.companyId,
-    payrollPeriodId: calculation.payrollPeriodId,
-    grossPay: Number(calculation.grossPay),
-    netPay: Number(calculation.netPay),
-    regularHours: calculation.regularHours,
-    overtimeHours: calculation.overtimeHours,
-    status: calculation.status
-  });
+  console.log('🔥 FIREBASE WRITE - Collection: payrollCalculations');
+  console.log('📦 FULL DATA:', JSON.stringify(calculationData, null, 2));
 
   const docRef = await addDoc(collection(db, 'payrollCalculations'), calculationData);
 
-  console.log(`✅ Payroll calculation saved: ${docRef.id}`);
+  console.log('✅ SAVED - ID:', docRef.id);
 
   return docRef.id;
 };

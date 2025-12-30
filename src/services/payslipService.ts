@@ -108,19 +108,12 @@ export const createPayslip = async (
     updatedAt: new Date()
   });
 
-  console.log(`💾 Writing to Firestore collection "payslips":`, {
-    userId,
-    employeeId: payslip.employeeId,
-    companyId: payslip.companyId,
-    payrollPeriodId: payslip.payrollPeriodId,
-    payrollCalculationId: payslip.payrollCalculationId,
-    periodStartDate: payslip.periodStartDate,
-    periodEndDate: payslip.periodEndDate
-  });
+  console.log('🔥 FIREBASE WRITE - Collection: payslips');
+  console.log('📦 FULL DATA:', JSON.stringify(payslipData, null, 2));
 
   const docRef = await addDoc(collection(db, 'payslips'), payslipData);
 
-  console.log(`✅ Payslip record saved: ${docRef.id}`);
+  console.log('✅ SAVED - ID:', docRef.id);
 
   return docRef.id;
 };
