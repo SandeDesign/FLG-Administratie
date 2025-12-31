@@ -791,12 +791,12 @@ export default function Timesheets() {
 
       {/* Week Summary */}
       {currentTimesheet && (
-        <Card className="bg-gradient-to-r from-primary-50 to-indigo-50 border-primary-200 p-4 sm:p-6">
+        <Card className="bg-gradient-to-r from-primary-50 to-indigo-50 dark:from-primary-900/20 dark:to-indigo-900/20 border-primary-200 dark:border-primary-800 p-4 sm:p-6">
           <div className="space-y-3">
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">Week {selectedWeek} Overzicht</h3>
 
             {isUnderContract && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700 flex gap-2">
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-sm text-yellow-700 dark:text-yellow-300 flex gap-2">
                 <span>⚠️</span>
                 <div>
                   <strong>Onder contract uren:</strong> {currentTimesheet.totalRegularHours}u van {contractHours}u
@@ -808,21 +808,21 @@ export default function Timesheets() {
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal</p>
-                <p className="text-xl sm:text-2xl font-bold text-primary-600">{currentTimesheet.totalRegularHours}u</p>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg text-center border border-gray-100 dark:border-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 font-medium">Totaal</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400">{currentTimesheet.totalRegularHours}u</p>
               </div>
-              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Kilometers</p>
-                <p className="text-xl sm:text-2xl font-bold text-green-600">{currentTimesheet.totalTravelKilometers}km</p>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg text-center border border-gray-100 dark:border-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 font-medium">Kilometers</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{currentTimesheet.totalTravelKilometers}km</p>
               </div>
-              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Werkdagen</p>
-                <p className="text-xl sm:text-2xl font-bold text-purple-600">{workDays}d</p>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg text-center border border-gray-100 dark:border-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 font-medium">Werkdagen</p>
+                <p className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{workDays}d</p>
               </div>
-              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Gem./dag</p>
-                <p className={`text-xl sm:text-2xl font-bold ${avgHours < 7 ? 'text-yellow-600' : 'text-orange-600'}`}>
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg text-center border border-gray-100 dark:border-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 font-medium">Gem./dag</p>
+                <p className={`text-xl sm:text-2xl font-bold ${avgHours < 7 ? 'text-yellow-600 dark:text-yellow-400' : 'text-orange-600 dark:text-orange-400'}`}>
                   {avgHours.toFixed(1)}u
                 </p>
               </div>
@@ -830,12 +830,12 @@ export default function Timesheets() {
 
             {/* Verlof & Ziekte Overzicht */}
             {(weekLeaveRequests.length > 0 || weekSickLeaves.length > 0) && (
-              <div className="border-t border-primary-200 pt-3 mt-3">
+              <div className="border-t border-primary-200 dark:border-primary-800 pt-3 mt-3">
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Verlof & Verzuim deze week</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {calculateWeekLeaveHours() > 0 && (
-                    <div className="flex items-center gap-2 p-2 bg-emerald-50 rounded-lg">
-                      <Palmtree className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                    <div className="flex items-center gap-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-100 dark:border-emerald-800">
+                      <Palmtree className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-emerald-700">
                           {calculateWeekLeaveHours().toFixed(1)}u verlof
@@ -847,13 +847,13 @@ export default function Timesheets() {
                     </div>
                   )}
                   {calculateWeekSickHours() > 0 && (
-                    <div className="flex items-center gap-2 p-2 bg-red-50 rounded-lg">
-                      <HeartPulse className="h-4 w-4 text-red-600 flex-shrink-0" />
+                    <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
+                      <HeartPulse className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-red-700">
+                        <p className="text-sm font-medium text-red-700 dark:text-red-300">
                           {calculateWeekSickHours().toFixed(1)}u ziek
                         </p>
-                        <p className="text-xs text-red-600">
+                        <p className="text-xs text-red-600 dark:text-red-400">
                           {weekSickLeaves.length} ziekmelding(en) actief
                         </p>
                       </div>

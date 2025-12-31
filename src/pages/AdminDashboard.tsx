@@ -184,28 +184,28 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-24 sm:pb-6">
-      <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-700 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-700 dark:from-blue-800 dark:via-blue-700 dark:to-indigo-900 rounded-xl p-6 text-white">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold">LoonMaatschappij</h1>
-            <p className="text-blue-100 mt-1">{selectedCompany.name}</p>
+            <p className="text-blue-100 dark:text-blue-200 mt-1">{selectedCompany.name}</p>
           </div>
-          <Activity className="h-12 w-12 text-blue-200 opacity-50" />
+          <Activity className="h-12 w-12 text-blue-200 dark:text-blue-300 opacity-50" />
         </div>
       </div>
 
       {totalPending > 0 && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-700 p-4 rounded-lg flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h3 className="text-sm font-semibold text-red-900">{totalPending} items wachten!</h3>
-            <p className="text-xs text-red-700 mt-1">
+            <h3 className="text-sm font-semibold text-red-900 dark:text-red-100">{totalPending} items wachten!</h3>
+            <p className="text-xs text-red-700 dark:text-red-300 mt-1">
               {stats.pendingTimesheets} uren • {stats.pendingLeaveRequests} verlof • {stats.pendingExpenses} onkosten
             </p>
           </div>
           <button
             onClick={() => navigate('/timesheet-approvals')}
-            className="text-red-600 hover:text-red-700 font-semibold text-sm whitespace-nowrap"
+            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-semibold text-sm whitespace-nowrap"
           >
             Bekijk →
           </button>
@@ -213,29 +213,29 @@ const AdminDashboard: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-blue-700">Actieve Medewerkers</p>
-              <p className="text-3xl font-bold text-blue-900 mt-2">{stats.activeEmployees}</p>
-              <p className="text-xs text-blue-600 mt-1">van {stats.totalEmployees} totaal</p>
+              <p className="text-xs font-medium text-blue-700 dark:text-blue-300">Actieve Medewerkers</p>
+              <p className="text-3xl font-bold text-blue-900 dark:text-blue-100 mt-2">{stats.activeEmployees}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">van {stats.totalEmployees} totaal</p>
             </div>
-            <Users className="h-10 w-10 text-blue-400" />
+            <Users className="h-10 w-10 text-blue-400 dark:text-blue-500" />
           </div>
         </Card>
 
         <Card
-          className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 cursor-pointer hover:shadow-lg transition-shadow"
+          className="p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-800 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/timesheet-approvals')}
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-orange-700">Uren Wachten</p>
-              <p className="text-3xl font-bold text-orange-900 mt-2">{stats.pendingTimesheets}</p>
-              <p className="text-xs text-orange-600 mt-1">te goedkeuren</p>
+              <p className="text-xs font-medium text-orange-700 dark:text-orange-300">Uren Wachten</p>
+              <p className="text-3xl font-bold text-orange-900 dark:text-orange-100 mt-2">{stats.pendingTimesheets}</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">te goedkeuren</p>
             </div>
             <div className="relative">
-              <Clock className="h-10 w-10 text-orange-400" />
+              <Clock className="h-10 w-10 text-orange-400 dark:text-orange-500" />
               {stats.pendingTimesheets > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                   {stats.pendingTimesheets}
@@ -246,17 +246,17 @@ const AdminDashboard: React.FC = () => {
         </Card>
 
         <Card
-          className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 cursor-pointer hover:shadow-lg transition-shadow"
+          className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/admin/leave-approvals')}
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-purple-700">Verlof Wachten</p>
-              <p className="text-3xl font-bold text-purple-900 mt-2">{stats.pendingLeaveRequests}</p>
-              <p className="text-xs text-purple-600 mt-1">aanvragen</p>
+              <p className="text-xs font-medium text-purple-700 dark:text-purple-300">Verlof Wachten</p>
+              <p className="text-3xl font-bold text-purple-900 dark:text-purple-100 mt-2">{stats.pendingLeaveRequests}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">aanvragen</p>
             </div>
             <div className="relative">
-              <Calendar className="h-10 w-10 text-purple-400" />
+              <Calendar className="h-10 w-10 text-purple-400 dark:text-purple-500" />
               {stats.pendingLeaveRequests > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                   {stats.pendingLeaveRequests}
@@ -267,17 +267,17 @@ const AdminDashboard: React.FC = () => {
         </Card>
 
         <Card
-          className="p-6 bg-gradient-to-br from-green-50 to-green-100 border-green-200 cursor-pointer hover:shadow-lg transition-shadow"
+          className="p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => navigate('/admin-expenses')}
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-green-700">Onkosten</p>
-              <p className="text-3xl font-bold text-green-900 mt-2">€{(stats.totalPendingExpenseAmount / 100).toFixed(0)}</p>
-              <p className="text-xs text-green-600 mt-1">{stats.pendingExpenses} in behandeling</p>
+              <p className="text-xs font-medium text-green-700 dark:text-green-300">Onkosten</p>
+              <p className="text-3xl font-bold text-green-900 dark:text-green-100 mt-2">€{(stats.totalPendingExpenseAmount / 100).toFixed(0)}</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">{stats.pendingExpenses} in behandeling</p>
             </div>
             <div className="relative">
-              <Receipt className="h-10 w-10 text-green-400" />
+              <Receipt className="h-10 w-10 text-green-400 dark:text-green-500" />
               {stats.pendingExpenses > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                   {stats.pendingExpenses}
