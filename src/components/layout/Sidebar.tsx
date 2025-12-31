@@ -257,7 +257,9 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
       icon: TrendingUp,
       color: 'bg-indigo-500',
       defaultOpen: companyType === 'holding' || companyType === 'project',
-      items: filteredNavigation.filter(i => i.name.includes('Stats'))
+      items: filteredNavigation.filter(i =>
+        i.name.includes('Stats') || i.name === 'Project Overzicht'
+      )
     },
     {
       title: 'HR',
