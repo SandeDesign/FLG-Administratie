@@ -596,7 +596,7 @@ const ProjectProduction: React.FC = () => {
           <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
             <button
               onClick={() => changeWeek(-1)}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
               title="Vorige week"
             >
               <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -607,7 +607,7 @@ const ProjectProduction: React.FC = () => {
             </div>
             <button
               onClick={() => changeWeek(1)}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
               title="Volgende week"
             >
               <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -655,13 +655,13 @@ const ProjectProduction: React.FC = () => {
 
       {/* Selected Employee Info */}
       {selectedEmployee && (
-        <Card className="bg-primary-50 border-primary-200 p-3 sm:p-4">
+        <Card className="bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 p-3 sm:p-4">
           <div className="flex items-center gap-3">
-            <div className="bg-primary-100 rounded-full p-2">
-              <UserIcon className="h-5 w-5 text-primary-600" />
+            <div className="bg-primary-100 dark:bg-primary-800/50 rounded-full p-2">
+              <UserIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-xs text-primary-600 font-medium">Geselecteerde medewerker</p>
+              <p className="text-xs text-primary-700 dark:text-primary-300 font-medium">Geselecteerde medewerker</p>
               <p className="font-semibold text-gray-900 dark:text-gray-100">
                 {selectedEmployee.personalInfo.firstName} {selectedEmployee.personalInfo.lastName}
               </p>

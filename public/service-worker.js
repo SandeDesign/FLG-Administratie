@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flg-admin-v2.0.5';
+const CACHE_NAME = 'flg-admin-v2.0.6';
 const urlsToCache = [
   '/',
   '/Logo.png',

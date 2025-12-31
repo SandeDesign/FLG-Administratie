@@ -9,7 +9,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 const ProjectStatistics: React.FC = () => {
-  const { selectedCompany, queryUserId } = useApp();
+  const { selectedCompany, queryUserId, selectedYear } = useApp();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -29,7 +29,7 @@ const ProjectStatistics: React.FC = () => {
     }
 
     loadProjectStatistics();
-  }, [selectedCompany, queryUserId]);
+  }, [selectedCompany, queryUserId, selectedYear]); // ✅ YEAR FILTERING: Re-load when year changes
 
   const loadProjectStatistics = async () => {
     if (!queryUserId || !selectedCompany) return;
@@ -42,7 +42,8 @@ const ProjectStatistics: React.FC = () => {
       const productionWeeksQuery = query(
         collection(db, 'productionWeeks'),
         where('userId', '==', queryUserId),
-        where('companyId', '==', selectedCompany.id)
+        where('companyId', '==', selectedCompany.id),
+        where('year', '==', selectedYear) // ✅ YEAR FILTERING: Only load selected year
       );
       const productionWeeksSnap = await getDocs(productionWeeksQuery);
       let totalHours = 0;
@@ -67,9 +68,13 @@ const ProjectStatistics: React.FC = () => {
 
       outgoingSnap.forEach(doc => {
         const data = doc.data();
+        const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
+
+        // ✅ YEAR FILTERING: Only count invoices from selected year
+        if (invoiceDate.getFullYear() !== selectedYear) return;
+
         totalRevenue += data.totalAmount || 0;
 
-        const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
         const monthKey = `${invoiceDate.getFullYear()}-${String(invoiceDate.getMonth() + 1).padStart(2, '0')}`;
         monthlyRevenueMap.set(monthKey, (monthlyRevenueMap.get(monthKey) || 0) + (data.totalAmount || 0));
       });
@@ -86,9 +91,13 @@ const ProjectStatistics: React.FC = () => {
 
       incomingSnap.forEach(doc => {
         const data = doc.data();
+        const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
+
+        // ✅ YEAR FILTERING: Only count invoices from selected year
+        if (invoiceDate.getFullYear() !== selectedYear) return;
+
         totalCosts += data.totalAmount || 0;
 
-        const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
         const monthKey = `${invoiceDate.getFullYear()}-${String(invoiceDate.getMonth() + 1).padStart(2, '0')}`;
         monthlyCostsMap.set(monthKey, (monthlyCostsMap.get(monthKey) || 0) + (data.totalAmount || 0));
       });
@@ -105,12 +114,19 @@ const ProjectStatistics: React.FC = () => {
 
       const averageHourlyRate = totalHours > 0 ? totalRevenue / totalHours : 0;
 
+      // ✅ YEAR FILTERING: Count only invoices from selected year
+      const totalInvoicesForYear = Array.from(outgoingSnap.docs).filter(doc => {
+        const data = doc.data();
+        const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
+        return invoiceDate.getFullYear() === selectedYear;
+      }).length;
+
       setStats({
         totalProductionHours: totalHours,
         totalOvertime,
         totalRevenue,
         totalCosts,
-        totalInvoices: outgoingSnap.size,
+        totalInvoices: totalInvoicesForYear,
         averageHourlyRate,
       });
 
