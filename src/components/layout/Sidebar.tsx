@@ -67,12 +67,12 @@ export const navigation: NavigationItem[] = [
 
   // PROJECT COMPANY
   { name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin', 'manager'], companyTypes: ['project'] },
-  { name: 'Project Stats', href: '/project-statistics', icon: BarChart2, roles: ['admin'], companyTypes: ['project'] },
+  { name: 'Project Overzicht', href: '/project-statistics', icon: BarChart2, roles: ['admin'], companyTypes: ['project'] },
 
   // STATISTIEKEN - Voor alle rollen en bedrijfstypes
-  { name: 'Statistieken', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { name: 'Statistieken', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'] },
-  { name: 'Statistieken', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding', 'shareholder'] },
+  { name: 'Werkgever Stats', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'] },
+  { name: 'Project Stats', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'] },
+  { name: 'Holding Stats', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding', 'shareholder'] },
 
   // SYSTEEM (Admin - Employer, Holding, Shareholder)
   { name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
@@ -257,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
       icon: TrendingUp,
       color: 'bg-indigo-500',
       defaultOpen: companyType === 'holding' || companyType === 'project',
-      items: filteredNavigation.filter(i => i.name === 'Statistieken')
+      items: filteredNavigation.filter(i => i.name.includes('Stats'))
     },
     {
       title: 'HR',
@@ -282,7 +282,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
       icon: Factory,
       color: 'bg-orange-500',
       defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Productie', 'Project Stats'].includes(i.name))
+      items: filteredNavigation.filter(i => ['Productie', 'Project Overzicht'].includes(i.name))
     },
     {
       title: 'Data',
