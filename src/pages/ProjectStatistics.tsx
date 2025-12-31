@@ -9,8 +9,8 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 const ProjectStatistics: React.FC = () => {
-  const { selectedCompany } = useApp();
-  const { adminUserId } = useAuth();
+  const { selectedCompany, queryUserId } = useApp();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalProductionHours: 0,
@@ -23,40 +23,41 @@ const ProjectStatistics: React.FC = () => {
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!selectedCompany || !adminUserId || selectedCompany.companyType !== 'project') {
+    if (!selectedCompany || !queryUserId || selectedCompany.companyType !== 'project') {
       setLoading(false);
       return;
     }
 
     loadProjectStatistics();
-  }, [selectedCompany, adminUserId]);
+  }, [selectedCompany, queryUserId]);
 
   const loadProjectStatistics = async () => {
-    if (!adminUserId || !selectedCompany) return;
+    if (!queryUserId || !selectedCompany) return;
 
     setLoading(true);
     try {
       console.log('📊 Loading project statistics...');
 
-      // Time entries (productie) - Load all production hours for this company
-      const timeEntriesQuery = query(
-        collection(db, 'timeEntries'),
+      // Production weeks (productie) - Load all production hours for this company
+      const productionWeeksQuery = query(
+        collection(db, 'productionWeeks'),
+        where('userId', '==', queryUserId),
         where('companyId', '==', selectedCompany.id)
       );
-      const timeEntriesSnap = await getDocs(timeEntriesQuery);
+      const productionWeeksSnap = await getDocs(productionWeeksQuery);
       let totalHours = 0;
       let totalOvertime = 0;
 
-      timeEntriesSnap.forEach(doc => {
+      productionWeeksSnap.forEach(doc => {
         const data = doc.data();
-        totalHours += data.regularHours || 0;
-        totalOvertime += data.overtimeHours || 0;
+        totalHours += data.totalHours || 0;
+        // Note: productionWeeks doesn't track overtime separately yet
       });
 
       // Outgoing invoices (omzet)
       const outgoingQuery = query(
         collection(db, 'outgoingInvoices'),
-        where('userId', '==', adminUserId),
+        where('userId', '==', queryUserId),
         where('companyId', '==', selectedCompany.id)
       );
       const outgoingSnap = await getDocs(outgoingQuery);
@@ -76,7 +77,7 @@ const ProjectStatistics: React.FC = () => {
       // Incoming invoices (kosten)
       const incomingQuery = query(
         collection(db, 'incomingInvoices'),
-        where('userId', '==', adminUserId),
+        where('userId', '==', queryUserId),
         where('companyId', '==', selectedCompany.id)
       );
       const incomingSnap = await getDocs(incomingQuery);
@@ -92,12 +93,13 @@ const ProjectStatistics: React.FC = () => {
         monthlyCostsMap.set(monthKey, (monthlyCostsMap.get(monthKey) || 0) + (data.totalAmount || 0));
       });
 
-      // Time entries per maand tellen
-      timeEntriesSnap.forEach(doc => {
+      // Production weeks per maand tellen
+      productionWeeksSnap.forEach(doc => {
         const data = doc.data();
-        const date = data.date?.toDate?.() || new Date(data.date);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const hours = (data.regularHours || 0) + (data.overtimeHours || 0);
+        // Convert week number to approximate month (week 1-4 = month 1, week 5-8 = month 2, etc.)
+        const approximateMonth = Math.ceil((data.week || 1) / 4.33);
+        const monthKey = `${data.year}-${String(approximateMonth).padStart(2, '0')}`;
+        const hours = data.totalHours || 0;
         monthlyHoursMap.set(monthKey, (monthlyHoursMap.get(monthKey) || 0) + hours);
       });
 
