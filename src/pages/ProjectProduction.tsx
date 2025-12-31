@@ -239,8 +239,10 @@ const ProjectProduction: React.FC = () => {
         Array.isArray(productionResponse) &&
         productionResponse.length > 0
       ) {
-        await processProductionData(productionResponse, selectedEmployeeId);
-        success('Import geslaagd', `${productionResponse.length} productie entries geïmporteerd`);
+        const savedSuccessfully = await processProductionData(productionResponse, selectedEmployeeId);
+        if (savedSuccessfully) {
+          success('Import & Opslaan geslaagd', `${productionResponse.length} productie entries geïmporteerd en opgeslagen`);
+        }
       } else if (productionResponse) {
         console.log('Webhook response:', productionResponse);
         showError('Geen data', 'Geen productie gegevens gevonden voor deze week/medewerker');
@@ -255,18 +257,18 @@ const ProjectProduction: React.FC = () => {
     }
   };
 
-  const processProductionData = async (rawData: any[], employeeId: string) => {
+  const processProductionData = async (rawData: any[], employeeId: string): Promise<boolean> => {
     console.log('🔍 Raw data received:', rawData);
-    
+
     const normalizedEntries = rawData.map((record, idx) => {
       const data = record.data || record;
-      
+
       let monteur = '';
       let datum = '';
       let uren = 0;
       let opdrachtgever = '';
       let locaties = '';
-      
+
       // Try numeric indices first (Make.com format)
       if (data['0'] !== undefined) {
         monteur = data['0'] || '';
@@ -282,7 +284,7 @@ const ProjectProduction: React.FC = () => {
         opdrachtgever = data.Opdrachtgever || data.opdrachtgever || '';
         locaties = data.Locaties || data.locaties || '';
       }
-      
+
       return {
         dag: datum,
         monteur,
@@ -325,6 +327,58 @@ const ProjectProduction: React.FC = () => {
 
     setProductionData(updatedWeek);
     setEntries(updatedEntries);
+
+    // 🔥 AUTO-SAVE: Automatisch opslaan na import
+    try {
+      const dataToSave = {
+        week: updatedWeek.week,
+        year: updatedWeek.year,
+        companyId: updatedWeek.companyId,
+        employeeId: updatedWeek.employeeId,
+        userId: queryUserId!,
+        entries: updatedEntries.map(entry => ({
+          monteur: entry.monteur,
+          datum: entry.datum,
+          uren: entry.uren,
+          opdrachtgever: entry.opdrachtgever,
+          locaties: entry.locaties,
+          week: entry.week,
+          year: entry.year,
+          companyId: entry.companyId,
+          employeeId: entry.employeeId,
+          userId: entry.userId,
+          createdAt: Timestamp.fromDate(entry.createdAt instanceof Date ? entry.createdAt : new Date()),
+          updatedAt: Timestamp.fromDate(entry.updatedAt instanceof Date ? entry.updatedAt : new Date())
+        })),
+        status: 'draft',
+        totalHours: updatedWeek.totalHours,
+        totalEntries: updatedWeek.totalEntries,
+        createdAt: Timestamp.fromDate(updatedWeek.createdAt instanceof Date ? updatedWeek.createdAt : new Date()),
+        updatedAt: Timestamp.fromDate(new Date())
+      };
+
+      if (existingWeek?.id) {
+        // Update existing
+        await updateDoc(doc(db, 'productionWeeks', existingWeek.id), dataToSave);
+        console.log('✅ Auto-saved (updated) with ID:', existingWeek.id);
+      } else {
+        // Create new
+        const docRef = await addDoc(collection(db, 'productionWeeks'), dataToSave);
+        console.log('✅ Auto-saved (created) with ID:', docRef.id);
+        setExistingWeek({ ...updatedWeek, id: docRef.id });
+      }
+
+      // Reload data to ensure consistency
+      setTimeout(() => {
+        loadProductionData();
+      }, 500);
+
+      return true;
+    } catch (error) {
+      console.error('Error auto-saving production data:', error);
+      showError('Fout bij automatisch opslaan', `Data is geïmporteerd maar niet opgeslagen: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
+      return false;
+    }
   };
 
   const updateEntry = (index: number, field: keyof ProductionEntry, value: any) => {
