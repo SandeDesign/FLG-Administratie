@@ -618,26 +618,26 @@ const ProjectProduction: React.FC = () => {
 
       {/* Summary Card */}
       {productionData && (
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 p-4 sm:p-6">
+        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800 p-4 sm:p-6">
           <div className="space-y-3">
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">Week {selectedWeek} Samenvatting</h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal Uren</p>
-                <p className="text-xl sm:text-2xl font-bold text-green-600">
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg text-center border border-gray-100 dark:border-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 font-medium">Totaal Uren</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
                   {productionData.totalHours}u
                 </p>
               </div>
-              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Entries</p>
-                <p className="text-xl sm:text-2xl font-bold text-primary-600">
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg text-center border border-gray-100 dark:border-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 font-medium">Entries</p>
+                <p className="text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400">
                   {productionData.totalEntries}
                 </p>
               </div>
-              <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 rounded-lg text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Status</p>
-                <p className="text-xs font-bold text-gray-600 dark:text-gray-400 capitalize">
+              <div className="p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg text-center border border-gray-100 dark:border-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 font-medium">Status</p>
+                <p className="text-xs font-bold text-gray-700 dark:text-gray-200 capitalize">
                   {productionData.status}
                 </p>
               </div>

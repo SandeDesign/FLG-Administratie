@@ -21,6 +21,7 @@ import {
   RotateCcw,
   Home,
   MoreVertical,
+  ListTodo,
 } from 'lucide-react';
 
 // Beschikbare iconen voor bottom nav
@@ -33,6 +34,7 @@ const AVAILABLE_ICONS = [
   { name: 'TrendingUp', icon: TrendingUp, label: 'Stats', gradient: 'from-indigo-500 to-indigo-600' },
   { name: 'Wallet', icon: Wallet, label: 'Begroting', gradient: 'from-pink-500 to-pink-600' },
   { name: 'Cpu', icon: Cpu, label: 'Productie', gradient: 'from-cyan-500 to-cyan-600' },
+  { name: 'ListTodo', icon: ListTodo, label: 'Taken', gradient: 'from-amber-500 to-amber-600' },
   { name: 'Settings', icon: Settings, label: 'Profiel', gradient: 'from-gray-500 to-gray-600' },
 ];
 
@@ -157,6 +159,7 @@ export const BottomNavSettings: React.FC = () => {
         else if (iconName === 'TrendingUp') href = `/statistics/${selectedCompany.companyType}`;
         else if (iconName === 'Wallet') href = '/budgeting';
         else if (iconName === 'Cpu') href = '/project-production';
+        else if (iconName === 'ListTodo') href = '/tasks';
         else if (iconName === 'Settings') href = '/settings';
 
         return {

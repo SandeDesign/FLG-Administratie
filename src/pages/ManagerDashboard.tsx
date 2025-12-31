@@ -11,6 +11,7 @@ import {
   Euro,
   FileText,
   Package,
+  ListTodo,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -164,33 +165,33 @@ const ManagerDashboard: React.FC = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-gray-800 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white/20 dark:bg-gray-800/40 backdrop-blur-sm rounded-lg p-4 border border-white/30 dark:border-gray-700/50">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="h-4 w-4 text-white/80" />
-              <p className="text-xs text-white/80">Team</p>
+              <Users className="h-4 w-4 text-white" />
+              <p className="text-xs text-white/90">Team</p>
             </div>
             <p className="text-2xl font-bold text-white">{stats.totalTeam}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white/20 dark:bg-gray-800/40 backdrop-blur-sm rounded-lg p-4 border border-white/30 dark:border-gray-700/50">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="h-4 w-4 text-white/80" />
-              <p className="text-xs text-white/80">Actief</p>
+              <CheckCircle className="h-4 w-4 text-white" />
+              <p className="text-xs text-white/90">Actief</p>
             </div>
             <p className="text-2xl font-bold text-white">{stats.activeMembers}</p>
           </div>
           {isProjectCompany && (
             <>
-              <div className="bg-white dark:bg-gray-800 backdrop-blur-sm rounded-lg p-4">
+              <div className="bg-white/20 dark:bg-gray-800/40 backdrop-blur-sm rounded-lg p-4 border border-white/30 dark:border-gray-700/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <Package className="h-4 w-4 text-white/80" />
-                  <p className="text-xs text-white/80">Productie</p>
+                  <Package className="h-4 w-4 text-white" />
+                  <p className="text-xs text-white/90">Productie</p>
                 </div>
                 <p className="text-2xl font-bold text-white">{stats.totalProduction}</p>
               </div>
-              <div className="bg-white dark:bg-gray-800 backdrop-blur-sm rounded-lg p-4">
+              <div className="bg-white/20 dark:bg-gray-800/40 backdrop-blur-sm rounded-lg p-4 border border-white/30 dark:border-gray-700/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <Euro className="h-4 w-4 text-white/80" />
-                  <p className="text-xs text-white/80">Waarde</p>
+                  <Euro className="h-4 w-4 text-white" />
+                  <p className="text-xs text-white/90">Waarde</p>
                 </div>
                 <p className="text-2xl font-bold text-white">€{stats.totalProductionValue.toLocaleString()}</p>
               </div>
@@ -205,7 +206,7 @@ const ManagerDashboard: React.FC = () => {
           <Zap className="h-6 w-6 text-amber-500" />
           Snelle Acties
         </h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {isProjectCompany ? (
             <>
               <button onClick={() => navigate('/project-production')} className="group">
@@ -230,6 +231,17 @@ const ManagerDashboard: React.FC = () => {
                   </div>
                 </div>
               </button>
+              <button onClick={() => navigate('/tasks')} className="group">
+                <div className="rounded-xl p-6 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="p-4 bg-amber-100 rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                      <ListTodo className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <h3 className="font-bold text-sm mb-1">Taken</h3>
+                    <p className="text-xs text-white/80">Beheren</p>
+                  </div>
+                </div>
+              </button>
             </>
           ) : (
             <>
@@ -251,6 +263,17 @@ const ManagerDashboard: React.FC = () => {
                       <Users className="h-6 w-6 text-green-600" />
                     </div>
                     <h3 className="font-bold text-sm mb-1">Team</h3>
+                    <p className="text-xs text-white/80">Beheren</p>
+                  </div>
+                </div>
+              </button>
+              <button onClick={() => navigate('/tasks')} className="group">
+                <div className="rounded-xl p-6 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="p-4 bg-amber-100 rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                      <ListTodo className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <h3 className="font-bold text-sm mb-1">Taken</h3>
                     <p className="text-xs text-white/80">Beheren</p>
                   </div>
                 </div>

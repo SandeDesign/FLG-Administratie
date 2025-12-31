@@ -15,6 +15,7 @@ import {
   Upload,
   Wallet,
   TrendingUp,
+  ListTodo,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -41,6 +42,7 @@ const ICON_MAP: Record<string, any> = {
   Upload,
   Wallet,
   TrendingUp,
+  ListTodo,
 };
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
