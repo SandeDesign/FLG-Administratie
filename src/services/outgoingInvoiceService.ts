@@ -80,7 +80,7 @@ const COLLECTION_NAME = 'outgoingInvoices';
 export const outgoingInvoiceService = {
   async getNextInvoiceNumber(userId: string, companyId: string): Promise<string> {
     try {
-      // ✅ NIEUW: Haal company op voor invoicePrefix
+      // ✅ Haal company op voor invoicePrefix
       let invoicePrefix = '';
       try {
         const companyDocRef = doc(db, 'companies', companyId);
@@ -97,6 +97,7 @@ export const outgoingInvoiceService = {
         console.error('❌ Could not load company prefix:', err);
       }
 
+      // ✅ YEAR FILTERING: Haal ALLE facturen op en filter client-side op prefix
       const q = query(
         collection(db, COLLECTION_NAME),
         where('userId', '==', userId),
@@ -106,26 +107,42 @@ export const outgoingInvoiceService = {
 
       const querySnapshot = await getDocs(q);
 
-      if (querySnapshot.empty) {
+      // ✅ Filter alleen facturen met huidige prefix (voor jaar-reset)
+      const invoicesWithCurrentPrefix = querySnapshot.docs.filter(doc => {
+        const invoiceNumber = doc.data().invoiceNumber;
+        if (!invoicePrefix) {
+          // Geen prefix: match alleen nummers zonder prefix (legacy)
+          return !invoiceNumber.includes('-');
+        }
+        // Met prefix: match alleen facturen die met deze prefix beginnen
+        return invoiceNumber.startsWith(`${invoicePrefix}-`);
+      });
+
+      console.log(`📊 Found ${invoicesWithCurrentPrefix.length} invoices with prefix "${invoicePrefix}"`);
+
+      if (invoicesWithCurrentPrefix.length === 0) {
         const num = '001';
         const result = invoicePrefix ? `${invoicePrefix}-${num}` : num;
-        console.log('📝 First invoice for company, generated:', result);
+        console.log('📝 First invoice with this prefix, generated:', result);
         return result;
       }
 
-      const lastInvoice = querySnapshot.docs[0].data();
-      const lastNumber = lastInvoice.invoiceNumber;
-      console.log('📋 Last invoice number:', lastNumber);
+      // ✅ Vind hoogste nummer van facturen met deze prefix
+      let highestNumber = 0;
+      invoicesWithCurrentPrefix.forEach(doc => {
+        const invoiceNumber = doc.data().invoiceNumber;
+        const match = invoiceNumber.match(/(\d+)$/);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num > highestNumber) {
+            highestNumber = num;
+          }
+        }
+      });
 
-      const match = lastNumber.match(/(\d+)$/);
-      if (!match) {
-        const num = '001';
-        const result = invoicePrefix ? `${invoicePrefix}-${num}` : num;
-        console.log('📝 Could not parse last number, generated:', result);
-        return result;
-      }
+      console.log('📋 Highest invoice number with prefix:', highestNumber);
 
-      const nextNum = (parseInt(match[1]) + 1).toString().padStart(3, '0');
+      const nextNum = (highestNumber + 1).toString().padStart(3, '0');
       const result = invoicePrefix ? `${invoicePrefix}-${nextNum}` : nextNum;
       console.log('📝 Generated next invoice number:', result);
 

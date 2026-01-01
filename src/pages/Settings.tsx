@@ -13,6 +13,7 @@ import {
   Moon,
   Sun,
   Calendar,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -29,6 +30,7 @@ import { useToast } from '../hooks/useToast';
 import { ALL_NAVIGATION_ITEMS, NavigationItem } from '../utils/menuConfig';
 import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibilitySettings';
 import { BottomNavSettings } from '../components/settings/BottomNavSettings';
+import { outgoingInvoiceService } from '../services/outgoingInvoiceService';
 // ✅ Ensure this component is placed at: src/components/settings/CompaniesVisibilitySettings.tsx
 
 const Settings: React.FC = () => {
@@ -56,11 +58,23 @@ const Settings: React.FC = () => {
   // Favorites state - nu per bedrijf
   const [favoritePages, setFavoritePages] = useState<string[]>([]);
 
+  // Invoice prefix & next number state
+  const [invoicePrefix, setInvoicePrefix] = useState<string>('');
+  const [nextInvoiceNumber, setNextInvoiceNumber] = useState<string>('');
+  const [loadingInvoiceNumber, setLoadingInvoiceNumber] = useState(false);
+
   useEffect(() => {
     if (user && userRole === 'admin' && activeTab === 'company') {
       loadDefaultCompany();
     }
   }, [user, userRole, activeTab, selectedCompany?.id]);
+
+  // Load next invoice number when company changes
+  useEffect(() => {
+    if (user && selectedCompany && activeTab === 'company') {
+      loadNextInvoiceNumber();
+    }
+  }, [user, selectedCompany?.id, selectedCompany?.invoicePrefix, activeTab]);
 
   useEffect(() => {
     if (user) {
@@ -94,6 +108,24 @@ const Settings: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading default company:', error);
+    }
+  };
+
+  const loadNextInvoiceNumber = async () => {
+    if (!user || !selectedCompany) return;
+
+    try {
+      setLoadingInvoiceNumber(true);
+      setInvoicePrefix(selectedCompany.invoicePrefix || '');
+
+      const nextNumber = await outgoingInvoiceService.getNextInvoiceNumber(user.uid, selectedCompany.id);
+      setNextInvoiceNumber(nextNumber);
+      console.log('📋 Next invoice number:', nextNumber);
+    } catch (error) {
+      console.error('Error loading next invoice number:', error);
+      setNextInvoiceNumber('Error');
+    } finally {
+      setLoadingInvoiceNumber(false);
     }
   };
 
@@ -719,6 +751,70 @@ const Settings: React.FC = () => {
                     Deze instelling wordt direct toegepast op alle pagina's met jaar-gerelateerde data
                   </p>
                 </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Invoice Number Preview */}
+          <Card>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary-600" />
+                Factuurnummer Preview
+              </h2>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Bekijk welk factuurnummer de volgende factuur krijgt bij aanmaken. De prefix kun je wijzigen bij het bewerken van het bedrijf.
+                </p>
+
+                {selectedCompany ? (
+                  <div className="space-y-3">
+                    {/* Current Prefix */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Huidige prefix
+                      </label>
+                      <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <p className="text-sm font-mono text-gray-900 dark:text-gray-100">
+                          {invoicePrefix || '(geen prefix ingesteld)'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Next Invoice Number */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Eerstvolgende factuurnummer
+                      </label>
+                      <div className="px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        {loadingInvoiceNumber ? (
+                          <div className="flex items-center gap-2">
+                            <LoadingSpinner className="h-4 w-4" />
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Laden...</p>
+                          </div>
+                        ) : (
+                          <p className="text-lg font-bold font-mono text-green-700 dark:text-green-300">
+                            {nextInvoiceNumber || 'N/A'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Info Box */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <p className="text-sm text-blue-800 dark:text-blue-300">
+                        <strong>Let op:</strong> Dit nummer wordt automatisch berekend op basis van de hoogste bestaande factuur met dezelfde prefix.
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        Bij het wijzigen van de prefix (bijv. van FLG-2025 naar FLG-2026) reset de nummering automatisch naar 001.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+                    Selecteer een bedrijf om het volgende factuurnummer te zien
+                  </div>
+                )}
               </div>
             </div>
           </Card>
