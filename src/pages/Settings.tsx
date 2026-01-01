@@ -116,14 +116,26 @@ const Settings: React.FC = () => {
 
     try {
       setLoadingInvoiceNumber(true);
-      setInvoicePrefix(selectedCompany.invoicePrefix || '');
 
       const nextNumber = await outgoingInvoiceService.getNextInvoiceNumber(user.uid, selectedCompany.id);
       setNextInvoiceNumber(nextNumber);
       console.log('📋 Next invoice number:', nextNumber);
+
+      // ✅ Parse prefix from next invoice number (always fresh from DB)
+      // Format: "PREFIX-001" or "001" (no prefix)
+      const lastDashIndex = nextNumber.lastIndexOf('-');
+      if (lastDashIndex !== -1) {
+        // Has prefix: extract everything before last dash
+        const extractedPrefix = nextNumber.substring(0, lastDashIndex);
+        setInvoicePrefix(extractedPrefix);
+      } else {
+        // No prefix
+        setInvoicePrefix('');
+      }
     } catch (error) {
       console.error('Error loading next invoice number:', error);
       setNextInvoiceNumber('Error');
+      setInvoicePrefix('');
     } finally {
       setLoadingInvoiceNumber(false);
     }
