@@ -12,6 +12,7 @@ import {
   Star,
   Moon,
   Sun,
+  Calendar,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -32,7 +33,7 @@ import { BottomNavSettings } from '../components/settings/BottomNavSettings';
 
 const Settings: React.FC = () => {
   const { user, userRole } = useAuth();
-  const { companies, selectedCompany } = useApp();
+  const { companies, selectedCompany, selectedYear, setSelectedYear } = useApp();
   const { success, error: showError } = useToast();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   const [activeTab, setActiveTab] = useState<'account' | 'company'>('account');
@@ -673,6 +674,51 @@ const Settings: React.FC = () => {
                 >
                   Standaard bedrijf opslaan
                 </Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* Year Selector */}
+          <Card>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary-600" />
+                Jaar Filter
+              </h2>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Selecteer welk jaar wordt weergegeven voor productie, facturen en statistieken. <strong>Oude data blijft altijd toegankelijk</strong> door het jaar te wijzigen.
+                </p>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Selecteer jaar
+                  </label>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => {
+                      const year = parseInt(e.target.value, 10);
+                      setSelectedYear(year);
+                      success('Jaar gewijzigd', `Data wordt nu gefilterd op jaar ${year}`);
+                    }}
+                    className="w-full px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border rounded-lg border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    {Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i).map((year) => (
+                      <option key={year} value={year}>
+                        {year} {year === new Date().getFullYear() && '(huidig jaar)'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                    <strong>Huidig geselecteerd jaar:</strong> {selectedYear}
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Deze instelling wordt direct toegepast op alle pagina's met jaar-gerelateerde data
+                  </p>
+                </div>
               </div>
             </div>
           </Card>

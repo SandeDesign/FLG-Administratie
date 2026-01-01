@@ -12,11 +12,13 @@ interface AppContextType {
   employees: Employee[];
   branches: Branch[];
   selectedCompany: Company | null;
+  selectedYear: number; // ✅ YEAR FILTERING: Selected year for data queries
   dashboardStats: DashboardStats;
   loading: boolean;
   currentEmployeeId: string | null;
   queryUserId: string | null; // ✅ NIEUW: userId voor data queries (voor managers = company owner, voor admins = eigen uid)
   setSelectedCompany: (company: Company | null) => void;
+  setSelectedYear: (year: number) => void; // ✅ YEAR FILTERING: Set selected year
   refreshDashboardStats: () => Promise<void>;
 }
 
@@ -28,6 +30,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedYear, setSelectedYearState] = useState<number>(new Date().getFullYear()); // ✅ YEAR FILTERING: Default to current year
   const [loading, setLoading] = useState(true);
   const [queryUserId, setQueryUserId] = useState<string | null>(null); // ✅ NIEUW: userId voor data queries
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
@@ -242,6 +245,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         defaultCompanyId = storedDefault || null;
       }
 
+      // ✅ YEAR FILTERING: Load selected year from localStorage
+      const storedYear = localStorage.getItem(`selectedYear_${adminUserId}`);
+      if (storedYear) {
+        const year = parseInt(storedYear, 10);
+        if (!isNaN(year) && year >= 2020 && year <= 2050) {
+          setSelectedYearState(year);
+          console.log('Loaded selected year from localStorage:', year);
+        }
+      }
+
       if (userRole === 'employee' && currentEmployeeId) {
         const currentEmployee = employeesData.find(e => e.id === currentEmployeeId);
         if (currentEmployee) {
@@ -297,6 +310,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [userRole, companies, employees, branches, adminUserId, calculateDashboardStats]);
 
+  // ✅ YEAR FILTERING: Wrapper function to save year to localStorage
+  const setSelectedYear = useCallback((year: number) => {
+    setSelectedYearState(year);
+    if (adminUserId) {
+      localStorage.setItem(`selectedYear_${adminUserId}`, String(year));
+      console.log('Saved selected year to localStorage:', year);
+    }
+  }, [adminUserId]);
+
   // Apply theme color when selected company changes
   useEffect(() => {
     if (selectedCompany?.themeColor) {
@@ -313,11 +335,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         employees,
         branches,
         selectedCompany,
+        selectedYear, // ✅ YEAR FILTERING: Expose selected year
         dashboardStats,
         loading,
         currentEmployeeId,
         queryUserId, // ✅ NIEUW: userId voor data queries
         setSelectedCompany,
+        setSelectedYear, // ✅ YEAR FILTERING: Expose setter
         refreshDashboardStats,
       }}
     >
