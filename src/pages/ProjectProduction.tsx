@@ -53,7 +53,7 @@ export interface ProductionWeek {
 }
 
 const ProjectProduction: React.FC = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { selectedCompany, employees, queryUserId } = useApp(); // ✅ Gebruik queryUserId ipv adminUserId
   const { success, error: showError } = useToast();
 
@@ -564,7 +564,8 @@ const ProjectProduction: React.FC = () => {
     );
   }
 
-  if (linkedEmployees.length === 0) {
+  // ✅ Show empty state only for non-admin/manager roles
+  if (linkedEmployees.length === 0 && userRole !== 'admin' && userRole !== 'manager') {
     return (
       <div className="space-y-6 px-4 sm:px-0">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Productie Verwerking</h1>
