@@ -294,6 +294,17 @@ export const getWeekNumber = (date: Date): number => {
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 };
 
+/**
+ * Get the ISO week year for a given date
+ * ISO week year can differ from calendar year (e.g., Dec 30 2024 is in week 1 of 2025)
+ */
+export const getISOWeekYear = (date: Date): number => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum); // Thursday of this week
+  return d.getUTCFullYear(); // Year of that Thursday
+};
+
 export const getWeekDates = (year: number, weekNumber: number): Date[] => {
   const jan4 = new Date(year, 0, 4);
   const firstMonday = new Date(jan4.getTime() - (jan4.getDay() - 1) * 86400000);
