@@ -61,7 +61,7 @@ export const navigation: NavigationItem[] = [
   { name: 'Klanten & Leveranciers', href: '/invoice-relations', icon: Handshake, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Uitgaande facturen', href: '/outgoing-invoices', icon: FileOutput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Inkomende facturen', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Inkoop Upload', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
 
