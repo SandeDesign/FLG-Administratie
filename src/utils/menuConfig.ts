@@ -53,9 +53,9 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Productie Verwerking', href: '/project-production', icon: Factory, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
   { name: 'Projectstatistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
 
-  // PERSONEEL SECTION (alleen employer - NIET holding)
+  // PERSONEEL SECTION (employer + project voor uren)
   { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
+  { name: 'Urenregistratie', href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project'] },
   { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: Clock, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { name: 'Verlof', href: '/leave', icon: Calendar, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
   { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: Calendar, roles: ['admin', 'manager'], companyTypes: ['employer'] },

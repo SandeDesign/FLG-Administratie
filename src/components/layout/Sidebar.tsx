@@ -84,8 +84,8 @@ export const navigation: NavigationItem[] = [
   { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['manager'], companyTypes: ['employer'] },
   { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['manager'], companyTypes: ['employer'] },
 
-  // EMPLOYEE - Mijn zaken (alleen employer)
-  { name: 'Mijn Uren', href: '/timesheets', icon: Clock, roles: ['employee', 'manager'], companyTypes: ['employer'] },
+  // EMPLOYEE - Mijn zaken (employer + project voor uren)
+  { name: 'Mijn Uren', href: '/timesheets', icon: Clock, roles: ['employee', 'manager'], companyTypes: ['employer', 'project'] },
   { name: 'Mijn Verlof', href: '/leave', icon: CalendarCheck, roles: ['employee'], companyTypes: ['employer'] },
   { name: 'Mijn Declaraties', href: '/expenses', icon: Receipt, roles: ['employee'], companyTypes: ['employer'] },
   { name: 'Mijn Loonstroken', href: '/payslips', icon: CreditCard, roles: ['employee'], companyTypes: ['employer'] },
