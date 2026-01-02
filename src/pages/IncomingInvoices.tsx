@@ -82,7 +82,7 @@ const IncomingInvoices: React.FC = () => {
           file,
           selectedCompany.id,
           selectedCompany.name,
-          adminUserId,
+          selectedCompany.userId, // ✅ FIX: Use company's admin userId so admins can see manager uploads
           user.email || undefined,
           {
             supplierName: ocrResult.invoiceData.supplierName,
