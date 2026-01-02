@@ -191,6 +191,7 @@ function App() {
                           <Route path="budgeting" element={<Budgeting />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
                           <Route path="incoming-invoices" element={<IncomingInvoices />} />
+                          <Route path="incoming-invoices-stats" element={<IncomingInvoicesStats />} />
 
                           {/* Manager kan exporteren */}
                           <Route path="timesheet-export" element={<TimesheetExport />} />
