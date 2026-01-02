@@ -72,8 +72,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
   { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties Medewerkers', href: '/expenses', icon: Receipt, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
 
   // SYSTEEM SECTION (employer, project, holding, shareholder)
@@ -292,8 +292,8 @@ export const getMobileBottomNavItems = (
     manager: [
       { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
       { href: '/employees', icon: Users, label: 'Team' },
-      { href: '/incoming-invoices', icon: Upload, label: 'Inkoop' },
-      { href: '/timesheet-approvals', icon: Calendar, label: 'Goedkeuren' },
+      { href: '/incoming-invoices-stats', icon: PieChart, label: 'Bonnen' },
+      { href: '/timesheet-approvals', icon: Clock, label: 'Goedkeuren' },
     ],
     admin: [
       { href: '/', icon: LayoutDashboard, label: 'Dashboard' },

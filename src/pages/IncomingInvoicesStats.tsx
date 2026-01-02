@@ -28,9 +28,13 @@ import { doc, updateDoc, deleteDoc, Timestamp, deleteField } from 'firebase/fire
 import { db } from '../lib/firebase';
 
 const IncomingInvoicesStats: React.FC = () => {
-  const { user, adminUserId } = useAuth();
+  const { user, adminUserId, userRole } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+
+  // ✅ Role-based permissions
+  const isAdmin = userRole === 'admin';
+  const isManager = userRole === 'manager';
 
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -527,49 +531,59 @@ const IncomingInvoicesStats: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end items-center gap-2">
+                          {/* View details - available to all */}
                           <button
                             onClick={() => setExpandedRow(expandedRow === invoice.id ? null : invoice.id)}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            title="Details bekijken"
                           >
                             <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                           </button>
 
-                          {invoice.status === 'pending' && (
-                            <button
-                              onClick={() => handleApprove(invoice)}
-                              disabled={isSaving}
-                              className="p-2 hover:bg-green-100 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                              <CheckCircle className="w-4 h-4 text-green-600" />
-                            </button>
-                          )}
-
-                          {/* ✅ Edit button always available for admin & co-admin */}
+                          {/* Edit - available to admin and manager */}
                           <button
                             onClick={() => openEdit(invoice)}
-                            className="p-2 hover:bg-primary-100 rounded-lg transition-colors"
+                            className="p-2 hover:bg-primary-100 dark:hover:bg-primary-900 rounded-lg transition-colors"
                             title="Bewerken"
                           >
                             <Edit2 className="w-4 h-4 text-primary-600" />
                           </button>
 
-                          {(invoice.status === 'approved' || invoice.status === 'pending') && (
+                          {/* Approve - admin only */}
+                          {isAdmin && invoice.status === 'pending' && (
+                            <button
+                              onClick={() => handleApprove(invoice)}
+                              disabled={isSaving}
+                              className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors disabled:opacity-50"
+                              title="Goedkeuren"
+                            >
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            </button>
+                          )}
+
+                          {/* Mark as Paid - admin only */}
+                          {isAdmin && (invoice.status === 'approved' || invoice.status === 'pending') && (
                             <button
                               onClick={() => handleMarkPaid(invoice)}
                               disabled={isSaving}
-                              className="p-2 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-50"
+                              className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900 rounded-lg transition-colors disabled:opacity-50"
+                              title="Markeer als betaald"
                             >
                               <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
                             </button>
                           )}
 
-                          <button
-                            onClick={() => handleDelete(invoice.id!)}
-                            disabled={isDeleting === invoice.id}
-                            className="p-2 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </button>
+                          {/* Delete - admin only */}
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDelete(invoice.id!)}
+                              disabled={isDeleting === invoice.id}
+                              className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors disabled:opacity-50"
+                              title="Verwijderen"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -660,25 +674,42 @@ const IncomingInvoicesStats: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-4">
-              {/* Status Selector */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Status
-                </label>
-                <select
-                  value={editFormData.status ?? 'pending'}
-                  onChange={e => setEditFormData({ ...editFormData, status: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="pending">In behandeling (Concept)</option>
-                  <option value="approved">Goedgekeurd</option>
-                  <option value="paid">Betaald</option>
-                  <option value="rejected">Afgewezen</option>
-                </select>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                  ℹ️ Je kunt de status aanpassen om bonnen terug te zetten (bijv. van betaald naar concept voor testen)
-                </p>
-              </div>
+              {/* Status Selector - Only for admins */}
+              {isAdmin && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={editFormData.status ?? 'pending'}
+                    onChange={e => setEditFormData({ ...editFormData, status: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="pending">In behandeling (Concept)</option>
+                    <option value="approved">Goedgekeurd</option>
+                    <option value="paid">Betaald</option>
+                    <option value="rejected">Afgewezen</option>
+                  </select>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    ℹ️ Je kunt de status aanpassen om bonnen terug te zetten (bijv. van betaald naar concept voor testen)
+                  </p>
+                </div>
+              )}
+
+              {/* Status Display - For managers (read-only) */}
+              {isManager && (
+                <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Status (alleen-lezen)
+                  </label>
+                  <div className="mt-2">
+                    <StatusBadge status={editFormData.status ?? 'pending'} />
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    ℹ️ Alleen admins kunnen de status wijzigen
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
