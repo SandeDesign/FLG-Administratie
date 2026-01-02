@@ -306,10 +306,16 @@ export const getISOWeekYear = (date: Date): number => {
 };
 
 export const getWeekDates = (year: number, weekNumber: number): Date[] => {
-  const jan4 = new Date(year, 0, 4);
-  const firstMonday = new Date(jan4.getTime() - (jan4.getDay() - 1) * 86400000);
-  const weekStart = new Date(firstMonday.getTime() + (weekNumber - 1) * 7 * 86400000);
+  // ISO 8601: Week 1 contains the first Thursday of the year
+  // Find January 4 (always in week 1), then find its Monday
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const dayOfWeek = jan4.getUTCDay() || 7; // 1=Monday, 7=Sunday
+  const mondayOfWeek1 = new Date(jan4.getTime() - (dayOfWeek - 1) * 86400000);
 
+  // Calculate Monday of the requested week
+  const weekStart = new Date(mondayOfWeek1.getTime() + (weekNumber - 1) * 7 * 86400000);
+
+  // Return array of 7 days starting from that Monday
   return Array.from({ length: 7 }, (_, i) =>
     new Date(weekStart.getTime() + i * 86400000)
   );
