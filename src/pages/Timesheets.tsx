@@ -14,6 +14,7 @@ import {
   updateWeeklyTimesheet,
   submitWeeklyTimesheet,
   getWeekNumber,
+  getISOWeekYear,
   getWeekDates,
   calculateWeekTotals
 } from '../services/timesheetService';
@@ -31,7 +32,7 @@ export default function Timesheets() {
   const [importing, setImporting] = useState(false);
   const [timesheets, setTimesheets] = useState<WeeklyTimesheet[]>([]);
   const [selectedWeek, setSelectedWeek] = useState<number>(getWeekNumber(new Date()));
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number>(getISOWeekYear(new Date())); // ✅ FIX: Use ISO week year instead of calendar year
   const [currentTimesheet, setCurrentTimesheet] = useState<WeeklyTimesheet | null>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
