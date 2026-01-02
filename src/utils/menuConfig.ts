@@ -291,9 +291,10 @@ export const getMobileBottomNavItems = (
     ],
     manager: [
       { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+      { href: '/timesheets', icon: Clock, label: 'Uren' },
       { href: '/employees', icon: Users, label: 'Team' },
       { href: '/incoming-invoices-stats', icon: PieChart, label: 'Bonnen' },
-      { href: '/timesheet-approvals', icon: Clock, label: 'Goedkeuren' },
+      { href: '/timesheet-approvals', icon: CalendarCheck, label: 'Goedkeuren' },
     ],
     admin: [
       { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
