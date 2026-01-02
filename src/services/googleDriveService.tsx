@@ -1,6 +1,44 @@
 import { db } from '../lib/firebase';
-import { addDoc, collection, Timestamp } from 'firebase/firestore';
+import { addDoc, collection, Timestamp, doc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
 import { uploadFile } from './fileUploadService';
+
+/**
+ * Generate a unique reference number for incoming invoices
+ * Format: INK-YYYY-####
+ */
+async function generateIncomingInvoiceReference(companyId: string): Promise<string> {
+  const year = new Date().getFullYear();
+  const counterRef = doc(db, 'companies', companyId, 'counters', 'incomingInvoices');
+
+  return await runTransaction(db, async (transaction) => {
+    const counterDoc = await transaction.get(counterRef);
+
+    let currentNumber = 1;
+    let currentYear = year;
+
+    if (counterDoc.exists()) {
+      const data = counterDoc.data();
+      currentYear = data.year || year;
+      currentNumber = data.number || 1;
+
+      // Reset counter if new year
+      if (currentYear !== year) {
+        currentYear = year;
+        currentNumber = 1;
+      }
+    }
+
+    // Update counter
+    transaction.set(counterRef, {
+      year: currentYear,
+      number: currentNumber + 1,
+      lastUpdated: Timestamp.now()
+    });
+
+    // Return formatted reference: INK-2025-0001
+    return `INK-${year}-${String(currentNumber).padStart(4, '0')}`;
+  });
+}
 
 export const uploadInvoiceToDrive = async (
   file: File,
@@ -17,16 +55,24 @@ export const uploadInvoiceToDrive = async (
   },
   ocrData?: any
 ): Promise<{ invoiceId: string; driveFileId: string; driveWebLink: string }> => {
-  // Upload to internedata.nl
-  const uploadResult = await uploadFile(file, companyName, 'Inkoop');
+  // ✅ Generate unique reference number FIRST
+  const referenceNumber = await generateIncomingInvoiceReference(companyId);
+
+  // ✅ Upload to internedata.nl with reference number as filename
+  const uploadResult = await uploadFile(file, companyName, 'Inkoop', referenceNumber);
 
   // Save to Firestore
   const now = new Date();
+  const supplierInvoiceNumber = ocrData?.invoiceNumber || metadata?.invoiceNumber || '';
+
   const docRef = await addDoc(collection(db, 'incomingInvoices'), {
     userId,
     companyId,
+    referenceNumber, // ✅ Our own unique reference
     supplierName: ocrData?.supplierName || metadata?.supplierName || 'Onbekend',
-    invoiceNumber: ocrData?.invoiceNumber || metadata?.invoiceNumber || `INV-${Date.now()}`,
+    supplierInvoiceNumber, // ✅ Leverancier's factuurnummer (apart veld)
+    invoiceNumber: referenceNumber, // ✅ Use our reference as main invoice number
+    fileName: `${referenceNumber}.${file.name.split('.').pop()}`, // ✅ Consistent filename
     subtotal: ocrData?.subtotal || metadata?.amount || 0,
     vatAmount: ocrData?.vatAmount || metadata?.vatAmount || 0,
     totalAmount: ocrData?.totalInclVat || metadata?.totalAmount || 0,

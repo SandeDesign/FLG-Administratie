@@ -276,7 +276,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
       color: 'bg-emerald-500',
       defaultOpen: false,
       items: filteredNavigation.filter(i =>
-        ['Klanten & Leveranciers', 'Begroting', 'Uitgaande facturen', 'Inkomende facturen', 'Inkoop Upload', 'Declaraties'].includes(i.name)
+        ['Klanten & Leveranciers', 'Begroting', 'Uitgaande facturen', 'Inkoop Overzicht', 'Inkoop Upload', 'Declaraties'].includes(i.name)
       )
     },
     {

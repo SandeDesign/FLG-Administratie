@@ -4,14 +4,19 @@ const BASE_FOLDER = 'FLG-Administratie';
 export const uploadFile = async (
   file: File,
   companyName: string,
-  folderType: string = 'Inkoop'
+  folderType: string = 'Inkoop',
+  customFileName?: string // ✅ Optional custom filename (e.g., INK-2025-0001)
 ): Promise<{ success: boolean; fileUrl: string }> => {
   const formData = new FormData();
 
   // Send folder path as separate field
   const folderPath = `${BASE_FOLDER}/${companyName}/${folderType}`;
-  const timestamp = Date.now();
-  const fileName = `${timestamp}_${file.name}`;
+
+  // ✅ Use custom filename if provided, otherwise use timestamp
+  const fileExtension = file.name.split('.').pop();
+  const fileName = customFileName
+    ? `${customFileName}.${fileExtension}`
+    : `${Date.now()}_${file.name}`;
 
   formData.append('file', file);
   formData.append('folder', folderPath);
