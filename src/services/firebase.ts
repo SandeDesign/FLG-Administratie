@@ -2301,14 +2301,16 @@ export const createIncomingPost = async (userId: string, postData: any): Promise
     const docRef = await addDoc(collection(db, 'incomingPost'), cleanData);
 
     // Log audit
-    await AuditService.log({
+    await AuditService.logAction(
       userId,
-      companyId: postData.companyId,
-      action: 'create_post',
-      entityType: 'incomingPost',
-      entityId: docRef.id,
-      details: `Post aangemaakt: ${postData.subject} van ${postData.sender}`,
-    });
+      'create' as any,
+      'incomingPost' as any,
+      docRef.id,
+      {
+        companyId: postData.companyId,
+        metadata: { description: `Post aangemaakt: ${postData.subject} van ${postData.sender}` },
+      }
+    );
 
     return docRef.id;
   } catch (error) {
@@ -2396,14 +2398,16 @@ export const updateIncomingPost = async (postId: string, userId: string, updates
     await updateDoc(docRef, cleanUpdates);
 
     // Log audit
-    await AuditService.log({
+    await AuditService.logAction(
       userId,
-      companyId: updates.companyId || 'unknown',
-      action: 'update_post',
-      entityType: 'incomingPost',
-      entityId: postId,
-      details: `Post bijgewerkt`,
-    });
+      'update' as any,
+      'incomingPost' as any,
+      postId,
+      {
+        companyId: updates.companyId || 'unknown',
+        metadata: { description: `Post bijgewerkt` },
+      }
+    );
   } catch (error) {
     console.error('Error updating incoming post:', error);
     throw error;
@@ -2419,14 +2423,16 @@ export const deleteIncomingPost = async (postId: string, userId: string, company
     await deleteDoc(docRef);
 
     // Log audit
-    await AuditService.log({
+    await AuditService.logAction(
       userId,
-      companyId,
-      action: 'delete_post',
-      entityType: 'incomingPost',
-      entityId: postId,
-      details: `Post verwijderd`,
-    });
+      'delete' as any,
+      'incomingPost' as any,
+      postId,
+      {
+        companyId,
+        metadata: { description: `Post verwijderd` },
+      }
+    );
   } catch (error) {
     console.error('Error deleting incoming post:', error);
     throw error;
