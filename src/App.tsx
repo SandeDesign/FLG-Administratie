@@ -57,6 +57,7 @@ import InvoiceRelations from './pages/InvoiceRelations';
 // ✅ FACTUREN IMPORTS
 import OutgoingInvoices from './pages/OutgoingInvoices';
 import IncomingInvoices from './pages/IncomingInvoices';
+import IncomingPost from './pages/IncomingPost';
 // ✅ INCOMING INVOICES STATS - NIEUW!
 import IncomingInvoicesStats from './pages/IncomingInvoicesStats';
 // ✅ BUDGETING - NIEUW!
@@ -138,6 +139,7 @@ function App() {
                           <Route path="budgeting" element={<Budgeting />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
                           <Route path="incoming-invoices" element={<IncomingInvoices />} />
+                          <Route path="incoming-post" element={<IncomingPost />} />
                           {/* ✅ NEW ROUTE - Incoming Invoices Stats Dashboard */}
                           <Route path="incoming-invoices-stats" element={<IncomingInvoicesStats />} />
                           
@@ -191,6 +193,7 @@ function App() {
                           <Route path="budgeting" element={<Budgeting />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
                           <Route path="incoming-invoices" element={<IncomingInvoices />} />
+                          <Route path="incoming-post" element={<IncomingPost />} />
                           <Route path="incoming-invoices-stats" element={<IncomingInvoicesStats />} />
 
                           {/* Manager kan exporteren */}

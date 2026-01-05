@@ -2246,3 +2246,203 @@ const calculateNextOccurrence = (
 
   return next;
 };
+
+/**
+ * ========================================
+ * INCOMING POST MANAGEMENT
+ * ========================================
+ */
+
+/**
+ * Create a new incoming post entry
+ */
+export const createIncomingPost = async (userId: string, postData: any): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, 'incomingPost'), {
+      ...postData,
+      userId,
+      uploadDate: Timestamp.now(),
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+
+    // Log audit
+    await AuditService.log({
+      userId,
+      companyId: postData.companyId,
+      action: 'create_post',
+      entityType: 'incomingPost',
+      entityId: docRef.id,
+      details: `Post aangemaakt: ${postData.subject} van ${postData.sender}`,
+    });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating incoming post:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all incoming post for a company
+ */
+export const getIncomingPost = async (companyId: string, userId?: string): Promise<any[]> => {
+  try {
+    const postsQuery = query(
+      collection(db, 'incomingPost'),
+      where('companyId', '==', companyId),
+      orderBy('uploadDate', 'desc')
+    );
+
+    const snapshot = await getDocs(postsQuery);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      uploadDate: doc.data().uploadDate?.toDate(),
+      receivedDate: doc.data().receivedDate?.toDate(),
+      dueDate: doc.data().dueDate?.toDate(),
+      processedDate: doc.data().processedDate?.toDate(),
+      createdAt: doc.data().createdAt?.toDate(),
+      updatedAt: doc.data().updatedAt?.toDate(),
+    }));
+  } catch (error) {
+    console.error('Error getting incoming post:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get a single post by ID
+ */
+export const getPostById = async (postId: string, userId: string): Promise<any | null> => {
+  try {
+    const docRef = doc(db, 'incomingPost', postId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return null;
+    }
+
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      ...data,
+      uploadDate: data.uploadDate?.toDate(),
+      receivedDate: data.receivedDate?.toDate(),
+      dueDate: data.dueDate?.toDate(),
+      processedDate: data.processedDate?.toDate(),
+      createdAt: data.createdAt?.toDate(),
+      updatedAt: data.updatedAt?.toDate(),
+    };
+  } catch (error) {
+    console.error('Error getting post:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update incoming post
+ */
+export const updateIncomingPost = async (postId: string, userId: string, updates: any): Promise<void> => {
+  try {
+    const docRef = doc(db, 'incomingPost', postId);
+
+    await updateDoc(docRef, {
+      ...updates,
+      updatedAt: Timestamp.now(),
+    });
+
+    // Log audit
+    await AuditService.log({
+      userId,
+      companyId: updates.companyId || 'unknown',
+      action: 'update_post',
+      entityType: 'incomingPost',
+      entityId: postId,
+      details: `Post bijgewerkt`,
+    });
+  } catch (error) {
+    console.error('Error updating incoming post:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete incoming post
+ */
+export const deleteIncomingPost = async (postId: string, userId: string, companyId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, 'incomingPost', postId);
+    await deleteDoc(docRef);
+
+    // Log audit
+    await AuditService.log({
+      userId,
+      companyId,
+      action: 'delete_post',
+      entityType: 'incomingPost',
+      entityId: postId,
+      details: `Post verwijderd`,
+    });
+  } catch (error) {
+    console.error('Error deleting incoming post:', error);
+    throw error;
+  }
+};
+
+/**
+ * Mark post as processed
+ */
+export const markPostAsProcessed = async (postId: string, userId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, 'incomingPost', postId);
+
+    await updateDoc(docRef, {
+      status: 'processed',
+      processedBy: userId,
+      processedDate: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+  } catch (error) {
+    console.error('Error marking post as processed:', error);
+    throw error;
+  }
+};
+
+/**
+ * Upload post file to proxy
+ */
+export const uploadPostFile = async (
+  file: File,
+  companyName: string
+): Promise<{ url: string; path: string }> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('companyFolder', companyName);
+    formData.append('filename', `post-${Date.now()}-${file.name}`);
+
+    const response = await fetch('https://internedata.nl/proxy3.php', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Upload failed');
+    }
+
+    return {
+      url: result.url,
+      path: result.path,
+    };
+  } catch (error) {
+    console.error('Error uploading post file:', error);
+    throw error;
+  }
+};
