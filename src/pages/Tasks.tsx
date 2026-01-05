@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency } from '../types';
+import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem } from '../types';
 import {
   getTasks,
   getAllCompanyTasks,
@@ -111,6 +111,7 @@ const Tasks: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<TaskCategory | 'all'>('all');
   const [filterPriority, setFilterPriority] = useState<TaskPriority | 'all'>('all');
+  const [filterAssignment, setFilterAssignment] = useState<'all' | 'assigned_to_me' | 'created_by_me'>('all');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -123,7 +124,9 @@ const Tasks: React.FC = () => {
     frequency: 'monthly' as TaskFrequency,
     recurrenceDay: 1,
     assignedTo: [] as string[],
+    checklist: [] as TaskChecklistItem[],
   });
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
   useEffect(() => {
     if (user && selectedCompany) {
@@ -178,10 +181,12 @@ const Tasks: React.FC = () => {
     if (!user || !selectedCompany) return;
 
     try {
+      const progress = calculateProgress(formData.checklist);
       await createTask(user.uid, {
         ...formData,
         companyId: selectedCompany.id,
         dueDate: new Date(formData.dueDate),
+        progress,
       });
 
       success('Taak aangemaakt');
@@ -199,9 +204,11 @@ const Tasks: React.FC = () => {
     if (!user || !editingTask) return;
 
     try {
+      const progress = calculateProgress(formData.checklist);
       await updateTask(editingTask.id, user.uid, {
         ...formData,
         dueDate: new Date(formData.dueDate),
+        progress,
       });
 
       success('Taak bijgewerkt');
@@ -254,6 +261,7 @@ const Tasks: React.FC = () => {
       frequency: task.frequency || 'monthly',
       recurrenceDay: task.recurrenceDay || 1,
       assignedTo: task.assignedTo || [],
+      checklist: task.checklist || [],
     });
     setShowTaskModal(true);
   };
@@ -269,7 +277,9 @@ const Tasks: React.FC = () => {
       frequency: 'monthly',
       recurrenceDay: 1,
       assignedTo: [],
+      checklist: [],
     });
+    setNewSubtaskTitle('');
     setEditingTask(null);
   };
 
@@ -278,6 +288,15 @@ const Tasks: React.FC = () => {
     if (filterStatus !== 'all' && task.status !== filterStatus) return false;
     if (filterCategory !== 'all' && task.category !== filterCategory) return false;
     if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
+
+    // Filter op toewijzing
+    if (filterAssignment === 'assigned_to_me' && user) {
+      if (!task.assignedTo || !task.assignedTo.includes(user.uid)) return false;
+    }
+    if (filterAssignment === 'created_by_me' && user) {
+      if (task.userId !== user.uid && task.createdBy !== user.uid) return false;
+    }
+
     return true;
   });
 
@@ -289,12 +308,90 @@ const Tasks: React.FC = () => {
     completed: filteredTasks.filter(t => t.status === 'completed'),
   };
 
+  // Calculate progress based on subtasks
+  const calculateProgress = (checklist: TaskChecklistItem[]): number => {
+    if (!checklist || checklist.length === 0) return 0;
+    const completed = checklist.filter(item => item.completed).length;
+    return Math.round((completed / checklist.length) * 100);
+  };
+
+  // Subtask management
+  const addSubtask = () => {
+    if (!newSubtaskTitle.trim()) return;
+
+    const newSubtask: TaskChecklistItem = {
+      id: `subtask-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      title: newSubtaskTitle.trim(),
+      completed: false,
+    };
+
+    setFormData({ ...formData, checklist: [...formData.checklist, newSubtask] });
+    setNewSubtaskTitle('');
+  };
+
+  const removeSubtask = (subtaskId: string) => {
+    setFormData({
+      ...formData,
+      checklist: formData.checklist.filter(item => item.id !== subtaskId)
+    });
+  };
+
+  const toggleSubtask = (subtaskId: string) => {
+    setFormData({
+      ...formData,
+      checklist: formData.checklist.map(item =>
+        item.id === subtaskId
+          ? { ...item, completed: !item.completed }
+          : item
+      )
+    });
+  };
+
+  // Toggle subtask in task list (update database directly)
+  const toggleTaskSubtask = async (task: BusinessTask, subtaskId: string) => {
+    if (!user) return;
+
+    try {
+      const updatedChecklist = (task.checklist || []).map(item =>
+        item.id === subtaskId
+          ? {
+              ...item,
+              completed: !item.completed,
+              completedBy: !item.completed ? user.uid : undefined,
+              completedAt: !item.completed ? new Date() : undefined
+            }
+          : item
+      );
+
+      const progress = calculateProgress(updatedChecklist);
+      await updateTask(task.id, user.uid, {
+        checklist: updatedChecklist,
+        progress
+      });
+      loadTasks();
+    } catch (err) {
+      console.error('Error updating subtask:', err);
+      error('Fout bij bijwerken van subtaak');
+    }
+  };
+
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('nl-NL', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
+  };
+
+  // Get assigned user names for display
+  const getAssignedUserNames = (assignedTo?: string[]): string[] => {
+    if (!assignedTo || assignedTo.length === 0) return [];
+    return assignedTo
+      .map(uid => {
+        const user = companyUsers.find(u => u.uid === uid);
+        return user ? (user.displayName || user.email.split('@')[0]) : null;
+      })
+      .filter(name => name !== null) as string[];
   };
 
   const isOverdue = (task: BusinessTask) => {
@@ -343,7 +440,7 @@ const Tasks: React.FC = () => {
       {/* Collapsible Filters */}
       {showFilters && (
         <Card>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Status
@@ -395,6 +492,21 @@ const Tasks: React.FC = () => {
                     {config.label}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Toewijzing
+              </label>
+              <select
+                value={filterAssignment}
+                onChange={(e) => setFilterAssignment(e.target.value as 'all' | 'assigned_to_me' | 'created_by_me')}
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+              >
+                <option value="all">Alle taken</option>
+                <option value="assigned_to_me">Toegewezen aan mij</option>
+                <option value="created_by_me">Door mij aangemaakt</option>
               </select>
             </div>
           </div>
@@ -479,6 +591,21 @@ const Tasks: React.FC = () => {
                             <Calendar className="h-3 w-3" />
                             {formatDate(task.dueDate)}
                           </span>
+
+                          {task.checklist && task.checklist.length > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700">
+                              <ListChecks className="h-3 w-3" />
+                              {task.checklist.filter(s => s.completed).length}/{task.checklist.length}
+                            </span>
+                          )}
+
+                          {task.assignedTo && task.assignedTo.length > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-cyan-100 text-cyan-700">
+                              <Users className="h-3 w-3" />
+                              {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
+                              {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -510,9 +637,40 @@ const Tasks: React.FC = () => {
                   </div>
 
                   {/* Expanded content */}
-                  {isExpanded && task.description && (
-                    <div className="pl-8 pt-2 border-t border-gray-100">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{task.description}</p>
+                  {isExpanded && (task.description || (task.checklist && task.checklist.length > 0)) && (
+                    <div className="pl-8 pt-2 border-t border-gray-100 dark:border-gray-700 space-y-3">
+                      {task.description && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Beschrijving</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{task.description}</p>
+                        </div>
+                      )}
+
+                      {task.checklist && task.checklist.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
+                            Subtaken ({task.checklist.filter(s => s.completed).length}/{task.checklist.length})
+                          </h4>
+                          <div className="space-y-1">
+                            {task.checklist.map((subtask) => (
+                              <label
+                                key={subtask.id}
+                                className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={subtask.completed}
+                                  onChange={() => toggleTaskSubtask(task, subtask.id)}
+                                  className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                                />
+                                <span className={`text-sm ${subtask.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                  {subtask.title}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -648,6 +806,64 @@ const Tasks: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
               className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
             />
+          </div>
+
+          {/* Subtaken sectie */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Subtaken
+            </label>
+
+            {/* Lijst van bestaande subtaken */}
+            {formData.checklist.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {formData.checklist.map((subtask) => (
+                  <div key={subtask.id} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked={subtask.completed}
+                      onChange={() => toggleSubtask(subtask.id)}
+                      className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                      {subtask.title}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeSubtask(subtask.id)}
+                      className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Nieuwe subtaak toevoegen */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addSubtask();
+                  }
+                }}
+                placeholder="Nieuwe subtaak..."
+                className="flex-1 rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+              />
+              <Button
+                type="button"
+                onClick={addSubtask}
+                variant="secondary"
+                icon={Plus}
+              >
+                Toevoegen
+              </Button>
+            </div>
           </div>
 
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">

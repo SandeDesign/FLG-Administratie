@@ -1,11 +1,11 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
-import { getTasks, getAllCompanyTasks, updateTask, createTask } from '../../services/firebase';
+import { getTasks, getAllCompanyTasks, updateTask, createTask, getCompanyUsers } from '../../services/firebase';
 import { BusinessTask } from '../../types';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import { Calendar, CheckCircle2, AlertCircle, Clock, ChevronRight, Check, Plus } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertCircle, Clock, ChevronRight, Check, Plus, Users, ListChecks } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 
@@ -23,6 +23,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
   const [thisWeekTasks, setThisWeekTasks] = useState<BusinessTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
+  const [companyUsers, setCompanyUsers] = useState<Array<{ uid: string; email: string; displayName?: string }>>([]);
 
   // Expose openManually functie voor external triggering
   useImperativeHandle(ref, () => ({
@@ -55,8 +56,33 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
   }));
 
   useEffect(() => {
-    checkWeeklyTasks();
+    if (user && selectedCompany) {
+      loadCompanyUsers();
+      checkWeeklyTasks();
+    }
   }, [user, selectedCompany]);
+
+  const loadCompanyUsers = async () => {
+    if (!selectedCompany) return;
+
+    try {
+      const users = await getCompanyUsers(selectedCompany.id);
+      setCompanyUsers(users);
+    } catch (err) {
+      console.error('Error loading company users:', err);
+    }
+  };
+
+  // Get assigned user names for display
+  const getAssignedUserNames = (assignedTo?: string[]): string[] => {
+    if (!assignedTo || assignedTo.length === 0) return [];
+    return assignedTo
+      .map(uid => {
+        const user = companyUsers.find(u => u.uid === uid);
+        return user ? (user.displayName || user.email.split('@')[0]) : null;
+      })
+      .filter(name => name !== null) as string[];
+  };
 
   const checkWeeklyTasks = async () => {
     if (!user || !selectedCompany) {
@@ -349,7 +375,22 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                     </button>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
-                      <p className="text-sm text-red-600">{formatDate(task.dueDate)}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <p className="text-sm text-red-600">{formatDate(task.dueDate)}</p>
+                        {task.checklist && task.checklist.length > 0 && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">
+                            <ListChecks className="h-3 w-3" />
+                            {task.checklist.filter(s => s.completed).length}/{task.checklist.length}
+                          </span>
+                        )}
+                        {task.assignedTo && task.assignedTo.length > 0 && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-cyan-100 text-cyan-700">
+                            <Users className="h-3 w-3" />
+                            {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
+                            {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
+                          </span>
+                        )}
+                      </div>
                       {task.isRecurring && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           🔄 Terugkerend ({task.frequency})
@@ -403,7 +444,22 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                     </button>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
-                      <p className="text-sm text-orange-600">Vandaag</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <p className="text-sm text-orange-600">Vandaag</p>
+                        {task.checklist && task.checklist.length > 0 && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">
+                            <ListChecks className="h-3 w-3" />
+                            {task.checklist.filter(s => s.completed).length}/{task.checklist.length}
+                          </span>
+                        )}
+                        {task.assignedTo && task.assignedTo.length > 0 && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-cyan-100 text-cyan-700">
+                            <Users className="h-3 w-3" />
+                            {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
+                            {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
+                          </span>
+                        )}
+                      </div>
                       {task.isRecurring && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           🔄 Terugkerend ({task.frequency})
@@ -457,7 +513,22 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
                     </button>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
-                      <p className="text-sm text-blue-600">{formatDate(task.dueDate)}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <p className="text-sm text-blue-600">{formatDate(task.dueDate)}</p>
+                        {task.checklist && task.checklist.length > 0 && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">
+                            <ListChecks className="h-3 w-3" />
+                            {task.checklist.filter(s => s.completed).length}/{task.checklist.length}
+                          </span>
+                        )}
+                        {task.assignedTo && task.assignedTo.length > 0 && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-cyan-100 text-cyan-700">
+                            <Users className="h-3 w-3" />
+                            {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
+                            {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
+                          </span>
+                        )}
+                      </div>
                       {task.isRecurring && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           🔄 Terugkerend ({task.frequency})
