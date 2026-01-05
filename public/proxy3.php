@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'success' => true,
             'url' => $url,
-            'path' => 'FLG-administratie/' . $companyFolder . '/Post/inkomend/' . $filename
+            'path' => 'FLG-Administratie/' . $companyFolder . '/Post/inkomend/' . $filename
         ]);
     } else {
         echo json_encode(['success' => false, 'error' => 'Upload failed']);
