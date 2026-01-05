@@ -352,16 +352,27 @@ const Tasks: React.FC = () => {
     if (!user) return;
 
     try {
-      const updatedChecklist = (task.checklist || []).map(item =>
-        item.id === subtaskId
-          ? {
-              ...item,
-              completed: !item.completed,
-              completedBy: !item.completed ? user.uid : undefined,
-              completedAt: !item.completed ? new Date() : undefined
-            }
-          : item
-      );
+      const updatedChecklist = (task.checklist || []).map(item => {
+        if (item.id === subtaskId) {
+          const newItem: any = {
+            ...item,
+            completed: !item.completed
+          };
+
+          // Voeg completedBy en completedAt alleen toe wanneer completed=true
+          if (!item.completed) {
+            newItem.completedBy = user.uid;
+            newItem.completedAt = new Date();
+          } else {
+            // Verwijder deze velden als completed=false wordt
+            delete newItem.completedBy;
+            delete newItem.completedAt;
+          }
+
+          return newItem;
+        }
+        return item;
+      });
 
       const progress = calculateProgress(updatedChecklist);
       await updateTask(task.id, user.uid, {

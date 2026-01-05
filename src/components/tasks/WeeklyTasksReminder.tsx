@@ -5,7 +5,7 @@ import { getTasks, getAllCompanyTasks, updateTask, createTask, getCompanyUsers }
 import { BusinessTask } from '../../types';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import { Calendar, CheckCircle2, AlertCircle, Clock, ChevronRight, Check, Plus, Users, ListChecks } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertCircle, Clock, ChevronRight, ChevronDown, Check, Plus, Users, ListChecks } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../hooks/useToast';
 
@@ -24,6 +24,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
   const [loading, setLoading] = useState(true);
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set());
   const [companyUsers, setCompanyUsers] = useState<Array<{ uid: string; email: string; displayName?: string }>>([]);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
   // Expose openManually functie voor external triggering
   useImperativeHandle(ref, () => ({
@@ -315,6 +316,112 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
     );
   };
 
+  // Render a single task card with expand/collapse
+  const renderTaskCard = (task: BusinessTask, colorScheme: { bg: string; border: string; checkbox: string; icon: string; text: string }, IconComponent: React.ComponentType<{ className?: string }>) => {
+    const isExpanded = expandedTaskId === task.id;
+    const hasExpandableContent = task.description || (task.checklist && task.checklist.length > 0);
+
+    return (
+      <div
+        key={task.id}
+        className={`p-3 ${colorScheme.bg} border ${colorScheme.border} rounded-lg`}
+      >
+        <div className="flex items-start gap-3">
+          <button
+            onClick={() => handleCompleteTask(task)}
+            disabled={completingTasks.has(task.id)}
+            className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 ${colorScheme.checkbox} hover:bg-opacity-20 disabled:opacity-50 flex items-center justify-center transition-colors`}
+          >
+            {completingTasks.has(task.id) && (
+              <Check className={`h-3 w-3 ${colorScheme.text}`} />
+            )}
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2">
+              <p className="font-medium text-gray-900 dark:text-gray-100 flex-1">{task.title}</p>
+              {hasExpandableContent && (
+                <button
+                  onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
+                  className={`p-1 hover:bg-opacity-20 rounded transition-colors ${colorScheme.checkbox}`}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className={`h-4 w-4 ${colorScheme.text}`} />
+                  ) : (
+                    <ChevronRight className={`h-4 w-4 ${colorScheme.text}`} />
+                  )}
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <p className={`text-sm ${colorScheme.text}`}>
+                {isOverdue(task) ? formatDate(task.dueDate) : isToday(task) ? 'Vandaag' : formatDate(task.dueDate)}
+              </p>
+              {task.checklist && task.checklist.length > 0 && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">
+                  <ListChecks className="h-3 w-3" />
+                  {task.checklist.filter(s => s.completed).length}/{task.checklist.length}
+                </span>
+              )}
+              {task.assignedTo && task.assignedTo.length > 0 && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-cyan-100 text-cyan-700">
+                  <Users className="h-3 w-3" />
+                  {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
+                  {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
+                </span>
+              )}
+            </div>
+            {task.isRecurring && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                🔄 Terugkerend ({task.frequency})
+              </p>
+            )}
+
+            {/* Expanded content */}
+            {isExpanded && hasExpandableContent && (
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                {task.description && (
+                  <div>
+                    <h5 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Beschrijving</h5>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{task.description}</p>
+                  </div>
+                )}
+                {task.checklist && task.checklist.length > 0 && (
+                  <div>
+                    <h5 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">
+                      Subtaken ({task.checklist.filter(s => s.completed).length}/{task.checklist.length})
+                    </h5>
+                    <div className="space-y-1">
+                      {task.checklist.map((subtask) => (
+                        <div key={subtask.id} className="flex items-center gap-2 text-sm">
+                          <span className={subtask.completed ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-300'}>
+                            {subtask.completed ? '✓' : '○'} {subtask.title}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-1 flex-shrink-0">
+            {!task.isRecurring && (
+              <button
+                onClick={() => handleCompleteTask(task, true)}
+                disabled={completingTasks.has(task.id)}
+                className={`p-1.5 rounded hover:bg-opacity-20 disabled:opacity-50 transition-colors ${colorScheme.checkbox}`}
+                title="Vervolgtaak aanmaken"
+              >
+                <Plus className={`h-4 w-4 ${colorScheme.icon}`} />
+              </button>
+            )}
+            <IconComponent className={`h-5 w-5 ${colorScheme.icon} mt-0.5`} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading || !showReminder || thisWeekTasks.length === 0) {
     return null;
   }
@@ -358,61 +465,13 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               </h4>
             </div>
             <div className="space-y-2">
-              {overdueTasks.map(task => (
-                <div
-                  key={task.id}
-                  className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
-                >
-                  <div className="flex items-start gap-3">
-                    <button
-                      onClick={() => handleCompleteTask(task)}
-                      disabled={completingTasks.has(task.id)}
-                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-red-400 dark:border-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50 flex items-center justify-center transition-colors"
-                    >
-                      {completingTasks.has(task.id) && (
-                        <Check className="h-3 w-3 text-red-600" />
-                      )}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <p className="text-sm text-red-600">{formatDate(task.dueDate)}</p>
-                        {task.checklist && task.checklist.length > 0 && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">
-                            <ListChecks className="h-3 w-3" />
-                            {task.checklist.filter(s => s.completed).length}/{task.checklist.length}
-                          </span>
-                        )}
-                        {task.assignedTo && task.assignedTo.length > 0 && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-cyan-100 text-cyan-700">
-                            <Users className="h-3 w-3" />
-                            {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
-                            {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
-                          </span>
-                        )}
-                      </div>
-                      {task.isRecurring && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          🔄 Terugkerend ({task.frequency})
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      {!task.isRecurring && (
-                        <button
-                          onClick={() => handleCompleteTask(task, true)}
-                          disabled={completingTasks.has(task.id)}
-                          className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50 transition-colors"
-                          title="Vervolgtaak aanmaken"
-                        >
-                          <Plus className="h-4 w-4 text-red-600 dark:text-red-400" />
-                        </button>
-                      )}
-                      <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {overdueTasks.map(task => renderTaskCard(task, {
+                bg: 'bg-red-50 dark:bg-red-900/20',
+                border: 'border-red-200 dark:border-red-800',
+                checkbox: 'border-red-400 dark:border-red-600',
+                icon: 'text-red-500',
+                text: 'text-red-600'
+              }, AlertCircle))}
             </div>
           </div>
         )}
@@ -427,61 +486,13 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               </h4>
             </div>
             <div className="space-y-2">
-              {todayTasks.map(task => (
-                <div
-                  key={task.id}
-                  className="p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg"
-                >
-                  <div className="flex items-start gap-3">
-                    <button
-                      onClick={() => handleCompleteTask(task)}
-                      disabled={completingTasks.has(task.id)}
-                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-orange-400 dark:border-orange-600 hover:bg-orange-100 dark:hover:bg-orange-900/40 disabled:opacity-50 flex items-center justify-center transition-colors"
-                    >
-                      {completingTasks.has(task.id) && (
-                        <Check className="h-3 w-3 text-orange-600" />
-                      )}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <p className="text-sm text-orange-600">Vandaag</p>
-                        {task.checklist && task.checklist.length > 0 && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">
-                            <ListChecks className="h-3 w-3" />
-                            {task.checklist.filter(s => s.completed).length}/{task.checklist.length}
-                          </span>
-                        )}
-                        {task.assignedTo && task.assignedTo.length > 0 && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-cyan-100 text-cyan-700">
-                            <Users className="h-3 w-3" />
-                            {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
-                            {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
-                          </span>
-                        )}
-                      </div>
-                      {task.isRecurring && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          🔄 Terugkerend ({task.frequency})
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      {!task.isRecurring && (
-                        <button
-                          onClick={() => handleCompleteTask(task, true)}
-                          disabled={completingTasks.has(task.id)}
-                          className="p-1.5 rounded hover:bg-orange-100 dark:hover:bg-orange-900/40 disabled:opacity-50 transition-colors"
-                          title="Vervolgtaak aanmaken"
-                        >
-                          <Plus className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                        </button>
-                      )}
-                      <Clock className="h-5 w-5 text-orange-500 dark:text-orange-400 mt-0.5" />
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {todayTasks.map(task => renderTaskCard(task, {
+                bg: 'bg-orange-50 dark:bg-orange-900/20',
+                border: 'border-orange-200 dark:border-orange-800',
+                checkbox: 'border-orange-400 dark:border-orange-600',
+                icon: 'text-orange-500 dark:text-orange-400',
+                text: 'text-orange-600'
+              }, Clock))}
             </div>
           </div>
         )}
@@ -496,61 +507,13 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
               </h4>
             </div>
             <div className="space-y-2">
-              {upcomingTasks.slice(0, 5).map(task => (
-                <div
-                  key={task.id}
-                  className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
-                >
-                  <div className="flex items-start gap-3">
-                    <button
-                      onClick={() => handleCompleteTask(task)}
-                      disabled={completingTasks.has(task.id)}
-                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 border-blue-400 dark:border-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 flex items-center justify-center transition-colors"
-                    >
-                      {completingTasks.has(task.id) && (
-                        <Check className="h-3 w-3 text-blue-600" />
-                      )}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <p className="text-sm text-blue-600">{formatDate(task.dueDate)}</p>
-                        {task.checklist && task.checklist.length > 0 && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">
-                            <ListChecks className="h-3 w-3" />
-                            {task.checklist.filter(s => s.completed).length}/{task.checklist.length}
-                          </span>
-                        )}
-                        {task.assignedTo && task.assignedTo.length > 0 && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-cyan-100 text-cyan-700">
-                            <Users className="h-3 w-3" />
-                            {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
-                            {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
-                          </span>
-                        )}
-                      </div>
-                      {task.isRecurring && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          🔄 Terugkerend ({task.frequency})
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      {!task.isRecurring && (
-                        <button
-                          onClick={() => handleCompleteTask(task, true)}
-                          disabled={completingTasks.has(task.id)}
-                          className="p-1.5 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 transition-colors"
-                          title="Vervolgtaak aanmaken"
-                        >
-                          <Plus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </button>
-                      )}
-                      <ChevronRight className="h-5 w-5 text-blue-400 dark:text-blue-500 mt-0.5" />
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {upcomingTasks.slice(0, 5).map(task => renderTaskCard(task, {
+                bg: 'bg-blue-50 dark:bg-blue-900/20',
+                border: 'border-blue-200 dark:border-blue-800',
+                checkbox: 'border-blue-400 dark:border-blue-600',
+                icon: 'text-blue-400 dark:text-blue-500',
+                text: 'text-blue-600'
+              }, ChevronRight))}
               {upcomingTasks.length > 5 && (
                 <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
                   + {upcomingTasks.length - 5} meer

@@ -1732,65 +1732,101 @@ export const getAllCompanyTasks = async (companyId: string, userId?: string): Pr
  */
 export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: string; email: string; displayName?: string }>> => {
   try {
-    const companyDoc = await getDoc(doc(db, 'companies', companyId));
+    console.log('🔍 getCompanyUsers: Loading users for company', companyId);
 
+    // Haal bedrijf op om owner en allowed users te krijgen
+    const companyDoc = await getDoc(doc(db, 'companies', companyId));
     if (!companyDoc.exists()) {
+      console.log('❌ Company not found:', companyId);
       return [];
     }
 
     const companyData = companyDoc.data();
-    const userIds: string[] = [companyData.userId]; // Owner
+    const companyOwner = companyData.userId;
+    const allowedUsers = companyData.allowedUsers || [];
 
-    // Voeg allowed users toe (managers/co-admins)
-    if (companyData.allowedUsers && Array.isArray(companyData.allowedUsers)) {
-      userIds.push(...companyData.allowedUsers);
-    }
-
-    // Maak unieke lijst
-    const uniqueUserIds = [...new Set(userIds)];
-
-    // Haal user details op uit users collection
-    const usersPromises = uniqueUserIds.map(async (uid) => {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-
-          // Probeer verschillende naamvelden
-          let displayName = userData.displayName;
-          if (!displayName && userData.firstName && userData.lastName) {
-            displayName = `${userData.firstName} ${userData.lastName}`;
-          } else if (!displayName && userData.firstName) {
-            displayName = userData.firstName;
-          } else if (!displayName && userData.name) {
-            displayName = userData.name;
-          } else if (!displayName && userData.email) {
-            displayName = userData.email.split('@')[0];
-          }
-
-          console.log('User data voor', uid, ':', { email: userData.email, displayName, allFields: Object.keys(userData) });
-
-          return {
-            uid,
-            email: userData.email || 'Onbekend',
-            displayName: displayName || 'Onbekende gebruiker'
-          };
-        }
-      } catch (error) {
-        console.error(`Error fetching user ${uid}:`, error);
-      }
-
-      return {
-        uid,
-        email: 'Onbekend',
-        displayName: 'Onbekende gebruiker'
-      };
+    console.log('📋 Company info:', {
+      owner: companyOwner,
+      allowedUsers: allowedUsers,
+      allowedCount: allowedUsers.length
     });
 
-    const users = await Promise.all(usersPromises);
-    return users.filter(u => u !== null);
+    // Haal ALLE users op uit de users collectie
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    console.log('👥 Total users in database:', usersSnapshot.size);
+
+    const allUsers: Array<{ uid: string; email: string; displayName: string; role?: string }> = [];
+
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      const uid = userDoc.id;
+
+      // Controleer of deze user toegang heeft tot dit bedrijf
+      const hasAccess =
+        uid === companyOwner ||  // Is owner
+        allowedUsers.includes(uid);  // Of is in allowedUsers
+
+      // Filter op admins en managers die toegang hebben
+      const role = userData.role;
+      if (hasAccess && (role === 'admin' || role === 'manager' || role === 'co-admin')) {
+        // Haal naam op uit verschillende bronnen
+        let displayName = '';
+
+        // Probeer eerst employeeId veld met Name sub-field
+        if (userData.employeeId) {
+          const employeeDoc = await getDoc(doc(db, 'employees', userData.employeeId));
+          if (employeeDoc.exists()) {
+            const employeeData = employeeDoc.data();
+            // Probeer Name field
+            if (employeeData.Name) {
+              displayName = employeeData.Name;
+            } else if (employeeData.firstName && employeeData.lastName) {
+              displayName = `${employeeData.firstName} ${employeeData.lastName}`;
+            } else if (employeeData.firstName) {
+              displayName = employeeData.firstName;
+            }
+          }
+        }
+
+        // Fallback naar user document zelf
+        if (!displayName) {
+          if (userData.displayName) {
+            displayName = userData.displayName;
+          } else if (userData.firstName && userData.lastName) {
+            displayName = `${userData.firstName} ${userData.lastName}`;
+          } else if (userData.firstName) {
+            displayName = userData.firstName;
+          } else if (userData.name) {
+            displayName = userData.name;
+          }
+        }
+
+        // Laatste fallback naar email
+        if (!displayName && userData.email) {
+          displayName = userData.email.split('@')[0];
+        }
+
+        allUsers.push({
+          uid,
+          email: userData.email || 'Onbekend',
+          displayName: displayName || 'Onbekende gebruiker',
+          role: role
+        });
+
+        console.log('✅ Added user:', {
+          uid,
+          email: userData.email,
+          displayName,
+          role,
+          employeeId: userData.employeeId
+        });
+      }
+    }
+
+    console.log(`📊 Found ${allUsers.length} users with access to company`);
+    return allUsers;
   } catch (error) {
-    console.error('Error getting company users:', error);
+    console.error('❌ Error getting company users:', error);
     return [];
   }
 };
