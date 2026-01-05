@@ -24,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Base directory structure: uploads/FLG-administratie/BEDRIJFSNAAM/Post/inkomend
-    $baseDir = __DIR__ . '/uploads/FLG-administratie/';
+    // Base directory structure: uploads/FLG-Administratie/BEDRIJFSNAAM/Post/inkomend
+    $baseDir = __DIR__ . '/uploads/FLG-Administratie/';
     $targetDir = $baseDir . $companyFolder . '/Post/inkomend/';
     $targetFile = $targetDir . $filename;
 
@@ -40,12 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Move uploaded file
     if (move_uploaded_file($_FILES['file']['tmp_name'], $targetFile)) {
         // Construct public URL
-        $url = 'https://internedata.nl/uploads/FLG-administratie/' . $companyFolder . '/Post/inkomend/' . $filename;
+        $url = 'https://internedata.nl/uploads/FLG-Administratie/' . $companyFolder . '/Post/inkomend/' . $filename;
 
         echo json_encode([
             'success' => true,
             'url' => $url,
-            'path' => 'FLG-administratie/' . $companyFolder . '/Post/inkomend/' . $filename
+            'path' => 'FLG-Administratie/' . $companyFolder . '/Post/inkomend/' . $filename
         ]);
     } else {
         echo json_encode(['success' => false, 'error' => 'Upload failed']);
