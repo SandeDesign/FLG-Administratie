@@ -257,6 +257,7 @@ const IncomingPostPage: React.FC = () => {
         title: taskForm.title,
         description: taskForm.description,
         priority: taskForm.priority,
+        category: 'operational' as const,
         dueDate: taskForm.dueDate ? new Date(taskForm.dueDate) : null,
         status: 'pending' as const,
         assignedTo: taskForm.assignedTo,
