@@ -2258,13 +2258,47 @@ const calculateNextOccurrence = (
  */
 export const createIncomingPost = async (userId: string, postData: any): Promise<string> => {
   try {
-    const docRef = await addDoc(collection(db, 'incomingPost'), {
-      ...postData,
+    // Filter out undefined values - Firebase doesn't allow them
+    const cleanData: any = {
       userId,
+      companyId: postData.companyId,
+      sender: postData.sender,
+      subject: postData.subject,
+      receivedDate: postData.receivedDate,
+      fileUrl: postData.fileUrl,
+      fileName: postData.fileName,
+      filePath: postData.filePath,
+      status: postData.status,
+      requiresAction: postData.requiresAction || false,
       uploadDate: Timestamp.now(),
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
-    });
+    };
+
+    // Only add optional fields if they are defined
+    if (postData.amount !== undefined && postData.amount !== null && postData.amount !== '') {
+      cleanData.amount = postData.amount;
+    }
+    if (postData.dueDate !== undefined && postData.dueDate !== null) {
+      cleanData.dueDate = postData.dueDate;
+    }
+    if (postData.actionType !== undefined && postData.actionType !== null && postData.actionType !== '') {
+      cleanData.actionType = postData.actionType;
+    }
+    if (postData.actionDescription !== undefined && postData.actionDescription !== null && postData.actionDescription !== '') {
+      cleanData.actionDescription = postData.actionDescription;
+    }
+    if (postData.priority !== undefined && postData.priority !== null && postData.priority !== '') {
+      cleanData.priority = postData.priority;
+    }
+    if (postData.notes !== undefined && postData.notes !== null && postData.notes !== '') {
+      cleanData.notes = postData.notes;
+    }
+    if (postData.tags !== undefined && postData.tags !== null && postData.tags.length > 0) {
+      cleanData.tags = postData.tags;
+    }
+
+    const docRef = await addDoc(collection(db, 'incomingPost'), cleanData);
 
     // Log audit
     await AuditService.log({
@@ -2347,10 +2381,19 @@ export const updateIncomingPost = async (postId: string, userId: string, updates
   try {
     const docRef = doc(db, 'incomingPost', postId);
 
-    await updateDoc(docRef, {
-      ...updates,
+    // Filter out undefined values - Firebase doesn't allow them
+    const cleanUpdates: any = {
       updatedAt: Timestamp.now(),
+    };
+
+    // Only add fields that are defined
+    Object.keys(updates).forEach(key => {
+      if (updates[key] !== undefined && updates[key] !== null && updates[key] !== '') {
+        cleanUpdates[key] = updates[key];
+      }
     });
+
+    await updateDoc(docRef, cleanUpdates);
 
     // Log audit
     await AuditService.log({
