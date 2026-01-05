@@ -73,6 +73,15 @@ const IncomingPostPage: React.FC = () => {
   // Company users for task assignment
   const [companyUsers, setCompanyUsers] = useState<Array<{ uid: string; email: string; displayName?: string }>>([]);
 
+  // Task form state
+  const [taskForm, setTaskForm] = useState({
+    title: '',
+    description: '',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+    dueDate: '',
+    assignedTo: [] as string[],
+  });
+
   useEffect(() => {
     if (user && selectedCompany) {
       loadPosts();
@@ -223,7 +232,59 @@ const IncomingPostPage: React.FC = () => {
 
   const handleCreateTaskFromPost = async (post: IncomingPost) => {
     setSelectedPost(post);
+    // Pre-fill task form with post data
+    setTaskForm({
+      title: `Post: ${post.subject}`,
+      description: `Afzender: ${post.sender}\n\n${post.actionDescription || ''}`,
+      priority: post.priority || 'medium',
+      dueDate: post.dueDate ? new Date(post.dueDate).toISOString().split('T')[0] : '',
+      assignedTo: [],
+    });
     setShowTaskModal(true);
+  };
+
+  const handleSubmitTask = async () => {
+    if (!user || !selectedCompany || !selectedPost) return;
+
+    if (!taskForm.title) {
+      showError('Validatie fout', 'Titel is verplicht');
+      return;
+    }
+
+    try {
+      const taskData = {
+        companyId: selectedCompany.id,
+        title: taskForm.title,
+        description: taskForm.description,
+        priority: taskForm.priority,
+        dueDate: taskForm.dueDate ? new Date(taskForm.dueDate) : null,
+        status: 'pending' as const,
+        assignedTo: taskForm.assignedTo,
+        relatedPostId: selectedPost.id,
+      };
+
+      const taskId = await createTask(user.uid, taskData);
+
+      // Update post with related task ID
+      await updateIncomingPost(selectedPost.id, user.uid, {
+        relatedTaskId: taskId,
+        companyId: selectedCompany.id,
+      });
+
+      success('Taak aangemaakt', 'De taak is succesvol aangemaakt');
+      setShowTaskModal(false);
+      setTaskForm({
+        title: '',
+        description: '',
+        priority: 'medium',
+        dueDate: '',
+        assignedTo: [],
+      });
+      loadPosts();
+    } catch (err) {
+      console.error('Error creating task:', err);
+      showError('Fout', 'Kon taak niet aanmaken');
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -322,16 +383,22 @@ const IncomingPostPage: React.FC = () => {
           </Button>
           <input
             type="file"
-            id="post-file-input"
+            ref={(input) => {
+              if (input) {
+                (window as any).postFileInput = input;
+              }
+            }}
             className="hidden"
-            accept="image/*,application/pdf"
+            accept="image/*,application/pdf,image/heic,image/heif"
+            capture="environment"
             onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
           />
-          <label htmlFor="post-file-input">
-            <Button as="span" icon={Upload} className="cursor-pointer">
-              Upload Post
-            </Button>
-          </label>
+          <Button
+            onClick={() => (window as any).postFileInput?.click()}
+            icon={Upload}
+          >
+            Upload Post
+          </Button>
         </div>
       </div>
 
@@ -753,6 +820,126 @@ const IncomingPostPage: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Task Creation Modal */}
+      <Modal
+        isOpen={showTaskModal}
+        onClose={() => {
+          setShowTaskModal(false);
+          setTaskForm({
+            title: '',
+            description: '',
+            priority: 'medium',
+            dueDate: '',
+            assignedTo: [],
+          });
+        }}
+        title="Taak aanmaken"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Titel *
+            </label>
+            <input
+              type="text"
+              value={taskForm.title}
+              onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+              className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+              placeholder="Taak titel"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Beschrijving
+            </label>
+            <textarea
+              value={taskForm.description}
+              onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+              rows={4}
+              className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+              placeholder="Taak beschrijving..."
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Prioriteit
+              </label>
+              <select
+                value={taskForm.priority}
+                onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as any })}
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+              >
+                <option value="low">Laag</option>
+                <option value="medium">Normaal</option>
+                <option value="high">Hoog</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Vervaldatum
+              </label>
+              <input
+                type="date"
+                value={taskForm.dueDate}
+                onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Toewijzen aan
+            </label>
+            <select
+              multiple
+              value={taskForm.assignedTo}
+              onChange={(e) => {
+                const selected = Array.from(e.target.selectedOptions, option => option.value);
+                setTaskForm({ ...taskForm, assignedTo: selected });
+              }}
+              className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+              size={4}
+            >
+              {companyUsers.map(user => (
+                <option key={user.uid} value={user.uid}>
+                  {user.displayName || user.email}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Houd Ctrl/Cmd ingedrukt om meerdere gebruikers te selecteren
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowTaskModal(false);
+                setTaskForm({
+                  title: '',
+                  description: '',
+                  priority: 'medium',
+                  dueDate: '',
+                  assignedTo: [],
+                });
+              }}
+            >
+              Annuleren
+            </Button>
+            <Button onClick={handleSubmitTask}>
+              Taak aanmaken
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
