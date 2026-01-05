@@ -320,14 +320,15 @@ const IncomingPostPage: React.FC = () => {
           >
             Filters
           </Button>
-          <label>
-            <input
-              type="file"
-              className="hidden"
-              accept="image/*,application/pdf"
-              onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-            />
-            <Button as="span" icon={Upload}>
+          <input
+            type="file"
+            id="post-file-input"
+            className="hidden"
+            accept="image/*,application/pdf"
+            onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+          />
+          <label htmlFor="post-file-input">
+            <Button as="span" icon={Upload} className="cursor-pointer">
               Upload Post
             </Button>
           </label>
