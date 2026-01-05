@@ -1732,12 +1732,14 @@ export const getAllCompanyTasks = async (companyId: string, userId?: string): Pr
  */
 export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: string; email: string; displayName?: string }>> => {
   try {
-    console.log('🔍 getCompanyUsers: Loading users for company', companyId);
+    console.log('🔍 ========================================');
+    console.log('🔍 getCompanyUsers START voor company:', companyId);
+    console.log('🔍 ========================================');
 
     // Haal bedrijf op om owner en allowed users te krijgen
     const companyDoc = await getDoc(doc(db, 'companies', companyId));
     if (!companyDoc.exists()) {
-      console.log('❌ Company not found:', companyId);
+      console.error('❌ FOUT: Company niet gevonden:', companyId);
       return [];
     }
 
@@ -1745,88 +1747,147 @@ export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: s
     const companyOwner = companyData.userId;
     const allowedUsers = companyData.allowedUsers || [];
 
-    console.log('📋 Company info:', {
-      owner: companyOwner,
-      allowedUsers: allowedUsers,
-      allowedCount: allowedUsers.length
-    });
+    console.log('📋 Company Gegevens:');
+    console.log('   - Owner ID:', companyOwner);
+    console.log('   - AllowedUsers:', allowedUsers);
+    console.log('   - AllowedUsers count:', allowedUsers.length);
+    console.log('   - Company name:', companyData.name);
 
     // Haal ALLE users op uit de users collectie
     const usersSnapshot = await getDocs(collection(db, 'users'));
-    console.log('👥 Total users in database:', usersSnapshot.size);
+    console.log('👥 Totaal users in database:', usersSnapshot.size);
+    console.log('');
 
     const allUsers: Array<{ uid: string; email: string; displayName: string; role?: string }> = [];
+    let processedCount = 0;
+    let hasAccessCount = 0;
+    let addedCount = 0;
 
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
       const uid = userDoc.id;
+      processedCount++;
+
+      console.log(`\n👤 User ${processedCount}/${usersSnapshot.size}:`);
+      console.log('   - UID:', uid);
+      console.log('   - Email:', userData.email);
+      console.log('   - Role:', userData.role || 'GEEN ROLE');
+      console.log('   - EmployeeId:', userData.employeeId || 'geen');
 
       // Controleer of deze user toegang heeft tot dit bedrijf
-      const hasAccess =
-        uid === companyOwner ||  // Is owner
-        allowedUsers.includes(uid);  // Of is in allowedUsers
+      const isOwner = uid === companyOwner;
+      const inAllowedUsers = allowedUsers.includes(uid);
+      const hasAccess = isOwner || inAllowedUsers;
 
-      // Filter op admins en managers die toegang hebben
+      console.log('   - Is Owner:', isOwner);
+      console.log('   - In AllowedUsers:', inAllowedUsers);
+      console.log('   - Has Access:', hasAccess);
+
+      if (!hasAccess) {
+        console.log('   ⏭️  SKIPPED: Geen toegang tot bedrijf');
+        continue;
+      }
+
+      hasAccessCount++;
+      console.log('   ✓ Heeft toegang! User wordt toegevoegd...');
+
+      // Haal role op voor weergave (maar filter er NIET op!)
       const role = userData.role;
-      if (hasAccess && (role === 'admin' || role === 'manager' || role === 'co-admin')) {
-        // Haal naam op uit verschillende bronnen
-        let displayName = '';
+      console.log('   - Role:', role || 'geen');
 
-        // Probeer eerst employeeId veld met Name sub-field
-        if (userData.employeeId) {
+      // Haal naam op uit verschillende bronnen
+      let displayName = '';
+
+      // Probeer eerst employeeId veld met Name sub-field
+      if (userData.employeeId) {
+        console.log('   - Ophalen employee data voor ID:', userData.employeeId);
+        try {
           const employeeDoc = await getDoc(doc(db, 'employees', userData.employeeId));
           if (employeeDoc.exists()) {
             const employeeData = employeeDoc.data();
+            console.log('   - Employee data gevonden');
+            console.log('   - Employee.Name:', employeeData.Name);
+            console.log('   - Employee.firstName:', employeeData.firstName);
+            console.log('   - Employee.lastName:', employeeData.lastName);
+
             // Probeer Name field
             if (employeeData.Name) {
               displayName = employeeData.Name;
+              console.log('   ✓ Naam uit Employee.Name:', displayName);
             } else if (employeeData.firstName && employeeData.lastName) {
               displayName = `${employeeData.firstName} ${employeeData.lastName}`;
+              console.log('   ✓ Naam uit Employee firstName+lastName:', displayName);
             } else if (employeeData.firstName) {
               displayName = employeeData.firstName;
+              console.log('   ✓ Naam uit Employee.firstName:', displayName);
             }
+          } else {
+            console.log('   ⚠️  Employee document niet gevonden');
           }
+        } catch (err) {
+          console.log('   ⚠️  Error bij ophalen employee:', err);
         }
-
-        // Fallback naar user document zelf
-        if (!displayName) {
-          if (userData.displayName) {
-            displayName = userData.displayName;
-          } else if (userData.firstName && userData.lastName) {
-            displayName = `${userData.firstName} ${userData.lastName}`;
-          } else if (userData.firstName) {
-            displayName = userData.firstName;
-          } else if (userData.name) {
-            displayName = userData.name;
-          }
-        }
-
-        // Laatste fallback naar email
-        if (!displayName && userData.email) {
-          displayName = userData.email.split('@')[0];
-        }
-
-        allUsers.push({
-          uid,
-          email: userData.email || 'Onbekend',
-          displayName: displayName || 'Onbekende gebruiker',
-          role: role
-        });
-
-        console.log('✅ Added user:', {
-          uid,
-          email: userData.email,
-          displayName,
-          role,
-          employeeId: userData.employeeId
-        });
       }
+
+      // Fallback naar user document zelf
+      if (!displayName) {
+        console.log('   - Fallback naar user document zelf');
+        if (userData.displayName) {
+          displayName = userData.displayName;
+          console.log('   ✓ Naam uit user.displayName:', displayName);
+        } else if (userData.firstName && userData.lastName) {
+          displayName = `${userData.firstName} ${userData.lastName}`;
+          console.log('   ✓ Naam uit user firstName+lastName:', displayName);
+        } else if (userData.firstName) {
+          displayName = userData.firstName;
+          console.log('   ✓ Naam uit user.firstName:', displayName);
+        } else if (userData.name) {
+          displayName = userData.name;
+          console.log('   ✓ Naam uit user.name:', displayName);
+        }
+      }
+
+      // Laatste fallback naar email
+      if (!displayName && userData.email) {
+        displayName = userData.email.split('@')[0];
+        console.log('   ✓ Naam uit email prefix:', displayName);
+      }
+
+      if (!displayName) {
+        displayName = 'Onbekende gebruiker';
+        console.log('   ⚠️  Geen naam gevonden, gebruik fallback');
+      }
+
+      const userToAdd = {
+        uid,
+        email: userData.email || 'Onbekend',
+        displayName: displayName,
+        role: role
+      };
+
+      allUsers.push(userToAdd);
+      addedCount++;
+
+      console.log('   ✅ USER TOEGEVOEGD:', {
+        uid,
+        email: userData.email,
+        displayName,
+        role
+      });
     }
 
-    console.log(`📊 Found ${allUsers.length} users with access to company`);
+    console.log('\n🎯 ========================================');
+    console.log('🎯 SAMENVATTING getCompanyUsers:');
+    console.log('   - Totaal users gescand:', processedCount);
+    console.log('   - Users met toegang:', hasAccessCount);
+    console.log('   - Users toegevoegd:', addedCount);
+    console.log('   - Finale lijst:', allUsers.map(u => `${u.displayName} (${u.email})`));
+    console.log('🎯 ========================================\n');
+
     return allUsers;
   } catch (error) {
-    console.error('❌ Error getting company users:', error);
+    console.error('❌ ERROR in getCompanyUsers:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
     return [];
   }
 };
