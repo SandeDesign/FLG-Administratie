@@ -676,14 +676,14 @@ const IncomingInvoicesStats: React.FC = () => {
             <div className="p-6 space-y-4">
               {/* Status Selector - Only for admins */}
               {isAdmin && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Status
                   </label>
                   <select
                     value={editFormData.status ?? 'pending'}
                     onChange={e => setEditFormData({ ...editFormData, status: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                   >
                     <option value="pending">In behandeling (Concept)</option>
                     <option value="approved">Goedgekeurd</option>
@@ -720,7 +720,7 @@ const IncomingInvoicesStats: React.FC = () => {
                     type="text"
                     value={editFormData.supplierName ?? ''}
                     onChange={e => setEditFormData({ ...editFormData, supplierName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
@@ -732,7 +732,7 @@ const IncomingInvoicesStats: React.FC = () => {
                     type="text"
                     value={editFormData.invoiceNumber ?? ''}
                     onChange={e => setEditFormData({ ...editFormData, invoiceNumber: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
@@ -748,7 +748,7 @@ const IncomingInvoicesStats: React.FC = () => {
                       const val = parseFloat(e.target.value) || 0;
                       setEditFormData({ ...editFormData, subtotal: val, amount: val } as IncomingInvoice);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
@@ -761,7 +761,7 @@ const IncomingInvoicesStats: React.FC = () => {
                     step="0.01"
                     value={editFormData.vatAmount ?? ''}
                     onChange={e => setEditFormData({ ...editFormData, vatAmount: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
@@ -774,7 +774,7 @@ const IncomingInvoicesStats: React.FC = () => {
                     step="0.01"
                     value={editFormData.totalAmount ?? ''}
                     onChange={e => setEditFormData({ ...editFormData, totalAmount: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
@@ -786,7 +786,7 @@ const IncomingInvoicesStats: React.FC = () => {
                     type="email"
                     value={editFormData.supplierEmail ?? ''}
                     onChange={e => setEditFormData({ ...editFormData, supplierEmail: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
@@ -802,7 +802,7 @@ const IncomingInvoicesStats: React.FC = () => {
                         : ''
                     }
                     onChange={e => setEditFormData({ ...editFormData, invoiceDate: new Date(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                   />
                 </div>
 
@@ -818,7 +818,7 @@ const IncomingInvoicesStats: React.FC = () => {
                         : ''
                     }
                     onChange={e => setEditFormData({ ...editFormData, dueDate: new Date(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                   />
                 </div>
               </div>
@@ -831,7 +831,7 @@ const IncomingInvoicesStats: React.FC = () => {
                   value={editFormData.description ?? ''}
                   onChange={e => setEditFormData({ ...editFormData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-gray-100"
                 />
               </div>
 
@@ -850,9 +850,9 @@ const IncomingInvoicesStats: React.FC = () => {
                       {formatCurrency(editFormData.vatAmount || 0)}
                     </p>
                   </div>
-                  <div className="bg-primary-50 p-3 rounded">
-                    <p className="text-xs text-primary-600">Incl. BTW</p>
-                    <p className="font-bold text-primary-900">
+                  <div className="bg-primary-50 dark:bg-primary-900/30 p-3 rounded">
+                    <p className="text-xs text-primary-600 dark:text-primary-400">Incl. BTW</p>
+                    <p className="font-bold text-primary-900 dark:text-primary-100">
                       {formatCurrency(editFormData.totalAmount || 0)}
                     </p>
                   </div>
