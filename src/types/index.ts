@@ -914,3 +914,50 @@ export interface BusinessTask {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ✅ NIEUW: Incoming Post Management - Fysieke post verwerking
+export type PostStatus = 'new' | 'processed' | 'archived' | 'requires_action';
+export type PostActionType = 'payment_required' | 'create_task' | 'file_document' | 'respond' | 'forward' | 'other';
+
+export interface IncomingPost {
+  id: string;
+  userId: string;           // Uploader
+  companyId: string;        // Bedrijf
+
+  // Basis informatie
+  sender: string;           // Afzender
+  subject: string;          // Onderwerp/beschrijving
+  receivedDate: Date;       // Ontvangstdatum
+  uploadDate: Date;         // Upload datum
+
+  // Bestand informatie
+  fileUrl: string;          // URL naar foto van brief
+  fileName: string;         // Originele bestandsnaam
+  filePath: string;         // Relatief pad in storage
+
+  // Optionele gegevens
+  amount?: number;          // Te betalen bedrag (optioneel)
+  dueDate?: Date;           // Vervaldatum (optioneel)
+
+  // Status en acties
+  status: PostStatus;
+  requiresAction: boolean;
+  actionType?: PostActionType;
+  actionDescription?: string;
+
+  // Gerelateerde entiteiten
+  relatedTaskId?: string;   // Gekoppelde taak (als deze is aangemaakt)
+  relatedInvoiceId?: string; // Gekoppelde factuur (als dit een factuur is)
+
+  // Verwerking
+  processedBy?: string;     // User ID die het heeft verwerkt
+  processedDate?: Date;     // Verwerkingsdatum
+  notes?: string;           // Opmerkingen
+
+  // Metadata
+  tags?: string[];          // Tags voor categorisering
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+
+  createdAt: Date;
+  updatedAt: Date;
+}
