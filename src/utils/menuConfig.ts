@@ -50,7 +50,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
 
   // ✅ PROJECT-SPECIFIC ITEMS (alleen voor project bedrijven)
   { name: 'Project Dashboard', href: '/project-dashboard', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
-  { name: 'Productie Verwerking', href: '/project-production', icon: Factory, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
+  { name: 'Productie Verwerking', href: '/project-production', icon: Factory, roles: ['admin', 'manager'], companyTypes: ['project'], section: 'Project' },
   { name: 'Projectstatistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
 
   // PERSONEEL SECTION (employer + project voor uren)
@@ -263,7 +263,7 @@ export const getMobileBottomNavItems = (
     // PROJECT BEDRIJF MOBILE NAV
     const projectItems = [
       { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-      { href: '/project-dashboard', icon: Factory, label: 'Project' },
+      { href: '/project-production', icon: Factory, label: 'Productie' },
       { href: '/outgoing-invoices', icon: Send, label: 'Facturen' },
       { href: '/settings', icon: Settings, label: 'Instellingen' },
     ];
