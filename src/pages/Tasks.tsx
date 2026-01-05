@@ -541,9 +541,9 @@ const Tasks: React.FC = () => {
       ) : (
         <div className="space-y-3">
           {filteredTasks.map((task) => {
-            const categoryConfig = CATEGORY_CONFIG[task.category];
-            const priorityConfig = PRIORITY_CONFIG[task.priority];
-            const statusConfig = STATUS_CONFIG[task.status];
+            const categoryConfig = CATEGORY_CONFIG[task.category] || CATEGORY_CONFIG['operational'];
+            const priorityConfig = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG['medium'];
+            const statusConfig = STATUS_CONFIG[task.status] || STATUS_CONFIG['pending'];
             const CategoryIcon = categoryConfig.icon;
             const StatusIcon = statusConfig.icon;
             const isExpanded = expandedTaskId === task.id;
