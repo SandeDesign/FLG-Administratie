@@ -287,8 +287,9 @@ export const bankImportService = {
       );
       if (exactMatch) confidence += 70;
 
+      let partialMatch = false;
       if (!exactMatch) {
-        const partialMatch = extractedNumbers.some(num =>
+        partialMatch = extractedNumbers.some(num =>
           normalizedInvoiceNumber.includes(this.normalizeInvoiceNumber(num)) ||
           this.normalizeInvoiceNumber(num).includes(normalizedInvoiceNumber)
         );
