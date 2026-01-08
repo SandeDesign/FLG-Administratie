@@ -65,6 +65,8 @@ import Budgeting from './pages/Budgeting';
 import TimesheetExport from './pages/TimesheetExport';
 import DriveFiles from './pages/DriveFiles';
 import Tasks from './pages/Tasks';
+// ✅ BANK STATEMENT IMPORT - NIEUW!
+import BankStatementImport from './pages/BankStatementImport';
 import { AppProvider } from './contexts/AppContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { ToastContainer } from './components/ui/Toast';
@@ -142,6 +144,8 @@ function App() {
                           <Route path="incoming-post" element={<IncomingPost />} />
                           {/* ✅ NEW ROUTE - Incoming Invoices Stats Dashboard */}
                           <Route path="incoming-invoices-stats" element={<IncomingInvoicesStats />} />
+                          {/* ✅ NEW ROUTE - Bank Statement Import */}
+                          <Route path="bank-statement-import" element={<BankStatementImport />} />
                           
                           {/* ✅ DATA & EXPORTS */}
                           <Route path="timesheet-export" element={<TimesheetExport />} />

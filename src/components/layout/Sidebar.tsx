@@ -65,6 +65,7 @@ export const navigation: NavigationItem[] = [
   { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Inkoop Upload', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Inkomende Post', href: '/incoming-post', icon: Mail, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Bankafschrift Import', href: '/bank-statement-import', icon: FileInput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
 
   // PROJECT COMPANY
