@@ -50,6 +50,7 @@ const BankStatementImport: React.FC = () => {
   const [editedTransaction, setEditedTransaction] = useState<BankTransaction | null>(null);
   const [columnMapping, setColumnMapping] = useState<CSVColumnMapping | null>(null);
   const [showColumnMapping, setShowColumnMapping] = useState(false);
+  const [dbPermissionError, setDbPermissionError] = useState(false);
 
   if (userRole !== 'admin') {
     return (
@@ -68,8 +69,12 @@ const BankStatementImport: React.FC = () => {
     try {
       const history = await bankImportService.getImports(selectedCompany.id);
       setImports(history);
-    } catch (e) {
+      setDbPermissionError(false);
+    } catch (e: any) {
       console.error('Error loading import history:', e);
+      if (e.code === 'PERMISSION_DENIED' || e.message?.includes('Permission denied')) {
+        setDbPermissionError(true);
+      }
     }
   }, [selectedCompany]);
 
@@ -266,6 +271,34 @@ const BankStatementImport: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {dbPermissionError && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4 rounded">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-yellow-400" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                Database Configuratie Vereist
+              </h3>
+              <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                <p>
+                  Firebase Realtime Database rules zijn niet geconfigureerd. Importgeschiedenis kan
+                  niet worden opgeslagen of geladen.
+                </p>
+                <p className="mt-2">
+                  <strong>Instructies:</strong> Zie{' '}
+                  <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">
+                    FIREBASE_REALTIME_DATABASE_RULES.md
+                  </code>{' '}
+                  in de projectroot voor configuratiestappen.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Card>
         <div className="p-6 space-y-4">

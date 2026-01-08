@@ -15,7 +15,17 @@ export const bankImportService = {
     const lines = rawData.trim().split('\n').filter(line => line.trim());
     if (lines.length === 0) throw new Error('CSV bestand is leeg');
 
-    const delimiter = rawData.includes(';') ? ';' : ',';
+    let delimiter = ',';
+    const firstLine = lines[0];
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    const semicolonCount = (firstLine.match(/;/g) || []).length;
+    const commaCount = (firstLine.match(/,/g) || []).length;
+
+    if (tabCount > semicolonCount && tabCount > commaCount) {
+      delimiter = '\t';
+    } else if (semicolonCount > commaCount) {
+      delimiter = ';';
+    }
 
     const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^["']|["']$/g, ''));
     const rows = lines.slice(1).map(line => {
@@ -98,24 +108,51 @@ export const bankImportService = {
   },
 
   parseCSVRows(rows: string[][], mapping: CSVColumnMapping): BankTransaction[] {
-    return rows.map((row, index) => {
-      const dateStr = row[mapping.date];
-      const amountStr = row[mapping.amount];
-      const description = row[mapping.description];
+    const transactions: BankTransaction[] = [];
+    const errors: string[] = [];
 
-      const date = this.parseDate(dateStr);
-      const amount = this.parseAmount(amountStr);
+    rows.forEach((row, index) => {
+      try {
+        if (row.length < 3) {
+          errors.push(`Regel ${index + 1}: Onvoldoende kolommen`);
+          return;
+        }
 
-      return {
-        id: `csv-${index}`,
-        date,
-        amount,
-        description,
-        beneficiary: mapping.beneficiary !== undefined ? row[mapping.beneficiary] : undefined,
-        reference: mapping.reference !== undefined ? row[mapping.reference] : undefined,
-        transactionType: amount >= 0 ? 'credit' : 'debit',
-      };
+        const dateStr = row[mapping.date] || '';
+        const amountStr = row[mapping.amount] || '';
+        const description = row[mapping.description] || '';
+
+        if (!dateStr || !amountStr) {
+          errors.push(`Regel ${index + 1}: Datum of bedrag ontbreekt`);
+          return;
+        }
+
+        const date = this.parseDate(dateStr);
+        const amount = this.parseAmount(amountStr);
+
+        transactions.push({
+          id: `csv-${index}`,
+          date,
+          amount,
+          description,
+          beneficiary: mapping.beneficiary !== undefined ? row[mapping.beneficiary] : undefined,
+          reference: mapping.reference !== undefined ? row[mapping.reference] : undefined,
+          transactionType: amount >= 0 ? 'credit' : 'debit',
+        });
+      } catch (e: any) {
+        errors.push(`Regel ${index + 1}: ${e.message}`);
+      }
     });
+
+    if (transactions.length === 0 && errors.length > 0) {
+      throw new Error(`Geen geldige transacties gevonden:\n${errors.slice(0, 5).join('\n')}`);
+    }
+
+    if (errors.length > 0) {
+      console.warn(`${errors.length} rijen overgeslagen:`, errors);
+    }
+
+    return transactions;
   },
 
   parseDate(dateStr: string): Date {
@@ -250,20 +287,28 @@ export const bankImportService = {
   },
 
   async getImports(companyId: string): Promise<BankImport[]> {
-    const importsRef = ref(database, `companies/${companyId}/bankImports`);
-    const snapshot = await get(importsRef);
+    try {
+      const importsRef = ref(database, `companies/${companyId}/bankImports`);
+      const snapshot = await get(importsRef);
 
-    if (!snapshot.exists()) return [];
+      if (!snapshot.exists()) return [];
 
-    const imports: BankImport[] = [];
-    snapshot.forEach(child => {
-      imports.push({
-        id: child.key || '',
-        ...child.val(),
+      const imports: BankImport[] = [];
+      snapshot.forEach(child => {
+        imports.push({
+          id: child.key || '',
+          ...child.val(),
+        });
       });
-    });
 
-    return imports.sort((a, b) => b.importedAt - a.importedAt);
+      return imports.sort((a, b) => b.importedAt - a.importedAt);
+    } catch (error: any) {
+      if (error.code === 'PERMISSION_DENIED') {
+        console.error('Firebase Realtime Database: Permission denied. Check database rules.');
+        return [];
+      }
+      throw error;
+    }
   },
 
   async deleteImport(companyId: string, importId: string): Promise<void> {
