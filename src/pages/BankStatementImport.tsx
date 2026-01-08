@@ -15,6 +15,8 @@ import {
   X,
   Edit2,
   Save,
+  Link,
+  Search,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -24,13 +26,17 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { bankImportService } from '../services/bankImportService';
+import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
+import { incomingInvoiceService, IncomingInvoice } from '../services/incomingInvoiceService';
 import {
   BankTransaction,
   BankImport,
   MatchResult,
   CSVColumnMapping,
+  MatchedInvoice,
 } from '../types/bankImport';
 import { format as formatDate } from 'date-fns';
+import Modal from '../components/ui/Modal';
 
 const BankStatementImport: React.FC = () => {
   const { user, userRole } = useAuth();
@@ -51,6 +57,38 @@ const BankStatementImport: React.FC = () => {
   const [columnMapping, setColumnMapping] = useState<CSVColumnMapping | null>(null);
   const [showColumnMapping, setShowColumnMapping] = useState(false);
   const [dbPermissionError, setDbPermissionError] = useState(false);
+  const [linkingTransaction, setLinkingTransaction] = useState<BankTransaction | null>(null);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [outgoingInvoices, setOutgoingInvoices] = useState<OutgoingInvoice[]>([]);
+  const [incomingInvoices, setIncomingInvoices] = useState<IncomingInvoice[]>([]);
+  const [invoiceSearchTerm, setInvoiceSearchTerm] = useState('');
+
+  const safeFormatDate = (date: Date | number | string | undefined, format: string): string => {
+    if (!date) return 'Onbekend';
+
+    try {
+      let dateObj: Date;
+
+      if (date instanceof Date) {
+        dateObj = date;
+      } else if (typeof date === 'number') {
+        dateObj = new Date(date);
+      } else if (typeof date === 'string') {
+        dateObj = new Date(date);
+      } else {
+        return 'Onbekend';
+      }
+
+      if (isNaN(dateObj.getTime())) {
+        return 'Ongeldige datum';
+      }
+
+      return formatDate(dateObj, format);
+    } catch (error) {
+      console.error('Error formatting date:', error, date);
+      return 'Ongeldige datum';
+    }
+  };
 
   if (userRole !== 'admin') {
     return (
@@ -63,6 +101,20 @@ const BankStatementImport: React.FC = () => {
       </div>
     );
   }
+
+  const loadInvoices = useCallback(async () => {
+    if (!selectedCompany || !queryUserId) return;
+    try {
+      const [outgoing, incoming] = await Promise.all([
+        outgoingInvoiceService.getInvoices(queryUserId, selectedCompany.id),
+        incomingInvoiceService.getInvoices(queryUserId, selectedCompany.id),
+      ]);
+      setOutgoingInvoices(outgoing);
+      setIncomingInvoices(incoming);
+    } catch (e) {
+      console.error('Error loading invoices:', e);
+    }
+  }, [selectedCompany, queryUserId]);
 
   const loadImportHistory = useCallback(async () => {
     if (!selectedCompany) return;
@@ -80,7 +132,8 @@ const BankStatementImport: React.FC = () => {
 
   useEffect(() => {
     loadImportHistory();
-  }, [loadImportHistory]);
+    loadInvoices();
+  }, [loadImportHistory, loadInvoices]);
 
   const handleParse = async () => {
     if (!rawData.trim()) {
@@ -133,7 +186,7 @@ const BankStatementImport: React.FC = () => {
     try {
       setImporting(true);
 
-      const matched = matchResults.filter(r => r.status === 'matched' || r.status === 'partial');
+      const matched = matchResults.filter(r => r.status === 'matched' || r.status === 'partial' || r.status === 'manual');
       const unmatched = matchResults.filter(r => r.status === 'unmatched');
 
       const importData = {
@@ -156,9 +209,26 @@ const BankStatementImport: React.FC = () => {
 
       await bankImportService.saveImport(importData);
 
+      let updatedCount = 0;
+      for (const match of matched) {
+        if (match.matchedInvoice && match.matchedInvoice.invoiceId) {
+          try {
+            if (match.matchedInvoice.type === 'outgoing') {
+              await outgoingInvoiceService.markAsPaid(match.matchedInvoice.invoiceId);
+              updatedCount++;
+            } else if (match.matchedInvoice.type === 'incoming') {
+              await incomingInvoiceService.markAsPaid(match.matchedInvoice.invoiceId);
+              updatedCount++;
+            }
+          } catch (updateError) {
+            console.error(`Failed to update invoice ${match.matchedInvoice.invoiceNumber}:`, updateError);
+          }
+        }
+      }
+
       success(
         'Import geslaagd',
-        `${matched.length} gematcht, ${unmatched.length} niet gematcht`
+        `${matched.length} gematcht, ${unmatched.length} niet gematcht. ${updatedCount} facturen gemarkeerd als betaald.`
       );
 
       setRawData('');
@@ -166,6 +236,7 @@ const BankStatementImport: React.FC = () => {
       setMatchResults([]);
       setShowPreview(false);
       loadImportHistory();
+      loadInvoices();
     } catch (e: any) {
       showError('Import fout', e.message || 'Kon import niet opslaan');
       console.error(e);
@@ -216,12 +287,74 @@ const BankStatementImport: React.FC = () => {
     setEditedTransaction(null);
   };
 
-  const getStatusBadge = (status: 'matched' | 'unmatched' | 'partial', confidence: number) => {
-    if (status === 'matched') {
+  const handleOpenLinkModal = (transaction: BankTransaction) => {
+    setLinkingTransaction(transaction);
+    setShowLinkModal(true);
+    setInvoiceSearchTerm('');
+  };
+
+  const handleLinkInvoice = (invoice: OutgoingInvoice | IncomingInvoice, type: 'outgoing' | 'incoming') => {
+    if (!linkingTransaction) return;
+
+    const clientName = type === 'outgoing'
+      ? (invoice as OutgoingInvoice).clientName
+      : (invoice as IncomingInvoice).supplierName;
+
+    const linkedInvoice: MatchedInvoice = {
+      invoiceId: invoice.id || '',
+      invoiceNumber: invoice.invoiceNumber,
+      amount: invoice.totalAmount,
+      clientName,
+      invoiceDate: invoice.invoiceDate,
+      confidence: 100,
+      type,
+      status: invoice.status,
+    };
+
+    const updatedResults = matchResults.map(r =>
+      r.transaction.id === linkingTransaction.id
+        ? {
+            ...r,
+            matchedInvoice: linkedInvoice,
+            status: 'manual' as const,
+            confidence: 100,
+            manuallyLinked: true,
+            linkedInvoiceId: invoice.id || '',
+            linkedInvoiceType: type,
+          }
+        : r
+    );
+
+    setMatchResults(updatedResults);
+    setShowLinkModal(false);
+    setLinkingTransaction(null);
+    success('Gekoppeld', `Transactie gekoppeld aan ${invoice.invoiceNumber}`);
+  };
+
+  const handleUnlinkInvoice = (transactionId: string) => {
+    const updatedResults = matchResults.map(r =>
+      r.transaction.id === transactionId
+        ? {
+            ...r,
+            matchedInvoice: undefined,
+            status: 'unmatched' as const,
+            confidence: 0,
+            manuallyLinked: false,
+            linkedInvoiceId: undefined,
+            linkedInvoiceType: undefined,
+          }
+        : r
+    );
+    setMatchResults(updatedResults);
+    success('Ontkoppeld', 'Koppeling verwijderd');
+  };
+
+  const getStatusBadge = (status: 'matched' | 'unmatched' | 'partial' | 'manual', confidence: number) => {
+    if (status === 'matched' || status === 'manual') {
       return (
         <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
           <CheckCircle className="w-3 h-3 mr-1" />
-          Gematcht ({confidence}%)
+          {status === 'manual' ? 'Handmatig gekoppeld' : `Gematcht (${confidence}%)`}
         </span>
       );
     } else if (status === 'partial') {
@@ -436,7 +569,7 @@ const BankStatementImport: React.FC = () => {
                           {isEditing ? (
                             <input
                               type="date"
-                              value={formatDate(transaction.date, 'yyyy-MM-dd')}
+                              value={safeFormatDate(transaction.date, 'yyyy-MM-dd')}
                               onChange={e =>
                                 setEditedTransaction({
                                   ...transaction,
@@ -446,7 +579,7 @@ const BankStatementImport: React.FC = () => {
                               className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
                             />
                           ) : (
-                            formatDate(transaction.date, 'dd-MM-yyyy')
+                            safeFormatDate(transaction.date, 'dd-MM-yyyy')
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
@@ -513,9 +646,18 @@ const BankStatementImport: React.FC = () => {
                           <div className="space-y-1">
                             {getStatusBadge(result.status, result.confidence)}
                             {result.matchedInvoice && (
-                              <div className="text-xs text-gray-600 dark:text-gray-400">
-                                {result.matchedInvoice.invoiceNumber} -{' '}
-                                {result.matchedInvoice.clientName}
+                              <div className="text-xs space-y-0.5">
+                                <div className="text-gray-600 dark:text-gray-400">
+                                  {result.matchedInvoice.invoiceNumber} - {result.matchedInvoice.clientName}
+                                </div>
+                                <div className={`font-medium ${result.matchedInvoice.type === 'outgoing' ? 'text-blue-600' : 'text-purple-600'}`}>
+                                  {result.matchedInvoice.type === 'outgoing' ? 'Uitgaand' : 'Inkomend'}
+                                </div>
+                                {result.possibleMatches && result.possibleMatches.length > 1 && (
+                                  <div className="text-gray-500">
+                                    +{result.possibleMatches.length - 1} andere mogelijkheden
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -526,23 +668,45 @@ const BankStatementImport: React.FC = () => {
                               <button
                                 onClick={handleSaveEdit}
                                 className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900 rounded"
+                                title="Opslaan"
                               >
                                 <Save className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={handleCancelEdit}
                                 className="p-1 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                                title="Annuleren"
                               >
                                 <X className="w-4 h-4" />
                               </button>
                             </div>
                           ) : (
-                            <button
-                              onClick={() => handleEditRow(result.transaction)}
-                              className="p-1 text-primary-600 hover:bg-primary-100 dark:hover:bg-primary-900 rounded"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => handleEditRow(result.transaction)}
+                                className="p-1 text-primary-600 hover:bg-primary-100 dark:hover:bg-primary-900 rounded"
+                                title="Bewerken"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              {result.matchedInvoice ? (
+                                <button
+                                  onClick={() => handleUnlinkInvoice(result.transaction.id)}
+                                  className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded"
+                                  title="Ontkoppelen"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleOpenLinkModal(result.transaction)}
+                                  className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                  title="Koppelen aan factuur"
+                                >
+                                  <Link className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -599,7 +763,7 @@ const BankStatementImport: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {formatDate(new Date(imp.importedAt), 'dd-MM-yyyy HH:mm')}
+                          {safeFormatDate(imp.importedAt, 'dd-MM-yyyy HH:mm')}
                         </span>
                         <span className="text-xs text-gray-600 dark:text-gray-400">
                           {imp.format}
@@ -651,7 +815,7 @@ const BankStatementImport: React.FC = () => {
                                   className="text-xs p-2 bg-white dark:bg-gray-900 rounded flex justify-between"
                                 >
                                   <span>
-                                    {formatDate(new Date(mt.transaction.date), 'dd-MM-yyyy')} - €{' '}
+                                    {safeFormatDate(mt.transaction.date, 'dd-MM-yyyy')} - €{' '}
                                     {mt.transaction.amount.toFixed(2)}
                                   </span>
                                   <span className="text-green-600">
@@ -674,7 +838,7 @@ const BankStatementImport: React.FC = () => {
                                   key={i}
                                   className="text-xs p-2 bg-white dark:bg-gray-900 rounded"
                                 >
-                                  {formatDate(new Date(t.date), 'dd-MM-yyyy')} - €{' '}
+                                  {safeFormatDate(t.date, 'dd-MM-yyyy')} - €{' '}
                                   {t.amount.toFixed(2)} - {t.description}
                                 </div>
                               ))}
@@ -690,6 +854,149 @@ const BankStatementImport: React.FC = () => {
           )}
         </div>
       </Card>
+
+      {showLinkModal && linkingTransaction && (
+        <Modal
+          isOpen={showLinkModal}
+          onClose={() => {
+            setShowLinkModal(false);
+            setLinkingTransaction(null);
+            setInvoiceSearchTerm('');
+          }}
+          title="Koppel aan factuur"
+          size="lg"
+        >
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                Transactie
+              </h3>
+              <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Datum:</span>{' '}
+                    {safeFormatDate(linkingTransaction.date, 'dd-MM-yyyy')}
+                  </div>
+                  <div>
+                    <span className="text-gray-600 dark:text-gray-400">Bedrag:</span>{' '}
+                    <span className={linkingTransaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      € {linkingTransaction.amount.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-gray-600 dark:text-gray-400">Omschrijving:</span>{' '}
+                    {linkingTransaction.description}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Zoek factuur
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={invoiceSearchTerm}
+                  onChange={(e) => setInvoiceSearchTerm(e.target.value)}
+                  placeholder="Zoek op factuurnummer of klant/leverancier"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {linkingTransaction.amount >= 0 ? (
+                <>
+                  <h4 className="text-sm font-medium text-blue-600 mb-2">
+                    Uitgaande facturen (ontvangen betalingen)
+                  </h4>
+                  {outgoingInvoices
+                    .filter(
+                      inv =>
+                        !invoiceSearchTerm ||
+                        inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
+                        inv.clientName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
+                    )
+                    .map(invoice => (
+                      <button
+                        key={invoice.id}
+                        onClick={() => handleLinkInvoice(invoice, 'outgoing')}
+                        className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {invoice.invoiceNumber}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {invoice.clientName}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {safeFormatDate(invoice.invoiceDate, 'dd-MM-yyyy')}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              € {invoice.totalAmount.toFixed(2)}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {invoice.status}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                </>
+              ) : (
+                <>
+                  <h4 className="text-sm font-medium text-purple-600 mb-2">
+                    Inkomende facturen (uitgaande betalingen)
+                  </h4>
+                  {incomingInvoices
+                    .filter(
+                      inv =>
+                        !invoiceSearchTerm ||
+                        inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
+                        inv.supplierName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
+                    )
+                    .map(invoice => (
+                      <button
+                        key={invoice.id}
+                        onClick={() => handleLinkInvoice(invoice, 'incoming')}
+                        className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {invoice.invoiceNumber}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {invoice.supplierName}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {safeFormatDate(invoice.invoiceDate, 'dd-MM-yyyy')}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              € {invoice.totalAmount.toFixed(2)}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {invoice.status}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                </>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

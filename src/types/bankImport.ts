@@ -16,14 +16,19 @@ export interface MatchedInvoice {
   clientName: string;
   invoiceDate: Date;
   confidence: number;
+  type: 'outgoing' | 'incoming';
+  status?: string;
 }
 
 export interface MatchResult {
   transaction: BankTransaction;
   matchedInvoice?: MatchedInvoice;
-  status: 'matched' | 'unmatched' | 'partial';
+  status: 'matched' | 'unmatched' | 'partial' | 'manual';
   confidence: number;
   possibleMatches?: MatchedInvoice[];
+  manuallyLinked?: boolean;
+  linkedInvoiceId?: string;
+  linkedInvoiceType?: 'outgoing' | 'incoming';
 }
 
 export interface BankImport {

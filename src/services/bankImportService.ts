@@ -9,6 +9,7 @@ import {
   MatchedInvoice,
 } from '../types/bankImport';
 import { outgoingInvoiceService, OutgoingInvoice } from './outgoingInvoiceService';
+import { incomingInvoiceService, IncomingInvoice } from './incomingInvoiceService';
 
 export const bankImportService = {
   parseCSV(rawData: string): ParsedCSV {
@@ -207,11 +208,18 @@ export const bankImportService = {
     userId: string,
     companyId: string
   ): Promise<MatchResult[]> {
-    const invoices = await outgoingInvoiceService.getInvoices(userId, companyId);
+    const outgoingInvoices = await outgoingInvoiceService.getInvoices(userId, companyId);
+    const incomingInvoices = await incomingInvoiceService.getInvoices(userId, companyId);
     const results: MatchResult[] = [];
 
     for (const transaction of transactions) {
-      const possibleMatches = this.findPossibleMatches(transaction, invoices);
+      let possibleMatches: MatchedInvoice[] = [];
+
+      if (transaction.amount >= 0) {
+        possibleMatches = this.findPossibleMatches(transaction, outgoingInvoices, 'outgoing');
+      } else {
+        possibleMatches = this.findPossibleMatches(transaction, incomingInvoices, 'incoming');
+      }
 
       if (possibleMatches.length > 0) {
         const bestMatch = possibleMatches[0];
@@ -220,7 +228,7 @@ export const bankImportService = {
           matchedInvoice: bestMatch,
           status: bestMatch.confidence >= 80 ? 'matched' : 'partial',
           confidence: bestMatch.confidence,
-          possibleMatches: possibleMatches.slice(0, 3),
+          possibleMatches: possibleMatches.slice(0, 5),
         });
       } else {
         results.push({
@@ -234,39 +242,116 @@ export const bankImportService = {
     return results;
   },
 
-  findPossibleMatches(transaction: BankTransaction, invoices: OutgoingInvoice[]): MatchedInvoice[] {
+  extractInvoiceNumbers(text: string): string[] {
+    const patterns = [
+      /\b(\d{4}[-\/]\d{3,4})\b/g,
+      /\b(INV[-_]?\d{3,})\b/gi,
+      /\b(FACT[-_]?\d{3,})\b/gi,
+      /\b(F[-_]?\d{4,})\b/gi,
+      /\b([A-Z]{2,4}\d{4,})\b/g,
+      /\b(\d{6,})\b/g,
+    ];
+
+    const found = new Set<string>();
+    for (const pattern of patterns) {
+      const matches = text.matchAll(pattern);
+      for (const match of matches) {
+        found.add(match[1].toUpperCase());
+      }
+    }
+
+    return Array.from(found);
+  },
+
+  normalizeInvoiceNumber(invoiceNumber: string): string {
+    return invoiceNumber
+      .toUpperCase()
+      .replace(/[-_\s]/g, '')
+      .trim();
+  },
+
+  findPossibleMatches(
+    transaction: BankTransaction,
+    invoices: (OutgoingInvoice | IncomingInvoice)[],
+    type: 'outgoing' | 'incoming'
+  ): MatchedInvoice[] {
     const matches: MatchedInvoice[] = [];
+    const extractedNumbers = this.extractInvoiceNumbers(transaction.description);
 
     for (const invoice of invoices) {
       let confidence = 0;
+      const normalizedInvoiceNumber = this.normalizeInvoiceNumber(invoice.invoiceNumber);
 
-      const invoiceNumberInDescription = transaction.description
-        .toLowerCase()
-        .includes(invoice.invoiceNumber.toLowerCase());
-      if (invoiceNumberInDescription) confidence += 50;
+      const exactMatch = extractedNumbers.some(
+        num => this.normalizeInvoiceNumber(num) === normalizedInvoiceNumber
+      );
+      if (exactMatch) confidence += 70;
 
-      const amountMatch = Math.abs(Math.abs(transaction.amount) - invoice.totalAmount) < 0.01;
-      if (amountMatch) confidence += 30;
+      if (!exactMatch) {
+        const partialMatch = extractedNumbers.some(num =>
+          normalizedInvoiceNumber.includes(this.normalizeInvoiceNumber(num)) ||
+          this.normalizeInvoiceNumber(num).includes(normalizedInvoiceNumber)
+        );
+        if (partialMatch) confidence += 40;
+      }
+
+      if (!exactMatch && !partialMatch) {
+        const simpleIncludes = transaction.description
+          .toUpperCase()
+          .includes(invoice.invoiceNumber.toUpperCase());
+        if (simpleIncludes) confidence += 30;
+      }
+
+      const transactionAmount = Math.abs(transaction.amount);
+      const invoiceAmount = invoice.totalAmount;
+      const amountDiff = Math.abs(transactionAmount - invoiceAmount);
+
+      if (amountDiff < 0.01) confidence += 40;
+      else if (amountDiff < 1) confidence += 30;
+      else if (amountDiff < 10) confidence += 20;
+      else if (amountDiff < invoiceAmount * 0.05) confidence += 10;
+
+      const transactionDate = transaction.date instanceof Date ? transaction.date : new Date(transaction.date);
+      const invoiceDate = invoice.invoiceDate instanceof Date ? invoice.invoiceDate : new Date(invoice.invoiceDate);
 
       const daysDiff = Math.abs(
-        (transaction.date.getTime() - invoice.invoiceDate.getTime()) / (1000 * 60 * 60 * 24)
+        (transactionDate.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24)
       );
-      if (daysDiff <= 7) confidence += 10;
-      else if (daysDiff <= 30) confidence += 5;
+      if (daysDiff <= 7) confidence += 15;
+      else if (daysDiff <= 30) confidence += 10;
+      else if (daysDiff <= 90) confidence += 5;
 
-      const clientNameInDescription = transaction.description
-        .toLowerCase()
-        .includes(invoice.clientName.toLowerCase().substring(0, 5));
-      if (clientNameInDescription) confidence += 10;
+      const clientName = type === 'outgoing'
+        ? (invoice as OutgoingInvoice).clientName
+        : (invoice as IncomingInvoice).supplierName;
 
-      if (confidence > 0) {
+      const nameParts = clientName.toLowerCase().split(/\s+/).filter(p => p.length > 2);
+      const nameMatchCount = nameParts.filter(part =>
+        transaction.description.toLowerCase().includes(part)
+      ).length;
+
+      if (nameMatchCount > 0) {
+        confidence += Math.min(nameMatchCount * 5, 15);
+      }
+
+      if (transaction.beneficiary) {
+        const beneficiaryLower = transaction.beneficiary.toLowerCase();
+        const clientNameLower = clientName.toLowerCase();
+        if (beneficiaryLower.includes(clientNameLower) || clientNameLower.includes(beneficiaryLower)) {
+          confidence += 20;
+        }
+      }
+
+      if (confidence > 15) {
         matches.push({
           invoiceId: invoice.id || '',
           invoiceNumber: invoice.invoiceNumber,
           amount: invoice.totalAmount,
-          clientName: invoice.clientName,
+          clientName,
           invoiceDate: invoice.invoiceDate,
-          confidence,
+          confidence: Math.min(confidence, 100),
+          type,
+          status: invoice.status,
         });
       }
     }
