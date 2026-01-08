@@ -30,7 +30,7 @@ import {
   MatchResult,
   CSVColumnMapping,
 } from '../types/bankImport';
-import { format } from 'date-fns';
+import { format as formatDate } from 'date-fns';
 
 const BankStatementImport: React.FC = () => {
   const { user, userRole } = useAuth();
@@ -436,7 +436,7 @@ const BankStatementImport: React.FC = () => {
                           {isEditing ? (
                             <input
                               type="date"
-                              value={format(transaction.date, 'yyyy-MM-dd')}
+                              value={formatDate(transaction.date, 'yyyy-MM-dd')}
                               onChange={e =>
                                 setEditedTransaction({
                                   ...transaction,
@@ -446,7 +446,7 @@ const BankStatementImport: React.FC = () => {
                               className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
                             />
                           ) : (
-                            format(transaction.date, 'dd-MM-yyyy')
+                            formatDate(transaction.date, 'dd-MM-yyyy')
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
@@ -599,7 +599,7 @@ const BankStatementImport: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {format(new Date(imp.importedAt), 'dd-MM-yyyy HH:mm')}
+                          {formatDate(new Date(imp.importedAt), 'dd-MM-yyyy HH:mm')}
                         </span>
                         <span className="text-xs text-gray-600 dark:text-gray-400">
                           {imp.format}
@@ -651,7 +651,7 @@ const BankStatementImport: React.FC = () => {
                                   className="text-xs p-2 bg-white dark:bg-gray-900 rounded flex justify-between"
                                 >
                                   <span>
-                                    {format(new Date(mt.transaction.date), 'dd-MM-yyyy')} - €{' '}
+                                    {formatDate(new Date(mt.transaction.date), 'dd-MM-yyyy')} - €{' '}
                                     {mt.transaction.amount.toFixed(2)}
                                   </span>
                                   <span className="text-green-600">
@@ -674,7 +674,7 @@ const BankStatementImport: React.FC = () => {
                                   key={i}
                                   className="text-xs p-2 bg-white dark:bg-gray-900 rounded"
                                 >
-                                  {format(new Date(t.date), 'dd-MM-yyyy')} - €{' '}
+                                  {formatDate(new Date(t.date), 'dd-MM-yyyy')} - €{' '}
                                   {t.amount.toFixed(2)} - {t.description}
                                 </div>
                               ))}
