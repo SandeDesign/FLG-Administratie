@@ -9,14 +9,16 @@ import {
   ChevronDown,
   ChevronUp,
   Shield,
-  DollarSign,
-  Calendar,
-  User,
-  X,
   Edit2,
   Save,
   Link,
   Search,
+  RefreshCw,
+  X,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -38,6 +40,9 @@ import {
 import { format as formatDate } from 'date-fns';
 import Modal from '../components/ui/Modal';
 
+type TabType = 'all' | 'incoming' | 'outgoing';
+type StatusFilter = 'all' | 'confirmed' | 'pending' | 'unmatched';
+
 const BankStatementImport: React.FC = () => {
   const { user, userRole } = useAuth();
   const { selectedCompany, queryUserId } = useApp();
@@ -45,30 +50,32 @@ const BankStatementImport: React.FC = () => {
 
   const [rawData, setRawData] = useState('');
   const [format, setFormat] = useState<'CSV' | 'MT940'>('CSV');
-  const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [imports, setImports] = useState<BankImport[]>([]);
   const [expandedImport, setExpandedImport] = useState<string | null>(null);
-  const [editingRow, setEditingRow] = useState<string | null>(null);
-  const [editedTransaction, setEditedTransaction] = useState<BankTransaction | null>(null);
-  const [columnMapping, setColumnMapping] = useState<CSVColumnMapping | null>(null);
-  const [showColumnMapping, setShowColumnMapping] = useState(false);
-  const [dbPermissionError, setDbPermissionError] = useState(false);
-  const [linkingTransaction, setLinkingTransaction] = useState<BankTransaction | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+
+  const [editingTransaction, setEditingTransaction] = useState<string | null>(null);
+  const [editedData, setEditedData] = useState<Partial<BankTransaction>>({});
+
+  const [linkingTransaction, setLinkingTransaction] = useState<MatchResult | null>(null);
   const [showLinkModal, setShowLinkModal] = useState(false);
-  const [outgoingInvoices, setOutgoingInvoices] = useState<OutgoingInvoice[]>([]);
-  const [incomingInvoices, setIncomingInvoices] = useState<IncomingInvoice[]>([]);
   const [invoiceSearchTerm, setInvoiceSearchTerm] = useState('');
 
-  const safeFormatDate = (date: Date | number | string | undefined, format: string): string => {
-    if (!date) return 'Onbekend';
+  const [outgoingInvoices, setOutgoingInvoices] = useState<OutgoingInvoice[]>([]);
+  const [incomingInvoices, setIncomingInvoices] = useState<IncomingInvoice[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
+  const [importTransactions, setImportTransactions] = useState<Map<string, BankTransaction[]>>(new Map());
+
+  const safeFormatDate = (date: Date | number | string | undefined, fmt: string): string => {
+    if (!date) return 'Onbekend';
     try {
       let dateObj: Date;
-
       if (date instanceof Date) {
         dateObj = date;
       } else if (typeof date === 'number') {
@@ -78,14 +85,9 @@ const BankStatementImport: React.FC = () => {
       } else {
         return 'Onbekend';
       }
-
-      if (isNaN(dateObj.getTime())) {
-        return 'Ongeldige datum';
-      }
-
-      return formatDate(dateObj, format);
+      if (isNaN(dateObj.getTime())) return 'Ongeldige datum';
+      return formatDate(dateObj, fmt);
     } catch (error) {
-      console.error('Error formatting date:', error, date);
       return 'Ongeldige datum';
     }
   };
@@ -121,12 +123,18 @@ const BankStatementImport: React.FC = () => {
     try {
       const history = await bankImportService.getImports(selectedCompany.id);
       setImports(history);
-      setDbPermissionError(false);
+
+      const transactionsMap = new Map<string, BankTransaction[]>();
+      for (const imp of history) {
+        const transactions = await bankImportService.getTransactionsByImport(
+          selectedCompany.id,
+          imp.id
+        );
+        transactionsMap.set(imp.id, transactions);
+      }
+      setImportTransactions(transactionsMap);
     } catch (e: any) {
       console.error('Error loading import history:', e);
-      if (e.code === 'PERMISSION_DENIED' || e.message?.includes('Permission denied')) {
-        setDbPermissionError(true);
-      }
     }
   }, [selectedCompany]);
 
@@ -149,11 +157,10 @@ const BankStatementImport: React.FC = () => {
     try {
       setLoading(true);
 
-      let parsedTransactions: BankTransaction[] = [];
+      let parsedTransactions: any[] = [];
 
       if (format === 'CSV') {
         const parsed = bankImportService.parseCSV(rawData);
-        setColumnMapping(parsed.detectedFormat);
         parsedTransactions = bankImportService.parseCSVRows(
           parsed.rows,
           parsed.detectedFormat
@@ -162,13 +169,23 @@ const BankStatementImport: React.FC = () => {
         parsedTransactions = bankImportService.parseMT940(rawData);
       }
 
-      setTransactions(parsedTransactions);
+      const enrichedTransactions: BankTransaction[] = parsedTransactions.map((t, idx) => ({
+        ...t,
+        id: `temp-${idx}`,
+        type: t.amount >= 0 ? 'outgoing' : 'incoming',
+        status: 'unmatched' as const,
+        companyId: selectedCompany.id,
+        importId: 'temp',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }));
 
       const results = await bankImportService.matchTransactions(
-        parsedTransactions,
+        enrichedTransactions,
         queryUserId,
         selectedCompany.id
       );
+
       setMatchResults(results);
       setShowPreview(true);
       success('Geslaagd', `${parsedTransactions.length} transacties geparsed`);
@@ -186,53 +203,63 @@ const BankStatementImport: React.FC = () => {
     try {
       setImporting(true);
 
-      const matched = matchResults.filter(r => r.status === 'matched' || r.status === 'partial' || r.status === 'manual');
+      const confirmed = matchResults.filter(r => r.status === 'confirmed');
+      const pending = matchResults.filter(r => r.status === 'pending');
       const unmatched = matchResults.filter(r => r.status === 'unmatched');
 
-      const importData = {
+      const importData: Omit<BankImport, 'id'> = {
         companyId: selectedCompany.id,
         companyName: selectedCompany.name,
         importedBy: user.uid,
         importedByName: user.displayName || user.email || 'Unknown',
-        totalLines: transactions.length,
+        totalLines: matchResults.length,
         format,
-        matchedCount: matched.length,
+        confirmedCount: confirmed.length,
+        pendingCount: pending.length,
         unmatchedCount: unmatched.length,
-        matchedTransactions: matched.map(m => ({
-          transaction: m.transaction,
-          matchedInvoice: m.matchedInvoice!,
-        })),
-        unmatchedTransactions: unmatched.map(u => u.transaction),
         rawData: rawData.substring(0, 10000),
         importedAt: Date.now(),
       };
 
-      await bankImportService.saveImport(importData);
+      const importId = await bankImportService.saveImport(importData);
 
-      let updatedCount = 0;
-      for (const match of matched) {
-        if (match.matchedInvoice && match.matchedInvoice.invoiceId) {
+      const allTransactions: BankTransaction[] = matchResults.map((r) => ({
+        ...r.transaction,
+        importId,
+        status: r.status,
+        confidence: r.confidence,
+        matchedInvoiceId: r.matchedInvoice?.invoiceId,
+        matchedInvoiceType: r.matchedInvoice?.type,
+      }));
+
+      await bankImportService.saveTransactions(allTransactions, selectedCompany.id, importId);
+
+      let confirmedCount = 0;
+      for (const result of confirmed) {
+        if (result.matchedInvoice?.invoiceId) {
           try {
-            if (match.matchedInvoice.type === 'outgoing') {
-              await outgoingInvoiceService.markAsPaid(match.matchedInvoice.invoiceId);
-              updatedCount++;
-            } else if (match.matchedInvoice.type === 'incoming') {
-              await incomingInvoiceService.markAsPaid(match.matchedInvoice.invoiceId);
-              updatedCount++;
+            const transactionDoc = allTransactions.find(t => t.id === result.transaction.id);
+            if (transactionDoc) {
+              await bankImportService.confirmTransaction(
+                transactionDoc.id,
+                selectedCompany.id,
+                user.uid,
+                user.displayName || user.email || 'Unknown'
+              );
+              confirmedCount++;
             }
-          } catch (updateError) {
-            console.error(`Failed to update invoice ${match.matchedInvoice.invoiceNumber}:`, updateError);
+          } catch (e) {
+            console.error('Error confirming transaction:', e);
           }
         }
       }
 
       success(
         'Import geslaagd',
-        `${matched.length} gematcht, ${unmatched.length} niet gematcht. ${updatedCount} facturen gemarkeerd als betaald.`
+        `${confirmed.length} bevestigd, ${pending.length} ter beoordeling, ${unmatched.length} onbekend. ${confirmedCount} facturen gemarkeerd als betaald.`
       );
 
       setRawData('');
-      setTransactions([]);
       setMatchResults([]);
       setShowPreview(false);
       loadImportHistory();
@@ -258,121 +285,197 @@ const BankStatementImport: React.FC = () => {
     }
   };
 
-  const handleEditRow = (transaction: BankTransaction) => {
-    setEditingRow(transaction.id);
-    setEditedTransaction({ ...transaction });
+  const handleEditTransaction = (transaction: BankTransaction) => {
+    setEditingTransaction(transaction.id);
+    setEditedData({
+      date: transaction.date,
+      amount: transaction.amount,
+      description: transaction.description,
+      beneficiary: transaction.beneficiary,
+    });
   };
 
-  const handleSaveEdit = () => {
-    if (!editedTransaction) return;
+  const handleSaveEdit = async (transactionId: string) => {
+    if (!user || !selectedCompany) return;
 
-    setTransactions(prev =>
-      prev.map(t => (t.id === editedTransaction.id ? editedTransaction : t))
-    );
-
-    const updatedResults = matchResults.map(r =>
-      r.transaction.id === editedTransaction.id
-        ? { ...r, transaction: editedTransaction }
-        : r
-    );
-    setMatchResults(updatedResults);
-
-    setEditingRow(null);
-    setEditedTransaction(null);
-    success('Opgeslagen', 'Transactie bijgewerkt');
+    try {
+      await bankImportService.updateTransaction(
+        transactionId,
+        editedData,
+        user.uid,
+        user.displayName || user.email || 'Unknown'
+      );
+      success('Opgeslagen', 'Transactie bijgewerkt');
+      setEditingTransaction(null);
+      setEditedData({});
+      loadImportHistory();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon transactie niet bijwerken');
+    }
   };
 
-  const handleCancelEdit = () => {
-    setEditingRow(null);
-    setEditedTransaction(null);
+  const handleRefreshMatch = async (transactionId: string) => {
+    if (!user || !selectedCompany || !queryUserId) return;
+
+    try {
+      setRefreshing(true);
+      const results = await bankImportService.rematchTransactions(
+        [transactionId],
+        queryUserId,
+        selectedCompany.id
+      );
+
+      if (results.length > 0 && results[0].matchedInvoice) {
+        await bankImportService.updateTransaction(
+          transactionId,
+          {
+            matchedInvoiceId: results[0].matchedInvoice.invoiceId,
+            matchedInvoiceType: results[0].matchedInvoice.type,
+            confidence: results[0].confidence,
+            status: results[0].status,
+          },
+          user.uid,
+          user.displayName || user.email || 'Unknown'
+        );
+        success('Vernieuwd', 'Match bijgewerkt');
+      } else {
+        success('Geen match', 'Geen nieuwe match gevonden');
+      }
+
+      loadImportHistory();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon match niet vernieuwen');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
-  const handleOpenLinkModal = (transaction: BankTransaction) => {
-    setLinkingTransaction(transaction);
+  const handleConfirmTransaction = async (transactionId: string) => {
+    if (!user || !selectedCompany) return;
+
+    try {
+      await bankImportService.confirmTransaction(
+        transactionId,
+        selectedCompany.id,
+        user.uid,
+        user.displayName || user.email || 'Unknown'
+      );
+      success('Bevestigd', 'Transactie bevestigd en factuur gemarkeerd als betaald');
+      loadImportHistory();
+      loadInvoices();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon transactie niet bevestigen');
+    }
+  };
+
+  const handleUnconfirmTransaction = async (transactionId: string) => {
+    if (!selectedCompany) return;
+    if (!confirm('Weet je zeker dat je deze bevestiging wilt terugdraaien?')) return;
+
+    try {
+      await bankImportService.unconfirmTransaction(transactionId, selectedCompany.id);
+      success('Teruggedraaid', 'Bevestiging teruggedraaid');
+      loadImportHistory();
+      loadInvoices();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon bevestiging niet terugdraaien');
+    }
+  };
+
+  const handleOpenLinkModal = (result: MatchResult) => {
+    setLinkingTransaction(result);
     setShowLinkModal(true);
     setInvoiceSearchTerm('');
   };
 
-  const handleLinkInvoice = (invoice: OutgoingInvoice | IncomingInvoice, type: 'outgoing' | 'incoming') => {
-    if (!linkingTransaction) return;
+  const handleLinkInvoice = async (
+    invoice: OutgoingInvoice | IncomingInvoice,
+    type: 'outgoing' | 'incoming'
+  ) => {
+    if (!linkingTransaction || !user || !selectedCompany) return;
 
-    const clientName = type === 'outgoing'
-      ? (invoice as OutgoingInvoice).clientName
-      : (invoice as IncomingInvoice).supplierName;
+    try {
+      const transactionId = linkingTransaction.transaction.id;
 
-    const linkedInvoice: MatchedInvoice = {
-      invoiceId: invoice.id || '',
-      invoiceNumber: invoice.invoiceNumber,
-      amount: invoice.totalAmount,
-      clientName,
-      invoiceDate: invoice.invoiceDate,
-      confidence: 100,
-      type,
-      status: invoice.status,
-    };
+      await bankImportService.updateTransaction(
+        transactionId,
+        {
+          matchedInvoiceId: invoice.id || '',
+          matchedInvoiceType: type,
+          confidence: 100,
+          status: 'pending',
+        },
+        user.uid,
+        user.displayName || user.email || 'Unknown'
+      );
 
-    const updatedResults = matchResults.map(r =>
-      r.transaction.id === linkingTransaction.id
-        ? {
-            ...r,
-            matchedInvoice: linkedInvoice,
-            status: 'manual' as const,
-            confidence: 100,
-            manuallyLinked: true,
-            linkedInvoiceId: invoice.id || '',
-            linkedInvoiceType: type,
-          }
-        : r
-    );
-
-    setMatchResults(updatedResults);
-    setShowLinkModal(false);
-    setLinkingTransaction(null);
-    success('Gekoppeld', `Transactie gekoppeld aan ${invoice.invoiceNumber}`);
+      success('Gekoppeld', `Transactie gekoppeld aan ${invoice.invoiceNumber}`);
+      setShowLinkModal(false);
+      setLinkingTransaction(null);
+      loadImportHistory();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon koppeling niet opslaan');
+    }
   };
 
-  const handleUnlinkInvoice = (transactionId: string) => {
-    const updatedResults = matchResults.map(r =>
-      r.transaction.id === transactionId
-        ? {
-            ...r,
-            matchedInvoice: undefined,
-            status: 'unmatched' as const,
-            confidence: 0,
-            manuallyLinked: false,
-            linkedInvoiceId: undefined,
-            linkedInvoiceType: undefined,
-          }
-        : r
-    );
-    setMatchResults(updatedResults);
-    success('Ontkoppeld', 'Koppeling verwijderd');
+  const handleUnlinkTransaction = async (transactionId: string) => {
+    if (!user || !selectedCompany) return;
+    if (!confirm('Weet je zeker dat je deze koppeling wilt verwijderen?')) return;
+
+    try {
+      await bankImportService.updateTransaction(
+        transactionId,
+        {
+          matchedInvoiceId: undefined,
+          matchedInvoiceType: undefined,
+          status: 'unmatched',
+          confidence: 0,
+        },
+        user.uid,
+        user.displayName || user.email || 'Unknown'
+      );
+      success('Ontkoppeld', 'Koppeling verwijderd');
+      loadImportHistory();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon koppeling niet verwijderen');
+    }
   };
 
-  const getStatusBadge = (status: 'matched' | 'unmatched' | 'partial' | 'manual', confidence: number) => {
-    if (status === 'matched' || status === 'manual') {
+  const getStatusBadge = (status: 'confirmed' | 'pending' | 'unmatched', confidence?: number) => {
+    if (status === 'confirmed') {
       return (
         <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
           <CheckCircle className="w-3 h-3 mr-1" />
-          {status === 'manual' ? 'Handmatig gekoppeld' : `Gematcht (${confidence}%)`}
+          Bevestigd ({confidence}%)
         </span>
       );
-    } else if (status === 'partial') {
+    } else if (status === 'pending') {
       return (
         <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
           <Clock className="w-3 h-3 mr-1" />
-          Mogelijk ({confidence}%)
+          Ter beoordeling ({confidence}%)
         </span>
       );
     } else {
       return (
         <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
           <AlertCircle className="w-3 h-3 mr-1" />
-          Niet gematcht
+          Geen match
         </span>
       );
     }
   };
+
+  const filteredPreviewResults = matchResults.filter((r) => {
+    if (activeTab === 'incoming' && r.transaction.type !== 'incoming') return false;
+    if (activeTab === 'outgoing' && r.transaction.type !== 'outgoing') return false;
+    if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+    return true;
+  });
+
+  const confirmedResults = matchResults.filter(r => r.status === 'confirmed');
+  const pendingResults = matchResults.filter(r => r.status === 'pending');
+  const unmatchedResults = matchResults.filter(r => r.status === 'unmatched');
 
   if (!selectedCompany) {
     return (
@@ -405,34 +508,6 @@ const BankStatementImport: React.FC = () => {
         </div>
       </div>
 
-      {dbPermissionError && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4 rounded">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-yellow-400" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                Database Configuratie Vereist
-              </h3>
-              <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-                <p>
-                  Firebase Realtime Database rules zijn niet geconfigureerd. Importgeschiedenis kan
-                  niet worden opgeslagen of geladen.
-                </p>
-                <p className="mt-2">
-                  <strong>Instructies:</strong> Zie{' '}
-                  <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">
-                    FIREBASE_REALTIME_DATABASE_RULES.md
-                  </code>{' '}
-                  in de projectroot voor configuratiestappen.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <Card>
         <div className="p-6 space-y-4">
           <div className="flex items-center justify-between">
@@ -444,7 +519,7 @@ const BankStatementImport: React.FC = () => {
                 onClick={() => setFormat('CSV')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                   format === 'CSV'
-                    ? 'bg-primary-600 text-white'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                 }`}
               >
@@ -454,7 +529,7 @@ const BankStatementImport: React.FC = () => {
                 onClick={() => setFormat('MT940')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                   format === 'MT940'
-                    ? 'bg-primary-600 text-white'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                 }`}
               >
@@ -469,7 +544,7 @@ const BankStatementImport: React.FC = () => {
             </label>
             <textarea
               value={rawData}
-              onChange={e => setRawData(e.target.value)}
+              onChange={(e) => setRawData(e.target.value)}
               rows={10}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
               placeholder={
@@ -481,11 +556,7 @@ const BankStatementImport: React.FC = () => {
           </div>
 
           <div className="flex gap-2">
-            <Button
-              onClick={handleParse}
-              disabled={loading || !rawData.trim()}
-              className="flex-1"
-            >
+            <Button onClick={handleParse} disabled={loading || !rawData.trim()} className="flex-1">
               {loading ? (
                 <>
                   <LoadingSpinner size="sm" />
@@ -501,7 +572,6 @@ const BankStatementImport: React.FC = () => {
             <Button
               onClick={() => {
                 setRawData('');
-                setTransactions([]);
                 setMatchResults([]);
                 setShowPreview(false);
               }}
@@ -519,204 +589,244 @@ const BankStatementImport: React.FC = () => {
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Preview ({transactions.length} transacties)
+                Importvoorbeeld ({matchResults.length} transacties)
               </h2>
-              <div className="flex gap-2 text-sm">
-                <span className="text-green-600 dark:text-green-400">
-                  {matchResults.filter(r => r.status === 'matched').length} gematcht
+              <div className="flex gap-3 text-sm">
+                <span className="flex items-center text-green-600 dark:text-green-400">
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  {confirmedResults.length} bevestigd
                 </span>
-                <span className="text-yellow-600 dark:text-yellow-400">
-                  {matchResults.filter(r => r.status === 'partial').length} mogelijk
+                <span className="flex items-center text-yellow-600 dark:text-yellow-400">
+                  <Clock className="w-4 h-4 mr-1" />
+                  {pendingResults.length} ter beoordeling
                 </span>
-                <span className="text-gray-600 dark:text-gray-400">
-                  {matchResults.filter(r => r.status === 'unmatched').length} niet gematcht
+                <span className="flex items-center text-gray-600 dark:text-gray-400">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  {unmatchedResults.length} geen match
                 </span>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Datum
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Bedrag
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Omschrijving
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Begunstigde
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Match Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                      Acties
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {matchResults.map((result, index) => {
-                    const isEditing = editingRow === result.transaction.id;
-                    const transaction = isEditing ? editedTransaction! : result.transaction;
-
-                    return (
-                      <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                          {isEditing ? (
-                            <input
-                              type="date"
-                              value={safeFormatDate(transaction.date, 'yyyy-MM-dd')}
-                              onChange={e =>
-                                setEditedTransaction({
-                                  ...transaction,
-                                  date: new Date(e.target.value),
-                                })
-                              }
-                              className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                            />
-                          ) : (
-                            safeFormatDate(transaction.date, 'dd-MM-yyyy')
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                          {isEditing ? (
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={transaction.amount}
-                              onChange={e =>
-                                setEditedTransaction({
-                                  ...transaction,
-                                  amount: parseFloat(e.target.value),
-                                })
-                              }
-                              className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 w-32"
-                            />
-                          ) : (
-                            <span
-                              className={
-                                transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                              }
-                            >
-                              € {transaction.amount.toFixed(2)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={transaction.description}
-                              onChange={e =>
-                                setEditedTransaction({
-                                  ...transaction,
-                                  description: e.target.value,
-                                })
-                              }
-                              className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 w-full"
-                            />
-                          ) : (
-                            <span className="truncate block max-w-xs">
-                              {transaction.description}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={transaction.beneficiary || ''}
-                              onChange={e =>
-                                setEditedTransaction({
-                                  ...transaction,
-                                  beneficiary: e.target.value,
-                                })
-                              }
-                              className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 w-full"
-                            />
-                          ) : (
-                            transaction.beneficiary || '-'
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="space-y-1">
-                            {getStatusBadge(result.status, result.confidence)}
-                            {result.matchedInvoice && (
-                              <div className="text-xs space-y-0.5">
-                                <div className="text-gray-600 dark:text-gray-400">
-                                  {result.matchedInvoice.invoiceNumber} - {result.matchedInvoice.clientName}
-                                </div>
-                                <div className={`font-medium ${result.matchedInvoice.type === 'outgoing' ? 'text-blue-600' : 'text-purple-600'}`}>
-                                  {result.matchedInvoice.type === 'outgoing' ? 'Uitgaand' : 'Inkomend'}
-                                </div>
-                                {result.possibleMatches && result.possibleMatches.length > 1 && (
-                                  <div className="text-gray-500">
-                                    +{result.possibleMatches.length - 1} andere mogelijkheden
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {isEditing ? (
-                            <div className="flex gap-1">
-                              <button
-                                onClick={handleSaveEdit}
-                                className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900 rounded"
-                                title="Opslaan"
-                              >
-                                <Save className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className="p-1 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                                title="Annuleren"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => handleEditRow(result.transaction)}
-                                className="p-1 text-primary-600 hover:bg-primary-100 dark:hover:bg-primary-900 rounded"
-                                title="Bewerken"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              {result.matchedInvoice ? (
-                                <button
-                                  onClick={() => handleUnlinkInvoice(result.transaction.id)}
-                                  className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded"
-                                  title="Ontkoppelen"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleOpenLinkModal(result.transaction)}
-                                  className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                  title="Koppelen aan factuur"
-                                >
-                                  <Link className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                }`}
+              >
+                Alle
+              </button>
+              <button
+                onClick={() => setActiveTab('outgoing')}
+                className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === 'outgoing'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <TrendingUp className="w-4 h-4" />
+                Uitgaand ({matchResults.filter(r => r.transaction.type === 'outgoing').length})
+              </button>
+              <button
+                onClick={() => setActiveTab('incoming')}
+                className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === 'incoming'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <TrendingDown className="w-4 h-4" />
+                Inkomend ({matchResults.filter(r => r.transaction.type === 'incoming').length})
+              </button>
             </div>
 
-            <div className="flex justify-end">
+            <div className="space-y-6">
+              {confirmedResults.length > 0 && (
+                <div>
+                  <h3 className="text-md font-semibold text-green-600 dark:text-green-400 mb-3 flex items-center">
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    Bevestigd ({confirmedResults.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {confirmedResults
+                      .filter((r) => {
+                        if (activeTab === 'incoming' && r.transaction.type !== 'incoming') return false;
+                        if (activeTab === 'outgoing' && r.transaction.type !== 'outgoing') return false;
+                        return true;
+                      })
+                      .map((result, index) => (
+                        <div
+                          key={index}
+                          className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                {result.transaction.type === 'outgoing' ? (
+                                  <TrendingUp className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <TrendingDown className="w-4 h-4 text-red-600" />
+                                )}
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {safeFormatDate(result.transaction.date, 'dd-MM-yyyy')}
+                                </span>
+                                <span
+                                  className={`text-sm font-bold ${
+                                    result.transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                                  }`}
+                                >
+                                  € {Math.abs(result.transaction.amount).toFixed(2)}
+                                </span>
+                                {getStatusBadge(result.status, result.confidence)}
+                              </div>
+                              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
+                                {result.transaction.description}
+                              </div>
+                              {result.transaction.beneficiary && (
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  Begunstigde: {result.transaction.beneficiary}
+                                </div>
+                              )}
+                              {result.matchedInvoice && (
+                                <div className="mt-2 text-xs">
+                                  <span className="font-medium text-gray-900 dark:text-white">
+                                    Gematcht met: {result.matchedInvoice.invoiceNumber}
+                                  </span>
+                                  <span className="text-gray-600 dark:text-gray-400 ml-2">
+                                    {result.matchedInvoice.clientName}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {pendingResults.length > 0 && (
+                <div>
+                  <h3 className="text-md font-semibold text-yellow-600 dark:text-yellow-400 mb-3 flex items-center">
+                    <Clock className="w-5 h-5 mr-2" />
+                    Ter beoordeling ({pendingResults.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {pendingResults
+                      .filter((r) => {
+                        if (activeTab === 'incoming' && r.transaction.type !== 'incoming') return false;
+                        if (activeTab === 'outgoing' && r.transaction.type !== 'outgoing') return false;
+                        return true;
+                      })
+                      .map((result, index) => (
+                        <div
+                          key={index}
+                          className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                {result.transaction.type === 'outgoing' ? (
+                                  <TrendingUp className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <TrendingDown className="w-4 h-4 text-red-600" />
+                                )}
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {safeFormatDate(result.transaction.date, 'dd-MM-yyyy')}
+                                </span>
+                                <span
+                                  className={`text-sm font-bold ${
+                                    result.transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                                  }`}
+                                >
+                                  € {Math.abs(result.transaction.amount).toFixed(2)}
+                                </span>
+                                {getStatusBadge(result.status, result.confidence)}
+                              </div>
+                              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
+                                {result.transaction.description}
+                              </div>
+                              {result.transaction.beneficiary && (
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  Begunstigde: {result.transaction.beneficiary}
+                                </div>
+                              )}
+                              {result.matchedInvoice && (
+                                <div className="mt-2 text-xs">
+                                  <span className="font-medium text-gray-900 dark:text-white">
+                                    Mogelijk: {result.matchedInvoice.invoiceNumber}
+                                  </span>
+                                  <span className="text-gray-600 dark:text-gray-400 ml-2">
+                                    {result.matchedInvoice.clientName}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {unmatchedResults.length > 0 && (
+                <div>
+                  <h3 className="text-md font-semibold text-gray-600 dark:text-gray-400 mb-3 flex items-center">
+                    <AlertCircle className="w-5 h-5 mr-2" />
+                    Geen match ({unmatchedResults.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {unmatchedResults
+                      .filter((r) => {
+                        if (activeTab === 'incoming' && r.transaction.type !== 'incoming') return false;
+                        if (activeTab === 'outgoing' && r.transaction.type !== 'outgoing') return false;
+                        return true;
+                      })
+                      .map((result, index) => (
+                        <div
+                          key={index}
+                          className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                {result.transaction.type === 'outgoing' ? (
+                                  <TrendingUp className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <TrendingDown className="w-4 h-4 text-red-600" />
+                                )}
+                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {safeFormatDate(result.transaction.date, 'dd-MM-yyyy')}
+                                </span>
+                                <span
+                                  className={`text-sm font-bold ${
+                                    result.transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                                  }`}
+                                >
+                                  € {Math.abs(result.transaction.amount).toFixed(2)}
+                                </span>
+                                {getStatusBadge(result.status, result.confidence)}
+                              </div>
+                              <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
+                                {result.transaction.description}
+                              </div>
+                              {result.transaction.beneficiary && (
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  Begunstigde: {result.transaction.beneficiary}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
               <Button onClick={handleImport} disabled={importing}>
                 {importing ? (
                   <>
@@ -726,7 +836,7 @@ const BankStatementImport: React.FC = () => {
                 ) : (
                   <>
                     <Upload className="w-4 h-4 mr-2" />
-                    Importeer {transactions.length} transacties
+                    Importeer {matchResults.length} transacties
                   </>
                 )}
               </Button>
@@ -749,107 +859,398 @@ const BankStatementImport: React.FC = () => {
             />
           ) : (
             <div className="space-y-2">
-              {imports.map(imp => (
-                <div
-                  key={imp.id}
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-                >
+              {imports.map((imp) => {
+                const transactions = importTransactions.get(imp.id) || [];
+                const confirmed = transactions.filter(t => t.status === 'confirmed');
+                const pending = transactions.filter(t => t.status === 'pending');
+                const unmatched = transactions.filter(t => t.status === 'unmatched');
+
+                return (
                   <div
-                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                    onClick={() =>
-                      setExpandedImport(expandedImport === imp.id ? null : imp.id)
-                    }
+                    key={imp.id}
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {safeFormatDate(imp.importedAt, 'dd-MM-yyyy HH:mm')}
-                        </span>
-                        <span className="text-xs text-gray-600 dark:text-gray-400">
-                          {imp.format}
-                        </span>
-                        <span className="text-xs text-gray-600 dark:text-gray-400">
-                          {imp.totalLines} regels
-                        </span>
-                        <span className="text-xs text-green-600">
-                          {imp.matchedCount} gematcht
-                        </span>
-                        <span className="text-xs text-gray-600">
-                          {imp.unmatchedCount} niet gematcht
-                        </span>
+                    <div
+                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => setExpandedImport(expandedImport === imp.id ? null : imp.id)}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {safeFormatDate(imp.importedAt, 'dd-MM-yyyy HH:mm')}
+                          </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400">
+                            {imp.format}
+                          </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400">
+                            {imp.totalLines} regels
+                          </span>
+                          <span className="text-xs text-green-600">
+                            {confirmed.length} bevestigd
+                          </span>
+                          <span className="text-xs text-yellow-600">
+                            {pending.length} ter beoordeling
+                          </span>
+                          <span className="text-xs text-gray-600">
+                            {unmatched.length} geen match
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                          Door: {imp.importedByName}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        Door: {imp.importedByName}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteImport(imp.id);
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        {expandedImport === imp.id ? (
+                          <ChevronUp className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleDeleteImport(imp.id);
-                        }}
-                        className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      {expandedImport === imp.id ? (
-                        <ChevronUp className="w-5 h-5 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
+
+                    {expandedImport === imp.id && transactions.length > 0 && (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 space-y-4">
+                        {confirmed.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium text-green-600 dark:text-green-400 mb-2 flex items-center">
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Bevestigd ({confirmed.length})
+                            </h4>
+                            <div className="space-y-1">
+                              {confirmed.map((t) => (
+                                <div
+                                  key={t.id}
+                                  className="text-xs p-3 bg-white dark:bg-gray-900 rounded border border-green-200 dark:border-green-800 flex justify-between items-center"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      {t.type === 'outgoing' ? (
+                                        <TrendingUp className="w-3 h-3 text-green-600" />
+                                      ) : (
+                                        <TrendingDown className="w-3 h-3 text-red-600" />
+                                      )}
+                                      <span>{safeFormatDate(t.date, 'dd-MM-yyyy')}</span>
+                                      <span className={t.amount >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                        € {Math.abs(t.amount).toFixed(2)}
+                                      </span>
+                                    </div>
+                                    <div className="text-gray-600 dark:text-gray-400">{t.description}</div>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => handleUnconfirmTransaction(t.id)}
+                                      className="p-1 text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900 rounded"
+                                      title="Terugdraaien"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {pending.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2 flex items-center">
+                              <Clock className="w-4 h-4 mr-1" />
+                              Ter beoordeling ({pending.length})
+                            </h4>
+                            <div className="space-y-1">
+                              {pending.map((t) => {
+                                const isEditing = editingTransaction === t.id;
+
+                                return (
+                                  <div
+                                    key={t.id}
+                                    className="text-xs p-3 bg-white dark:bg-gray-900 rounded border border-yellow-200 dark:border-yellow-800"
+                                  >
+                                    {isEditing ? (
+                                      <div className="space-y-2">
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <input
+                                            type="date"
+                                            value={
+                                              editedData.date
+                                                ? safeFormatDate(editedData.date, 'yyyy-MM-dd')
+                                                : ''
+                                            }
+                                            onChange={(e) =>
+                                              setEditedData({
+                                                ...editedData,
+                                                date: new Date(e.target.value).getTime(),
+                                              })
+                                            }
+                                            className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                                          />
+                                          <input
+                                            type="number"
+                                            step="0.01"
+                                            value={editedData.amount || 0}
+                                            onChange={(e) =>
+                                              setEditedData({
+                                                ...editedData,
+                                                amount: parseFloat(e.target.value),
+                                              })
+                                            }
+                                            className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                                          />
+                                        </div>
+                                        <input
+                                          type="text"
+                                          value={editedData.description || ''}
+                                          onChange={(e) =>
+                                            setEditedData({ ...editedData, description: e.target.value })
+                                          }
+                                          className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                                        />
+                                        <div className="flex gap-1">
+                                          <button
+                                            onClick={() => handleSaveEdit(t.id)}
+                                            className="px-2 py-1 bg-green-600 text-white rounded text-xs"
+                                          >
+                                            Opslaan
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setEditingTransaction(null);
+                                              setEditedData({});
+                                            }}
+                                            className="px-2 py-1 bg-gray-600 text-white rounded text-xs"
+                                          >
+                                            Annuleren
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="flex justify-between items-center">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            {t.type === 'outgoing' ? (
+                                              <TrendingUp className="w-3 h-3 text-green-600" />
+                                            ) : (
+                                              <TrendingDown className="w-3 h-3 text-red-600" />
+                                            )}
+                                            <span>{safeFormatDate(t.date, 'dd-MM-yyyy')}</span>
+                                            <span
+                                              className={t.amount >= 0 ? 'text-green-600' : 'text-red-600'}
+                                            >
+                                              € {Math.abs(t.amount).toFixed(2)}
+                                            </span>
+                                          </div>
+                                          <div className="text-gray-600 dark:text-gray-400">
+                                            {t.description}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            onClick={() => handleEditTransaction(t)}
+                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                            title="Bewerken"
+                                          >
+                                            <Edit2 className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleRefreshMatch(t.id)}
+                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                            title="Ververs match"
+                                            disabled={refreshing}
+                                          >
+                                            <RefreshCw
+                                              className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`}
+                                            />
+                                          </button>
+                                          {t.matchedInvoiceId ? (
+                                            <>
+                                              <button
+                                                onClick={() => handleConfirmTransaction(t.id)}
+                                                className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900 rounded"
+                                                title="Bevestigen"
+                                              >
+                                                <CheckCircle className="w-3 h-3" />
+                                              </button>
+                                              <button
+                                                onClick={() => handleUnlinkTransaction(t.id)}
+                                                className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded"
+                                                title="Ontkoppelen"
+                                              >
+                                                <X className="w-3 h-3" />
+                                              </button>
+                                            </>
+                                          ) : (
+                                            <button
+                                              onClick={() => {
+                                                const result: MatchResult = {
+                                                  transaction: t,
+                                                  status: t.status,
+                                                  confidence: t.confidence || 0,
+                                                };
+                                                handleOpenLinkModal(result);
+                                              }}
+                                              className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                              title="Handmatig koppelen"
+                                            >
+                                              <Link className="w-3 h-3" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {unmatched.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 flex items-center">
+                              <AlertCircle className="w-4 h-4 mr-1" />
+                              Geen match ({unmatched.length})
+                            </h4>
+                            <div className="space-y-1">
+                              {unmatched.map((t) => {
+                                const isEditing = editingTransaction === t.id;
+
+                                return (
+                                  <div
+                                    key={t.id}
+                                    className="text-xs p-3 bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700"
+                                  >
+                                    {isEditing ? (
+                                      <div className="space-y-2">
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <input
+                                            type="date"
+                                            value={
+                                              editedData.date
+                                                ? safeFormatDate(editedData.date, 'yyyy-MM-dd')
+                                                : ''
+                                            }
+                                            onChange={(e) =>
+                                              setEditedData({
+                                                ...editedData,
+                                                date: new Date(e.target.value).getTime(),
+                                              })
+                                            }
+                                            className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                                          />
+                                          <input
+                                            type="number"
+                                            step="0.01"
+                                            value={editedData.amount || 0}
+                                            onChange={(e) =>
+                                              setEditedData({
+                                                ...editedData,
+                                                amount: parseFloat(e.target.value),
+                                              })
+                                            }
+                                            className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                                          />
+                                        </div>
+                                        <input
+                                          type="text"
+                                          value={editedData.description || ''}
+                                          onChange={(e) =>
+                                            setEditedData({ ...editedData, description: e.target.value })
+                                          }
+                                          className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+                                        />
+                                        <div className="flex gap-1">
+                                          <button
+                                            onClick={() => handleSaveEdit(t.id)}
+                                            className="px-2 py-1 bg-green-600 text-white rounded text-xs"
+                                          >
+                                            Opslaan
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setEditingTransaction(null);
+                                              setEditedData({});
+                                            }}
+                                            className="px-2 py-1 bg-gray-600 text-white rounded text-xs"
+                                          >
+                                            Annuleren
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="flex justify-between items-center">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            {t.type === 'outgoing' ? (
+                                              <TrendingUp className="w-3 h-3 text-green-600" />
+                                            ) : (
+                                              <TrendingDown className="w-3 h-3 text-red-600" />
+                                            )}
+                                            <span>{safeFormatDate(t.date, 'dd-MM-yyyy')}</span>
+                                            <span
+                                              className={t.amount >= 0 ? 'text-green-600' : 'text-red-600'}
+                                            >
+                                              € {Math.abs(t.amount).toFixed(2)}
+                                            </span>
+                                          </div>
+                                          <div className="text-gray-600 dark:text-gray-400">
+                                            {t.description}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            onClick={() => handleEditTransaction(t)}
+                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                            title="Bewerken"
+                                          >
+                                            <Edit2 className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => handleRefreshMatch(t.id)}
+                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                            title="Ververs match"
+                                            disabled={refreshing}
+                                          >
+                                            <RefreshCw
+                                              className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`}
+                                            />
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              const result: MatchResult = {
+                                                transaction: t,
+                                                status: t.status,
+                                                confidence: t.confidence || 0,
+                                              };
+                                              handleOpenLinkModal(result);
+                                            }}
+                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                            title="Handmatig koppelen"
+                                          >
+                                            <Link className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {expandedImport === imp.id && (
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                      <div className="space-y-4">
-                        {imp.matchedTransactions.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                              Gematchte transacties ({imp.matchedTransactions.length})
-                            </h4>
-                            <div className="space-y-1">
-                              {imp.matchedTransactions.map((mt, i) => (
-                                <div
-                                  key={i}
-                                  className="text-xs p-2 bg-white dark:bg-gray-900 rounded flex justify-between"
-                                >
-                                  <span>
-                                    {safeFormatDate(mt.transaction.date, 'dd-MM-yyyy')} - €{' '}
-                                    {mt.transaction.amount.toFixed(2)}
-                                  </span>
-                                  <span className="text-green-600">
-                                    → {mt.matchedInvoice.invoiceNumber}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {imp.unmatchedTransactions.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                              Niet gematchte transacties ({imp.unmatchedTransactions.length})
-                            </h4>
-                            <div className="space-y-1">
-                              {imp.unmatchedTransactions.map((t, i) => (
-                                <div
-                                  key={i}
-                                  className="text-xs p-2 bg-white dark:bg-gray-900 rounded"
-                                >
-                                  {safeFormatDate(t.date, 'dd-MM-yyyy')} - €{' '}
-                                  {t.amount.toFixed(2)} - {t.description}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -868,24 +1269,26 @@ const BankStatementImport: React.FC = () => {
         >
           <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                Transactie
-              </h3>
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Transactie</h3>
               <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-gray-600 dark:text-gray-400">Datum:</span>{' '}
-                    {safeFormatDate(linkingTransaction.date, 'dd-MM-yyyy')}
+                    {safeFormatDate(linkingTransaction.transaction.date, 'dd-MM-yyyy')}
                   </div>
                   <div>
                     <span className="text-gray-600 dark:text-gray-400">Bedrag:</span>{' '}
-                    <span className={linkingTransaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      € {linkingTransaction.amount.toFixed(2)}
+                    <span
+                      className={
+                        linkingTransaction.transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                      }
+                    >
+                      € {Math.abs(linkingTransaction.transaction.amount).toFixed(2)}
                     </span>
                   </div>
                   <div className="col-span-2">
                     <span className="text-gray-600 dark:text-gray-400">Omschrijving:</span>{' '}
-                    {linkingTransaction.description}
+                    {linkingTransaction.transaction.description}
                   </div>
                 </div>
               </div>
@@ -908,23 +1311,21 @@ const BankStatementImport: React.FC = () => {
             </div>
 
             <div className="max-h-96 overflow-y-auto space-y-2">
-              {linkingTransaction.amount >= 0 ? (
+              {linkingTransaction.transaction.type === 'outgoing' ? (
                 <>
-                  <h4 className="text-sm font-medium text-blue-600 mb-2">
-                    Uitgaande facturen (ontvangen betalingen)
-                  </h4>
+                  <h4 className="text-sm font-medium text-green-600 mb-2">Uitgaande facturen</h4>
                   {outgoingInvoices
                     .filter(
-                      inv =>
+                      (inv) =>
                         !invoiceSearchTerm ||
                         inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
                         inv.clientName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
                     )
-                    .map(invoice => (
+                    .map((invoice) => (
                       <button
                         key={invoice.id}
                         onClick={() => handleLinkInvoice(invoice, 'outgoing')}
-                        className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                        className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                       >
                         <div className="flex justify-between items-start">
                           <div>
@@ -942,9 +1343,7 @@ const BankStatementImport: React.FC = () => {
                             <div className="font-medium text-gray-900 dark:text-white">
                               € {invoice.totalAmount.toFixed(2)}
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {invoice.status}
-                            </div>
+                            <div className="text-xs text-gray-500 mt-1">{invoice.status}</div>
                           </div>
                         </div>
                       </button>
@@ -952,21 +1351,19 @@ const BankStatementImport: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <h4 className="text-sm font-medium text-purple-600 mb-2">
-                    Inkomende facturen (uitgaande betalingen)
-                  </h4>
+                  <h4 className="text-sm font-medium text-red-600 mb-2">Inkomende facturen</h4>
                   {incomingInvoices
                     .filter(
-                      inv =>
+                      (inv) =>
                         !invoiceSearchTerm ||
                         inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
                         inv.supplierName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
                     )
-                    .map(invoice => (
+                    .map((invoice) => (
                       <button
                         key={invoice.id}
                         onClick={() => handleLinkInvoice(invoice, 'incoming')}
-                        className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                        className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
                         <div className="flex justify-between items-start">
                           <div>
@@ -984,9 +1381,7 @@ const BankStatementImport: React.FC = () => {
                             <div className="font-medium text-gray-900 dark:text-white">
                               € {invoice.totalAmount.toFixed(2)}
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {invoice.status}
-                            </div>
+                            <div className="text-xs text-gray-500 mt-1">{invoice.status}</div>
                           </div>
                         </div>
                       </button>

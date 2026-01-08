@@ -1,5 +1,17 @@
-import { ref, push, set, get, query, orderByChild, equalTo } from 'firebase/database';
-import { database } from '../lib/firebase';
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  orderBy,
+  writeBatch,
+} from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import {
   BankTransaction,
   BankImport,
@@ -7,9 +19,11 @@ import {
   CSVColumnMapping,
   MatchResult,
   MatchedInvoice,
+  EditHistoryEntry,
 } from '../types/bankImport';
 import { outgoingInvoiceService, OutgoingInvoice } from './outgoingInvoiceService';
 import { incomingInvoiceService, IncomingInvoice } from './incomingInvoiceService';
+import { matchedPaymentsService } from './matchedPaymentsService';
 
 export const bankImportService = {
   parseCSV(rawData: string): ParsedCSV {
@@ -210,23 +224,37 @@ export const bankImportService = {
   ): Promise<MatchResult[]> {
     const outgoingInvoices = await outgoingInvoiceService.getInvoices(userId, companyId);
     const incomingInvoices = await incomingInvoiceService.getInvoices(userId, companyId);
+
+    const matchedInvoiceIds = await matchedPaymentsService.getMatchedInvoiceIds(companyId);
+
+    const availableOutgoingInvoices = outgoingInvoices.filter(
+      inv => !matchedInvoiceIds.has(inv.id || '')
+    );
+    const availableIncomingInvoices = incomingInvoices.filter(
+      inv => !matchedInvoiceIds.has(inv.id || '')
+    );
+
     const results: MatchResult[] = [];
 
     for (const transaction of transactions) {
       let possibleMatches: MatchedInvoice[] = [];
 
       if (transaction.amount >= 0) {
-        possibleMatches = this.findPossibleMatches(transaction, outgoingInvoices, 'outgoing');
+        possibleMatches = this.findPossibleMatches(transaction, availableOutgoingInvoices, 'outgoing');
       } else {
-        possibleMatches = this.findPossibleMatches(transaction, incomingInvoices, 'incoming');
+        possibleMatches = this.findPossibleMatches(transaction, availableIncomingInvoices, 'incoming');
       }
 
       if (possibleMatches.length > 0) {
         const bestMatch = possibleMatches[0];
+        const status: 'confirmed' | 'pending' | 'unmatched' =
+          bestMatch.confidence >= 80 ? 'confirmed' :
+          bestMatch.confidence >= 40 ? 'pending' : 'unmatched';
+
         results.push({
           transaction,
           matchedInvoice: bestMatch,
-          status: bestMatch.confidence >= 80 ? 'matched' : 'partial',
+          status,
           confidence: bestMatch.confidence,
           possibleMatches: possibleMatches.slice(0, 5),
         });
@@ -361,44 +389,258 @@ export const bankImportService = {
   },
 
   async saveImport(importData: Omit<BankImport, 'id'>): Promise<string> {
-    const importsRef = ref(database, `companies/${importData.companyId}/bankImports`);
-    const newImportRef = push(importsRef);
-
-    await set(newImportRef, {
+    const docRef = await addDoc(collection(db, 'bankImports'), {
       ...importData,
       importedAt: Date.now(),
     });
 
-    return newImportRef.key || '';
+    return docRef.id;
   },
 
   async getImports(companyId: string): Promise<BankImport[]> {
     try {
-      const importsRef = ref(database, `companies/${companyId}/bankImports`);
-      const snapshot = await get(importsRef);
+      const q = query(
+        collection(db, 'bankImports'),
+        where('companyId', '==', companyId),
+        orderBy('importedAt', 'desc')
+      );
 
-      if (!snapshot.exists()) return [];
-
+      const snapshot = await getDocs(q);
       const imports: BankImport[] = [];
-      snapshot.forEach(child => {
+
+      snapshot.forEach((doc) => {
         imports.push({
-          id: child.key || '',
-          ...child.val(),
-        });
+          id: doc.id,
+          ...doc.data(),
+        } as BankImport);
       });
 
-      return imports.sort((a, b) => b.importedAt - a.importedAt);
+      return imports;
     } catch (error: any) {
-      if (error.code === 'PERMISSION_DENIED') {
-        console.error('Firebase Realtime Database: Permission denied. Check database rules.');
-        return [];
-      }
-      throw error;
+      console.error('Error loading bank imports:', error);
+      return [];
     }
   },
 
   async deleteImport(companyId: string, importId: string): Promise<void> {
-    const importRef = ref(database, `companies/${companyId}/bankImports/${importId}`);
-    await set(importRef, null);
+    const batch = writeBatch(db);
+
+    await deleteDoc(doc(db, 'bankImports', importId));
+
+    const transactionsQuery = query(
+      collection(db, 'bankTransactions'),
+      where('companyId', '==', companyId),
+      where('importId', '==', importId)
+    );
+    const transactionsSnapshot = await getDocs(transactionsQuery);
+
+    transactionsSnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+  },
+
+  async saveTransactions(
+    transactions: BankTransaction[],
+    companyId: string,
+    importId: string
+  ): Promise<void> {
+    const batch = writeBatch(db);
+
+    transactions.forEach((transaction) => {
+      const transactionRef = doc(collection(db, 'bankTransactions'));
+      batch.set(transactionRef, {
+        ...transaction,
+        date: typeof transaction.date === 'number' ? transaction.date : transaction.date.getTime(),
+        companyId,
+        importId,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
+    await batch.commit();
+  },
+
+  async getTransactionsByImport(companyId: string, importId: string): Promise<BankTransaction[]> {
+    const q = query(
+      collection(db, 'bankTransactions'),
+      where('companyId', '==', companyId),
+      where('importId', '==', importId)
+    );
+
+    const snapshot = await getDocs(q);
+    const transactions: BankTransaction[] = [];
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      transactions.push({
+        ...data,
+        id: doc.id,
+        date: typeof data.date === 'number' ? new Date(data.date) : data.date,
+      } as BankTransaction);
+    });
+
+    return transactions;
+  },
+
+  async getTransactionsByStatus(
+    companyId: string,
+    status: 'confirmed' | 'pending' | 'unmatched'
+  ): Promise<BankTransaction[]> {
+    const q = query(
+      collection(db, 'bankTransactions'),
+      where('companyId', '==', companyId),
+      where('status', '==', status),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    const transactions: BankTransaction[] = [];
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      transactions.push({
+        ...data,
+        id: doc.id,
+        date: typeof data.date === 'number' ? new Date(data.date) : data.date,
+      } as BankTransaction);
+    });
+
+    return transactions;
+  },
+
+  async updateTransaction(
+    transactionId: string,
+    updates: Partial<BankTransaction>,
+    userId: string,
+    userName: string
+  ): Promise<void> {
+    const transactionRef = doc(db, 'bankTransactions', transactionId);
+    const transactionDoc = await getDoc(transactionRef);
+
+    if (!transactionDoc.exists()) {
+      throw new Error('Transaction not found');
+    }
+
+    const currentData = transactionDoc.data() as BankTransaction;
+    const editHistory: EditHistoryEntry[] = currentData.editHistory || [];
+
+    Object.keys(updates).forEach((key) => {
+      if (key !== 'editHistory' && key !== 'updatedAt') {
+        const oldValue = currentData[key as keyof BankTransaction];
+        const newValue = updates[key as keyof BankTransaction];
+
+        if (oldValue !== newValue) {
+          editHistory.push({
+            timestamp: Date.now(),
+            userId,
+            userName,
+            fieldChanged: key,
+            oldValue,
+            newValue,
+          });
+        }
+      }
+    });
+
+    await updateDoc(transactionRef, {
+      ...updates,
+      editHistory,
+      updatedAt: Date.now(),
+    });
+  },
+
+  async confirmTransaction(
+    transactionId: string,
+    companyId: string,
+    userId: string,
+    userName: string
+  ): Promise<void> {
+    const transactionRef = doc(db, 'bankTransactions', transactionId);
+    const transactionDoc = await getDoc(transactionRef);
+
+    if (!transactionDoc.exists()) {
+      throw new Error('Transaction not found');
+    }
+
+    const transaction = transactionDoc.data() as BankTransaction;
+
+    if (!transaction.matchedInvoiceId || !transaction.matchedInvoiceType) {
+      throw new Error('Transaction must be matched before confirming');
+    }
+
+    await updateDoc(transactionRef, {
+      status: 'confirmed',
+      updatedAt: Date.now(),
+    });
+
+    await matchedPaymentsService.createMatchedPayment(
+      companyId,
+      transaction.matchedInvoiceId,
+      transaction.matchedInvoiceType,
+      transaction.matchedInvoiceId,
+      transactionId,
+      transaction.importId,
+      userId,
+      userName
+    );
+
+    if (transaction.matchedInvoiceType === 'outgoing') {
+      await outgoingInvoiceService.markAsPaid(transaction.matchedInvoiceId);
+    } else {
+      await incomingInvoiceService.markAsPaid(transaction.matchedInvoiceId);
+    }
+  },
+
+  async unconfirmTransaction(transactionId: string, companyId: string): Promise<void> {
+    const transactionRef = doc(db, 'bankTransactions', transactionId);
+    const transactionDoc = await getDoc(transactionRef);
+
+    if (!transactionDoc.exists()) {
+      throw new Error('Transaction not found');
+    }
+
+    const transaction = transactionDoc.data() as BankTransaction;
+
+    await updateDoc(transactionRef, {
+      status: 'pending',
+      updatedAt: Date.now(),
+    });
+
+    await matchedPaymentsService.deleteByTransactionId(companyId, transactionId);
+
+    if (transaction.matchedInvoiceId && transaction.matchedInvoiceType) {
+      if (transaction.matchedInvoiceType === 'outgoing') {
+        await outgoingInvoiceService.markAsUnpaid(transaction.matchedInvoiceId);
+      } else {
+        await incomingInvoiceService.markAsUnpaid(transaction.matchedInvoiceId);
+      }
+    }
+  },
+
+  async rematchTransactions(
+    transactionIds: string[],
+    userId: string,
+    companyId: string
+  ): Promise<MatchResult[]> {
+    const transactions: BankTransaction[] = [];
+
+    for (const transactionId of transactionIds) {
+      const transactionRef = doc(db, 'bankTransactions', transactionId);
+      const transactionDoc = await getDoc(transactionRef);
+
+      if (transactionDoc.exists()) {
+        const data = transactionDoc.data();
+        transactions.push({
+          ...data,
+          id: transactionDoc.id,
+          date: typeof data.date === 'number' ? new Date(data.date) : data.date,
+        } as BankTransaction);
+      }
+    }
+
+    return await this.matchTransactions(transactions, userId, companyId);
   },
 };

@@ -273,6 +273,18 @@ export const outgoingInvoiceService = {
     }
   },
 
+  async markAsUnpaid(invoiceId: string): Promise<void> {
+    try {
+      await this.updateInvoice(invoiceId, {
+        status: 'sent',
+        paidAt: null
+      });
+    } catch (error) {
+      console.error('Error marking as unpaid:', error);
+      throw new Error('Kon factuur niet als onbetaald markeren');
+    }
+  },
+
   async deleteInvoice(invoiceId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, COLLECTION_NAME, invoiceId));

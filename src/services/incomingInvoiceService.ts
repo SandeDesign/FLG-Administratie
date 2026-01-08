@@ -339,6 +339,21 @@ export const incomingInvoiceService = {
     }
   },
 
+  // Mark as unpaid
+  async markAsUnpaid(invoiceId: string): Promise<void> {
+    try {
+      const docRef = doc(db, COLLECTION_NAME, invoiceId);
+      await updateDoc(docRef, {
+        status: 'pending',
+        paidAt: null,
+        updatedAt: Timestamp.fromDate(new Date())
+      });
+    } catch (error) {
+      console.error('Error marking as unpaid:', error);
+      throw new Error('Kon factuur niet als onbetaald markeren');
+    }
+  },
+
   // Process OCR (placeholder for Tesseract.js or Google Vision API)
   async processOCR(file: File): Promise<OCRData | null> {
     try {

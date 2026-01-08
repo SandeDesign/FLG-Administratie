@@ -1,12 +1,31 @@
+export interface EditHistoryEntry {
+  timestamp: number;
+  userId: string;
+  userName: string;
+  fieldChanged: string;
+  oldValue: any;
+  newValue: any;
+}
+
 export interface BankTransaction {
   id: string;
-  date: Date;
+  date: Date | number;
   amount: number;
   description: string;
   beneficiary?: string;
   reference?: string;
   accountNumber?: string;
   transactionType?: 'debit' | 'credit';
+  type: 'incoming' | 'outgoing';
+  status: 'confirmed' | 'pending' | 'unmatched';
+  companyId: string;
+  importId: string;
+  matchedInvoiceId?: string;
+  matchedInvoiceType?: 'outgoing' | 'incoming';
+  confidence?: number;
+  editHistory?: EditHistoryEntry[];
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface MatchedInvoice {
@@ -23,12 +42,25 @@ export interface MatchedInvoice {
 export interface MatchResult {
   transaction: BankTransaction;
   matchedInvoice?: MatchedInvoice;
-  status: 'matched' | 'unmatched' | 'partial' | 'manual';
+  status: 'confirmed' | 'pending' | 'unmatched';
   confidence: number;
   possibleMatches?: MatchedInvoice[];
   manuallyLinked?: boolean;
   linkedInvoiceId?: string;
   linkedInvoiceType?: 'outgoing' | 'incoming';
+}
+
+export interface MatchedPayment {
+  id: string;
+  invoiceId: string;
+  invoiceType: 'outgoing' | 'incoming';
+  invoiceNumber: string;
+  transactionId: string;
+  importId: string;
+  companyId: string;
+  matchedAt: number;
+  matchedBy: string;
+  matchedByName: string;
 }
 
 export interface BankImport {
@@ -40,13 +72,9 @@ export interface BankImport {
   importedByName: string;
   totalLines: number;
   format: 'CSV' | 'MT940';
-  matchedCount: number;
+  confirmedCount: number;
+  pendingCount: number;
   unmatchedCount: number;
-  matchedTransactions: Array<{
-    transaction: BankTransaction;
-    matchedInvoice: MatchedInvoice;
-  }>;
-  unmatchedTransactions: BankTransaction[];
   rawData?: string;
 }
 
