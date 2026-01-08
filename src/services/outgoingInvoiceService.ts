@@ -156,7 +156,7 @@ export const outgoingInvoiceService = {
   async createInvoice(invoice: Omit<OutgoingInvoice, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       const now = new Date();
-      const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+      const invoiceData: any = {
         ...invoice,
         invoiceDate: Timestamp.fromDate(invoice.invoiceDate),
         dueDate: Timestamp.fromDate(invoice.dueDate),
@@ -164,7 +164,16 @@ export const outgoingInvoiceService = {
         sentAt: invoice.sentAt ? Timestamp.fromDate(invoice.sentAt) : null,
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now)
+      };
+
+      // Verwijder undefined waarden (Firestore accepteert geen undefined)
+      Object.keys(invoiceData).forEach(key => {
+        if (invoiceData[key] === undefined) {
+          delete invoiceData[key];
+        }
       });
+
+      const docRef = await addDoc(collection(db, COLLECTION_NAME), invoiceData);
       console.log('✅ Invoice created:', docRef.id);
       return docRef.id;
     } catch (error) {
