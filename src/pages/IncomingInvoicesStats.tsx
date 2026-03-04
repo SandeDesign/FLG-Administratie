@@ -27,6 +27,7 @@ import {
 } from '../services/incomingInvoiceService';
 import { doc, updateDoc, deleteDoc, Timestamp, deleteField, addDoc, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { generateIncomingInvoiceReference } from '../services/googleDriveService';
 
 const IncomingInvoicesStats: React.FC = () => {
   const { user, adminUserId, userRole } = useAuth();
@@ -320,12 +321,15 @@ const IncomingInvoicesStats: React.FC = () => {
         return;
       }
 
-      // Sla elke factuur op in Firestore
+      // Sla elke factuur op in Firestore met correct referentienummer
       const now = new Date();
       let savedCount = 0;
 
       for (const emailInvoice of invoicesFromEmail) {
         try {
+          // Genereer een echt INK-YYYY-#### referentienummer
+          const referenceNumber = await generateIncomingInvoiceReference(selectedCompany.id);
+
           const subtotal = parseFloat(emailInvoice.subtotal || emailInvoice.amount || emailInvoice.bedrag || 0);
           const vatAmount = parseFloat(emailInvoice.vatAmount || emailInvoice.vat_amount || emailInvoice.btw || 0);
           const totalAmount = parseFloat(emailInvoice.totalAmount || emailInvoice.total_amount || emailInvoice.totaal || 0) || (subtotal + vatAmount);
@@ -333,12 +337,19 @@ const IncomingInvoicesStats: React.FC = () => {
           const invoiceDate = emailInvoice.invoiceDate || emailInvoice.invoice_date || emailInvoice.factuurdatum;
           const dueDate = emailInvoice.dueDate || emailInvoice.due_date || emailInvoice.vervaldatum;
 
+          // fileUrl en fileName uit Make response
+          const fileUrl = emailInvoice.fileUrl || emailInvoice.file_url || emailInvoice.bestandUrl || '';
+          const originalFileName = emailInvoice.fileName || emailInvoice.file_name || emailInvoice.bestandsnaam || '';
+          const fileExtension = originalFileName ? originalFileName.split('.').pop() : 'pdf';
+
           const invoiceData: any = {
             userId: adminUserId,
             companyId: selectedCompany.id,
+            referenceNumber,
+            invoiceNumber: referenceNumber,
+            supplierInvoiceNumber: emailInvoice.invoiceNumber || emailInvoice.invoice_number || emailInvoice.factuurnummer || '',
             supplierName: emailInvoice.supplierName || emailInvoice.supplier_name || emailInvoice.leverancier || 'Onbekend',
             supplierEmail: emailInvoice.supplierEmail || emailInvoice.supplier_email || emailInvoice.email || '',
-            invoiceNumber: emailInvoice.invoiceNumber || emailInvoice.invoice_number || emailInvoice.factuurnummer || `EMAIL-${Date.now()}-${savedCount}`,
             amount: subtotal,
             subtotal: subtotal,
             vatAmount: vatAmount,
@@ -347,8 +358,8 @@ const IncomingInvoicesStats: React.FC = () => {
             invoiceDate: Timestamp.fromDate(invoiceDate ? new Date(invoiceDate) : now),
             dueDate: Timestamp.fromDate(dueDate ? new Date(dueDate) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)),
             status: 'pending' as const,
-            fileName: emailInvoice.fileName || emailInvoice.file_name || '',
-            fileUrl: emailInvoice.fileUrl || emailInvoice.file_url || '',
+            fileName: `${referenceNumber}.${fileExtension}`,
+            fileUrl: fileUrl,
             driveWebLink: emailInvoice.driveWebLink || emailInvoice.drive_web_link || '',
             ocrProcessed: false,
             createdAt: Timestamp.fromDate(now),

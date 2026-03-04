@@ -6,7 +6,7 @@ import { uploadFile } from './fileUploadService';
  * Generate a unique reference number for incoming invoices
  * Format: INK-YYYY-####
  */
-async function generateIncomingInvoiceReference(companyId: string): Promise<string> {
+export async function generateIncomingInvoiceReference(companyId: string): Promise<string> {
   const year = new Date().getFullYear();
   const counterRef = doc(db, 'companies', companyId, 'counters', 'incomingInvoices');
 
