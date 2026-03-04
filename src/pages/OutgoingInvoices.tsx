@@ -489,7 +489,9 @@ const OutgoingInvoices: React.FC = () => {
         taxNumber: selectedCompany?.taxNumber || '',
         bankAccount: selectedCompany?.bankAccount || '',
         contactInfo: { email: selectedCompany?.contactInfo?.email || '', phone: selectedCompany?.contactInfo?.phone || '' },
-        address: { street: selectedCompany?.address?.street || '', city: selectedCompany?.address?.city || '', zipCode: selectedCompany?.address?.zipCode || '', country: selectedCompany?.address?.country || '' }
+        address: { street: selectedCompany?.address?.street || '', city: selectedCompany?.address?.city || '', zipCode: selectedCompany?.address?.zipCode || '', country: selectedCompany?.address?.country || '' },
+        themeColor: selectedCompany?.themeColor,
+        logoUrl: selectedCompany?.logoUrl,
       };
       const html = await outgoingInvoiceService.generateInvoiceHTML(invoice, info);
       const payload = {
