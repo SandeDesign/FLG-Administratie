@@ -27,7 +27,7 @@ import {
 } from '../services/incomingInvoiceService';
 import { doc, updateDoc, deleteDoc, Timestamp, deleteField, addDoc, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { generateIncomingInvoiceReference } from '../services/googleDriveService';
+import { generateIncomingInvoiceReference } from '../services/incomingInvoiceService';
 
 const IncomingInvoicesStats: React.FC = () => {
   const { user, adminUserId, userRole } = useAuth();
