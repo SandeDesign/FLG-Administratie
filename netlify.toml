@@ -5,6 +5,7 @@ functions = "netlify/functions"
 
 [build.environment]
 NODE_VERSION = "18"
+SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
 [functions]
 node_bundler = "esbuild"
