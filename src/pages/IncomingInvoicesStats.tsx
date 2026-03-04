@@ -11,7 +11,8 @@ import {
   Trash2,
   ArrowDownLeft,
   TrendingUp,
-  X
+  X,
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -24,7 +25,7 @@ import {
   incomingInvoiceService,
   IncomingInvoice,
 } from '../services/incomingInvoiceService';
-import { doc, updateDoc, deleteDoc, Timestamp, deleteField } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, Timestamp, deleteField, addDoc, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const IncomingInvoicesStats: React.FC = () => {
@@ -46,6 +47,7 @@ const IncomingInvoicesStats: React.FC = () => {
   const [editFormData, setEditFormData] = useState<IncomingInvoice | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isFetchingFromEmail, setIsFetchingFromEmail] = useState(false);
 
   // Load Invoices from Firestore
   const loadInvoices = useCallback(async () => {
@@ -253,6 +255,128 @@ const IncomingInvoicesStats: React.FC = () => {
     }
   };
 
+  // Fetch invoices from email via Make.com webhook
+  const handleFetchFromEmail = async () => {
+    if (!user || !adminUserId || !selectedCompany) return;
+
+    try {
+      setIsFetchingFromEmail(true);
+
+      const webhookPayload = {
+        action: 'fetch_invoices_from_email',
+        timestamp: new Date().toISOString(),
+        company: {
+          id: selectedCompany.id,
+          name: selectedCompany.name,
+        },
+        user: {
+          id: user.uid,
+          email: user.email,
+        },
+      };
+
+      const response = await fetch(
+        'https://hook.eu2.make.com/sphpptl7j3x0aadqjidzb5r17uatkr5b',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(webhookPayload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Webhook mislukt: ${response.status} ${response.statusText}`);
+      }
+
+      // Flexibel response parsen
+      const contentType = response.headers.get('content-type');
+      let data: any;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch {
+          if (text.toLowerCase().includes('accepted') || text === '202') {
+            success('Verzoek verzonden', 'Make.com verwerkt je aanvraag. Facturen verschijnen zodra ze verwerkt zijn.');
+            return;
+          }
+          throw new Error('Onverwacht antwoord van Make.com');
+        }
+      }
+
+      // Normaliseer response: array, {invoices: [...]}, of {data: [...]}
+      const invoicesFromEmail: any[] = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.invoices)
+          ? data.invoices
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
+
+      if (invoicesFromEmail.length === 0) {
+        success('Geen nieuwe facturen', 'Er zijn geen nieuwe facturen gevonden in de e-mail.');
+        return;
+      }
+
+      // Sla elke factuur op in Firestore
+      const now = new Date();
+      let savedCount = 0;
+
+      for (const emailInvoice of invoicesFromEmail) {
+        try {
+          const subtotal = parseFloat(emailInvoice.subtotal || emailInvoice.amount || emailInvoice.bedrag || 0);
+          const vatAmount = parseFloat(emailInvoice.vatAmount || emailInvoice.vat_amount || emailInvoice.btw || 0);
+          const totalAmount = parseFloat(emailInvoice.totalAmount || emailInvoice.total_amount || emailInvoice.totaal || 0) || (subtotal + vatAmount);
+
+          const invoiceDate = emailInvoice.invoiceDate || emailInvoice.invoice_date || emailInvoice.factuurdatum;
+          const dueDate = emailInvoice.dueDate || emailInvoice.due_date || emailInvoice.vervaldatum;
+
+          const invoiceData: any = {
+            userId: adminUserId,
+            companyId: selectedCompany.id,
+            supplierName: emailInvoice.supplierName || emailInvoice.supplier_name || emailInvoice.leverancier || 'Onbekend',
+            supplierEmail: emailInvoice.supplierEmail || emailInvoice.supplier_email || emailInvoice.email || '',
+            invoiceNumber: emailInvoice.invoiceNumber || emailInvoice.invoice_number || emailInvoice.factuurnummer || `EMAIL-${Date.now()}-${savedCount}`,
+            amount: subtotal,
+            subtotal: subtotal,
+            vatAmount: vatAmount,
+            totalAmount: totalAmount,
+            description: emailInvoice.description || emailInvoice.omschrijving || '',
+            invoiceDate: Timestamp.fromDate(invoiceDate ? new Date(invoiceDate) : now),
+            dueDate: Timestamp.fromDate(dueDate ? new Date(dueDate) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)),
+            status: 'pending' as const,
+            fileName: emailInvoice.fileName || emailInvoice.file_name || '',
+            fileUrl: emailInvoice.fileUrl || emailInvoice.file_url || '',
+            driveWebLink: emailInvoice.driveWebLink || emailInvoice.drive_web_link || '',
+            ocrProcessed: false,
+            createdAt: Timestamp.fromDate(now),
+            updatedAt: Timestamp.fromDate(now),
+            source: 'email',
+          };
+
+          await addDoc(collection(db, 'incomingInvoices'), invoiceData);
+          savedCount++;
+        } catch (saveErr) {
+          console.error('Fout bij opslaan e-mail factuur:', saveErr);
+        }
+      }
+
+      if (savedCount > 0) {
+        success(`${savedCount} facturen opgehaald`, `${savedCount} facturen succesvol opgehaald uit e-mail.`);
+        await loadInvoices();
+      } else {
+        showError('Kon facturen niet opslaan');
+      }
+    } catch (err) {
+      console.error('Error fetching invoices from email:', err);
+      showError('Fout bij ophalen', err instanceof Error ? err.message : 'Kon facturen niet ophalen uit e-mail');
+    } finally {
+      setIsFetchingFromEmail(false);
+    }
+  };
+
   // Open Edit Modal
   const openEdit = (invoice: IncomingInvoice) => {
     setEditingInvoice(invoice);
@@ -395,13 +519,25 @@ const IncomingInvoicesStats: React.FC = () => {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Inkoop Bonnen
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Controleer alle inkoop bonnen.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Inkoop Bonnen
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Controleer alle inkoop bonnen.
+          </p>
+        </div>
+        {(isAdmin || isManager) && (
+          <Button
+            onClick={handleFetchFromEmail}
+            loading={isFetchingFromEmail}
+            disabled={isFetchingFromEmail || !selectedCompany}
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Facturen ophalen uit mail
+          </Button>
+        )}
       </div>
 
       {/* Statistics Cards */}
