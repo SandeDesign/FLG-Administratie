@@ -12,6 +12,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { getThemeColorPreset } from '../utils/themeColors';
 
 export interface OutgoingInvoice {
   id?: string;
@@ -73,6 +74,8 @@ export interface CompanyInfo {
     zipCode: string;
     country: string;
   };
+  themeColor?: string;
+  logoUrl?: string;
 }
 
 const COLLECTION_NAME = 'outgoingInvoices';
@@ -301,6 +304,8 @@ export const outgoingInvoiceService = {
       const dueDateObj = new Date(invoice.dueDate);
       const daysUntilDue = Math.ceil((dueDateObj.getTime() - invoiceDateObj.getTime()) / (1000 * 60 * 60 * 24));
 
+      const theme = getThemeColorPreset(company.themeColor);
+
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -311,8 +316,9 @@ export const outgoingInvoiceService = {
     .container { max-width: 900px; margin: 0 auto; padding: 20px 30px; background-color: white; }
     
     /* Header */
-    .header { display: flex; justify-content: space-between; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #2563eb; align-items: flex-start; gap: 30px; }
-    .company-info h1 { font-size: 18px; color: #2563eb; margin-bottom: 6px; font-weight: 700; letter-spacing: -0.5px; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid ${theme.primaryHex}; align-items: flex-start; gap: 30px; }
+    .company-logo { max-height: 50px; max-width: 180px; margin-bottom: 8px; object-fit: contain; }
+    .company-info h1 { font-size: 18px; color: ${theme.primaryHex}; margin-bottom: 6px; font-weight: 700; letter-spacing: -0.5px; }
     .company-info p { font-size: 11px; color: #6b7280; margin-bottom: 2px; line-height: 1.3; }
     .company-details { font-size: 11px; color: #6b7280; text-align: right; }
     .company-details p { margin-bottom: 4px; line-height: 1.4; }
@@ -337,7 +343,7 @@ export const outgoingInvoiceService = {
     
     /* Table */
     table { width: 100%; border-collapse: collapse; margin-bottom: 20px; margin-top: 15px; }
-    table thead { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; }
+    table thead { background: linear-gradient(135deg, ${theme.primaryHex} 0%, ${theme.darkHex} 100%); color: white; }
     table th { padding: 10px 10px; text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
     table td { padding: 9px 10px; border-bottom: 1px solid #f3f4f6; font-size: 11px; color: #374151; }
     table tbody tr:hover { background-color: #f9fafb; }
@@ -355,18 +361,18 @@ export const outgoingInvoiceService = {
     .totals-box { display: flex; justify-content: flex-end; margin-bottom: 25px; }
     .totals-content { width: 280px; }
     .totals-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 11px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
-    .totals-row.total { border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb; padding: 8px 0; font-size: 13px; font-weight: 700; color: #2563eb; margin-bottom: 0; }
+    .totals-row.total { border-top: 2px solid ${theme.primaryHex}; border-bottom: 2px solid ${theme.primaryHex}; padding: 8px 0; font-size: 13px; font-weight: 700; color: ${theme.primaryHex}; margin-bottom: 0; }
     .totals-label { color: #6b7280; }
     .totals-value { font-weight: 600; color: #111827; }
-    .totals-row.total .totals-value { color: #2563eb; }
+    .totals-row.total .totals-value { color: ${theme.primaryHex}; }
     
     /* ⭐ Payment Info Section - NIEUW */
-    .payment-section { margin-top: 30px; padding: 15px 14px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #0ea5e9; border-radius: 6px; }
-    .payment-section h4 { font-size: 11px; font-weight: 700; color: #0369a1; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.3px; }
+    .payment-section { margin-top: 30px; padding: 15px 14px; background: linear-gradient(135deg, ${theme.lightHex} 0%, ${theme.lightHex} 100%); border: 1px solid ${theme.primaryHex}; border-radius: 6px; }
+    .payment-section h4 { font-size: 11px; font-weight: 700; color: ${theme.darkHex}; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.3px; }
     .payment-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 11px; }
     .payment-info-item { }
-    .payment-info-label { color: #0369a1; font-weight: 600; margin-bottom: 2px; }
-    .payment-info-value { color: #164e63; font-weight: 600; word-break: break-all; }
+    .payment-info-label { color: ${theme.darkHex}; font-weight: 600; margin-bottom: 2px; }
+    .payment-info-value { color: ${theme.darkHex}; font-weight: 600; word-break: break-all; }
     
     /* Footer */
     .footer { margin-top: 25px; padding-top: 15px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #9ca3af; text-align: center; line-height: 1.4; }
@@ -378,6 +384,7 @@ export const outgoingInvoiceService = {
     <!-- Header with Company Info -->
     <div class="header">
       <div class="company-info">
+        ${company.logoUrl ? `<img src="${company.logoUrl}" alt="${company.name}" class="company-logo" />` : ''}
         <h1>${company.name}</h1>
         <p>${company.address.street}</p>
         <p>${company.address.zipCode} ${company.address.city}</p>
