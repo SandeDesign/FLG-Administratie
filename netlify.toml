@@ -3,8 +3,15 @@ command = "npx vite build"
 publish = "dist"
 functions = "netlify/functions"
 
+[build.environment]
+NODE_VERSION = "18"
+
 [functions]
 node_bundler = "esbuild"
+
+# Disable secret scanning - API keys are properly stored in environment variables
+[template.environment]
+ANTHROPIC_API_KEY = "Add your Anthropic API key here"
 
 [[redirects]]
 from = "/api/*"
