@@ -29,6 +29,7 @@ import {
 } from '../services/firebase';
 import { getPendingTimesheets } from '../services/timesheetService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 interface DashboardStats {
   totalEmployees: number;
@@ -49,6 +50,7 @@ const AdminDashboard: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { employees, selectedCompany } = useApp();
   const { error: showError } = useToast();
+  usePageTitle('LoonMaatschappij');
   const navigate = useNavigate();
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -184,7 +186,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-24 sm:pb-6">
-      <div className="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-700 dark:from-blue-800 dark:via-blue-700 dark:to-indigo-900 rounded-xl p-6 text-white">
+      <div className="hidden lg:block bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-700 dark:from-blue-800 dark:via-blue-700 dark:to-indigo-900 rounded-xl p-6 text-white">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold">LoonMaatschappij</h1>

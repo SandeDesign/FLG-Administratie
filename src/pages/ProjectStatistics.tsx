@@ -7,10 +7,12 @@ import { Factory, Euro, TrendingUp, Package, Clock } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const ProjectStatistics: React.FC = () => {
   const { selectedCompany, queryUserId, selectedYear } = useApp();
   const { user } = useAuth();
+  usePageTitle('Project Statistieken');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalProductionHours: 0,
@@ -183,7 +185,7 @@ const ProjectStatistics: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="hidden lg:block">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Project Statistieken</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>

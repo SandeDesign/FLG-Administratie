@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Receipt, Filter, Download, CheckCircle, XCircle, AlertCircle, Building2, User } from 'lucide-react';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { Expense, Employee } from '../types';
@@ -14,6 +15,7 @@ import Input from '../components/ui/Input';
 import { formatExpenseType } from '../utils/leaveCalculations';
 
 const AdminExpenses: React.FC = () => {
+  usePageTitle('Declaratiebeheer');
   const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
@@ -189,7 +191,7 @@ const AdminExpenses: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Declaraties Goedkeuring</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Beheer en keur declaraties goed van werknemers
@@ -230,7 +232,41 @@ const AdminExpenses: React.FC = () => {
         </Card>
       </div>
 
-      <Card>
+      {/* Filter bar for mobile */}
+      <div className="md:hidden flex flex-wrap items-center gap-3">
+        <div className="flex items-center space-x-2">
+          <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          >
+            <option value="all">Alle statussen</option>
+            <option value="draft">Concept</option>
+            <option value="submitted">Ingediend</option>
+            <option value="approved">Goedgekeurd</option>
+            <option value="rejected">Afgewezen</option>
+            <option value="paid">Uitbetaald</option>
+          </select>
+        </div>
+        <div className="flex items-center space-x-2">
+          <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          <select
+            value={filterEmployee}
+            onChange={(e) => setFilterEmployee(e.target.value)}
+            className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          >
+            <option value="all">Alle werknemers</option>
+            {employees.map(emp => (
+              <option key={emp.id} value={emp.id}>
+                {emp.personalInfo.firstName} {emp.personalInfo.lastName}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <Card className="hidden md:block">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center space-x-2">
@@ -385,6 +421,78 @@ const AdminExpenses: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* Mobile card view */}
+      <div className="md:hidden space-y-3">
+        {filteredExpenses.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={Receipt}
+              title="Geen declaraties"
+              description="Er zijn geen declaraties die voldoen aan de filters"
+            />
+          </Card>
+        ) : (
+          filteredExpenses.map((expense) => {
+            const employee = getEmployee(expense.employeeId);
+            return (
+              <Card key={expense.id} className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {employee ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}` : 'Onbekend'}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(expense.date).toLocaleDateString('nl-NL')}
+                      </span>
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
+                        {getStatusText(expense.status)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {formatExpenseType(expense.type)}
+                    </p>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-2">
+                      {formatCurrency(expense.amount)}
+                    </p>
+                  </div>
+                  <div className="ml-2 flex-shrink-0">
+                    {expense.status === 'submitted' && (
+                      <div className="flex flex-col space-y-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(expense)}
+                          disabled={actionLoading}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Goedkeuren
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => openRejectModal(expense)}
+                          disabled={actionLoading}
+                          className="border-red-600 text-red-600 hover:bg-red-50"
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Afwijzen
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {expense.status === 'rejected' && expense.approvals.length > 0 && expense.approvals[expense.approvals.length - 1].comment && (
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic border-t border-gray-200 dark:border-gray-700 pt-2">
+                    "{expense.approvals[expense.approvals.length - 1].comment}"
+                  </div>
+                )}
+              </Card>
+            );
+          })
+        )}
+      </div>
 
       <Modal
         isOpen={rejectModalOpen}

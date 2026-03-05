@@ -11,11 +11,13 @@ import { getEmployeeById, getCompany } from '../services/firebase';
 import { getPayrollCalculations } from '../services/payrollService';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 export default function Payslips() {
   const { user, userRole } = useAuth();
   const { currentEmployeeId, selectedCompany, employees } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Loonstroken');
 
   const [loading, setLoading] = useState(true);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
@@ -181,7 +183,9 @@ export default function Payslips() {
   if (!selectedCompany) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
+        <div className="hidden lg:block">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
+        </div>
         <EmptyState
           icon={Building2}
           title="Geen bedrijf geselecteerd"
@@ -196,7 +200,9 @@ export default function Payslips() {
   if (userRole === 'admin' && !selectedEmployeeId && companyEmployees.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
+        <div className="hidden lg:block">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
+        </div>
         <EmptyState
           icon={FileText}
           title="Geen werknemers gevonden"
@@ -209,7 +215,7 @@ export default function Payslips() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             {userRole === 'admin' ? 'Bekijk en beheer loonstroken' : 'Bekijk en download uw loonstroken'}

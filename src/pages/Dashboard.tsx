@@ -38,11 +38,13 @@ import {
 } from '../services/firebase';
 import { getPendingTimesheets } from '../services/timesheetService';
 import { getPayrollCalculations } from '../services/payrollService';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const Dashboard: React.FC = () => {
   const { employees, companies, loading, selectedCompany } = useApp();
   const { user, userRole, currentEmployeeId, adminUserId } = useAuth();
   const navigate = useNavigate();
+  usePageTitle('Dashboard');
 
   // ========== SHARED STATE ==========
   const [dashLoading, setDashLoading] = useState(false);
@@ -493,7 +495,7 @@ const Dashboard: React.FC = () => {
   if (!selectedCompany && userRole !== 'employee') {
     return (
       <div className="space-y-6 pb-24 sm:pb-6 px-4 sm:px-0">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Welkom!</h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Laten we beginnen met je loonadministratie</p>
         </div>
@@ -515,7 +517,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Hero Header */}
-        <div className="bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 rounded-xl p-6 text-white space-y-2">
+        <div className="hidden lg:block bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 rounded-xl p-6 text-white space-y-2">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold">Holding Dashboard</h1>
@@ -629,7 +631,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Hero Header */}
-        <div className="bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 rounded-xl p-6 text-white space-y-2">
+        <div className="hidden lg:block bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 rounded-xl p-6 text-white space-y-2">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold">WerkMaatschappij</h1>
@@ -880,7 +882,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Hero Header */}
-        <div className="bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 rounded-xl p-6 text-white space-y-2">
+        <div className="hidden lg:block bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 rounded-xl p-6 text-white space-y-2">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold">
@@ -1106,7 +1108,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Welcome Hero */}
-        <div className="bg-gradient-to-br from-green-500 via-green-400 to-emerald-600 rounded-xl p-6 text-white space-y-3">
+        <div className="hidden lg:block bg-gradient-to-br from-green-500 via-green-400 to-emerald-600 rounded-xl p-6 text-white space-y-3">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold">Welkom terug!</h1>

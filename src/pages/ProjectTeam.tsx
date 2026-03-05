@@ -8,11 +8,13 @@ import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const ProjectTeam: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { error: showError } = useToast();
+  usePageTitle('Project Team');
   const [loading, setLoading] = useState(true);
   const [projectEmployees, setProjectEmployees] = useState<Employee[]>([]);
   const [recentTimeEntries, setRecentTimeEntries] = useState<TimeEntry[]>([]);
@@ -70,7 +72,7 @@ const ProjectTeam: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Project Team</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Team voor project: <span className="font-medium">{selectedCompany.name}</span>

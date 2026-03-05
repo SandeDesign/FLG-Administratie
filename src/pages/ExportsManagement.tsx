@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ExportJob, ExportType } from '../types/export';
 import { getExportJobs, createExportJob } from '../services/exportService';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import { EmptyState } from '../components/ui/EmptyState';
 
 const exportTypes: Array<{ type: ExportType; label: string; description: string; icon: any }> = [
@@ -53,6 +54,7 @@ export default function ExportsManagement() {
   const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Exports');
 
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -139,7 +141,7 @@ export default function ExportsManagement() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="hidden lg:block">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Exports</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
           Exporteer data naar verschillende formaten
@@ -210,7 +212,8 @@ export default function ExportsManagement() {
         <Card>
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recente exports</h2>
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
@@ -265,6 +268,40 @@ export default function ExportsManagement() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {exportJobs.slice(0, 10).map((job) => (
+                <div key={job.id} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{job.fileName}</p>
+                    <span className={`px-2 py-1 text-xs rounded-full ${ job.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' : job.status === 'processing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300' : job.status === 'failed' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }`}>
+                      {job.status === 'completed' ? 'Voltooid' :
+                       job.status === 'processing' ? 'Bezig' :
+                       job.status === 'failed' ? 'Mislukt' :
+                       'In wachtrij'}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                    <p>Periode: {job.filters.startDate?.toLocaleDateString('nl-NL')} - {job.filters.endDate?.toLocaleDateString('nl-NL')}</p>
+                    <p>Aangemaakt: {job.requestedAt.toLocaleDateString('nl-NL')}</p>
+                  </div>
+                  {job.status === 'completed' && job.fileUrl && (
+                    <div className="mt-3">
+                      <Button
+                        onClick={() => window.open(job.fileUrl, '_blank')}
+                        size="sm"
+                        variant="secondary"
+                        className="w-full"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </Card>

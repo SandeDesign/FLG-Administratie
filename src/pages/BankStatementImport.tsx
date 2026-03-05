@@ -39,6 +39,7 @@ import {
 } from '../types/bankImport';
 import { format as formatDate } from 'date-fns';
 import Modal from '../components/ui/Modal';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 type TabType = 'all' | 'incoming' | 'outgoing';
 type StatusFilter = 'all' | 'confirmed' | 'pending' | 'unmatched';
@@ -47,6 +48,7 @@ const BankStatementImport: React.FC = () => {
   const { user, userRole } = useAuth();
   const { selectedCompany, queryUserId } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Bankafschrift Import');
 
   const [rawData, setRawData] = useState('');
   const [format, setFormat] = useState<'CSV' | 'MT940'>('CSV');
@@ -492,7 +494,7 @@ const BankStatementImport: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Bankafschrift Import
           </h1>

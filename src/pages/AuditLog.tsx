@@ -8,7 +8,8 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { AuditService } from '../services/auditService'; // Ensure AuditService is imported
 import { EmptyState } from '../components/ui/EmptyState';
-import { useApp } from '../contexts/AppContext'; // Import useApp to get selectedCompany
+import { useApp } from '../contexts/AppContext';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 interface AuditLogEntry { // Renamed to avoid conflict with AuditLog type from types/audit.ts
   id: string;
@@ -32,6 +33,7 @@ const AuditLogPage: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp(); // Get selected company from AppContext
   const { success, error: showError } = useToast();
+  usePageTitle('Audit Log');
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{
@@ -133,7 +135,7 @@ const AuditLogPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Audit Log</h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Bekijk alle acties die zijn uitgevoerd in het systeem
@@ -249,64 +251,57 @@ const AuditLogPage: React.FC = () => {
               description="Geen audit logs gevonden voor de geselecteerde filters."
             />
           ) : (
-            <div className="overflow-x-auto">
+            {/* Desktop tabel */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Datum/Tijd
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Gebruiker
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actie
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Entiteit ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Ernst
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Datum/Tijd</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gebruiker</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actie</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entiteit ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ernst</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {auditLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-gray-50 dark:bg-gray-900">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {log.createdAt.toLocaleString('nl-NL')}
-                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{log.createdAt.toLocaleString('nl-NL')}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {log.performedBy.name || log.performedBy.email}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {log.performedBy.role}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{log.performedBy.name || log.performedBy.email}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{log.performedBy.role}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {getActionLabel(log.action)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {getEntityTypeLabel(log.entityType)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
-                        {log.entityId.substring(0, 8)}...
-                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{getActionLabel(log.action)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{getEntityTypeLabel(log.entityType)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">{log.entityId.substring(0, 8)}...</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor( log.severity )}`}
-                        >
-                          {log.severity}
-                        </span>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(log.severity)}`}>{log.severity}</span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobiele cards */}
+            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+              {auditLogs.map((log) => (
+                <div key={log.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{log.performedBy.name || log.performedBy.email}</span>
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getSeverityColor(log.severity)}`}>{log.severity}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{getActionLabel(log.action)}</span>
+                    <span className="text-gray-400">·</span>
+                    <span className="text-gray-500 dark:text-gray-400">{getEntityTypeLabel(log.entityType)}</span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {log.createdAt.toLocaleString('nl-NL')}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

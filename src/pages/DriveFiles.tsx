@@ -27,6 +27,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { incomingInvoiceService } from '../services/incomingInvoiceService';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 interface DriveFile {
   id: string;
@@ -83,6 +84,7 @@ const DriveFiles: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { selectedCompany, companies } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Drive Bestanden');
   const [files, setFiles] = useState<DriveFile[]>([]);
   const [folders, setFolders] = useState<DriveFolder[]>([]);
   const [archivedInvoices, setArchivedInvoices] = useState<ArchivedInvoice[]>([]);
@@ -272,7 +274,7 @@ const DriveFiles: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Drive Bestanden</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Centraal overzicht van alle Google Drive bestanden en gearchiveerde facturen

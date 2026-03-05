@@ -20,10 +20,12 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { getEmployeeById } from '../services/firebase';
 import { getWeeklyTimesheets, getWeekNumber } from '../services/timesheetService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const EmployeeDashboard: React.FC = () => {
   const { user, adminUserId, currentEmployeeId } = useAuth();
   const { selectedCompany } = useApp();
+  usePageTitle('Mijn Dashboard');
   const [loading, setLoading] = useState(true);
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [timesheets, setTimesheets] = useState<any[]>([]);
@@ -168,7 +170,7 @@ const EmployeeDashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white shadow-lg">
+      <div className="hidden lg:block bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white shadow-lg">
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-4xl font-bold mb-2">

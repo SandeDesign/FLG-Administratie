@@ -12,8 +12,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import ActionMenu from '../components/ui/ActionMenu';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
@@ -44,6 +46,7 @@ interface UserRole {
 
 const AdminUsers: React.FC = () => {
   const { user, adminUserId } = useAuth();
+  usePageTitle('Gebruikersbeheer');
   const { success, error: showError } = useToast();
   const [users, setUsers] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,7 +198,7 @@ const AdminUsers: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Gebruikersbeheer</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Beheer gebruikersrollen en toegang ({users.length} gebruikers gevonden)
@@ -317,7 +320,8 @@ const AdminUsers: React.FC = () => {
           }
         />
       ) : (
-        <Card>
+        {/* Desktop Table */}
+        <Card className="hidden md:block">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
@@ -418,6 +422,60 @@ const AdminUsers: React.FC = () => {
             </table>
           </div>
         </Card>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-3">
+          {filteredUsers.map((systemUser) => (
+            <Card key={systemUser.id} className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {systemUser.displayName || 'Geen naam'}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                      <Mail className="h-3 w-3 mr-1" />
+                      {systemUser.email || 'Geen email'}
+                    </div>
+                  </div>
+                </div>
+                <ActionMenu
+                  actions={[
+                    { label: 'Bewerken', icon: Edit, onClick: () => {} },
+                    {
+                      label: systemUser.isActive !== false ? 'Deactiveren' : 'Activeren',
+                      icon: systemUser.isActive !== false ? Ban : UserCheck,
+                      onClick: () => handleToggleUserStatus(systemUser.id, systemUser.isActive !== false),
+                    },
+                    {
+                      label: 'Verwijderen',
+                      icon: Trash2,
+                      onClick: () => handleDeleteUser(systemUser.id, systemUser.email || 'Onbekend'),
+                      variant: 'danger',
+                    },
+                  ]}
+                />
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <select
+                  value={systemUser.role}
+                  onChange={(e) => handleUpdateUserRole(systemUser.id, e.target.value as UserRole['role'])}
+                  className={`text-xs px-2 py-1 rounded-full border-none cursor-pointer ${getRoleColor(systemUser.role)}`}
+                >
+                  <option value="admin">Administrator</option>
+                  <option value="manager">Manager</option>
+                  <option value="employee">Werknemer</option>
+                </select>
+                <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(systemUser.isActive !== false)}`}>
+                  {systemUser.isActive !== false ? 'Actief' : 'Inactief'}
+                </span>
+              </div>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

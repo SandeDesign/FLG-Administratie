@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Receipt, Plus, Filter, Building2, Send } from 'lucide-react';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -13,6 +14,7 @@ import { formatExpenseType } from '../utils/leaveCalculations';
 import { useApp } from '../contexts/AppContext';
 
 const Expenses: React.FC = () => {
+  usePageTitle('Declaraties');
   const { user, currentEmployeeId, adminUserId } = useAuth();
   const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
   const { success, error: showError } = useToast();
@@ -143,7 +145,7 @@ const Expenses: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Declaraties</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Beheer je onkostendeclaraties
@@ -182,7 +184,23 @@ const Expenses: React.FC = () => {
         </Card>
       </div>
 
-      <Card>
+      {/* Filter bar for mobile */}
+      <div className="md:hidden flex items-center space-x-2">
+        <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+        >
+          <option value="all">Alle statussen</option>
+          <option value="draft">Concept</option>
+          <option value="submitted">Ingediend</option>
+          <option value="approved">Goedgekeurd</option>
+          <option value="paid">Uitbetaald</option>
+        </select>
+      </div>
+
+      <Card className="hidden md:block">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -286,6 +304,62 @@ const Expenses: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* Mobile card view */}
+      <div className="md:hidden space-y-3">
+        {filteredExpenses.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={Receipt}
+              title="Geen declaraties"
+              description="Je hebt nog geen declaraties ingediend"
+              actionLabel="Nieuwe Declaratie"
+              onAction={() => setIsModalOpen(true)}
+            />
+          </Card>
+        ) : (
+          filteredExpenses.map((expense) => (
+            <Card key={expense.id} className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(expense.date).toLocaleDateString('nl-NL')}
+                    </span>
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(expense.status)}`}>
+                      {getStatusText(expense.status)}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {formatExpenseType(expense.type)}
+                  </p>
+                  {expense.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">
+                      {expense.description}
+                    </p>
+                  )}
+                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mt-2">
+                    {formatCurrency(expense.amount)}
+                  </p>
+                </div>
+                <div className="ml-2 flex-shrink-0">
+                  {expense.status === 'draft' && expense.id && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleSubmitExpense(expense)}
+                      loading={submittingId === expense.id}
+                      disabled={submittingId !== null}
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      Indienen
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
 
       <ExpenseModal
         isOpen={isModalOpen}

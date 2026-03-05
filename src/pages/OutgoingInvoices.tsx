@@ -10,6 +10,7 @@ import Card from '../components/ui/Card';
 import { outgoingInvoiceService, OutgoingInvoice, CompanyInfo } from '../services/outgoingInvoiceService';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/ttdixmxlu9n7rvbnxgfomilht2ihllc2';
 
@@ -52,6 +53,7 @@ const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
   const { selectedCompany, employees, queryUserId } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Facturen');
 
   const [invoices, setInvoices] = useState<OutgoingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -670,7 +672,7 @@ const OutgoingInvoices: React.FC = () => {
   if (!selectedCompany) {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Facturen</h1>
         </div>
         <EmptyState
@@ -693,7 +695,7 @@ const OutgoingInvoices: React.FC = () => {
           >
             <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           </button>
-          <div>
+          <div className="hidden lg:block">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
               {editingInvoice ? 'Factuur bewerken' : 'Nieuwe factuur'}
             </h1>
@@ -1172,7 +1174,7 @@ const OutgoingInvoices: React.FC = () => {
   return (
     <div className="space-y-3 px-4 sm:px-0 pb-6">
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Facturen</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {filteredInvoices.length} stuks

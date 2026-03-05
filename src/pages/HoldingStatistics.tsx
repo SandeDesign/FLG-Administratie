@@ -7,6 +7,7 @@ import { Building2, Euro, TrendingUp, TrendingDown, Package, Receipt } from 'luc
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 interface CompanyStats {
   companyId: string;
@@ -24,6 +25,7 @@ interface CompanyStats {
 const HoldingStatistics: React.FC = () => {
   const { selectedCompany, companies } = useApp();
   const { adminUserId } = useAuth();
+  usePageTitle('Holding Statistieken');
   const [loading, setLoading] = useState(true);
   const [companyStats, setCompanyStats] = useState<CompanyStats[]>([]);
   const [totalStats, setTotalStats] = useState({
@@ -273,7 +275,7 @@ const HoldingStatistics: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="hidden lg:block">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pageTitle}</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">{pageDescription}</p>
       </div>

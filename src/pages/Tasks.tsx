@@ -43,6 +43,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
 import Modal from '../components/ui/Modal';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 // Category configuratie
 const CATEGORY_CONFIG: Record<TaskCategory, {
@@ -98,6 +99,7 @@ const Tasks: React.FC = () => {
   const { user } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error } = useToast();
+  usePageTitle('Taken');
 
   const [tasks, setTasks] = useState<BusinessTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -422,7 +424,7 @@ const Tasks: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Taken</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             {selectedCompany?.name} - {tasks.length} taken

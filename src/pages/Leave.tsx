@@ -12,11 +12,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { formatLeaveType } from '../utils/leaveCalculations';
 import { useApp } from '../contexts/AppContext';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const Leave: React.FC = () => {
   const { user, currentEmployeeId, adminUserId } = useAuth();
   const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
   const { success, error: showError } = useToast();
+  usePageTitle('Verlof');
   const [loading, setLoading] = useState(true);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [leaveBalance, setLeaveBalance] = useState<LeaveBalance | null>(null);
@@ -109,7 +111,7 @@ const Leave: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Verlof</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Beheer je verlofaanvragen en bekijk je saldo

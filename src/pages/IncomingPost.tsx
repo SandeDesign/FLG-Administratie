@@ -33,11 +33,13 @@ import {
   getCompanyUsers,
 } from '../services/firebase';
 import { IncomingPost, PostStatus, PostActionType } from '../types';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const IncomingPostPage: React.FC = () => {
   const { user } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Inkomende Post');
   const navigate = useNavigate();
 
   const [posts, setPosts] = useState<IncomingPost[]>([]);
@@ -368,7 +370,7 @@ const IncomingPostPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Inkomende Post</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             {selectedCompany?.name} - {posts.length} document{posts.length !== 1 ? 'en' : ''}

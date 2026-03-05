@@ -11,11 +11,13 @@ import CompanyModal from '../components/company/CompanyModal';
 import BranchModal from '../components/company/BranchModal';
 import { useToast } from '../hooks/useToast';
 import { useApp } from '../contexts/AppContext'; // Import useApp to refresh global state
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const Companies: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { refreshDashboardStats } = useApp(); // Use refreshDashboardStats
   const { success, error: showError } = useToast();
+  usePageTitle('Bedrijven');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +97,7 @@ const Companies: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Bedrijven</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Beheer je bedrijven en vestigingen

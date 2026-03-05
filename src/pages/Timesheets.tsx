@@ -21,11 +21,13 @@ import {
 import { getEmployeeById, getLeaveRequests, getSickLeaveRecords } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 export default function Timesheets() {
   const { user, userRole } = useAuth();
   const { currentEmployeeId, selectedCompany, employees, queryUserId } = useApp(); // ✅ Gebruik queryUserId
   const { success, error: showError } = useToast();
+  usePageTitle('Urenregistratie');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -624,7 +626,9 @@ export default function Timesheets() {
   if (!selectedCompany) {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
+        <div className="hidden lg:block">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
+        </div>
         <EmptyState
           icon={Clock}
           title="Geen bedrijf geselecteerd"
@@ -640,7 +644,9 @@ export default function Timesheets() {
   if (!effectiveEmployeeId) {
     return (
       <div className="space-y-6 px-4 sm:px-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
+        <div className="hidden lg:block">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
+        </div>
         {userRole === 'admin' && companyEmployees.length === 0 ? (
           <EmptyState
             icon={Clock}
@@ -678,7 +684,7 @@ export default function Timesheets() {
     <div className="space-y-3 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
       {/* Header */}
       <div className="space-y-3">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
           {employeeData && (
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 flex items-center gap-2">

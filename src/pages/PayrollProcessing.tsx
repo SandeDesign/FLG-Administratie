@@ -20,12 +20,14 @@ import { createPayslipFromCalculation } from '../services/payslipService';
 import { getCompany } from '../services/firebase';
 import { getWeeklyTimesheets } from '../services/timesheetService';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import { EmptyState } from '../components/ui/EmptyState';
 
 export default function PayrollProcessing() {
   const { user, adminUserId } = useAuth();
   const { selectedCompany, employees } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Salarisverwerking');
 
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -295,7 +297,7 @@ export default function PayrollProcessing() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loonverwerking</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Bereken en verwerk salarissen
@@ -415,7 +417,8 @@ export default function PayrollProcessing() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Loonberekeningen ({calculations.filter(c => c.payrollPeriodId === selectedPeriod.id).length})
             </h2>
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
@@ -479,6 +482,57 @@ export default function PayrollProcessing() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {calculations.filter(c => c.payrollPeriodId === selectedPeriod.id).map((calc) => {
+                const employee = employees?.find((e: any) => e.id === calc.employeeId);
+                const employeeName = employee
+                  ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
+                  : calc.employeeId;
+                const paymentType = employee?.salaryInfo?.paymentType || 'unknown';
+                const paymentTypeLabel = paymentType === 'hourly' ? 'Uurloon' : paymentType === 'monthly' ? 'Maand' : paymentType === 'annual' ? 'Jaar' : '?';
+
+                return (
+                  <div key={calc.id} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{employeeName}</p>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        paymentType === 'hourly' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' :
+                        paymentType === 'monthly' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' :
+                        'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300'
+                      }`}>
+                        {paymentTypeLabel}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Normale uren</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{calc.regularHours}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Overuren</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{calc.overtimeHours}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Bruto loon</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">€{calc.grossPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500 dark:text-gray-400">Loonheffing</p>
+                        <p className="font-medium text-gray-900 dark:text-gray-100">€{calc.taxes.incomeTax.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Netto loon</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">€{calc.netPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </Card>
