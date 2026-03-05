@@ -12,7 +12,8 @@ import {
   ArrowDownLeft,
   TrendingUp,
   X,
-  Mail
+  Mail,
+  RotateCw
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -501,6 +502,44 @@ const IncomingInvoicesStats: React.FC = () => {
     }
   };
 
+  // Reprocess OCR for invoices with missing data
+  const [reprocessingOCR, setReprocessingOCR] = useState<string | null>(null);
+  const handleReprocessOCR = async (invoice: IncomingInvoice) => {
+    if (!invoice.id || !invoice.fileUrl) return;
+
+    try {
+      setReprocessingOCR(invoice.id);
+      const visionData = await extractWithClaudeVisionUrl(invoice.fileUrl);
+
+      if (!visionData || (visionData.supplierName === 'Onbekend' && visionData.amount === 0)) {
+        showError('OCR mislukt', 'Kon geen data uit het document halen');
+        return;
+      }
+
+      const invoiceRef = doc(db, 'incomingInvoices', invoice.id);
+      await updateDoc(invoiceRef, {
+        supplierName: visionData.supplierName || invoice.supplierName,
+        supplierInvoiceNumber: visionData.invoiceNumber || invoice.invoiceNumber,
+        subtotal: visionData.subtotal || invoice.amount,
+        amount: visionData.subtotal || invoice.amount,
+        vatAmount: visionData.vatAmount || invoice.vatAmount,
+        totalAmount: visionData.totalInclVat || invoice.totalAmount,
+        description: visionData.description || invoice.description,
+        invoiceDate: visionData.invoiceDate ? Timestamp.fromDate(new Date(visionData.invoiceDate)) : undefined,
+        ocrProcessed: true,
+        updatedAt: Timestamp.fromDate(new Date()),
+      });
+
+      await loadInvoices();
+      success('OCR voltooid', `Leverancier: ${visionData.supplierName}, Bedrag: €${visionData.totalInclVat?.toFixed(2)}`);
+    } catch (err) {
+      console.error('OCR reprocess error:', err);
+      showError('OCR fout', err instanceof Error ? err.message : 'OCR verwerking mislukt');
+    } finally {
+      setReprocessingOCR(null);
+    }
+  };
+
   // Download
   const handleDownload = (invoice: IncomingInvoice) => {
     const url = invoice.fileUrl || invoice.driveWebLink;
@@ -724,6 +763,18 @@ const IncomingInvoicesStats: React.FC = () => {
                               title="Markeer als betaald"
                             >
                               <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
+                            </button>
+                          )}
+
+                          {/* Reprocess OCR - for invoices with missing data */}
+                          {isAdmin && invoice.fileUrl && (invoice.supplierName === 'Onbekend' || invoice.totalAmount === 0) && (
+                            <button
+                              onClick={() => handleReprocessOCR(invoice)}
+                              disabled={reprocessingOCR === invoice.id}
+                              className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900 rounded-lg transition-colors disabled:opacity-50"
+                              title="Opnieuw OCR verwerken"
+                            >
+                              <RotateCw className={`w-4 h-4 text-purple-600 ${reprocessingOCR === invoice.id ? 'animate-spin' : ''}`} />
                             </button>
                           )}
 

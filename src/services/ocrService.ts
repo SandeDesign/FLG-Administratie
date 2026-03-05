@@ -164,7 +164,7 @@ export async function extractWithClaudeVisionUrl(fileUrl: string): Promise<Invoi
 // Extract with Claude via PHP proxy on internedata.nl (fallback for text-only)
 async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
   try {
-    const res = await fetch('https://internedata.nl/claude-ocr.php', {
+    const res = await fetch('/.netlify/functions/claude-ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ocrText }),
