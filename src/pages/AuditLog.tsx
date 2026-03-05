@@ -251,8 +251,8 @@ const AuditLogPage: React.FC = () => {
               description="Geen audit logs gevonden voor de geselecteerde filters."
             />
           ) : (
-            {/* Desktop tabel */}
-            <div className="hidden md:block overflow-x-auto">
+            <>
+              <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
@@ -303,6 +303,7 @@ const AuditLogPage: React.FC = () => {
                 </div>
               ))}
             </div>
+            </>
           )}
         </div>
       </Card>

@@ -286,8 +286,8 @@ const TaxReturns: React.FC = () => {
               onAction={() => showError('Nieuwe aangifte', 'Deze functionaliteit wordt nog geïmplementeerd.')}
             />
           ) : (
-            {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
+            <>
+              <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
@@ -410,6 +410,7 @@ const TaxReturns: React.FC = () => {
                 </div>
               ))}
             </div>
+            </>
           )}
         </div>
       </Card>

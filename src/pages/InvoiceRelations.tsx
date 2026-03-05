@@ -1,22 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Mail,
-  Phone,
-  MapPin,
-  Building2,
-  X,
-  Users,
-  Truck,
-  FileText,
-  Euro,
-  ChevronRight,
-  Globe,
-  Hash,
-} from 'lucide-react';
+import { Plus, Search, CreditCard as Edit, Trash2, Mail, Phone, MapPin, Building2, X, Users, Truck, FileText, Euro, ChevronRight, Globe, Hash } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Card from '../components/ui/Card';
@@ -478,8 +461,8 @@ const InvoiceRelations: React.FC = () => {
               action={<Button onClick={handleCreate} icon={Plus}>Nieuwe Klant</Button>}
             />
           ) : (
-            {/* Desktop tabel */}
-            <Card className="hidden md:block">
+            <>
+              <Card className="hidden md:block">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-900">
@@ -556,6 +539,7 @@ const InvoiceRelations: React.FC = () => {
                 </Card>
               ))}
             </div>
+            </>
           )}
         </>
       )}
@@ -617,8 +601,8 @@ const InvoiceRelations: React.FC = () => {
                 : 'Leveranciers worden automatisch aangemaakt wanneer je een inkoopbon goedkeurt'}
             />
           ) : (
-            {/* Desktop tabel */}
-            <Card className="hidden md:block">
+            <>
+              <Card className="hidden md:block">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-900">
@@ -713,6 +697,7 @@ const InvoiceRelations: React.FC = () => {
                 </Card>
               ))}
             </div>
+            </>
           )}
         </>
       )}

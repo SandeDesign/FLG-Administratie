@@ -1,16 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Users, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
-  Shield,
-  Mail,
-  Ban,
-  UserCheck,
-  AlertCircle
-} from 'lucide-react';
+import { Users, Plus, CreditCard as Edit, Trash2, Search, Shield, Mail, Ban, UserCheck, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import Card from '../components/ui/Card';
@@ -320,8 +309,8 @@ const AdminUsers: React.FC = () => {
           }
         />
       ) : (
-        {/* Desktop Table */}
-        <Card className="hidden md:block">
+        <>
+          <Card className="hidden md:block">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
@@ -476,6 +465,7 @@ const AdminUsers: React.FC = () => {
             </Card>
           ))}
         </div>
+        </>
       )}
     </div>
   );
