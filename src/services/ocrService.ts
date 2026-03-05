@@ -67,21 +67,23 @@ async function extractWithClaudeVision(file: File): Promise<InvoiceData | null> 
     });
 
     if (!res.ok) {
-      console.log('Claude Vision returned non-OK status, falling back');
+      const errText = await res.text();
+      console.error('❌ Claude Vision HTTP error:', res.status, errText);
       return null;
     }
 
     const responseText = await res.text();
+    console.log('📋 Claude Vision response:', responseText.substring(0, 500));
     let data;
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.log('Claude Vision returned non-JSON, falling back');
+      console.error('❌ Claude Vision returned non-JSON:', responseText.substring(0, 500));
       return null;
     }
 
     if (!data.success || !data.invoiceData) {
-      console.log('Claude Vision returned error, falling back');
+      console.error('❌ Claude Vision returned error:', JSON.stringify(data));
       return null;
     }
 
@@ -103,7 +105,7 @@ async function extractWithClaudeVision(file: File): Promise<InvoiceData | null> 
       rawText: `[Claude Vision extraction] ${d.supplierName || ''} - ${d.invoiceNumber || ''}`,
     };
   } catch (err) {
-    console.log('Claude Vision failed, falling back:', err);
+    console.error('❌ Claude Vision network/fetch failed:', err);
     return null;
   }
 }
@@ -118,21 +120,23 @@ export async function extractWithClaudeVisionUrl(fileUrl: string): Promise<Invoi
     });
 
     if (!res.ok) {
-      console.log('Claude Vision URL returned non-OK status');
+      const errText = await res.text();
+      console.error('❌ Claude Vision URL HTTP error:', res.status, errText);
       return null;
     }
 
     const responseText = await res.text();
+    console.log('📋 Claude Vision URL response:', responseText.substring(0, 500));
     let data;
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.log('Claude Vision URL returned non-JSON');
+      console.error('❌ Claude Vision URL returned non-JSON:', responseText.substring(0, 500));
       return null;
     }
 
     if (!data.success || !data.invoiceData) {
-      console.log('Claude Vision URL returned error');
+      console.error('❌ Claude Vision URL returned error:', JSON.stringify(data));
       return null;
     }
 
@@ -154,7 +158,7 @@ export async function extractWithClaudeVisionUrl(fileUrl: string): Promise<Invoi
       rawText: `[Claude Vision extraction] ${d.supplierName || ''} - ${d.invoiceNumber || ''}`,
     };
   } catch (err) {
-    console.log('Claude Vision URL failed:', err);
+    console.error('❌ Claude Vision URL network/fetch failed:', err);
     return null;
   }
 }
@@ -169,22 +173,24 @@ async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
     });
 
     if (!res.ok) {
-      console.log('Claude OCR returned non-OK status, using basic extraction');
+      const errText = await res.text();
+      console.error('❌ Claude OCR HTTP error:', res.status, errText);
       return null;
     }
 
     const responseText = await res.text();
+    console.log('📋 Claude OCR response:', responseText.substring(0, 500));
 
     let data;
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.log('Claude OCR returned non-JSON, using basic extraction');
+      console.error('❌ Claude OCR returned non-JSON:', responseText.substring(0, 500));
       return null;
     }
 
     if (!data.success || !data.invoiceData) {
-      console.log('Claude OCR returned error, using basic extraction');
+      console.error('❌ Claude OCR returned error:', JSON.stringify(data));
       return null;
     }
 
@@ -201,7 +207,7 @@ async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
       rawText: ocrText,
     };
   } catch (err) {
-    console.log('Claude OCR failed, using basic extraction:', err);
+    console.error('❌ Claude OCR network/fetch failed:', err);
     return null;
   }
 }
