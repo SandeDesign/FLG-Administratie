@@ -34,11 +34,9 @@ async function getWorker() {
   return worker;
 }
 
-// Determine the Netlify function URL for Claude Vision OCR
+// Claude Vision OCR endpoint on internedata.nl
 function getClaudeVisionUrl(): string {
-  // In production, use relative path (same domain)
-  // In development, Netlify Dev serves functions at /.netlify/functions/
-  return '/.netlify/functions/claude-vision-ocr';
+  return 'https://internedata.nl/claude-vision-ocr.php';
 }
 
 // Convert File to base64
@@ -164,7 +162,7 @@ export async function extractWithClaudeVisionUrl(fileUrl: string): Promise<Invoi
 // Extract with Claude via PHP proxy on internedata.nl (fallback for text-only)
 async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
   try {
-    const res = await fetch('/.netlify/functions/claude-ocr', {
+    const res = await fetch('https://internedata.nl/claude-ocr.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ocrText }),
