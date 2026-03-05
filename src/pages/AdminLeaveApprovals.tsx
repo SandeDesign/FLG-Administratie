@@ -9,11 +9,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { useToast } from '../hooks/useToast';
 import { formatLeaveType } from '../utils/leaveCalculations';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const AdminLeaveApprovals: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { companies, employees, selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Verlof Goedkeuren');
   const [loading, setLoading] = useState(true);
   const [pendingRequests, setPendingRequests] = useState<LeaveRequest[]>([]);
   const [filterCompany, setFilterCompany] = useState<string>('all');
@@ -135,7 +137,7 @@ const AdminLeaveApprovals: React.FC = () => {
     <div className="space-y-5 px-4 sm:px-0 pb-6">
       {/* Header with Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Verlof Goedkeuren</h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{filteredRequests.length} aanvraag{filteredRequests.length !== 1 ? 'en' : ''} wachten</p>
         </div>

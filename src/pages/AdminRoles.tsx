@@ -27,6 +27,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 interface Permission {
   id: string;
@@ -93,6 +94,7 @@ const SYSTEM_PERMISSIONS: Permission[] = [
 const AdminRoles: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { success, error: showError } = useToast();
+  usePageTitle('Rollen & Rechten');
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -283,7 +285,7 @@ const AdminRoles: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Rollen & Rechten</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Beheer gebruikersrollen en hun toegangsrechten
