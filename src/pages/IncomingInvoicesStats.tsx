@@ -6,14 +6,15 @@ import {
   XCircle,
   Search,
   Download,
-  Eye,
   Edit2,
   Trash2,
   ArrowDownLeft,
   TrendingUp,
   X,
   Mail,
-  RotateCw
+  RotateCw,
+  MoreVertical,
+  Upload
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -51,6 +52,8 @@ const IncomingInvoicesStats: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isFetchingFromEmail, setIsFetchingFromEmail] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; invoice: IncomingInvoice } | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Load Invoices from Firestore
   const loadInvoices = useCallback(async () => {
@@ -550,6 +553,23 @@ const IncomingInvoicesStats: React.FC = () => {
     }
   };
 
+  // Close context menu on outside click or scroll
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    window.addEventListener('scroll', close, true);
+    return () => {
+      window.removeEventListener('click', close);
+      window.removeEventListener('scroll', close, true);
+    };
+  }, [contextMenu]);
+
+  const handleContextMenu = (e: React.MouseEvent, invoice: IncomingInvoice) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, invoice });
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('nl-NL', {
       style: 'currency',
@@ -586,14 +606,23 @@ const IncomingInvoicesStats: React.FC = () => {
           </p>
         </div>
         {(isAdmin || isManager) && (
-          <Button
-            onClick={handleFetchFromEmail}
-            loading={isFetchingFromEmail}
-            disabled={isFetchingFromEmail || !selectedCompany}
-          >
-            <Mail className="w-4 h-4 mr-2" />
-            Facturen ophalen uit mail
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setShowUploadModal(true)}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Factuur uploaden
+            </Button>
+            <Button
+              onClick={handleFetchFromEmail}
+              loading={isFetchingFromEmail}
+              disabled={isFetchingFromEmail || !selectedCompany}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Facturen ophalen uit mail
+            </Button>
+          </div>
         )}
       </div>
 
@@ -706,7 +735,11 @@ const IncomingInvoicesStats: React.FC = () => {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredInvoices.map(invoice => (
                   <React.Fragment key={invoice.id}>
-                    <tr className="hover:bg-gray-50 dark:bg-gray-900 transition-colors">
+                    <tr
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-900 transition-colors cursor-pointer select-none"
+                      onClick={() => setExpandedRow(expandedRow === invoice.id ? null : invoice.id)}
+                      onContextMenu={(e) => handleContextMenu(e, invoice)}
+                    >
                       <td className="px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
                         {invoice.supplierName}
                       </td>
@@ -723,73 +756,16 @@ const IncomingInvoicesStats: React.FC = () => {
                         <StatusBadge status={invoice.status} />
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end items-center gap-2">
-                          {/* View details - available to all */}
-                          <button
-                            onClick={() => setExpandedRow(expandedRow === invoice.id ? null : invoice.id)}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            title="Details bekijken"
-                          >
-                            <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                          </button>
-
-                          {/* Edit - available to admin and manager */}
-                          <button
-                            onClick={() => openEdit(invoice)}
-                            className="p-2 hover:bg-primary-100 dark:hover:bg-primary-900 rounded-lg transition-colors"
-                            title="Bewerken"
-                          >
-                            <Edit2 className="w-4 h-4 text-primary-600" />
-                          </button>
-
-                          {/* Approve - admin only */}
-                          {isAdmin && invoice.status === 'pending' && (
-                            <button
-                              onClick={() => handleApprove(invoice)}
-                              disabled={isSaving}
-                              className="p-2 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors disabled:opacity-50"
-                              title="Goedkeuren"
-                            >
-                              <CheckCircle className="w-4 h-4 text-green-600" />
-                            </button>
-                          )}
-
-                          {/* Mark as Paid - admin only */}
-                          {isAdmin && (invoice.status === 'approved' || invoice.status === 'pending') && (
-                            <button
-                              onClick={() => handleMarkPaid(invoice)}
-                              disabled={isSaving}
-                              className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900 rounded-lg transition-colors disabled:opacity-50"
-                              title="Markeer als betaald"
-                            >
-                              <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
-                            </button>
-                          )}
-
-                          {/* Reprocess OCR - for invoices with missing data */}
-                          {isAdmin && invoice.fileUrl && (invoice.supplierName === 'Onbekend' || invoice.totalAmount === 0) && (
-                            <button
-                              onClick={() => handleReprocessOCR(invoice)}
-                              disabled={reprocessingOCR === invoice.id}
-                              className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900 rounded-lg transition-colors disabled:opacity-50"
-                              title="Opnieuw OCR verwerken"
-                            >
-                              <RotateCw className={`w-4 h-4 text-purple-600 ${reprocessingOCR === invoice.id ? 'animate-spin' : ''}`} />
-                            </button>
-                          )}
-
-                          {/* Delete - admin only */}
-                          {isAdmin && (
-                            <button
-                              onClick={() => handleDelete(invoice.id!)}
-                              disabled={isDeleting === invoice.id}
-                              className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors disabled:opacity-50"
-                              title="Verwijderen"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </button>
-                          )}
-                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setContextMenu({ x: e.currentTarget.getBoundingClientRect().right, y: e.currentTarget.getBoundingClientRect().bottom, invoice });
+                          }}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          title="Acties"
+                        >
+                          <MoreVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        </button>
                       </td>
                     </tr>
 
@@ -1083,6 +1059,111 @@ const IncomingInvoicesStats: React.FC = () => {
               </Button>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 min-w-[200px]"
+          style={{
+            left: Math.min(contextMenu.x, window.innerWidth - 220),
+            top: Math.min(contextMenu.y, window.innerHeight - 300),
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Bewerken - iedereen */}
+          <button
+            onClick={() => { openEdit(contextMenu.invoice); setContextMenu(null); }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Edit2 className="w-4 h-4 text-primary-600" />
+            Bewerken
+          </button>
+
+          {/* Goedkeuren - admin, pending */}
+          {isAdmin && contextMenu.invoice.status === 'pending' && (
+            <button
+              onClick={() => { handleApprove(contextMenu.invoice); setContextMenu(null); }}
+              disabled={isSaving}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+            >
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              Goedkeuren
+            </button>
+          )}
+
+          {/* Betaald markeren - admin, pending/approved */}
+          {isAdmin && (contextMenu.invoice.status === 'approved' || contextMenu.invoice.status === 'pending') && (
+            <button
+              onClick={() => { handleMarkPaid(contextMenu.invoice); setContextMenu(null); }}
+              disabled={isSaving}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+            >
+              <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
+              Markeer als betaald
+            </button>
+          )}
+
+          {/* Opnieuw OCR - admin, onvolledige data */}
+          {isAdmin && contextMenu.invoice.fileUrl && (contextMenu.invoice.supplierName === 'Onbekend' || contextMenu.invoice.totalAmount === 0) && (
+            <button
+              onClick={() => { handleReprocessOCR(contextMenu.invoice); setContextMenu(null); }}
+              disabled={reprocessingOCR === contextMenu.invoice.id}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+            >
+              <RotateCw className={`w-4 h-4 text-purple-600 ${reprocessingOCR === contextMenu.invoice.id ? 'animate-spin' : ''}`} />
+              Opnieuw OCR verwerken
+            </button>
+          )}
+
+          {/* Download - als fileUrl beschikbaar */}
+          {(contextMenu.invoice.fileUrl || (contextMenu.invoice as any).driveWebLink) && (
+            <button
+              onClick={() => { handleDownload(contextMenu.invoice); setContextMenu(null); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Download className="w-4 h-4 text-gray-600" />
+              Download
+            </button>
+          )}
+
+          {/* Verwijderen - admin */}
+          {isAdmin && (
+            <>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+              <button
+                onClick={() => { handleDelete(contextMenu.invoice.id!); setContextMenu(null); }}
+                disabled={isDeleting === contextMenu.invoice.id}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                Verwijderen
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Factuur uploaden</h2>
+              <button
+                onClick={() => { setShowUploadModal(false); loadInvoices(); }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <iframe
+              src="/incoming-invoices"
+              className="flex-1 w-full border-0"
+              title="Factuur uploaden"
+            />
+          </div>
         </div>
       )}
     </div>
