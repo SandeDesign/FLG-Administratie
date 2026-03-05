@@ -1,7 +1,5 @@
 <?php
-// Increase limits for large base64 payloads (PDF files)
 ini_set('memory_limit', '256M');
-ini_set('post_max_size', '50M');
 ini_set('max_execution_time', '120');
 
 header('Content-Type: application/json');
@@ -9,146 +7,101 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); die(json_encode(['success' => false, 'error' => 'POST only'])); }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
-    exit();
-}
+$API_KEY = 'JOUW-ANTHROPIC-API-KEY-HIER'; // Vervang op internedata.nl met je echte key
 
-$apiKey = 'sk-ant-api03-JOUW-KEY-HIER'; // Vervang met je Anthropic API key
+$raw = file_get_contents('php://input');
+if (!$raw) { die(json_encode(['success' => false, 'error' => 'Empty body'])); }
 
-$rawInput = file_get_contents('php://input');
-if (!$rawInput) {
-    echo json_encode(['success' => false, 'error' => 'Empty request body. POST max size may be exceeded. Size limit: ' . ini_get('post_max_size')]);
-    exit();
-}
+$input = json_decode($raw, true);
+if (!$input) { die(json_encode(['success' => false, 'error' => 'Invalid JSON'])); }
 
-$input = json_decode($rawInput, true);
-if (!$input) {
-    echo json_encode(['success' => false, 'error' => 'Invalid JSON in request body. Length: ' . strlen($rawInput) . ' bytes']);
-    exit();
-}
-
+$base64 = $input['fileBase64'] ?? '';
+$mediaType = $input['fileMediaType'] ?? 'application/pdf';
 $fileUrl = $input['fileUrl'] ?? '';
-$fileBase64 = $input['fileBase64'] ?? '';
-$fileMediaType = $input['fileMediaType'] ?? 'application/pdf';
 
-if (!$fileUrl && !$fileBase64) {
-    echo json_encode(['success' => false, 'error' => 'fileUrl or fileBase64 is required']);
-    exit();
-}
-
-// Download file if URL provided
-if ($fileUrl && !$fileBase64) {
+// If URL given, download and convert to base64
+if ($fileUrl && !$base64) {
     $ch = curl_init($fileUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    $fileData = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_TIMEOUT => 30]);
+    $data = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $ct = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     curl_close($ch);
 
-    if ($httpCode !== 200 || !$fileData) {
-        echo json_encode(['success' => false, 'error' => 'Failed to download file: HTTP ' . $httpCode]);
-        exit();
-    }
+    if ($code !== 200 || !$data) { die(json_encode(['success' => false, 'error' => "Download failed: HTTP $code"])); }
 
-    $fileBase64 = base64_encode($fileData);
+    $base64 = base64_encode($data);
+    if ($ct) { $mediaType = explode(';', $ct)[0]; }
 
-    // Determine media type
-    if ($contentType && strpos($contentType, 'application/') !== false) {
-        $fileMediaType = explode(';', $contentType)[0];
-    }
-
-    // Guess from URL extension if needed
-    if ($fileMediaType === 'application/octet-stream' || !$fileMediaType) {
+    // Guess from extension if content-type is generic
+    if (in_array($mediaType, ['application/octet-stream', 'binary/octet-stream', ''])) {
         $ext = strtolower(pathinfo(parse_url($fileUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
-        $typeMap = ['pdf' => 'application/pdf', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'webp' => 'image/webp', 'gif' => 'image/gif'];
-        $fileMediaType = $typeMap[$ext] ?? 'application/pdf';
+        $map = ['pdf'=>'application/pdf','png'=>'image/png','jpg'=>'image/jpeg','jpeg'=>'image/jpeg','webp'=>'image/webp'];
+        $mediaType = $map[$ext] ?? 'application/pdf';
     }
 }
 
-// Build content block for Claude
-$extractionPrompt = "Je bent een expert Nederlandse factuur-scanner. Analyseer dit document (factuur, bon, of kassabon) en extraheer alle financiële gegevens.\n\nLet op:\n- Nederlandse bedragen gebruiken komma als decimaalteken (€ 1.234,56)\n- BTW is meestal 21% of 9%\n- Zoek naar: factuurnummer, factuurdatum, vervaldatum, bedragen, leveranciersnaam\n- Als je iets niet kunt vinden, gebruik null\n\nBELANGRIJK: Retourneer ALLEEN een JSON object, geen uitleg, geen tekst ervoor of erna:\n{\"supplierName\": \"bedrijfsnaam leverancier\", \"invoiceNumber\": \"factuurnummer\", \"invoiceDate\": \"YYYY-MM-DD\", \"dueDate\": \"YYYY-MM-DD of null\", \"subtotal\": 100.00, \"vatAmount\": 21.00, \"totalAmount\": 121.00, \"description\": \"korte omschrijving van de factuur\"}";
+if (!$base64) { die(json_encode(['success' => false, 'error' => 'No file data'])); }
 
-if ($fileMediaType === 'application/pdf') {
-    $fileContent = [
-        'type' => 'document',
-        'source' => [
-            'type' => 'base64',
-            'media_type' => 'application/pdf',
-            'data' => $fileBase64,
-        ],
-    ];
+// Build Claude API request
+$prompt = "Je bent een expert factuurscanner. Analyseer dit document en extraheer de gegevens.
+
+RETURN ONLY JSON, nothing else:
+{\"supplierName\":\"naam\",\"invoiceNumber\":\"nummer\",\"invoiceDate\":\"YYYY-MM-DD\",\"subtotal\":0.00,\"vatAmount\":0.00,\"totalAmount\":0.00,\"description\":\"korte omschrijving\"}
+
+Let op: Nederlandse bedragen met komma (1.234,56). BTW is 21% of 9%.";
+
+if ($mediaType === 'application/pdf') {
+    $content = [['type'=>'document','source'=>['type'=>'base64','media_type'=>'application/pdf','data'=>$base64]]];
 } else {
-    $allowedImageTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
-    $imageType = in_array($fileMediaType, $allowedImageTypes) ? $fileMediaType : 'image/jpeg';
-    $fileContent = [
-        'type' => 'image',
-        'source' => [
-            'type' => 'base64',
-            'media_type' => $imageType,
-            'data' => $fileBase64,
-        ],
-    ];
+    $allowed = ['image/png','image/jpeg','image/webp','image/gif'];
+    $type = in_array($mediaType, $allowed) ? $mediaType : 'image/jpeg';
+    $content = [['type'=>'image','source'=>['type'=>'base64','media_type'=>$type,'data'=>$base64]]];
 }
+$content[] = ['type'=>'text','text'=>$prompt];
 
-$requestBody = json_encode([
-    'model' => 'claude-sonnet-4-5-20250514', // or use 'claude-sonnet-4-6' for latest
-    'max_tokens' => 1000,
-    'messages' => [[
-        'role' => 'user',
-        'content' => [
-            $fileContent,
-            ['type' => 'text', 'text' => $extractionPrompt],
-        ],
-    ]],
+$body = json_encode([
+    'model' => 'claude-sonnet-4-20250514',
+    'max_tokens' => 1024,
+    'messages' => [['role'=>'user','content'=>$content]]
 ]);
 
 $ch = curl_init('https://api.anthropic.com/v1/messages');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $requestBody);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Content-Type: application/json',
-    'x-api-key: ' . $apiKey,
-    'anthropic-version: 2023-06-01',
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => $body,
+    CURLOPT_TIMEOUT => 60,
+    CURLOPT_HTTPHEADER => [
+        'Content-Type: application/json',
+        'x-api-key: ' . $API_KEY,
+        'anthropic-version: 2023-06-01'
+    ]
 ]);
-curl_setopt($ch, CURLOPT_TIMEOUT, 60);
 
 $response = curl_exec($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
+$err = curl_error($ch);
 curl_close($ch);
 
-if ($curlError) {
-    echo json_encode(['success' => false, 'error' => 'cURL error: ' . $curlError]);
-    exit();
-}
+if ($err) { die(json_encode(['success'=>false,'error'=>"cURL: $err"])); }
+if ($httpCode !== 200) { die(json_encode(['success'=>false,'error'=>"Claude API HTTP $httpCode",'details'=>$response])); }
 
-if ($httpCode !== 200) {
-    echo json_encode(['success' => false, 'error' => 'Claude API error: HTTP ' . $httpCode, 'details' => $response]);
-    exit();
-}
+$result = json_decode($response, true);
+$text = $result['content'][0]['text'] ?? '';
 
-$data = json_decode($response, true);
-$text = $data['content'][0]['text'] ?? '';
-$clean = preg_replace('/```json?\n?|\n?```/', '', trim($text));
-
-// Parse JSON from response
-if (preg_match('/\{[\s\S]*\}/s', $clean, $matches)) {
-    $invoiceData = json_decode($matches[0], true);
-    if ($invoiceData) {
-        echo json_encode(['success' => true, 'invoiceData' => $invoiceData]);
+// Extract JSON from response
+$clean = preg_replace('/```json?\s*|\s*```/', '', trim($text));
+if (preg_match('/\{[\s\S]*\}/s', $clean, $m)) {
+    $invoice = json_decode($m[0], true);
+    if ($invoice) {
+        echo json_encode(['success'=>true,'invoiceData'=>$invoice]);
     } else {
-        echo json_encode(['success' => false, 'error' => 'Invalid JSON in response', 'raw' => $clean]);
+        echo json_encode(['success'=>false,'error'=>'JSON parse failed','raw'=>$clean]);
     }
 } else {
-    echo json_encode(['success' => false, 'error' => 'No JSON found in response', 'raw' => $clean]);
+    echo json_encode(['success'=>false,'error'=>'No JSON in Claude response','raw'=>$text]);
 }
