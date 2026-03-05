@@ -21,6 +21,7 @@ export interface InvoiceData {
   vatAmount: number;
   vatRate: number;
   totalInclVat: number;
+  description?: string;
   rawText: string;
 }
 
@@ -33,7 +34,134 @@ async function getWorker() {
   return worker;
 }
 
-// Extract with Claude via PHP proxy on internedata.nl
+// Determine the Netlify function URL for Claude Vision OCR
+function getClaudeVisionUrl(): string {
+  // In production, use relative path (same domain)
+  // In development, Netlify Dev serves functions at /.netlify/functions/
+  return '/.netlify/functions/claude-vision-ocr';
+}
+
+// Convert File to base64
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove data URL prefix (e.g., "data:application/pdf;base64,")
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Extract with Claude Vision (primary method - sends file directly to Claude)
+async function extractWithClaudeVision(file: File): Promise<InvoiceData | null> {
+  try {
+    const base64 = await fileToBase64(file);
+    const mediaType = file.type || 'application/pdf';
+
+    const res = await fetch(getClaudeVisionUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileBase64: base64, fileMediaType: mediaType }),
+    });
+
+    if (!res.ok) {
+      console.log('Claude Vision returned non-OK status, falling back');
+      return null;
+    }
+
+    const responseText = await res.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.log('Claude Vision returned non-JSON, falling back');
+      return null;
+    }
+
+    if (!data.success || !data.invoiceData) {
+      console.log('Claude Vision returned error, falling back');
+      return null;
+    }
+
+    const d = data.invoiceData;
+    const totalAmount = Number(d.totalAmount) || 0;
+    const subtotal = Number(d.subtotal) || Number(d.subtotalExclVat) || totalAmount / 1.21 || 0;
+    const vatAmount = Number(d.vatAmount) || totalAmount - subtotal || 0;
+
+    return {
+      supplierName: d.supplierName || 'Onbekend',
+      invoiceNumber: d.invoiceNumber || `INV-${Date.now()}`,
+      invoiceDate: d.invoiceDate ? new Date(d.invoiceDate) : new Date(),
+      amount: totalAmount,
+      subtotal,
+      vatAmount,
+      vatRate: 21,
+      totalInclVat: totalAmount,
+      description: d.description || '',
+      rawText: `[Claude Vision extraction] ${d.supplierName || ''} - ${d.invoiceNumber || ''}`,
+    };
+  } catch (err) {
+    console.log('Claude Vision failed, falling back:', err);
+    return null;
+  }
+}
+
+// Extract with Claude Vision from URL (for email imports)
+export async function extractWithClaudeVisionUrl(fileUrl: string): Promise<InvoiceData | null> {
+  try {
+    const res = await fetch(getClaudeVisionUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileUrl }),
+    });
+
+    if (!res.ok) {
+      console.log('Claude Vision URL returned non-OK status');
+      return null;
+    }
+
+    const responseText = await res.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.log('Claude Vision URL returned non-JSON');
+      return null;
+    }
+
+    if (!data.success || !data.invoiceData) {
+      console.log('Claude Vision URL returned error');
+      return null;
+    }
+
+    const d = data.invoiceData;
+    const totalAmount = Number(d.totalAmount) || 0;
+    const subtotal = Number(d.subtotal) || Number(d.subtotalExclVat) || totalAmount / 1.21 || 0;
+    const vatAmount = Number(d.vatAmount) || totalAmount - subtotal || 0;
+
+    return {
+      supplierName: d.supplierName || 'Onbekend',
+      invoiceNumber: d.invoiceNumber || `INV-${Date.now()}`,
+      invoiceDate: d.invoiceDate ? new Date(d.invoiceDate) : new Date(),
+      amount: totalAmount,
+      subtotal,
+      vatAmount,
+      vatRate: 21,
+      totalInclVat: totalAmount,
+      description: d.description || '',
+      rawText: `[Claude Vision extraction] ${d.supplierName || ''} - ${d.invoiceNumber || ''}`,
+    };
+  } catch (err) {
+    console.log('Claude Vision URL failed:', err);
+    return null;
+  }
+}
+
+// Extract with Claude via PHP proxy on internedata.nl (fallback for text-only)
 async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
   try {
     const res = await fetch('https://internedata.nl/claude-ocr.php', {
@@ -42,13 +170,11 @@ async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
       body: JSON.stringify({ ocrText }),
     });
 
-    // Any non-OK response -> fallback to basic
     if (!res.ok) {
       console.log('Claude OCR returned non-OK status, using basic extraction');
       return null;
     }
 
-    // Get response as text first to safely parse
     const responseText = await res.text();
 
     let data;
@@ -86,7 +212,6 @@ async function extractWithClaude(ocrText: string): Promise<InvoiceData | null> {
 function extractBasic(text: string): InvoiceData {
   const lines = text.split('\n').filter(l => l.trim());
 
-  // Find supplier (first non-numeric line)
   let supplierName = 'Onbekend';
   for (const line of lines.slice(0, 10)) {
     if (line.length > 3 && !/^\d/.test(line)) {
@@ -95,21 +220,18 @@ function extractBasic(text: string): InvoiceData {
     }
   }
 
-  // Find invoice number
   let invoiceNumber = `INV-${Date.now()}`;
   const invMatch = text.match(/(?:factuurnummer|invoice|inv\.?|factuur)[\s:]*([A-Z0-9-]+)/i);
   if (invMatch) {
     invoiceNumber = invMatch[1];
   }
 
-  // Find date
   let invoiceDate = new Date();
   const dateMatch = text.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
   if (dateMatch) {
     invoiceDate = new Date(+dateMatch[3], +dateMatch[2] - 1, +dateMatch[1]);
   }
 
-  // Find amounts
   const amounts: number[] = [];
   const amountMatches = text.matchAll(/€?\s*(\d+[.,]\d{2})/g);
   for (const m of amountMatches) {
@@ -134,7 +256,7 @@ function extractBasic(text: string): InvoiceData {
   };
 }
 
-// OCR image
+// OCR image (Tesseract fallback)
 async function ocrImage(file: File, onProgress?: (n: number) => void): Promise<OCRResult> {
   onProgress?.(10);
   const w = await getWorker();
@@ -149,7 +271,7 @@ async function ocrImage(file: File, onProgress?: (n: number) => void): Promise<O
   };
 }
 
-// OCR PDF
+// OCR PDF (Tesseract fallback)
 async function ocrPdf(file: File, onProgress?: (n: number) => void): Promise<OCRResult> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -187,20 +309,33 @@ async function ocrPdf(file: File, onProgress?: (n: number) => void): Promise<OCR
   };
 }
 
-// Main export
+// Main export — tries Claude Vision first, then Tesseract + Claude text, then basic regex
 export async function processInvoiceFile(
   file: File,
   onProgress?: (n: number) => void
 ): Promise<OCRResult & { invoiceData: InvoiceData }> {
-  let ocrResult: OCRResult;
+  // Step 1: Try Claude Vision directly (best quality, works on Dutch invoices + receipts)
+  onProgress?.(10);
+  const visionResult = await extractWithClaudeVision(file);
+  if (visionResult) {
+    onProgress?.(100);
+    return {
+      text: visionResult.rawText,
+      confidence: 95,
+      pages: [{ pageNumber: 1, text: visionResult.rawText, confidence: 95 }],
+      invoiceData: visionResult,
+    };
+  }
 
+  // Step 2: Fallback to Tesseract OCR + Claude text extraction
+  onProgress?.(20);
+  let ocrResult: OCRResult;
   if (file.type === 'application/pdf') {
     ocrResult = await ocrPdf(file, onProgress);
   } else {
     ocrResult = await ocrImage(file, onProgress);
   }
 
-  // Try Claude first, fallback to basic extraction
   const invoiceData = (await extractWithClaude(ocrResult.text)) || extractBasic(ocrResult.text);
 
   return { ...ocrResult, invoiceData };

@@ -28,6 +28,7 @@ import {
 import { doc, updateDoc, deleteDoc, Timestamp, deleteField, addDoc, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { generateIncomingInvoiceReference } from '../services/incomingInvoiceService';
+import { extractWithClaudeVisionUrl } from '../services/ocrService';
 
 const IncomingInvoicesStats: React.FC = () => {
   const { user, adminUserId, userRole } = useAuth();
@@ -327,41 +328,47 @@ const IncomingInvoicesStats: React.FC = () => {
 
       for (const emailInvoice of invoicesFromEmail) {
         try {
-          // Genereer een echt INK-YYYY-#### referentienummer
           const referenceNumber = await generateIncomingInvoiceReference(selectedCompany.id);
 
-          const subtotal = parseFloat(emailInvoice.subtotal || emailInvoice.amount || emailInvoice.bedrag || 0);
-          const vatAmount = parseFloat(emailInvoice.vatAmount || emailInvoice.vat_amount || emailInvoice.btw || 0);
-          const totalAmount = parseFloat(emailInvoice.totalAmount || emailInvoice.total_amount || emailInvoice.totaal || 0) || (subtotal + vatAmount);
-
-          const invoiceDate = emailInvoice.invoiceDate || emailInvoice.invoice_date || emailInvoice.factuurdatum;
-          const dueDate = emailInvoice.dueDate || emailInvoice.due_date || emailInvoice.vervaldatum;
-
-          // fileUrl en fileName uit Make response
+          // File info from Make.com (minimal: just URL, email, filename)
           const fileUrl = emailInvoice.fileUrl || emailInvoice.file_url || emailInvoice.bestandUrl || '';
+          const supplierEmail = emailInvoice.supplierEmail || emailInvoice.supplier_email || emailInvoice.email || '';
           const originalFileName = emailInvoice.fileName || emailInvoice.file_name || emailInvoice.bestandsnaam || '';
           const fileExtension = originalFileName ? originalFileName.split('.').pop() : 'pdf';
+
+          // Use Claude Vision to extract invoice data from the file
+          let visionData = fileUrl ? await extractWithClaudeVisionUrl(fileUrl) : null;
+
+          // Use extracted data if available, otherwise fall back to Make.com data
+          const supplierName = visionData?.supplierName || emailInvoice.supplierName || emailInvoice.supplier_name || emailInvoice.leverancier || 'Onbekend';
+          const subtotal = visionData?.subtotal || parseFloat(emailInvoice.subtotal || emailInvoice.amount || emailInvoice.bedrag || 0);
+          const vatAmount = visionData?.vatAmount || parseFloat(emailInvoice.vatAmount || emailInvoice.vat_amount || emailInvoice.btw || 0);
+          const totalAmount = visionData?.totalInclVat || parseFloat(emailInvoice.totalAmount || emailInvoice.total_amount || emailInvoice.totaal || 0) || (subtotal + vatAmount);
+          const supplierInvoiceNumber = visionData?.invoiceNumber || emailInvoice.invoiceNumber || emailInvoice.invoice_number || emailInvoice.factuurnummer || '';
+          const description = visionData?.description || emailInvoice.description || emailInvoice.omschrijving || '';
+
+          const invoiceDate = visionData?.invoiceDate || (emailInvoice.invoiceDate || emailInvoice.invoice_date || emailInvoice.factuurdatum ? new Date(emailInvoice.invoiceDate || emailInvoice.invoice_date || emailInvoice.factuurdatum) : null);
+          const dueDate = emailInvoice.dueDate || emailInvoice.due_date || emailInvoice.vervaldatum;
 
           const invoiceData: any = {
             userId: adminUserId,
             companyId: selectedCompany.id,
             referenceNumber,
             invoiceNumber: referenceNumber,
-            supplierInvoiceNumber: emailInvoice.invoiceNumber || emailInvoice.invoice_number || emailInvoice.factuurnummer || '',
-            supplierName: emailInvoice.supplierName || emailInvoice.supplier_name || emailInvoice.leverancier || 'Onbekend',
-            supplierEmail: emailInvoice.supplierEmail || emailInvoice.supplier_email || emailInvoice.email || '',
+            supplierInvoiceNumber,
+            supplierName,
+            supplierEmail,
             amount: subtotal,
             subtotal: subtotal,
             vatAmount: vatAmount,
             totalAmount: totalAmount,
-            description: emailInvoice.description || emailInvoice.omschrijving || '',
+            description,
             invoiceDate: Timestamp.fromDate(invoiceDate ? new Date(invoiceDate) : now),
             dueDate: Timestamp.fromDate(dueDate ? new Date(dueDate) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)),
             status: 'pending' as const,
             fileName: `${referenceNumber}.${fileExtension}`,
             fileUrl: fileUrl,
-            driveWebLink: emailInvoice.driveWebLink || emailInvoice.drive_web_link || '',
-            ocrProcessed: false,
+            ocrProcessed: !!visionData,
             createdAt: Timestamp.fromDate(now),
             updatedAt: Timestamp.fromDate(now),
             source: 'email',
