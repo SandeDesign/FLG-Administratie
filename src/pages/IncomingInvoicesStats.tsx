@@ -612,7 +612,7 @@ const IncomingInvoicesStats: React.FC = () => {
               onClick={() => setShowUploadModal(true)}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Factuur uploaden
+              Uploaden
             </Button>
             <Button
               onClick={handleFetchFromEmail}
@@ -620,7 +620,7 @@ const IncomingInvoicesStats: React.FC = () => {
               disabled={isFetchingFromEmail || !selectedCompany}
             >
               <Mail className="w-4 h-4 mr-2" />
-              Facturen ophalen uit mail
+              Mail
             </Button>
           </div>
         )}
