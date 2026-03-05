@@ -27,7 +27,7 @@ import {
   incomingInvoiceService,
   IncomingInvoice,
 } from '../services/incomingInvoiceService';
-import { doc, updateDoc, deleteDoc, Timestamp, deleteField, addDoc, collection } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, Timestamp, deleteField, addDoc, collection, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { generateIncomingInvoiceReference } from '../services/incomingInvoiceService';
 import { extractWithClaudeVisionUrl } from '../services/ocrService';
@@ -511,8 +511,40 @@ const IncomingInvoicesStats: React.FC = () => {
 
     try {
       setIsDeleting(invoiceId);
+
+      // Find the invoice to get its reference number and companyId
+      const invoice = invoices.find(inv => inv.id === invoiceId);
       const invoiceRef = doc(db, 'incomingInvoices', invoiceId);
       await deleteDoc(invoiceRef);
+
+      // Try to decrement the counter if this was the last reference number
+      const refNum = invoice?.invoiceNumber || (invoice as any)?.referenceNumber;
+      if (refNum && invoice?.companyId) {
+        try {
+          const match = refNum.match(/^INK-(\d{4})-(\d+)$/);
+          if (match) {
+            const refYear = parseInt(match[1]);
+            const refNumber = parseInt(match[2]);
+            const counterRef = doc(db, 'companies', invoice.companyId, 'counters', 'incomingInvoices');
+
+            await runTransaction(db, async (transaction) => {
+              const counterDoc = await transaction.get(counterRef);
+              if (counterDoc.exists()) {
+                const data = counterDoc.data();
+                // Only decrement if this was the last number (counter.number - 1 === refNumber)
+                if (data.year === refYear && data.number - 1 === refNumber) {
+                  transaction.update(counterRef, {
+                    number: refNumber,
+                    lastUpdated: Timestamp.now(),
+                  });
+                }
+              }
+            });
+          }
+        } catch (counterErr) {
+          console.error('Counter decrement failed (non-critical):', counterErr);
+        }
+      }
 
       setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
       success('Factuur verwijderd');
