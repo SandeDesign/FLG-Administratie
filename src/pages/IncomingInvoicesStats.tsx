@@ -1159,7 +1159,7 @@ const IncomingInvoicesStats: React.FC = () => {
               </button>
             </div>
             <iframe
-              src="/incoming-invoices"
+              src="/incoming-invoices?embed=true"
               className="flex-1 w-full border-0"
               title="Factuur uploaden"
             />
