@@ -25,6 +25,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const tasksReminderRef = useRef<WeeklyTasksReminderRef>(null);
 
+  // Embed mode: render only the page content without layout chrome
+  const isEmbed = new URLSearchParams(location.search).get('embed') === 'true';
+  if (isEmbed) {
+    return <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">{children}</div>;
+  }
+
   const canGoBack = location.pathname !== '/';
 
   const handleBackClick = () => {
