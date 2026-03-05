@@ -1,4 +1,9 @@
 <?php
+// Increase limits for large base64 payloads (PDF files)
+ini_set('memory_limit', '256M');
+ini_set('post_max_size', '50M');
+ini_set('max_execution_time', '120');
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -17,7 +22,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $apiKey = 'sk-ant-api03-JOUW-KEY-HIER'; // Vervang met je Anthropic API key
 
-$input = json_decode(file_get_contents('php://input'), true);
+$rawInput = file_get_contents('php://input');
+if (!$rawInput) {
+    echo json_encode(['success' => false, 'error' => 'Empty request body. POST max size may be exceeded. Size limit: ' . ini_get('post_max_size')]);
+    exit();
+}
+
+$input = json_decode($rawInput, true);
+if (!$input) {
+    echo json_encode(['success' => false, 'error' => 'Invalid JSON in request body. Length: ' . strlen($rawInput) . ' bytes']);
+    exit();
+}
+
 $fileUrl = $input['fileUrl'] ?? '';
 $fileBase64 = $input['fileBase64'] ?? '';
 $fileMediaType = $input['fileMediaType'] ?? 'application/pdf';
@@ -84,7 +100,7 @@ if ($fileMediaType === 'application/pdf') {
 }
 
 $requestBody = json_encode([
-    'model' => 'claude-sonnet-4-5-20250514',
+    'model' => 'claude-sonnet-4-5-20250514', // or use 'claude-sonnet-4-6' for latest
     'max_tokens' => 1000,
     'messages' => [[
         'role' => 'user',
