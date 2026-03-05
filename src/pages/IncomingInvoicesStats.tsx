@@ -31,6 +31,7 @@ import { doc, updateDoc, deleteDoc, Timestamp, deleteField, addDoc, collection }
 import { db } from '../lib/firebase';
 import { generateIncomingInvoiceReference } from '../services/incomingInvoiceService';
 import { extractWithClaudeVisionUrl } from '../services/ocrService';
+import { supplierService } from '../services/supplierService';
 
 const IncomingInvoicesStats: React.FC = () => {
   const { user, adminUserId, userRole } = useAuth();
@@ -150,6 +151,23 @@ const IncomingInvoicesStats: React.FC = () => {
         approvedBy: adminUserId,
         updatedAt: Timestamp.fromDate(new Date()),
       });
+
+      // Leverancier toevoegen/bijwerken in suppliers collectie
+      try {
+        await supplierService.upsertSupplier(
+          invoice.companyId,
+          invoice.supplierName,
+          invoice.supplierEmail || undefined,
+          {
+            amount: invoice.amount,
+            vatAmount: invoice.vatAmount,
+            totalAmount: invoice.totalAmount,
+            invoiceDate: invoice.invoiceDate,
+          }
+        );
+      } catch (supplierErr) {
+        console.error('Supplier upsert failed:', supplierErr);
+      }
 
       setInvoices(prev =>
         prev.map(inv =>
