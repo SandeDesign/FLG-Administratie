@@ -1108,7 +1108,7 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Welcome Hero */}
-        <div className="bg-gradient-to-br from-green-500 via-green-400 to-emerald-600 rounded-xl p-6 text-white space-y-3">
+        <div className="hidden lg:block bg-gradient-to-br from-green-500 via-green-400 to-emerald-600 rounded-xl p-6 text-white space-y-3">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold">Welkom terug!</h1>

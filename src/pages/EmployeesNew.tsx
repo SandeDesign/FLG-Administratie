@@ -10,6 +10,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import EmployeeModal from '../components/employee/EmployeeModal';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const DEFAULT_PASSWORD = 'DeInstallatie1234!!';
 
@@ -17,6 +18,7 @@ const EmployeesNew: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { companies, selectedCompany, refreshDashboardStats } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Werknemers');
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -162,7 +164,7 @@ const EmployeesNew: React.FC = () => {
     <div className="space-y-4 md:space-y-6 px-4 md:px-0">
       {/* Header - Mobiel vriendelijk */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Werknemers</h1>
           <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1 md:mt-2">
             Beheer je werknemers en hun gegevens

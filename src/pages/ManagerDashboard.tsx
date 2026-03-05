@@ -19,6 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 interface ProductionWeek {
   id: string;
@@ -43,6 +44,7 @@ const ManagerDashboard: React.FC = () => {
   const { user } = useAuth();
   const { selectedCompany, queryUserId, employees } = useApp();
   const navigate = useNavigate();
+  usePageTitle('Manager Dashboard');
 
   const [loading, setLoading] = useState(false);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
@@ -149,7 +151,7 @@ const ManagerDashboard: React.FC = () => {
   return (
     <div className="space-y-8 pb-24 sm:pb-0">
       {/* Header */}
-      <div className={`bg-gradient-to-r ${isProjectCompany ? 'from-emerald-600 to-emerald-700' : 'from-indigo-600 to-indigo-700'} rounded-2xl p-8 text-white shadow-lg`}>
+      <div className={`hidden lg:block bg-gradient-to-r ${isProjectCompany ? 'from-emerald-600 to-emerald-700' : 'from-indigo-600 to-indigo-700'} rounded-2xl p-8 text-white shadow-lg`}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-4xl font-bold mb-2">{isProjectCompany ? 'Project Dashboard' : 'Manager Dashboard'}</h1>

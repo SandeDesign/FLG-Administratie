@@ -18,6 +18,7 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 interface ExportPeriod {
   id: string;
@@ -70,6 +71,7 @@ const TimesheetExport: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Uren Export');
   const [exportPeriods, setExportPeriods] = useState<ExportPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -226,7 +228,7 @@ const TimesheetExport: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      <div className="hidden lg:block">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Uren Export</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Exporteer urenregistraties naar loonadministratie voor {selectedCompany.name}

@@ -17,6 +17,7 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 interface EmployeeTimesheetSummary {
   employeeId: string;
@@ -35,6 +36,7 @@ export default function TimesheetApprovals() {
   const { user, adminUserId } = useAuth();
   const { selectedCompany, employees } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Uren goedkeuren');
 
   const [loading, setLoading] = useState(true);
   const [timesheets, setTimesheets] = useState<WeeklyTimesheet[]>([]);
@@ -209,7 +211,7 @@ export default function TimesheetApprovals() {
   return (
     <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
       {/* Header */}
-      <div>
+      <div className="hidden lg:block">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Uren goedkeuren</h1>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
           {pendingCount} aanvraag{pendingCount !== 1 ? 'en' : ''} wachtend op goedkeuring
