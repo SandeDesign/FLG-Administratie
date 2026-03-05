@@ -29,6 +29,7 @@ import {
   PieChart,
   ListChecks,
   Mail,
+  FileInput,
 } from 'lucide-react';
 
 export type CompanyType = 'employer' | 'project' | 'holding' | 'shareholder' | 'investor';
@@ -76,6 +77,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Inkomende Post', href: '/incoming-post', icon: Mail, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Inkoop', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Bankafschrift Import', href: '/bank-statement-import', icon: FileInput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties Medewerkers', href: '/expenses', icon: Receipt, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
 
   // SYSTEEM SECTION (employer, project, holding, shareholder)
@@ -144,7 +146,7 @@ export const getNavigationSections = (
         title: 'Facturatie',
         icon: Receipt,
         defaultOpen: false,
-        items: filtered.filter(i => ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop'].includes(i.name)),
+        items: filtered.filter(i => ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)),
       },
       {
         title: 'Overig',
@@ -169,7 +171,7 @@ export const getNavigationSections = (
         icon: Receipt,
         defaultOpen: false,
         items: filtered.filter(i =>
-          ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop'].includes(i.name)
+          ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)
         ),
       },
       {
@@ -201,7 +203,7 @@ export const getNavigationSections = (
         icon: Receipt,
         defaultOpen: false,
         items: filtered.filter(i =>
-          ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop'].includes(i.name)
+          ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)
         ),
       },
       {
@@ -234,7 +236,7 @@ export const getNavigationSections = (
       icon: Receipt,
       defaultOpen: false,
       items: filtered.filter(i =>
-        ['Relaties', 'Begroting', 'Declaraties', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop'].includes(i.name)
+        ['Relaties', 'Begroting', 'Declaraties', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)
       ),
     },
     {
