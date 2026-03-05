@@ -28,7 +28,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Embed mode: render only the page content without layout chrome
   const isEmbed = new URLSearchParams(location.search).get('embed') === 'true';
   if (isEmbed) {
-    return <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">{children}</div>;
+    return <div className="bg-gray-50 dark:bg-gray-900 min-h-screen p-4 lg:p-6">{children}</div>;
   }
 
   const canGoBack = location.pathname !== '/';
