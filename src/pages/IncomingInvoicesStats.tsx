@@ -772,6 +772,7 @@ const IncomingInvoicesStats: React.FC = () => {
           description="Er zijn nog geen inkomende facturen"
         />
       ) : (
+        <>
         {/* Desktop Table */}
         <Card className="overflow-hidden hidden md:block">
           <div className="overflow-x-auto">
@@ -1005,6 +1006,7 @@ const IncomingInvoicesStats: React.FC = () => {
             </div>
           ))}
         </div>
+        </>
       )}
 
       {/* Edit Modal */}
