@@ -17,6 +17,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useApp } from '../contexts/AppContext'; // Import useApp
 
@@ -31,6 +32,7 @@ const TaxReturns: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { companies: appCompanies, selectedCompany: appSelectedCompany } = useApp(); // Get companies from AppContext
   const { success, error: showError } = useToast();
+  usePageTitle('Belastingaangifte');
   const [taxReturns, setTaxReturns] = useState<TaxReturn[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
@@ -139,7 +141,7 @@ const TaxReturns: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonaangiftes</h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Beheer uw loonaangiftes naar de Belastingdienst

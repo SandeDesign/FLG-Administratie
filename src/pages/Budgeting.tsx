@@ -59,6 +59,7 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 // Cost category configuration
 const COST_CATEGORY_CONFIG: Record<BudgetCostCategory, {
@@ -196,6 +197,7 @@ const Budgeting: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Begroting & Projecties');
   const exportRef = useRef<HTMLDivElement>(null);
 
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
@@ -861,7 +863,7 @@ const Budgeting: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Begroting & Projecties</h1>
+          <h1 className="hidden lg:block text-2xl font-bold text-gray-900 dark:text-gray-100">Begroting & Projecties</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Financieel overzicht voor {selectedCompany.name}
           </p>

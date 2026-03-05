@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { ExportJob, ExportType } from '../types/export';
 import { getExportJobs, createExportJob } from '../services/exportService';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import { EmptyState } from '../components/ui/EmptyState';
 
 const exportTypes: Array<{ type: ExportType; label: string; description: string; icon: any }> = [
@@ -53,6 +54,7 @@ export default function ExportsManagement() {
   const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Exports');
 
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -139,7 +141,7 @@ export default function ExportsManagement() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="hidden lg:block">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Exports</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
           Exporteer data naar verschillende formaten

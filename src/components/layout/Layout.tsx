@@ -7,6 +7,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
+import { usePageTitleValue } from '../../contexts/PageTitleContext';
 import Sidebar from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileFullScreenMenu } from './MobileFullScreenMenu';
@@ -24,6 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const tasksReminderRef = useRef<WeeklyTasksReminderRef>(null);
+  const pageTitle = usePageTitleValue();
 
   // Embed mode: render only the page content without layout chrome
   const isEmbed = new URLSearchParams(location.search).get('embed') === 'true';
@@ -69,17 +71,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </button>
           </div>
 
-          {/* CENTER: LOGO - Click to open Taken popup */}
-          <button
-            onClick={() => tasksReminderRef.current?.openManually()}
-            className="flex-shrink-0 mx-2 hover:opacity-80 transition-opacity"
-          >
-            {selectedCompany?.logoUrl ? (
-              <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className="h-12 w-auto max-w-[120px] object-contain" />
-            ) : (
-              <img src="/Logo_1.png" alt="FLG-Administratie Logo" className="h-12 w-auto" />
+          {/* CENTER: LOGO + Page Title */}
+          <div className="flex-shrink-0 mx-2 flex flex-col items-center min-w-0">
+            <button
+              onClick={() => tasksReminderRef.current?.openManually()}
+              className="hover:opacity-80 transition-opacity"
+            >
+              {selectedCompany?.logoUrl ? (
+                <img src={selectedCompany.logoUrl} alt={selectedCompany.name} className={`w-auto max-w-[120px] object-contain ${pageTitle ? 'h-8' : 'h-12'}`} />
+              ) : (
+                <img src="/Logo_1.png" alt="FLG-Administratie Logo" className={`w-auto ${pageTitle ? 'h-8' : 'h-12'}`} />
+              )}
+            </button>
+            {pageTitle && (
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate max-w-[160px]">
+                {pageTitle}
+              </span>
             )}
-          </button>
+          </div>
 
           {/* RIGHT: Company Selector */}
           <div className="flex-1 flex justify-end">

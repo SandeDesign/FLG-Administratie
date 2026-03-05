@@ -27,6 +27,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import { ALL_NAVIGATION_ITEMS, NavigationItem } from '../utils/menuConfig';
 import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibilitySettings';
 import { BottomNavSettings } from '../components/settings/BottomNavSettings';
@@ -38,6 +39,7 @@ const Settings: React.FC = () => {
   const { companies, selectedCompany, selectedYear, setSelectedYear } = useApp();
   const { success, error: showError } = useToast();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  usePageTitle('Instellingen');
   const [activeTab, setActiveTab] = useState<'account' | 'company'>('account');
   const [loading, setLoading] = useState(false);
   const [selectedDefaultCompanyId, setSelectedDefaultCompanyId] = useState<string>('');
@@ -435,7 +437,7 @@ const Settings: React.FC = () => {
   return (
     <div className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Instellingen</h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Beheer je account en voorkeuren

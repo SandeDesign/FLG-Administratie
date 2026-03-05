@@ -23,6 +23,8 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
+import ActionMenu from '../components/ui/ActionMenu';
 import {
   incomingInvoiceService,
   IncomingInvoice,
@@ -37,6 +39,7 @@ const IncomingInvoicesStats: React.FC = () => {
   const { user, adminUserId, userRole } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Inkoopbonnen');
 
   // ✅ Role-based permissions
   const isAdmin = userRole === 'admin';
@@ -647,7 +650,7 @@ const IncomingInvoicesStats: React.FC = () => {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Inkoop Bonnen
           </h1>
@@ -769,7 +772,8 @@ const IncomingInvoicesStats: React.FC = () => {
           description="Er zijn nog geen inkomende facturen"
         />
       ) : (
-        <Card className="overflow-hidden">
+        {/* Desktop Table */}
+        <Card className="overflow-hidden hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
@@ -885,6 +889,122 @@ const IncomingInvoicesStats: React.FC = () => {
             </table>
           </div>
         </Card>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3">
+          {filteredInvoices.map(invoice => (
+            <div
+              key={invoice.id}
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+              onClick={() => setExpandedRow(expandedRow === invoice.id ? null : invoice.id)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {invoice.supplierName}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    {invoice.invoiceNumber}
+                  </p>
+                </div>
+                <ActionMenu
+                  actions={[
+                    {
+                      label: 'Bewerken',
+                      icon: Edit2,
+                      onClick: () => openEdit(invoice),
+                    },
+                    ...(isAdmin && invoice.status === 'pending'
+                      ? [{
+                          label: 'Goedkeuren',
+                          icon: CheckCircle,
+                          onClick: () => handleApprove(invoice),
+                        }]
+                      : []),
+                    ...(isAdmin && (invoice.status === 'approved' || invoice.status === 'pending')
+                      ? [{
+                          label: 'Markeer als betaald',
+                          icon: ArrowDownLeft,
+                          onClick: () => handleMarkPaid(invoice),
+                        }]
+                      : []),
+                    ...(invoice.fileUrl || (invoice as any).driveWebLink
+                      ? [{
+                          label: 'Download',
+                          icon: Download,
+                          onClick: () => handleDownload(invoice),
+                        }]
+                      : []),
+                    ...(isAdmin
+                      ? [{
+                          label: 'Verwijderen',
+                          icon: Trash2,
+                          onClick: () => handleDelete(invoice.id!),
+                          variant: 'danger' as const,
+                        }]
+                      : []),
+                  ]}
+                />
+              </div>
+
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {formatDate(invoice.invoiceDate)}
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                  {formatCurrency(invoice.totalAmount)}
+                </span>
+              </div>
+
+              <div className="mt-2">
+                <StatusBadge status={invoice.status} />
+              </div>
+
+              {expandedRow === invoice.id && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Beschrijving</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {invoice.description}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">E-mail</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {invoice.supplierEmail || '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Vervaldatum</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {formatDate(invoice.dueDate)}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Excl. BTW</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {formatCurrency((invoice as any).subtotal || invoice.amount || 0)}
+                      </p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">BTW</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {formatCurrency(invoice.vatAmount)}
+                      </p>
+                    </div>
+                    <div className="bg-primary-50 p-2 rounded border border-primary-200">
+                      <p className="text-xs text-primary-600">Incl. BTW</p>
+                      <p className="text-sm font-bold text-primary-900">
+                        {formatCurrency(invoice.totalAmount)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Edit Modal */}

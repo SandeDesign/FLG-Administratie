@@ -69,6 +69,7 @@ import Tasks from './pages/Tasks';
 import BankStatementImport from './pages/BankStatementImport';
 import { AppProvider } from './contexts/AppContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
+import { PageTitleProvider } from './contexts/PageTitleContext';
 import { ToastContainer } from './components/ui/Toast';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
@@ -253,12 +254,14 @@ function App() {
     <AuthProvider>
       <DarkModeProvider>
         <AppProvider>
-          <Router>
-            <div className="App">
-              <AppContent />
-              <ToastContainer />
-            </div>
-          </Router>
+          <PageTitleProvider>
+            <Router>
+              <div className="App">
+                <AppContent />
+                <ToastContainer />
+              </div>
+            </Router>
+          </PageTitleProvider>
         </AppProvider>
       </DarkModeProvider>
     </AuthProvider>

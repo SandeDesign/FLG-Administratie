@@ -20,12 +20,14 @@ import { createPayslipFromCalculation } from '../services/payslipService';
 import { getCompany } from '../services/firebase';
 import { getWeeklyTimesheets } from '../services/timesheetService';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import { EmptyState } from '../components/ui/EmptyState';
 
 export default function PayrollProcessing() {
   const { user, adminUserId } = useAuth();
   const { selectedCompany, employees } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Salarisverwerking');
 
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -295,7 +297,7 @@ export default function PayrollProcessing() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loonverwerking</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Bereken en verwerk salarissen

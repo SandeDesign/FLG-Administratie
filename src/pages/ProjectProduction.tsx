@@ -18,6 +18,7 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
+import { usePageTitle } from '../contexts/PageTitleContext';
 import { collection, addDoc, Timestamp, getDocs, query, where, orderBy, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -56,6 +57,7 @@ const ProjectProduction: React.FC = () => {
   const { user, userRole } = useAuth();
   const { selectedCompany, employees, queryUserId } = useApp(); // ✅ Gebruik queryUserId ipv adminUserId
   const { success, error: showError } = useToast();
+  usePageTitle('Productie');
 
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
@@ -584,7 +586,7 @@ const ProjectProduction: React.FC = () => {
     <div className="space-y-3 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
       {/* Header */}
       <div className="space-y-3">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Productie Verwerking</h1>
           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
             Beheer productie voor {selectedCompany.name}

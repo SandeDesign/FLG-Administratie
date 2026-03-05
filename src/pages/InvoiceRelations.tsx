@@ -14,6 +14,8 @@ import {
   FileText,
   Euro,
   ChevronRight,
+  Globe,
+  Hash,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -28,6 +30,7 @@ import { db } from '../lib/firebase';
 import { supplierService } from '../services/supplierService';
 import { Supplier, Grootboekrekening } from '../types/supplier';
 import { IncomingInvoice } from '../services/incomingInvoiceService';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 export interface InvoiceRelation {
   id?: string;
@@ -59,6 +62,7 @@ const InvoiceRelations: React.FC = () => {
   const { user } = useAuth();
   const { selectedCompany, queryUserId } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Klanten & Leveranciers');
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabType>('klanten');
@@ -82,6 +86,10 @@ const InvoiceRelations: React.FC = () => {
     defaultAdditionalRecipients: []
   });
   const [newDefaultRecipient, setNewDefaultRecipient] = useState('');
+
+  // Klant detail modal state
+  const [selectedCustomer, setSelectedCustomer] = useState<InvoiceRelation | null>(null);
+  const [showCustomerDetailModal, setShowCustomerDetailModal] = useState(false);
 
   // Leveranciers state
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -302,6 +310,12 @@ const InvoiceRelations: React.FC = () => {
     }
   };
 
+  // Klant detail handler
+  const openCustomerDetail = (customer: InvoiceRelation) => {
+    setSelectedCustomer(customer);
+    setShowCustomerDetailModal(true);
+  };
+
   // Leverancier handlers
   const openSupplierDetail = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
@@ -381,14 +395,14 @@ const InvoiceRelations: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Klanten & Leveranciers</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Beheer klanten en leveranciers voor {selectedCompany.name}
           </p>
         </div>
         {activeTab === 'klanten' && (
-          <Button onClick={handleCreate} className="mt-4 sm:mt-0" icon={Plus}>
+          <Button onClick={handleCreate} className="mt-4 sm:mt-0 lg:mt-0" icon={Plus}>
             Nieuwe Klant
           </Button>
         )}
@@ -464,22 +478,23 @@ const InvoiceRelations: React.FC = () => {
               action={<Button onClick={handleCreate} icon={Plus}>Nieuwe Klant</Button>}
             />
           ) : (
-            <Card>
+            {/* Desktop tabel */}
+            <Card className="hidden md:block">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-900">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Naam</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Telefoon</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Telefoon</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">KvK</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Stad</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acties</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden xl:table-cell">Stad</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredRelations.map((relation) => (
-                      <tr key={relation.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                      <tr key={relation.id} onClick={() => openCustomerDetail(relation)} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors cursor-pointer">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mr-3">
@@ -496,22 +511,19 @@ const InvoiceRelations: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                          <a href={`mailto:${relation.email}`} className="hover:text-primary-600">{relation.email}</a>
+                          {relation.email}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
                           {relation.phone || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
                           {relation.kvk || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 hidden xl:table-cell">
                           {relation.address?.city || '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="flex justify-end space-x-1">
-                            <Button variant="ghost" size="sm" icon={Edit} onClick={() => handleEdit(relation)} />
-                            <Button variant="danger" size="sm" icon={Trash2} onClick={() => handleDelete(relation.id!)} />
-                          </div>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
                         </td>
                       </tr>
                     ))}
@@ -519,6 +531,31 @@ const InvoiceRelations: React.FC = () => {
                 </table>
               </div>
             </Card>
+
+            {/* Mobiele cards */}
+            <div className="md:hidden space-y-3">
+              {filteredRelations.map((relation) => (
+                <Card key={relation.id} className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors" onClick={() => openCustomerDetail(relation)}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center min-w-0">
+                      <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mr-3 flex-shrink-0">
+                        <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+                          {relation.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{relation.name}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{relation.email}</div>
+                        {relation.phone && (
+                          <div className="text-xs text-gray-400 dark:text-gray-500">{relation.phone}</div>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+                  </div>
+                </Card>
+              ))}
+            </div>
           )}
         </>
       )}
@@ -580,13 +617,14 @@ const InvoiceRelations: React.FC = () => {
                 : 'Leveranciers worden automatisch aangemaakt wanneer je een inkoopbon goedkeurt'}
             />
           ) : (
-            <Card>
+            {/* Desktop tabel */}
+            <Card className="hidden md:block">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-900">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Leverancier</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Email</th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Facturen</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Excl. BTW</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Incl. BTW</th>
@@ -610,11 +648,11 @@ const InvoiceRelations: React.FC = () => {
                             </div>
                             <div>
                               <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{supplier.supplierName}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 md:hidden">{supplier.supplierEmail || ''}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 lg:hidden">{supplier.supplierEmail || ''}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 hidden md:table-cell">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 hidden lg:table-cell">
                           {supplier.supplierEmail || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -643,11 +681,148 @@ const InvoiceRelations: React.FC = () => {
                 </table>
               </div>
             </Card>
+
+            {/* Mobiele leverancier cards */}
+            <div className="md:hidden space-y-3">
+              {filteredSuppliers.map((supplier) => (
+                <Card key={supplier.id} className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors" onClick={() => openSupplierDetail(supplier)}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center min-w-0">
+                      <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center mr-3 flex-shrink-0">
+                        <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                          {supplier.supplierName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{supplier.supplierName}</div>
+                        {supplier.supplierEmail && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{supplier.supplierEmail}</div>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                            {supplier.invoiceCount} facturen
+                          </span>
+                          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                            {formatCurrency(supplier.totalAmountIncVat)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+                  </div>
+                </Card>
+              ))}
+            </div>
           )}
         </>
       )}
 
-      {/* ===== KLANT MODAL ===== */}
+      {/* ===== KLANT DETAIL MODAL ===== */}
+      <Modal isOpen={showCustomerDetailModal} onClose={() => setShowCustomerDetailModal(false)} title={selectedCustomer?.name || 'Klant'} size="xl">
+        {selectedCustomer && (
+          <div className="space-y-6">
+            {/* Contact info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail className="h-3.5 w-3.5 text-gray-400" />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                </div>
+                <a href={`mailto:${selectedCustomer.email}`} className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">{selectedCustomer.email}</a>
+              </div>
+              {selectedCustomer.phone && (
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Phone className="h-3.5 w-3.5 text-gray-400" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Telefoon</p>
+                  </div>
+                  <a href={`tel:${selectedCustomer.phone}`} className="text-sm font-medium text-gray-900 dark:text-gray-100">{selectedCustomer.phone}</a>
+                </div>
+              )}
+              {selectedCustomer.website && (
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Globe className="h-3.5 w-3.5 text-gray-400" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Website</p>
+                  </div>
+                  <a href={selectedCustomer.website} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline truncate block">{selectedCustomer.website}</a>
+                </div>
+              )}
+            </div>
+
+            {/* Bedrijfsgegevens */}
+            {(selectedCustomer.kvk || selectedCustomer.taxNumber) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {selectedCustomer.kvk && (
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Hash className="h-3.5 w-3.5 text-gray-400" />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">KvK Nummer</p>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{selectedCustomer.kvk}</p>
+                  </div>
+                )}
+                {selectedCustomer.taxNumber && (
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Euro className="h-3.5 w-3.5 text-gray-400" />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">BTW Nummer</p>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{selectedCustomer.taxNumber}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Adres */}
+            {selectedCustomer.address && (selectedCustomer.address.street || selectedCustomer.address.city) && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Adres</p>
+                </div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {[selectedCustomer.address.street, `${selectedCustomer.address.zipCode} ${selectedCustomer.address.city}`.trim(), selectedCustomer.address.country].filter(Boolean).join(', ')}
+                </p>
+              </div>
+            )}
+
+            {/* Notities */}
+            {selectedCustomer.notes && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notities</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{selectedCustomer.notes}</p>
+              </div>
+            )}
+
+            {/* Extra ontvangers */}
+            {selectedCustomer.defaultAdditionalRecipients && selectedCustomer.defaultAdditionalRecipients.length > 0 && (
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Standaard extra ontvangers</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCustomer.defaultAdditionalRecipients.map((email, i) => (
+                    <span key={i} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
+                      {email}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Acties */}
+            <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+              <Button icon={Edit} onClick={() => { setShowCustomerDetailModal(false); handleEdit(selectedCustomer); }}>
+                Bewerken
+              </Button>
+              <Button variant="danger" icon={Trash2} onClick={() => { setShowCustomerDetailModal(false); handleDelete(selectedCustomer.id!); }}>
+                Verwijderen
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ===== KLANT FORM MODAL ===== */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
