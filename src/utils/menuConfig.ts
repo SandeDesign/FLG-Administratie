@@ -72,7 +72,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Relaties', href: '/invoice-relations', icon: UserCheck, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Uitgaande Facturen', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Verkoop', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Inkomende Post', href: '/incoming-post', icon: Mail, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Inkoop', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
