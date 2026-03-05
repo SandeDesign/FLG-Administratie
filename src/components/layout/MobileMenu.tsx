@@ -77,7 +77,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
       icon: Wallet,
       color: 'bg-emerald-500',
       items: filteredNavigation.filter(i =>
-        ['Klanten & Leveranciers', 'Begroting', 'Verkoop', 'Inkoop Upload', 'Inkoop Overzicht', 'Declaraties'].includes(i.name)
+        ['Klanten & Leveranciers', 'Begroting', 'Verkoop', 'Inkoop Upload', 'Inkoop', 'Declaraties'].includes(i.name)
       )
     },
     {

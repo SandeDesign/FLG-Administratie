@@ -253,7 +253,7 @@ const IncomingInvoices: React.FC = () => {
                     navigate('/incoming-invoices-stats');
                   }}
                 >
-                  Ga naar Inkoop Overzicht
+                  Ga naar Inkoop
                 </Button>
                 <Button
                   variant="ghost"

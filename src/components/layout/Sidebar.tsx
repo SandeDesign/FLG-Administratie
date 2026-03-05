@@ -60,8 +60,8 @@ export const navigation: NavigationItem[] = [
   // FINANCIEEL - Voor alle types (employer, project, holding)
   { name: 'Klanten & Leveranciers', href: '/invoice-relations', icon: Handshake, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Uitgaande facturen', href: '/outgoing-invoices', icon: FileOutput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Inkoop Overzicht', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Verkoop', href: '/outgoing-invoices', icon: FileOutput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { name: 'Inkoop', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Inkomende Post', href: '/incoming-post', icon: Mail, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Bankafschrift Import', href: '/bank-statement-import', icon: FileInput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
@@ -277,7 +277,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
       color: 'bg-emerald-500',
       defaultOpen: false,
       items: filteredNavigation.filter(i =>
-        ['Klanten & Leveranciers', 'Begroting', 'Uitgaande facturen', 'Inkoop Overzicht', 'Inkomende Post', 'Declaraties'].includes(i.name)
+        ['Klanten & Leveranciers', 'Begroting', 'Verkoop', 'Inkoop', 'Inkomende Post', 'Declaraties'].includes(i.name)
       )
     },
     {
