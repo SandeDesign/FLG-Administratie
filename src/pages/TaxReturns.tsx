@@ -286,7 +286,8 @@ const TaxReturns: React.FC = () => {
               onAction={() => showError('Nieuwe aangifte', 'Deze functionaliteit wordt nog geïmplementeerd.')}
             />
           ) : (
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead>
                   <tr>
@@ -359,6 +360,55 @@ const TaxReturns: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {taxReturns.map((taxReturn) => (
+                <div key={taxReturn.id} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {getPeriodLabel(taxReturn.period)}
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(taxReturn.status)}
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(taxReturn.status)}`}>
+                        {getStatusLabel(taxReturn.status)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400">Werknemers</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{taxReturn.totals.numberOfEmployees}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400">Totaal loon</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">€{taxReturn.totals.totalGrossWages.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 dark:text-gray-400">Ingediend op</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{taxReturn.submissionData.submittedAt?.toLocaleDateString('nl-NL') || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end space-x-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <button
+                      className="text-primary-600 hover:text-primary-900 p-1"
+                      title="Bekijk"
+                      onClick={() => showError('Bekijken', 'Deze functionaliteit wordt nog geïmplementeerd.')}
+                    >
+                      <Eye className="h-5 w-5" />
+                    </button>
+                    <button
+                      className="text-gray-600 dark:text-gray-400 hover:text-gray-900 p-1"
+                      title="Download XML"
+                      onClick={() => showError('Download XML', 'Deze functionaliteit wordt nog geïmplementeerd.')}
+                    >
+                      <Download className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

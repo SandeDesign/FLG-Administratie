@@ -12,11 +12,13 @@ import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
 import { useApp } from '../contexts/AppContext';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 const Absence: React.FC = () => {
   const { user, currentEmployeeId, adminUserId } = useAuth();
   const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
   const { error: showError } = useToast();
+  usePageTitle('Verzuim');
   const [loading, setLoading] = useState(true);
   const [sickLeaveRecords, setSickLeaveRecords] = useState<SickLeave[]>([]);
   const [absenceStats, setAbsenceStats] = useState<AbsenceStatistics | null>(null);
@@ -107,7 +109,7 @@ const Absence: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Verzuim</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Bekijk je verzuimhistorie en statistieken

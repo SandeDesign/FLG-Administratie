@@ -18,6 +18,7 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { uploadAndSaveInvoice } from '../services/incomingInvoiceService';
 import { processInvoiceFile } from '../services/ocrService';
+import { usePageTitle } from '../contexts/PageTitleContext';
 
 interface OCRResult {
   id: string;
@@ -35,6 +36,7 @@ const IncomingInvoices: React.FC = () => {
   const { user, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
+  usePageTitle('Inkoopbonnen uploaden');
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
   const [processingFiles, setProcessingFiles] = useState<string[]>([]);
@@ -173,7 +175,7 @@ const IncomingInvoices: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Inkoopbonnen uploaden</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Upload facturen voor {selectedCompany.name}
