@@ -16,7 +16,7 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
-import { uploadInvoiceToDrive } from '../services/googleDriveService';
+import { uploadAndSaveInvoice } from '../services/incomingInvoiceService';
 import { processInvoiceFile } from '../services/ocrService';
 
 interface OCRResult {
@@ -78,7 +78,7 @@ const IncomingInvoices: React.FC = () => {
           setOcrProgress(Math.round(progress));
         });
 
-        const uploadResult = await uploadInvoiceToDrive(
+        const uploadResult = await uploadAndSaveInvoice(
           file,
           selectedCompany.id,
           selectedCompany.name,
@@ -107,7 +107,7 @@ const IncomingInvoices: React.FC = () => {
           amount: ocrResult.invoiceData.subtotal || 0,
           vatAmount: ocrResult.invoiceData.vatAmount || 0,
           totalAmount: ocrResult.invoiceData.totalInclVat || 0,
-          fileUrl: uploadResult.driveWebLink,
+          fileUrl: uploadResult.fileUrl,
           confidence: ocrResult.confidence,
         };
 
@@ -296,7 +296,7 @@ const IncomingInvoices: React.FC = () => {
           </label>
         </p>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          PDF, PNG, JPG tot 10MB - Automatische OCR + Google Drive upload
+          PDF, PNG, JPG tot 10MB - Automatische OCR verwerking
         </p>
         <p className="mt-1 text-xs font-medium text-primary-600">
           ⚡ Parallel verwerking: max 3 bestanden tegelijk voor snelheid

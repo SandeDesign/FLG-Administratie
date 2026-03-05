@@ -1,17 +1,19 @@
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
-  Timestamp 
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+  runTransaction
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
+import { uploadFile } from './fileUploadService';
 
 export interface OCRData {
   supplierName?: string;
@@ -42,19 +44,101 @@ export interface IncomingInvoice {
   rejectionReason?: string;
   fileName: string;
   fileUrl: string;
-  driveFileId?: string;
-  driveFileLink?: string;
   ocrProcessed: boolean;
   ocrData?: OCRData;
-  archivedToDrive?: boolean;
   archivedAt?: Date;
-  driveArchiveId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const COLLECTION_NAME = 'incomingInvoices';
 const ARCHIVE_COLLECTION_NAME = 'invoiceArchives';
+
+/**
+ * Generate a unique reference number for incoming invoices
+ * Format: INK-YYYY-####
+ */
+export async function generateIncomingInvoiceReference(companyId: string): Promise<string> {
+  const year = new Date().getFullYear();
+  const counterRef = doc(db, 'companies', companyId, 'counters', 'incomingInvoices');
+
+  return await runTransaction(db, async (transaction) => {
+    const counterDoc = await transaction.get(counterRef);
+
+    let currentNumber = 1;
+    let currentYear = year;
+
+    if (counterDoc.exists()) {
+      const data = counterDoc.data();
+      currentYear = data.year || year;
+      currentNumber = data.number || 1;
+
+      if (currentYear !== year) {
+        currentYear = year;
+        currentNumber = 1;
+      }
+    }
+
+    transaction.set(counterRef, {
+      year: currentYear,
+      number: currentNumber + 1,
+      lastUpdated: Timestamp.now()
+    });
+
+    return `INK-${year}-${String(currentNumber).padStart(4, '0')}`;
+  });
+}
+
+/**
+ * Upload invoice file to internedata.nl and save to Firestore
+ */
+export const uploadAndSaveInvoice = async (
+  file: File,
+  companyId: string,
+  companyName: string,
+  userId: string,
+  _userEmail?: string,
+  metadata?: {
+    supplierName?: string;
+    invoiceNumber?: string;
+    amount?: number;
+    vatAmount?: number;
+    totalAmount?: number;
+  },
+  ocrData?: any
+): Promise<{ invoiceId: string; fileUrl: string }> => {
+  const referenceNumber = await generateIncomingInvoiceReference(companyId);
+
+  const uploadResult = await uploadFile(file, companyName, 'Inkoop', referenceNumber);
+
+  const now = new Date();
+  const supplierInvoiceNumber = ocrData?.invoiceNumber || metadata?.invoiceNumber || '';
+
+  const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+    userId,
+    companyId,
+    referenceNumber,
+    supplierName: ocrData?.supplierName || metadata?.supplierName || 'Onbekend',
+    supplierInvoiceNumber,
+    invoiceNumber: referenceNumber,
+    fileName: `${referenceNumber}.${file.name.split('.').pop()}`,
+    subtotal: ocrData?.subtotal || metadata?.amount || 0,
+    vatAmount: ocrData?.vatAmount || metadata?.vatAmount || 0,
+    totalAmount: ocrData?.totalInclVat || metadata?.totalAmount || 0,
+    invoiceDate: Timestamp.fromDate(ocrData?.invoiceDate || now),
+    dueDate: Timestamp.fromDate(new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)),
+    status: 'pending',
+    fileUrl: uploadResult.fileUrl,
+    ocrData: ocrData || null,
+    createdAt: Timestamp.fromDate(now),
+    updatedAt: Timestamp.fromDate(now),
+  });
+
+  return {
+    invoiceId: docRef.id,
+    fileUrl: uploadResult.fileUrl,
+  };
+};
 
 export const incomingInvoiceService = {
   // Upload and create invoice
@@ -94,7 +178,6 @@ export const incomingInvoiceService = {
         fileUrl,
         ocrProcessed: !!ocrData,
         ocrData,
-        archivedToDrive: false,
         createdAt: now,
         updatedAt: now
       };
@@ -205,47 +288,14 @@ export const incomingInvoiceService = {
       // Update original invoice to mark as archived
       const invoiceRef = doc(db, COLLECTION_NAME, invoiceId);
       await updateDoc(invoiceRef, {
-        archivedToDrive: true,
         archivedAt: Timestamp.fromDate(now),
-        driveArchiveId: archiveRef.id,
         updatedAt: Timestamp.fromDate(now)
       });
-
-      // Sync to Google Drive if configured
-      try {
-        await this.syncArchiveToGoogleDrive(archiveRef.id, invoice, companyId, userId);
-      } catch (driveError) {
-        console.warn('Google Drive sync failed, archive saved locally:', driveError);
-      }
 
       return archiveRef.id;
     } catch (error) {
       console.error('Error archiving to Google Drive:', error);
       throw new Error('Kon factuur niet archiveren');
-    }
-  },
-
-  // Sync archive to Google Drive (placeholder for actual Google Drive API integration)
-  async syncArchiveToGoogleDrive(
-    archiveId: string,
-    invoice: IncomingInvoice,
-    companyId: string,
-    userId: string
-  ): Promise<void> {
-    try {
-      // TODO: Implement actual Google Drive API calls here
-      // This would upload the file and create a folder structure in Google Drive
-      // For now, this is a placeholder that logs the intent
-      console.log(`Syncing archive ${archiveId} to Google Drive for company ${companyId}`);
-      
-      // When implemented, this should:
-      // 1. Create a folder structure: /Bedrijf/Jaar/Maand/
-      // 2. Upload the invoice file
-      // 3. Store the driveFileId and driveFileLink
-      // 4. Create a metadata file with OCR extracted data
-    } catch (error) {
-      console.error('Error syncing to Google Drive:', error);
-      throw error;
     }
   },
 
