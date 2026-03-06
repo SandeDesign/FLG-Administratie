@@ -51,7 +51,6 @@ import AuditLogPage from './pages/AuditLog';
 import Timesheets from './pages/Timesheets';
 import TimesheetApprovals from './pages/TimesheetApprovals';
 import Payslips from './pages/Payslips';
-import PayrollProcessing from './pages/PayrollProcessing';
 // ✅ INVOICE RELATIONS - NIEUW!
 import InvoiceRelations from './pages/InvoiceRelations';
 // ✅ FACTUREN IMPORTS
@@ -63,7 +62,6 @@ import IncomingInvoicesStats from './pages/IncomingInvoicesStats';
 // ✅ BUDGETING - NIEUW!
 import Budgeting from './pages/Budgeting';
 import TimesheetExport from './pages/TimesheetExport';
-import DriveFiles from './pages/DriveFiles';
 import Tasks from './pages/Tasks';
 // ✅ BANK STATEMENT IMPORT - NIEUW!
 import BankStatementImport from './pages/BankStatementImport';
@@ -130,7 +128,6 @@ function App() {
                           {/* ✅ TIJD & UREN */}
                           <Route path="timesheets" element={<Timesheets />} />
                           <Route path="timesheet-approvals" element={<TimesheetApprovals />} />
-                          <Route path="payroll-processing" element={<PayrollProcessing />} />
                           <Route path="admin-expenses" element={<AdminExpenses />} />
                           
                           {/* ✅ VERLOF & VERZUIM */}
@@ -150,7 +147,6 @@ function App() {
                           
                           {/* ✅ DATA & EXPORTS */}
                           <Route path="timesheet-export" element={<TimesheetExport />} />
-                          <Route path="drive-files" element={<DriveFiles />} />
                           
                           {/* ✅ SYSTEEM */}
                           <Route path="tasks" element={<Tasks />} />
@@ -187,7 +183,6 @@ function App() {
                           {/* Manager kan uren beheren */}
                           <Route path="timesheets" element={<Timesheets />} />
                           <Route path="timesheet-approvals" element={<TimesheetApprovals />} />
-                          <Route path="payroll-processing" element={<PayrollProcessing />} />
 
                           {/* Manager kan verlof/verzuim goedkeuren */}
                           <Route path="admin/leave-approvals" element={<AdminLeaveApprovals />} />

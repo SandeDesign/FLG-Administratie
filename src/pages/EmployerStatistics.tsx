@@ -12,7 +12,7 @@ import { usePageTitle } from '../contexts/PageTitleContext';
 const EmployerStatistics: React.FC = () => {
   const { selectedCompany, employees } = useApp();
   const { adminUserId } = useAuth();
-  usePageTitle('Employer Statistieken');
+  usePageTitle('Werkgeverstatistieken');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalEmployees: 0,
@@ -223,7 +223,7 @@ const EmployerStatistics: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="hidden lg:block">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Employer Statistieken</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Werkgeverstatistieken</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>
 

@@ -25,7 +25,7 @@ interface CompanyStats {
 const HoldingStatistics: React.FC = () => {
   const { selectedCompany, companies } = useApp();
   const { adminUserId } = useAuth();
-  usePageTitle('Holding Statistieken');
+  usePageTitle('Holdingstatistieken');
   const [loading, setLoading] = useState(true);
   const [companyStats, setCompanyStats] = useState<CompanyStats[]>([]);
   const [totalStats, setTotalStats] = useState({
@@ -266,8 +266,8 @@ const HoldingStatistics: React.FC = () => {
     }));
 
   const pageTitle = selectedCompany.companyType === 'shareholder'
-    ? 'Aandeelhouder Statistieken'
-    : 'Holding Statistieken';
+    ? 'Aandeelhouderstatistieken'
+    : 'Holdingstatistieken';
 
   const pageDescription = selectedCompany.companyType === 'shareholder'
     ? `Overzicht van ${selectedCompany.name}`

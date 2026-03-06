@@ -10,21 +10,17 @@ import {
   HeartPulse,
   FileText,
   Upload,
-  Download,
   Settings,
   Shield,
   Activity,
   Receipt,
   Send,
-  FolderOpen,
   UserCheck,
   TrendingUp,
   Factory,
   BarChart3,
   Wallet,
-  DollarSign,
   UserPlus,
-  Package,
   LineChart,
   PieChart,
   ListChecks,
@@ -51,7 +47,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // ✅ PROJECT-SPECIFIC ITEMS (alleen voor project bedrijven)
-  { name: 'Project Dashboard', href: '/project-dashboard', icon: LayoutDashboard, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
   { name: 'Productie Verwerking', href: '/project-production', icon: Factory, roles: ['admin', 'manager'], companyTypes: ['project'], section: 'Project' },
   { name: 'Projectstatistieken', href: '/project-statistics', icon: BarChart3, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
 
@@ -84,11 +79,11 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
   { name: 'Loonstroken', href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
+  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
   { name: 'Gebruikers Beheer', href: '/admin/users', icon: UserPlus, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
   { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // PROJECT EXTRA PAGES
-  { name: 'Productie Pool', href: '/production-pool', icon: Package, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
   { name: 'Project Team', href: '/project-team', icon: Users, roles: ['admin'], companyTypes: ['project'], section: 'Project' },
   { name: 'Investment Pitch', href: '/investment-pitch', icon: LineChart, roles: ['admin'], companyTypes: ['project', 'holding'] },
 ];
@@ -146,7 +141,7 @@ export const getNavigationSections = (
         title: 'Facturatie',
         icon: Receipt,
         defaultOpen: false,
-        items: filtered.filter(i => ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)),
+        items: filtered.filter(i => ['Relaties', 'Begroting', 'Verkoop', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)),
       },
       {
         title: 'Overig',
@@ -171,20 +166,14 @@ export const getNavigationSections = (
         icon: Receipt,
         defaultOpen: false,
         items: filtered.filter(i =>
-          ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)
+          ['Relaties', 'Begroting', 'Verkoop', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)
         ),
-      },
-      {
-        title: 'Data & Exports',
-        icon: BarChart3,
-        defaultOpen: false,
-        items: filtered.filter(i => ['Drive Bestanden', 'Exports Beheer'].includes(i.name)),
       },
       {
         title: 'Systeem',
         icon: Settings,
         defaultOpen: false,
-        items: filtered.filter(i => ['Taken', 'Bedrijven', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Investment Pitch', 'Instellingen'].includes(i.name)),
+        items: filtered.filter(i => ['Taken', 'Bedrijven', 'Audit Log', 'Gebruikers Beheer', 'Investment Pitch', 'Instellingen'].includes(i.name)),
       },
     ].filter(section => section.items.length > 0);
   }
@@ -203,7 +192,7 @@ export const getNavigationSections = (
         icon: Receipt,
         defaultOpen: false,
         items: filtered.filter(i =>
-          ['Relaties', 'Begroting', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)
+          ['Relaties', 'Begroting', 'Verkoop', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)
         ),
       },
       {
@@ -228,7 +217,7 @@ export const getNavigationSections = (
       icon: Activity,
       defaultOpen: false,
       items: filtered.filter(i =>
-        ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof', 'Verlof Goedkeuren', 'Ziekteverzuim', 'Verzuim Beheren', 'Salarisverwerking', 'Declaraties Medewerkers'].includes(i.name)
+        ['Werknemers', 'Urenregistratie', 'Uren Goedkeuren', 'Verlof', 'Verlof Goedkeuren', 'Ziekteverzuim', 'Verzuim Beheren', 'Declaraties Medewerkers'].includes(i.name)
       ),
     },
     {
@@ -236,20 +225,14 @@ export const getNavigationSections = (
       icon: Receipt,
       defaultOpen: false,
       items: filtered.filter(i =>
-        ['Relaties', 'Begroting', 'Declaraties', 'Uitgaande Facturen', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)
+        ['Relaties', 'Begroting', 'Declaraties', 'Verkoop', 'Inkomende Facturen', 'Inkomende Post', 'Inkoop', 'Bankafschrift Import'].includes(i.name)
       ),
-    },
-    {
-      title: 'Data & Exports',
-      icon: BarChart3,
-      defaultOpen: false,
-      items: filtered.filter(i => ['Uren Export', 'Drive Bestanden', 'Exports Beheer'].includes(i.name)),
     },
     {
       title: 'Systeem',
       icon: Settings,
       defaultOpen: false,
-      items: filtered.filter(i => ['Taken', 'Bedrijven', 'Loonstroken', 'Belastingaangiften', 'Audit Log', 'Gebruikers Beheer', 'Rollen Beheer', 'Instellingen'].includes(i.name)),
+      items: filtered.filter(i => ['Taken', 'Bedrijven', 'Loonstroken', 'Audit Log', 'Gebruikers Beheer', 'Instellingen'].includes(i.name)),
     },
   ].filter(section => section.items.length > 0);
 };

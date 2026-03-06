@@ -12,7 +12,7 @@ import { usePageTitle } from '../contexts/PageTitleContext';
 const ProjectStatistics: React.FC = () => {
   const { selectedCompany, queryUserId, selectedYear } = useApp();
   const { user } = useAuth();
-  usePageTitle('Project Statistieken');
+  usePageTitle('Projectstatistieken');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalProductionHours: 0,
@@ -186,7 +186,7 @@ const ProjectStatistics: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="hidden lg:block">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Project Statistieken</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projectstatistieken</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>
 
