@@ -40,6 +40,13 @@ import { getPendingTimesheets } from '../services/timesheetService';
 import { getPayrollCalculations } from '../services/payrollService';
 import { usePageTitle } from '../contexts/PageTitleContext';
 
+const formatCurrency = (amount: number): string => {
+  if (Math.abs(amount) >= 100000) {
+    return `€${(amount / 1000).toFixed(0)}k`;
+  }
+  return `€${amount.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+};
+
 const Dashboard: React.FC = () => {
   const { employees, companies, loading, selectedCompany } = useApp();
   const { user, userRole, currentEmployeeId, adminUserId } = useAuth();
@@ -153,10 +160,10 @@ const Dashboard: React.FC = () => {
 
       setStats(prev => ({
         ...prev,
-        outgoingInvoices: outgoingCount, // Totaal aantal facturen, niet alleen deze maand
-        outgoingTotal: outgoingTotalThisMonth,
-        incomingInvoices: incomingCount, // Totaal aantal facturen, niet alleen deze maand
-        incomingTotal: incomingTotalThisMonth,
+        outgoingInvoices: outgoingCount,
+        outgoingTotal: outgoingTotal,
+        incomingInvoices: incomingCount,
+        incomingTotal: incomingTotal,
       }));
     } catch (error) {
       console.error('❌ Error loading invoice stats:', error);
@@ -544,7 +551,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-green-700">Verkoop</p>
-                <p className="text-2xl font-bold text-green-900 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-2xl font-bold text-green-900 mt-2">{formatCurrency(stats.outgoingTotal)}</p>
                 <p className="text-xs text-green-600 mt-2">{stats.outgoingInvoices} facturen</p>
               </div>
               <Send className="h-8 w-8 text-green-300" />
@@ -555,7 +562,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-purple-700">Inkoop</p>
-                <p className="text-2xl font-bold text-purple-900 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-2xl font-bold text-purple-900 mt-2">{formatCurrency(stats.incomingTotal)}</p>
                 <p className="text-xs text-purple-600 mt-2">{stats.incomingInvoices} facturen</p>
               </div>
               <Upload className="h-8 w-8 text-purple-300" />
@@ -566,7 +573,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-orange-700">Marge</p>
-                <p className="text-2xl font-bold text-orange-900 mt-2">€{((stats.outgoingTotal - stats.incomingTotal) / 1000).toFixed(1)}k</p>
+                <p className="text-2xl font-bold text-orange-900 mt-2">{formatCurrency(stats.outgoingTotal - stats.incomingTotal)}</p>
                 <p className="text-xs text-orange-600 mt-2">verschil</p>
               </div>
               <Wallet className="h-8 w-8 text-orange-300" />
@@ -680,9 +687,9 @@ const Dashboard: React.FC = () => {
             <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-green-700">Omzet</p>
-                  <p className="text-2xl font-bold text-green-900 mt-2">€{(projectStats.totalRevenue / 1000).toFixed(0)}k</p>
-                  <p className="text-xs text-green-600 mt-2">totaal</p>
+                  <p className="text-xs font-medium text-green-700">Productie Waarde</p>
+                  <p className="text-2xl font-bold text-green-900 mt-2">{projectStats.totalHours > 0 ? formatCurrency(projectStats.totalRevenue) : '€0'}</p>
+                  <p className="text-xs text-green-600 mt-2">{formatCurrency(projectStats.revenuePerHour)}/uur</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-300" />
               </div>
@@ -718,7 +725,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-green-700">Verkoop</p>
-                <p className="text-xl font-bold text-green-900 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xl font-bold text-green-900 mt-2">{formatCurrency(stats.outgoingTotal)}</p>
                 <p className="text-xs text-green-600 mt-2">{stats.outgoingInvoices} facturen</p>
               </div>
               <Send className="h-8 w-8 text-green-300" />
@@ -729,7 +736,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-purple-700">Inkoop</p>
-                <p className="text-xl font-bold text-purple-900 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-xl font-bold text-purple-900 mt-2">{formatCurrency(stats.incomingTotal)}</p>
                 <p className="text-xs text-purple-600 mt-2">{stats.incomingInvoices} facturen</p>
               </div>
               <Upload className="h-8 w-8 text-purple-300" />
@@ -740,7 +747,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-blue-700">Marge</p>
-                <p className="text-xl font-bold text-blue-900 mt-2">€{((stats.outgoingTotal - stats.incomingTotal) / 1000).toFixed(1)}k</p>
+                <p className="text-xl font-bold text-blue-900 mt-2">{formatCurrency(stats.outgoingTotal - stats.incomingTotal)}</p>
                 <p className="text-xs text-blue-600 mt-2">winst</p>
               </div>
               <TrendingUp className="h-8 w-8 text-blue-300" />
@@ -934,7 +941,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-green-700 dark:text-green-400">Verkoop</p>
-                <p className="text-2xl font-bold text-green-900 dark:text-green-200 mt-2">€{(stats.outgoingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-200 mt-2">{formatCurrency(stats.outgoingTotal)}</p>
                 <p className="text-xs text-green-600 dark:text-green-400 mt-2">{stats.outgoingInvoices} facturen</p>
               </div>
               <Send className="h-8 w-8 text-green-300 dark:text-green-500" />
@@ -946,7 +953,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-purple-700 dark:text-purple-400">Inkoop</p>
-                <p className="text-2xl font-bold text-purple-900 dark:text-purple-200 mt-2">€{(stats.incomingTotal / 1000).toFixed(1)}k</p>
+                <p className="text-2xl font-bold text-purple-900 dark:text-purple-200 mt-2">{formatCurrency(stats.incomingTotal)}</p>
                 <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">{stats.incomingInvoices} facturen</p>
               </div>
               <Upload className="h-8 w-8 text-purple-300 dark:text-purple-500" />
@@ -957,8 +964,8 @@ const Dashboard: React.FC = () => {
           <Card className="p-4 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-orange-700 dark:text-orange-400">Onkosten</p>
-                <p className="text-2xl font-bold text-orange-900 dark:text-orange-200 mt-2">€{(stats.totalExpenses / 100).toFixed(0)}</p>
+                <p className="text-xs font-medium text-orange-700 dark:text-orange-400">Declaraties</p>
+                <p className="text-2xl font-bold text-orange-900 dark:text-orange-200 mt-2">€{stats.totalExpenses.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">{pendingExpenses.length} wachten</p>
               </div>
               <ArrowUpRight className="h-8 w-8 text-orange-300 dark:text-orange-500" />
@@ -973,7 +980,7 @@ const Dashboard: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-blue-700 dark:text-blue-400">Loonkosten (bruto)</p>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-200 mt-2">€{(stats.totalGrossPay / 1000).toFixed(1)}k</p>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-200 mt-2">{formatCurrency(stats.totalGrossPay)}</p>
                   <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">deze maand</p>
                 </div>
                 <CreditCard className="h-8 w-8 text-blue-300 dark:text-blue-500" />
@@ -984,7 +991,7 @@ const Dashboard: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-cyan-700 dark:text-cyan-400">Netto Uitbetaald</p>
-                  <p className="text-2xl font-bold text-cyan-900 dark:text-cyan-200 mt-2">€{(stats.totalNetPay / 1000).toFixed(1)}k</p>
+                  <p className="text-2xl font-bold text-cyan-900 dark:text-cyan-200 mt-2">{formatCurrency(stats.totalNetPay)}</p>
                   <p className="text-xs text-cyan-600 dark:text-cyan-400 mt-2">{stats.payrollCount} salarissen</p>
                 </div>
                 <Wallet className="h-8 w-8 text-cyan-300 dark:text-cyan-500" />
