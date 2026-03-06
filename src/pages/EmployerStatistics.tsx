@@ -3,11 +3,20 @@ import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Users, Clock, Euro, TrendingUp, Calendar, HeartPulse, Receipt } from 'lucide-react';
+import { Users, Clock, Euro, TrendingUp, HeartPulse, AlertTriangle } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
+
+const AVERAGE_MONTHLY_COST_PER_EMPLOYEE = 3000;
+
+const formatCurrency = (amount: number): string => {
+  if (Math.abs(amount) >= 100000) {
+    return `€${(amount / 1000).toFixed(0)}k`;
+  }
+  return `€${amount.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+};
 
 const EmployerStatistics: React.FC = () => {
   const { selectedCompany, employees } = useApp();
@@ -19,14 +28,18 @@ const EmployerStatistics: React.FC = () => {
     activeEmployees: 0,
     totalHours: 0,
     totalOvertime: 0,
-    totalGrossPay: 0,
+    estimatedMonthlyPayroll: 0,
     totalSickDays: 0,
+    activeSickCount: 0,
+    sickPercentage: 0,
     totalLeaveRequests: 0,
+    approvedLeave: 0,
     totalRevenue: 0,
     totalCosts: 0,
   });
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [employeeHoursData, setEmployeeHoursData] = useState<any[]>([]);
+  const [sickEmployees, setSickEmployees] = useState<any[]>([]);
 
   useEffect(() => {
     if (!selectedCompany || !adminUserId || selectedCompany.companyType !== 'employer') {
@@ -42,15 +55,16 @@ const EmployerStatistics: React.FC = () => {
 
     setLoading(true);
     try {
-      console.log('📊 Loading employer statistics...');
-
       // Werknemers voor dit bedrijf
       const companyEmployees = employees.filter(
         e => e.companyId === selectedCompany.id || e.userId === adminUserId
       );
       const activeEmps = companyEmployees.filter(e => e.status === 'active');
 
-      // Time entries (uren registraties) - Load all hours for this company's employees
+      // Loonkosten: gemiddeld €3k per actieve medewerker per maand
+      const estimatedMonthlyPayroll = activeEmps.length * AVERAGE_MONTHLY_COST_PER_EMPLOYEE;
+
+      // Time entries (uren registraties)
       const timeEntriesQuery = query(
         collection(db, 'timeEntries'),
         where('companyId', '==', selectedCompany.id)
@@ -74,41 +88,66 @@ const EmployerStatistics: React.FC = () => {
         }
       });
 
-      // Payroll (loonberekeningen)
-      const payrollQuery = query(
-        collection(db, 'payrollCalculations'),
-        where('userId', '==', adminUserId)
-      );
-      const payrollSnap = await getDocs(payrollQuery);
-      let totalGrossPay = 0;
-      payrollSnap.forEach(doc => {
-        const data = doc.data();
-        totalGrossPay += data.grossPay || 0;
-      });
-
-      // Sick leave (ziekteverzuim)
+      // Sick leave (ziekteverzuim) - filter op companyId
       const sickLeaveQuery = query(
         collection(db, 'sickLeave'),
         where('userId', '==', adminUserId)
       );
       const sickLeaveSnap = await getDocs(sickLeaveQuery);
       let totalSickDays = 0;
+      let activeSickCount = 0;
+      const sickEmpList: any[] = [];
+      const now = new Date();
+
       sickLeaveSnap.forEach(doc => {
         const data = doc.data();
-        if (data.startDate && data.endDate) {
-          const start = data.startDate.toDate ? data.startDate.toDate() : new Date(data.startDate);
-          const end = data.endDate.toDate ? data.endDate.toDate() : new Date(data.endDate);
-          const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-          totalSickDays += days;
+        // Filter op companyId
+        if (data.companyId !== selectedCompany.id) return;
+
+        const start = data.startDate?.toDate ? data.startDate.toDate() : new Date(data.startDate);
+        const end = data.endDate
+          ? (data.endDate?.toDate ? data.endDate.toDate() : new Date(data.endDate))
+          : now;
+        const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        totalSickDays += days;
+
+        if (data.status === 'active' || data.status === 'partially_recovered') {
+          activeSickCount++;
+          const emp = companyEmployees.find(e => e.id === data.employeeId);
+          sickEmpList.push({
+            id: doc.id,
+            employeeName: emp
+              ? `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim()
+              : 'Onbekend',
+            startDate: start,
+            days: Math.max(1, Math.ceil((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1),
+            status: data.status,
+            capacity: data.workCapacityPercentage || 0,
+          });
         }
       });
 
-      // Leave requests (verlofaanvragen)
+      setSickEmployees(sickEmpList.sort((a, b) => b.days - a.days));
+
+      // Ziekteverzuim percentage: actief ziek / totaal actieve medewerkers
+      const sickPercentage = activeEmps.length > 0
+        ? (activeSickCount / activeEmps.length) * 100
+        : 0;
+
+      // Leave requests (verlofaanvragen) - filter op companyId
       const leaveQuery = query(
         collection(db, 'leaveRequests'),
         where('userId', '==', adminUserId)
       );
       const leaveSnap = await getDocs(leaveQuery);
+      let totalLeaveRequests = 0;
+      let approvedLeave = 0;
+      leaveSnap.forEach(doc => {
+        const data = doc.data();
+        if (data.companyId !== selectedCompany.id) return;
+        totalLeaveRequests++;
+        if (data.status === 'approved') approvedLeave++;
+      });
 
       // Outgoing invoices (omzet)
       const outgoingQuery = query(
@@ -153,14 +192,17 @@ const EmployerStatistics: React.FC = () => {
         activeEmployees: activeEmps.length,
         totalHours,
         totalOvertime,
-        totalGrossPay,
+        estimatedMonthlyPayroll,
         totalSickDays,
-        totalLeaveRequests: leaveSnap.size,
+        activeSickCount,
+        sickPercentage,
+        totalLeaveRequests,
+        approvedLeave,
         totalRevenue,
         totalCosts,
       });
 
-      // Maandelijkse data voor chart
+      // Maandelijkse data voor chart - inclusief loonkosten lijn
       const allMonthKeys = new Set([
         ...Array.from(monthlyRevenueMap.keys()),
         ...Array.from(monthlyCostsMap.keys()),
@@ -171,6 +213,7 @@ const EmployerStatistics: React.FC = () => {
           month: monthKey,
           omzet: monthlyRevenueMap.get(monthKey) || 0,
           kosten: monthlyCostsMap.get(monthKey) || 0,
+          loonkosten: estimatedMonthlyPayroll,
         }));
       setMonthlyData(monthlyChartData);
 
@@ -184,10 +227,8 @@ const EmployerStatistics: React.FC = () => {
         .sort((a, b) => b.uren - a.uren)
         .slice(0, 10);
       setEmployeeHoursData(empHoursData);
-
-      console.log('✅ Statistics loaded successfully');
     } catch (error) {
-      console.error('❌ Error loading employer statistics:', error);
+      console.error('Error loading employer statistics:', error);
     } finally {
       setLoading(false);
     }
@@ -217,7 +258,6 @@ const EmployerStatistics: React.FC = () => {
     );
   }
 
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
   const profit = stats.totalRevenue - stats.totalCosts;
 
   return (
@@ -228,7 +268,7 @@ const EmployerStatistics: React.FC = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <div className="flex items-center justify-between">
             <div>
@@ -248,7 +288,7 @@ const EmployerStatistics: React.FC = () => {
                 {stats.totalHours.toLocaleString('nl-NL')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {stats.totalOvertime > 0 && `+${stats.totalOvertime.toFixed(0)} overuren`}
+                {stats.totalOvertime > 0 ? `+${stats.totalOvertime.toFixed(0)} overuren` : 'geregistreerd'}
               </p>
             </div>
             <Clock className="h-8 w-8 text-purple-600" />
@@ -258,29 +298,36 @@ const EmployerStatistics: React.FC = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Loonkosten</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Loonkosten /mnd</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                €{stats.totalGrossPay.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+                {formatCurrency(stats.estimatedMonthlyPayroll)}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                ~€{AVERAGE_MONTHLY_COST_PER_EMPLOYEE.toLocaleString('nl-NL')} p.p.
               </p>
             </div>
             <Euro className="h-8 w-8 text-green-600" />
           </div>
         </Card>
 
-        <Card>
+        <Card className={stats.sickPercentage > 5 ? 'border-red-300 dark:border-red-700' : ''}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ziekteverzuim</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{stats.totalSickDays}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">dagen totaal</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                {stats.sickPercentage.toFixed(1)}%
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {stats.activeSickCount} ziek • {stats.totalSickDays} dagen totaal
+              </p>
             </div>
-            <HeartPulse className="h-8 w-8 text-red-600" />
+            <HeartPulse className={`h-8 w-8 ${stats.sickPercentage > 5 ? 'text-red-600' : 'text-orange-500'}`} />
           </div>
         </Card>
       </div>
 
-      {/* Financiële Overzicht */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Financieel Overzicht */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <div>
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totale Omzet</p>
@@ -309,6 +356,40 @@ const EmployerStatistics: React.FC = () => {
         </Card>
       </div>
 
+      {/* Actief Zieke Medewerkers */}
+      {sickEmployees.length > 0 && (
+        <Card>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-orange-500" />
+            Actief Zieke Medewerkers ({sickEmployees.length})
+          </h2>
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            {sickEmployees.map((emp) => (
+              <div key={emp.id} className="py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{emp.employeeName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Sinds {emp.startDate.toLocaleDateString('nl-NL')} • {emp.days} dagen
+                    {emp.days > 42 && <span className="text-orange-600 font-medium ml-1">(Poortwachter)</span>}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                    emp.status === 'active' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                    'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                  }`}>
+                    {emp.status === 'active' ? 'Ziek' : 'Gedeeltelijk'}
+                  </span>
+                  {emp.capacity > 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{emp.capacity}% inzetbaar</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Maandelijkse Omzet vs Kosten */}
       {monthlyData.length > 0 && (
         <Card>
@@ -322,6 +403,7 @@ const EmployerStatistics: React.FC = () => {
               <Legend />
               <Line type="monotone" dataKey="omzet" stroke="#10B981" name="Omzet" strokeWidth={2} />
               <Line type="monotone" dataKey="kosten" stroke="#EF4444" name="Kosten" strokeWidth={2} />
+              <Line type="monotone" dataKey="loonkosten" stroke="#F59E0B" name="Loonkosten" strokeWidth={2} strokeDasharray="5 5" />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -343,17 +425,25 @@ const EmployerStatistics: React.FC = () => {
         </Card>
       )}
 
-      {/* Verlof Statistieken */}
+      {/* Verlof Overzicht */}
       <Card>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Verlof & Verzuim Overzicht</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Verlofaanvragen</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{stats.totalLeaveRequests}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{stats.totalLeaveRequests}</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Verlofaanvragen</p>
           </div>
-          <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ziektedagen</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{stats.totalSickDays}</p>
+          <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <p className="text-2xl font-bold text-green-700 dark:text-green-400">{stats.approvedLeave}</p>
+            <p className="text-xs text-green-600 dark:text-green-400 mt-1">Goedgekeurd</p>
+          </div>
+          <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <p className="text-2xl font-bold text-red-700 dark:text-red-400">{stats.totalSickDays}</p>
+            <p className="text-xs text-red-600 dark:text-red-400 mt-1">Ziektedagen</p>
+          </div>
+          <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+            <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{stats.activeSickCount}</p>
+            <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">Nu ziek</p>
           </div>
         </div>
       </Card>
