@@ -103,24 +103,30 @@ const EmployerStatistics: React.FC = () => {
         const data = doc.data();
         // Filter op companyId
         if (data.companyId !== selectedCompany.id) return;
+        if (!data.startDate) return;
 
         const start = data.startDate?.toDate ? data.startDate.toDate() : new Date(data.startDate);
+        if (isNaN(start.getTime())) return;
+
         const end = data.endDate
           ? (data.endDate?.toDate ? data.endDate.toDate() : new Date(data.endDate))
           : now;
-        const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        const endTime = isNaN(end.getTime()) ? now.getTime() : end.getTime();
+
+        const days = Math.max(1, Math.ceil((endTime - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
         totalSickDays += days;
 
         if (data.status === 'active' || data.status === 'partially_recovered') {
           activeSickCount++;
           const emp = companyEmployees.find(e => e.id === data.employeeId);
+          const activeDays = Math.max(1, Math.ceil((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
           sickEmpList.push({
             id: doc.id,
             employeeName: emp
               ? `${emp.personalInfo?.firstName || ''} ${emp.personalInfo?.lastName || ''}`.trim()
               : 'Onbekend',
             startDate: start,
-            days: Math.max(1, Math.ceil((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1),
+            days: activeDays,
             status: data.status,
             capacity: data.workCapacityPercentage || 0,
           });
@@ -315,7 +321,7 @@ const EmployerStatistics: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ziekteverzuim</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                {stats.sickPercentage.toFixed(1)}%
+                {(stats.sickPercentage || 0).toFixed(1)}%
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {stats.activeSickCount} ziek • {stats.totalSickDays} dagen totaal
