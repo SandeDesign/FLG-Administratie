@@ -23,6 +23,9 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
   const { companies, selectedCompany, setSelectedCompany } = useApp();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [favoritePages, setFavoritePages] = useState<string[]>([]);
+  const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
+
+  const canSelectCompany = userRole === 'admin' && companies && companies.length > 1;
 
   // Load favorite pages from user settings for the selected company
   useEffect(() => {
@@ -47,6 +50,12 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
 
     loadFavorites();
   }, [user?.uid, userRole, selectedCompany?.id]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setCompanyDropdownOpen(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -111,8 +120,21 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                 </div>
               )}
               <div>
-                <h2 className="text-base font-bold text-white drop-shadow-sm">FLG-Administratie</h2>
-                <p className="text-xs text-primary-100 truncate max-w-[160px] mt-0.5">{selectedCompany?.name || 'Menu'}</p>
+                {canSelectCompany ? (
+                  <button
+                    onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
+                    className="flex items-center space-x-1.5 text-left"
+                  >
+                    <h2 className="text-base font-bold text-white drop-shadow-sm truncate max-w-[180px]">
+                      {selectedCompany?.name || 'Selecteer bedrijf'}
+                    </h2>
+                    <ChevronDown className={`h-4 w-4 text-white/80 flex-shrink-0 transition-transform duration-200 ${companyDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                ) : (
+                  <h2 className="text-base font-bold text-white drop-shadow-sm truncate max-w-[180px]">
+                    {selectedCompany?.name || 'Menu'}
+                  </h2>
+                )}
               </div>
             </div>
             <button
@@ -124,27 +146,57 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
           </div>
         </div>
 
-        {/* Modern Company Selector */}
-        {userRole === 'admin' && companies && companies.length > 0 && (
-          <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800 backdrop-blur-sm">
-            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2.5">
-              Bedrijf Selecteren
-            </label>
-            <select
-              value={selectedCompany?.id || ''}
-              onChange={(e) => {
-                const company = companies.find(c => c.id === e.target.value);
-                if (company) setSelectedCompany(company);
-              }}
-              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all shadow-sm hover:shadow-md hover:border-primary-200"
-            >
-              <option value="">Selecteer bedrijf</option>
+        {/* Company Dropdown */}
+        {canSelectCompany && companyDropdownOpen && (
+          <div className="border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800 shadow-lg">
+            <div className="p-3 space-y-1 max-h-64 overflow-y-auto">
               {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name} {company.companyType === 'project' ? '(Project)' : ''}
-                </option>
+                <button
+                  key={company.id}
+                  onClick={() => {
+                    setSelectedCompany(company);
+                    setCompanyDropdownOpen(false);
+                  }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-left transition-all duration-200 ${
+                    selectedCompany?.id === company.id
+                      ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {company.logoUrl ? (
+                    <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-white dark:bg-gray-800 shadow-md ring-1 ring-gray-200 dark:ring-gray-600 flex-shrink-0">
+                      <img
+                        src={company.logoUrl}
+                        alt={company.name}
+                        className="w-full h-full object-contain p-1.5"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+                      <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-semibold block truncate ${
+                      selectedCompany?.id === company.id ? 'text-white' : ''
+                    }`}>
+                      {company.name}
+                    </span>
+                    <span className={`text-xs block ${
+                      selectedCompany?.id === company.id ? 'text-white/70' : 'text-gray-400 dark:text-gray-500'
+                    }`}>
+                      {company.companyType === 'project' ? 'Project' :
+                       company.companyType === 'holding' ? 'Holding' :
+                       company.companyType === 'shareholder' ? 'Aandeelhouder' :
+                       company.companyType === 'employer' ? 'Werkgever' : company.companyType}
+                    </span>
+                  </div>
+                  {selectedCompany?.id === company.id && (
+                    <div className="w-2 h-2 rounded-full bg-white shadow-sm flex-shrink-0" />
+                  )}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         )}
 

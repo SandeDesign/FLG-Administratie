@@ -187,8 +187,8 @@ const AdminAbsenceManagement: React.FC = () => {
             onAction={() => {}}
           />
         ) : (
-          {/* Desktop tabel */}
-          <div className="hidden md:block overflow-x-auto">
+          <>
+            <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
@@ -274,6 +274,7 @@ const AdminAbsenceManagement: React.FC = () => {
               );
             })}
           </div>
+          </>
         )}
       </Card>
 
