@@ -1693,19 +1693,37 @@ export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: s
     const usersSnapshot = await getDocs(collection(db, 'users'));
     const allUsers: Array<{ uid: string; email: string; displayName: string; role?: string }> = [];
 
-    // Haal ook alle employees op voor naam-resolutie (batch in plaats van per user)
+    // Haal alle employees op voor naam-resolutie en company-koppeling (batch)
     const employeesSnapshot = await getDocs(collection(db, 'employees'));
     const employeesMap = new Map<string, any>();
     employeesSnapshot.docs.forEach(empDoc => {
       employeesMap.set(empDoc.id, empDoc.data());
     });
 
+    // Bouw set van UIDs die toegang hebben tot dit bedrijf
+    const accessUIDs = new Set<string>();
+    accessUIDs.add(companyOwner);
+    allowedUsers.forEach((uid: string) => accessUIDs.add(uid));
+
+    // Voeg ook users toe die een employee record hebben voor dit bedrijf
+    for (const [empId, empData] of employeesMap) {
+      if (empData.companyId === companyId || empData.projectCompanies?.includes(companyId)) {
+        // Zoek user die via employeeId aan deze employee gekoppeld is
+        for (const uDoc of usersSnapshot.docs) {
+          if (uDoc.data().employeeId === empId) {
+            accessUIDs.add(uDoc.id);
+          }
+        }
+        // Check ook accountUserId op het employee record
+        if (empData.accountUserId) accessUIDs.add(empData.accountUserId);
+      }
+    }
+
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
       const uid = userDoc.id;
 
-      const hasAccess = uid === companyOwner || allowedUsers.includes(uid);
-      if (!hasAccess) continue;
+      if (!accessUIDs.has(uid)) continue;
 
       let displayName = '';
 
