@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Users, Clock, Euro, TrendingUp, HeartPulse, AlertTriangle } from 'lucide-react';
+import { Users, Clock, Euro, TrendingUp, HeartPulse, AlertTriangle, Factory } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
 
-import { isInQuarter } from '../utils/dateFilters';
+import { isInQuarter, isWeekInQuarter } from '../utils/dateFilters';
 
 const AVERAGE_MONTHLY_COST_PER_EMPLOYEE = 3000;
 
@@ -38,6 +38,8 @@ const EmployerStatistics: React.FC = () => {
     approvedLeave: 0,
     totalRevenue: 0,
     totalCosts: 0,
+    productionValue: 0,
+    hourlyRate: 0,
   });
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [employeeHoursData, setEmployeeHoursData] = useState<any[]>([]);
@@ -57,6 +59,11 @@ const EmployerStatistics: React.FC = () => {
 
     setLoading(true);
     try {
+      // Vers uurtarief ophalen uit Firestore
+      const companyDocSnap = await getDoc(doc(db, 'companies', selectedCompany.id));
+      const companyData = companyDocSnap.data();
+      const companyHourlyRate = companyData?.hourlyRate || 0;
+
       // Werknemers voor dit bedrijf
       const companyEmployees = employees.filter(
         e => e.companyId === selectedCompany.id || e.userId === adminUserId
@@ -66,25 +73,25 @@ const EmployerStatistics: React.FC = () => {
       // Loonkosten: gemiddeld €3k per actieve medewerker per maand
       const estimatedMonthlyPayroll = activeEmps.length * AVERAGE_MONTHLY_COST_PER_EMPLOYEE;
 
-      // Time entries (uren registraties)
-      const timeEntriesQuery = query(
-        collection(db, 'timeEntries'),
+      // Production weeks (productie) - Load production hours with correct filtering
+      const productionWeeksQuery = query(
+        collection(db, 'productionWeeks'),
         where('userId', '==', adminUserId),
-        where('companyId', '==', selectedCompany.id)
+        where('companyId', '==', selectedCompany.id),
+        where('year', '==', selectedYear)
       );
-      const timeEntriesSnap = await getDocs(timeEntriesQuery);
+      const productionWeeksSnap = await getDocs(productionWeeksQuery);
       let totalHours = 0;
       let totalOvertime = 0;
       const employeeHoursMap = new Map<string, number>();
 
-      timeEntriesSnap.forEach(doc => {
+      productionWeeksSnap.forEach(doc => {
         const data = doc.data();
-        // Jaar + kwartaal filter op datum
-        const entryDate = data.date?.toDate?.() || (data.date ? new Date(data.date) : null);
-        if (entryDate && !isInQuarter(entryDate, selectedYear, selectedQuarter)) return;
+        // Filter op kwartaal (week moet in geselecteerd kwartaal vallen)
+        if (!isWeekInQuarter(data.week, selectedQuarter)) return;
 
-        const hours = (data.regularHours || 0) + (data.overtimeHours || 0);
-        totalHours += data.regularHours || 0;
+        const hours = data.totalHours || 0;
+        totalHours += hours;
         totalOvertime += data.overtimeHours || 0;
 
         if (data.employeeId) {
@@ -94,6 +101,9 @@ const EmployerStatistics: React.FC = () => {
           );
         }
       });
+
+      // Bereken productiewaarde op basis van gefilterde uren
+      const productionValue = totalHours * companyHourlyRate;
 
       // Sick leave (ziekteverzuim) - filter op companyId
       const sickLeaveQuery = query(
@@ -225,6 +235,8 @@ const EmployerStatistics: React.FC = () => {
         approvedLeave,
         totalRevenue,
         totalCosts,
+        productionValue,
+        hourlyRate: companyHourlyRate,
       });
 
       // Maandelijkse data voor chart
@@ -293,7 +305,7 @@ const EmployerStatistics: React.FC = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <Card>
           <div className="flex items-center justify-between">
             <div>
@@ -313,10 +325,25 @@ const EmployerStatistics: React.FC = () => {
                 {stats.totalHours.toLocaleString('nl-NL')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {stats.totalOvertime > 0 ? `+${stats.totalOvertime.toFixed(0)} overuren` : 'geregistreerd'}
+                {stats.totalOvertime > 0 ? `+${stats.totalOvertime.toFixed(0)} overuren` : 'productie uren'}
               </p>
             </div>
             <Clock className="h-8 w-8 text-purple-600" />
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Productiewaarde</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                {formatCurrency(stats.productionValue)}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {stats.hourlyRate > 0 ? `€${stats.hourlyRate}/uur` : 'geen tarief'}
+              </p>
+            </div>
+            <Factory className="h-8 w-8 text-indigo-600" />
           </div>
         </Card>
 
