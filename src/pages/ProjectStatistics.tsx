@@ -8,7 +8,7 @@ import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
-import PeriodSelector from '../components/ui/PeriodSelector';
+
 import { isInQuarter, isWeekInQuarter } from '../utils/dateFilters';
 
 const ProjectStatistics: React.FC = () => {
@@ -230,8 +230,6 @@ const ProjectStatistics: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projectstatistieken</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>
-
-      <PeriodSelector />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

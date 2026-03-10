@@ -8,7 +8,7 @@ import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
-import PeriodSelector from '../components/ui/PeriodSelector';
+
 import { isInQuarter } from '../utils/dateFilters';
 
 interface CompanyStats {
@@ -237,8 +237,6 @@ const HoldingStatistics: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pageTitle}</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">{pageDescription}</p>
       </div>
-
-      <PeriodSelector />
 
       {/* Totalen Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
