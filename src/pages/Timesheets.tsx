@@ -49,8 +49,8 @@ export default function Timesheets() {
       return;
     }
 
-    // Voor admin: selecteerbare employee, voor manager/employee: eigen currentEmployeeId
-    const effectiveEmployeeId = userRole === 'admin' ? selectedEmployeeId : currentEmployeeId;
+    // Voor admin/manager: selecteerbare employee, voor employee: eigen currentEmployeeId
+    const effectiveEmployeeId = (userRole === 'admin' || userRole === 'manager') ? (selectedEmployeeId || currentEmployeeId) : currentEmployeeId;
 
     if (!effectiveEmployeeId) {
       setLoading(false);
@@ -287,13 +287,16 @@ export default function Timesheets() {
   };
 
   useEffect(() => {
-    if (userRole === 'admin' && !selectedEmployeeId && selectedCompany) {
+    if ((userRole === 'admin' || userRole === 'manager') && !selectedEmployeeId && selectedCompany) {
       const companyEmployees = employees.filter(emp => emp.companyId === selectedCompany.id);
-      if (companyEmployees.length > 0) {
+      if (userRole === 'manager' && currentEmployeeId) {
+        const own = companyEmployees.find(emp => emp.id === currentEmployeeId);
+        setSelectedEmployeeId(own ? own.id : companyEmployees[0]?.id || '');
+      } else if (companyEmployees.length > 0) {
         setSelectedEmployeeId(companyEmployees[0].id);
       }
     }
-  }, [userRole, selectedEmployeeId, selectedCompany, employees]);
+  }, [userRole, selectedEmployeeId, selectedCompany, employees, currentEmployeeId]);
 
   useEffect(() => {
     loadData();
@@ -639,7 +642,7 @@ export default function Timesheets() {
   }
 
   const companyEmployees = employees.filter(emp => emp.companyId === selectedCompany.id);
-  const effectiveEmployeeId = userRole === 'admin' ? selectedEmployeeId : currentEmployeeId;
+  const effectiveEmployeeId = (userRole === 'admin' || userRole === 'manager') ? (selectedEmployeeId || currentEmployeeId) : currentEmployeeId;
 
   if (!effectiveEmployeeId) {
     return (
@@ -717,8 +720,8 @@ export default function Timesheets() {
             </button>
           </div>
 
-          {/* Employee Selector (Admin only) */}
-          {userRole === 'admin' && companyEmployees.length > 1 && (
+          {/* Employee Selector (Admin/Manager) */}
+          {(userRole === 'admin' || userRole === 'manager') && companyEmployees.length > 1 && (
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
