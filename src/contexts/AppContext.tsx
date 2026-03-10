@@ -319,6 +319,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [adminUserId]);
 
+  // Persist selectedCompany naar localStorage bij wijziging
+  useEffect(() => {
+    if (selectedCompany && adminUserId) {
+      localStorage.setItem(`defaultCompany_${adminUserId}`, selectedCompany.id);
+    }
+  }, [selectedCompany?.id, adminUserId]);
+
   // Apply theme color when selected company changes
   useEffect(() => {
     if (selectedCompany?.themeColor) {

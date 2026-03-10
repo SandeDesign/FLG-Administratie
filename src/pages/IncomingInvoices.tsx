@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Upload,
   Zap,
@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -34,10 +34,27 @@ interface OCRResult {
 
 const IncomingInvoices: React.FC = () => {
   const { user, adminUserId } = useAuth();
-  const { selectedCompany } = useApp();
+  const { selectedCompany: contextCompany, companies, setSelectedCompany } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('Inkoopbonnen uploaden');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const companyIdFromUrl = searchParams.get('companyId');
+
+  // Als companyId via URL is meegegeven (vanuit iframe), gebruik dat bedrijf
+  useEffect(() => {
+    if (companyIdFromUrl && companies.length > 0) {
+      const targetCompany = companies.find(c => c.id === companyIdFromUrl);
+      if (targetCompany && targetCompany.id !== contextCompany?.id) {
+        setSelectedCompany(targetCompany);
+      }
+    }
+  }, [companyIdFromUrl, companies, contextCompany?.id, setSelectedCompany]);
+
+  // Gebruik het bedrijf uit URL params als dat beschikbaar is, anders het context bedrijf
+  const selectedCompany = companyIdFromUrl
+    ? companies.find(c => c.id === companyIdFromUrl) || contextCompany
+    : contextCompany;
   const [uploading, setUploading] = useState(false);
   const [processingFiles, setProcessingFiles] = useState<string[]>([]);
   const [ocrProgress, setOcrProgress] = useState(0);
