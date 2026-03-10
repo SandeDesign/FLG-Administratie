@@ -8,9 +8,11 @@ import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import PeriodSelector from '../components/ui/PeriodSelector';
+import { isInQuarter, isWeekInQuarter } from '../utils/dateFilters';
 
 const ProjectStatistics: React.FC = () => {
-  const { selectedCompany, queryUserId, selectedYear, employees } = useApp();
+  const { selectedCompany, queryUserId, selectedYear, selectedQuarter, employees } = useApp();
   const { user } = useAuth();
   usePageTitle('Projectstatistieken');
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ const ProjectStatistics: React.FC = () => {
     }
 
     loadProjectStatistics();
-  }, [selectedCompany, queryUserId, selectedYear]); // ✅ YEAR FILTERING: Re-load when year changes
+  }, [selectedCompany, queryUserId, selectedYear, selectedQuarter]);
 
   const loadProjectStatistics = async () => {
     if (!queryUserId || !selectedCompany) return;
@@ -63,6 +65,8 @@ const ProjectStatistics: React.FC = () => {
 
       productionWeeksSnap.forEach(doc => {
         const data = doc.data();
+        if (!isWeekInQuarter(data.week, selectedQuarter)) return;
+
         const hours = data.totalHours || 0;
         totalHours += hours;
 
@@ -90,8 +94,7 @@ const ProjectStatistics: React.FC = () => {
         const data = doc.data();
         const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
 
-        // ✅ YEAR FILTERING: Only count invoices from selected year
-        if (invoiceDate.getFullYear() !== selectedYear) return;
+        if (!isInQuarter(invoiceDate, selectedYear, selectedQuarter)) return;
 
         totalRevenue += data.totalAmount || 0;
 
@@ -113,8 +116,7 @@ const ProjectStatistics: React.FC = () => {
         const data = doc.data();
         const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
 
-        // ✅ YEAR FILTERING: Only count invoices from selected year
-        if (invoiceDate.getFullYear() !== selectedYear) return;
+        if (!isInQuarter(invoiceDate, selectedYear, selectedQuarter)) return;
 
         totalCosts += data.totalAmount || 0;
 
@@ -125,20 +127,19 @@ const ProjectStatistics: React.FC = () => {
       // Production weeks per maand tellen
       productionWeeksSnap.forEach(doc => {
         const data = doc.data();
-        // Convert week number to approximate month (week 1-4 = month 1, week 5-8 = month 2, etc.)
+        if (!isWeekInQuarter(data.week, selectedQuarter)) return;
         const approximateMonth = Math.ceil((data.week || 1) / 4.33);
         const monthKey = `${data.year}-${String(approximateMonth).padStart(2, '0')}`;
         const hours = data.totalHours || 0;
         monthlyHoursMap.set(monthKey, (monthlyHoursMap.get(monthKey) || 0) + hours);
       });
 
-      const productionValue = totalHours * companyHourlyRate;
+      const productionValue = totalHours * companyHourlyRate * 1.21;
 
-      // ✅ YEAR FILTERING: Count only invoices from selected year
-      const totalInvoicesForYear = Array.from(outgoingSnap.docs).filter(doc => {
+      const totalInvoicesForPeriod = Array.from(outgoingSnap.docs).filter(doc => {
         const data = doc.data();
         const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
-        return invoiceDate.getFullYear() === selectedYear;
+        return isInQuarter(invoiceDate, selectedYear, selectedQuarter);
       }).length;
 
       setStats({
@@ -146,7 +147,7 @@ const ProjectStatistics: React.FC = () => {
         totalOvertime,
         totalRevenue,
         totalCosts,
-        totalInvoices: totalInvoicesForYear,
+        totalInvoices: totalInvoicesForPeriod,
         hourlyRate: companyHourlyRate,
         productionValue,
       });
@@ -178,7 +179,7 @@ const ProjectStatistics: React.FC = () => {
         name: getEmployeeName(empId),
         totalHours: data.totalHours,
         totalWeeks: data.weeks.size,
-        value: data.totalHours * companyHourlyRate,
+        value: data.totalHours * companyHourlyRate * 1.21,
       })).sort((a, b) => b.totalHours - a.totalHours);
       setEmployeeProduction(empProduction);
 
@@ -186,7 +187,7 @@ const ProjectStatistics: React.FC = () => {
       const weekProd = weekList.map(w => ({
         ...w,
         name: getEmployeeName(w.employeeId),
-        value: w.hours * companyHourlyRate,
+        value: w.hours * companyHourlyRate * 1.21,
       })).sort((a, b) => a.week - b.week || a.name.localeCompare(b.name));
       setWeeklyProduction(weekProd);
     } catch (error) {
@@ -229,6 +230,8 @@ const ProjectStatistics: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projectstatistieken</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>
+
+      <PeriodSelector />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -353,11 +356,11 @@ const ProjectStatistics: React.FC = () => {
             <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">excl. BTW</p>
           </div>
           <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-            <p className="text-sm font-medium text-green-900 dark:text-green-300">Productie Waarde</p>
+            <p className="text-sm font-medium text-green-900 dark:text-green-300">Productie Waarde (incl. BTW)</p>
             <p className="text-2xl font-bold text-green-600 mt-2">
               €{stats.productionValue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
-            <p className="text-xs text-green-700 dark:text-green-400 mt-1">{stats.totalProductionHours.toLocaleString('nl-NL')} uur × €{stats.hourlyRate.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</p>
+            <p className="text-xs text-green-700 dark:text-green-400 mt-1">{stats.totalProductionHours.toLocaleString('nl-NL')} uur × €{stats.hourlyRate.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} excl. BTW</p>
           </div>
           <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
             <p className="text-sm font-medium text-purple-900 dark:text-purple-300">Winstmarge</p>
@@ -378,7 +381,7 @@ const ProjectStatistics: React.FC = () => {
                   <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Medewerker</th>
                   <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Weken</th>
                   <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Uren</th>
-                  <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Waarde</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Waarde (incl. BTW)</th>
                 </tr>
               </thead>
               <tbody>
@@ -415,7 +418,7 @@ const ProjectStatistics: React.FC = () => {
                   <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Week</th>
                   <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Medewerker</th>
                   <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Uren</th>
-                  <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Waarde</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Waarde (incl. BTW)</th>
                 </tr>
               </thead>
               <tbody>

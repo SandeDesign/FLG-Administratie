@@ -8,6 +8,8 @@ import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import PeriodSelector from '../components/ui/PeriodSelector';
+import { isInQuarter } from '../utils/dateFilters';
 
 interface CompanyStats {
   companyId: string;
@@ -23,7 +25,7 @@ interface CompanyStats {
 }
 
 const HoldingStatistics: React.FC = () => {
-  const { selectedCompany, companies } = useApp();
+  const { selectedCompany, companies, selectedYear, selectedQuarter } = useApp();
   const { adminUserId } = useAuth();
   usePageTitle('Holdingstatistieken');
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,6 @@ const HoldingStatistics: React.FC = () => {
   });
 
   useEffect(() => {
-    // Deze pagina is voor holdings EN shareholders
     if (!selectedCompany || !adminUserId) {
       setLoading(false);
       return;
@@ -48,70 +49,38 @@ const HoldingStatistics: React.FC = () => {
     }
 
     loadHoldingStatistics();
-  }, [selectedCompany, adminUserId]);
+  }, [selectedCompany, adminUserId, selectedYear, selectedQuarter]);
 
   const loadHoldingStatistics = async () => {
-    if (!adminUserId) return;
+    if (!adminUserId || !selectedCompany) return;
 
     setLoading(true);
     try {
-      console.log('📊 Loading holding statistics...');
-
-      // DEBUG: Laat alle companies zien met hun primaryEmployerId
-      console.log('🔍 ALL COMPANIES DEBUG:');
-      companies.forEach(c => {
-        console.log(`  - ${c.name}`);
-        console.log(`    Type: "${c.companyType}" (typeof: ${typeof c.companyType})`);
-        console.log(`    PrimaryEmployerId: ${c.primaryEmployerId || 'NONE'}`);
-        console.log(`    ID: ${c.id}`);
-        console.log(`    UserId: ${c.userId}`);
-      });
-      console.log(`🎯 Current holding: ${selectedCompany.name} (id: ${selectedCompany.id}, type: ${selectedCompany.companyType})`);
-
-      // Werkmaatschappijen ophalen op basis van bedrijfstype:
-      // Voor HOLDING: toon employer/project companies (werkmaatschappijen)
-      // Voor SHAREHOLDER: toon alleen eigen data (geen aggregatie van andere bedrijven)
       const isOperationalHolding = selectedCompany.companyType === 'holding';
       const isShareholder = selectedCompany.companyType === 'shareholder';
 
       let workCompanies = [];
 
       if (isOperationalHolding) {
-        // HOLDING: toon ALLE employer/project companies + holding zelf
-        // EXCLUDE: andere holdings en shareholders
         workCompanies = companies.filter(c => {
-          // User moet matchen
           if (c.userId !== adminUserId) return false;
-
-          // Skip andere holdings en shareholders (maar NIET de huidige holding zelf!)
           if (c.id !== selectedCompany.id && (c.companyType === 'holding' || c.companyType === 'shareholder')) {
             return false;
           }
-
-          // Include de holding zelf
           if (c.id === selectedCompany.id) return true;
-
-          // Include ALLE employer en project companies van deze user
           if (c.companyType === 'employer' || c.companyType === 'project') {
             return true;
           }
-
           return false;
         });
       } else if (isShareholder) {
-        // SHAREHOLDER: toon alleen eigen data (geen werkmaatschappijen)
         workCompanies = [selectedCompany];
       }
-
-      console.log(`✅ Found ${workCompanies.length} companies (incl. holding zelf)`);
-      console.log(`📋 Companies: ${workCompanies.map(c => `${c.name} (${c.companyType})`).join(', ')}`);
 
       const stats: CompanyStats[] = [];
 
       for (const company of workCompanies) {
-        console.log(`📈 Loading stats for: ${company.name} (${company.companyType})`);
-
-        // Uitgaande facturen (ALLE statussen: concept, betaald, etc.)
+        // Uitgaande facturen met jaar/kwartaal filter
         const outgoingQuery = query(
           collection(db, 'outgoingInvoices'),
           where('userId', '==', adminUserId),
@@ -119,18 +88,16 @@ const HoldingStatistics: React.FC = () => {
         );
         const outgoingSnap = await getDocs(outgoingQuery);
         let outgoingTotal = 0;
-        const outgoingByStatus: Record<string, number> = {};
+        let outgoingCount = 0;
         outgoingSnap.forEach(doc => {
           const data = doc.data();
-          const amount = data.totalAmount || 0;
-          const status = data.status || 'unknown';
-          outgoingTotal += amount;
-          outgoingByStatus[status] = (outgoingByStatus[status] || 0) + 1;
+          const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
+          if (!isInQuarter(invoiceDate, selectedYear, selectedQuarter)) return;
+          outgoingTotal += data.totalAmount || 0;
+          outgoingCount++;
         });
-        console.log(`  💰 Outgoing: ${outgoingSnap.size} facturen, €${outgoingTotal.toFixed(2)}`);
-        console.log(`     Status breakdown:`, outgoingByStatus);
 
-        // Inkomende facturen (ALLE statussen: concept, betaald, etc.)
+        // Inkomende facturen met jaar/kwartaal filter
         const incomingQuery = query(
           collection(db, 'incomingInvoices'),
           where('userId', '==', adminUserId),
@@ -138,16 +105,14 @@ const HoldingStatistics: React.FC = () => {
         );
         const incomingSnap = await getDocs(incomingQuery);
         let incomingTotal = 0;
-        const incomingByStatus: Record<string, number> = {};
+        let incomingCount = 0;
         incomingSnap.forEach(doc => {
           const data = doc.data();
-          const amount = data.totalAmount || 0;
-          const status = data.status || 'unknown';
-          incomingTotal += amount;
-          incomingByStatus[status] = (incomingByStatus[status] || 0) + 1;
+          const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
+          if (!isInQuarter(invoiceDate, selectedYear, selectedQuarter)) return;
+          incomingTotal += data.totalAmount || 0;
+          incomingCount++;
         });
-        console.log(`  💸 Incoming: ${incomingSnap.size} facturen, €${incomingTotal.toFixed(2)}`);
-        console.log(`     Status breakdown:`, incomingByStatus);
 
         // Budget items
         const budgetQuery = query(
@@ -165,7 +130,6 @@ const HoldingStatistics: React.FC = () => {
           const amount = data.amount || 0;
           let monthlyAmount = 0;
 
-          // Bereken maandelijks bedrag
           switch (data.frequency) {
             case 'monthly':
               monthlyAmount = amount;
@@ -191,21 +155,18 @@ const HoldingStatistics: React.FC = () => {
           companyId: company.id,
           companyName: company.name,
           companyType: company.companyType,
-          outgoingInvoicesCount: outgoingSnap.size,
+          outgoingInvoicesCount: outgoingCount,
           outgoingInvoicesTotal: outgoingTotal,
-          incomingInvoicesCount: incomingSnap.size,
+          incomingInvoicesCount: incomingCount,
           incomingInvoicesTotal: incomingTotal,
           budgetCostsMonthly: monthlyCosts,
           budgetIncomeMonthly: monthlyIncome,
           profit,
         });
-
-        console.log(`✓ ${company.name}: €${outgoingTotal.toFixed(2)} revenue, €${incomingTotal.toFixed(2)} costs`);
       }
 
       setCompanyStats(stats);
 
-      // Totalen berekenen
       const totalRevenue = stats.reduce((sum, s) => sum + s.outgoingInvoicesTotal, 0);
       const totalCosts = stats.reduce((sum, s) => sum + s.incomingInvoicesTotal, 0);
       const totalProfit = totalRevenue - totalCosts;
@@ -216,10 +177,8 @@ const HoldingStatistics: React.FC = () => {
         totalProfit,
         totalCompanies: stats.length,
       });
-
-      console.log(`💰 Total: €${totalRevenue.toFixed(2)} revenue, €${totalCosts.toFixed(2)} costs, €${totalProfit.toFixed(2)} profit`);
     } catch (error) {
-      console.error('❌ Error loading holding statistics:', error);
+      console.error('Error loading holding statistics:', error);
     } finally {
       setLoading(false);
     }
@@ -251,7 +210,6 @@ const HoldingStatistics: React.FC = () => {
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
 
-  // Data voor charts
   const revenueChartData = companyStats.map(s => ({
     name: s.companyName,
     omzet: s.outgoingInvoicesTotal,
@@ -279,6 +237,8 @@ const HoldingStatistics: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pageTitle}</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">{pageDescription}</p>
       </div>
+
+      <PeriodSelector />
 
       {/* Totalen Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

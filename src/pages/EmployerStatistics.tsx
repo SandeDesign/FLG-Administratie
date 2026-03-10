@@ -8,6 +8,8 @@ import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, LineChart } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import PeriodSelector from '../components/ui/PeriodSelector';
+import { isInQuarter } from '../utils/dateFilters';
 
 const AVERAGE_MONTHLY_COST_PER_EMPLOYEE = 3000;
 
@@ -19,7 +21,7 @@ const formatCurrency = (amount: number): string => {
 };
 
 const EmployerStatistics: React.FC = () => {
-  const { selectedCompany, employees } = useApp();
+  const { selectedCompany, employees, selectedYear, selectedQuarter } = useApp();
   const { adminUserId } = useAuth();
   usePageTitle('Werkgeverstatistieken');
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ const EmployerStatistics: React.FC = () => {
     }
 
     loadEmployerStatistics();
-  }, [selectedCompany, adminUserId]);
+  }, [selectedCompany, adminUserId, selectedYear, selectedQuarter]);
 
   const loadEmployerStatistics = async () => {
     if (!adminUserId || !selectedCompany) return;
@@ -67,6 +69,7 @@ const EmployerStatistics: React.FC = () => {
       // Time entries (uren registraties)
       const timeEntriesQuery = query(
         collection(db, 'timeEntries'),
+        where('userId', '==', adminUserId),
         where('companyId', '==', selectedCompany.id)
       );
       const timeEntriesSnap = await getDocs(timeEntriesQuery);
@@ -76,6 +79,10 @@ const EmployerStatistics: React.FC = () => {
 
       timeEntriesSnap.forEach(doc => {
         const data = doc.data();
+        // Jaar + kwartaal filter op datum
+        const entryDate = data.date?.toDate?.() || (data.date ? new Date(data.date) : null);
+        if (entryDate && !isInQuarter(entryDate, selectedYear, selectedQuarter)) return;
+
         const hours = (data.regularHours || 0) + (data.overtimeHours || 0);
         totalHours += data.regularHours || 0;
         totalOvertime += data.overtimeHours || 0;
@@ -101,12 +108,17 @@ const EmployerStatistics: React.FC = () => {
 
       sickLeaveSnap.forEach(doc => {
         const data = doc.data();
-        // Filter op companyId
         if (data.companyId !== selectedCompany.id) return;
         if (!data.startDate) return;
 
         const start = data.startDate?.toDate ? data.startDate.toDate() : new Date(data.startDate);
         if (isNaN(start.getTime())) return;
+
+        // Filter op jaar/kwartaal: ziekmelding moet overlap hebben met geselecteerde periode
+        if (!isInQuarter(start, selectedYear, selectedQuarter)) {
+          // Check of het een actieve ziekmelding is die doorloopt in de geselecteerde periode
+          if (data.status !== 'active' && data.status !== 'partially_recovered') return;
+        }
 
         const end = data.endDate
           ? (data.endDate?.toDate ? data.endDate.toDate() : new Date(data.endDate))
@@ -135,12 +147,11 @@ const EmployerStatistics: React.FC = () => {
 
       setSickEmployees(sickEmpList.sort((a, b) => b.days - a.days));
 
-      // Ziekteverzuim percentage: actief ziek / totaal actieve medewerkers
       const sickPercentage = activeEmps.length > 0
         ? (activeSickCount / activeEmps.length) * 100
         : 0;
 
-      // Leave requests (verlofaanvragen) - filter op companyId
+      // Leave requests (verlofaanvragen) - filter op companyId + jaar/kwartaal
       const leaveQuery = query(
         collection(db, 'leaveRequests'),
         where('userId', '==', adminUserId)
@@ -151,11 +162,15 @@ const EmployerStatistics: React.FC = () => {
       leaveSnap.forEach(doc => {
         const data = doc.data();
         if (data.companyId !== selectedCompany.id) return;
+
+        const leaveDate = data.startDate?.toDate?.() || (data.startDate ? new Date(data.startDate) : null);
+        if (leaveDate && !isInQuarter(leaveDate, selectedYear, selectedQuarter)) return;
+
         totalLeaveRequests++;
         if (data.status === 'approved') approvedLeave++;
       });
 
-      // Outgoing invoices (omzet)
+      // Outgoing invoices (omzet) - met jaar/kwartaal filter
       const outgoingQuery = query(
         collection(db, 'outgoingInvoices'),
         where('userId', '==', adminUserId),
@@ -167,14 +182,16 @@ const EmployerStatistics: React.FC = () => {
 
       outgoingSnap.forEach(doc => {
         const data = doc.data();
-        totalRevenue += data.totalAmount || 0;
-
         const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
+
+        if (!isInQuarter(invoiceDate, selectedYear, selectedQuarter)) return;
+
+        totalRevenue += data.totalAmount || 0;
         const monthKey = `${invoiceDate.getFullYear()}-${String(invoiceDate.getMonth() + 1).padStart(2, '0')}`;
         monthlyRevenueMap.set(monthKey, (monthlyRevenueMap.get(monthKey) || 0) + (data.totalAmount || 0));
       });
 
-      // Incoming invoices (kosten)
+      // Incoming invoices (kosten) - met jaar/kwartaal filter
       const incomingQuery = query(
         collection(db, 'incomingInvoices'),
         where('userId', '==', adminUserId),
@@ -186,9 +203,11 @@ const EmployerStatistics: React.FC = () => {
 
       incomingSnap.forEach(doc => {
         const data = doc.data();
-        totalCosts += data.totalAmount || 0;
-
         const invoiceDate = data.invoiceDate?.toDate?.() || new Date(data.invoiceDate);
+
+        if (!isInQuarter(invoiceDate, selectedYear, selectedQuarter)) return;
+
+        totalCosts += data.totalAmount || 0;
         const monthKey = `${invoiceDate.getFullYear()}-${String(invoiceDate.getMonth() + 1).padStart(2, '0')}`;
         monthlyCostsMap.set(monthKey, (monthlyCostsMap.get(monthKey) || 0) + (data.totalAmount || 0));
       });
@@ -208,7 +227,7 @@ const EmployerStatistics: React.FC = () => {
         totalCosts,
       });
 
-      // Maandelijkse data voor chart - inclusief loonkosten lijn
+      // Maandelijkse data voor chart
       const allMonthKeys = new Set([
         ...Array.from(monthlyRevenueMap.keys()),
         ...Array.from(monthlyCostsMap.keys()),
@@ -272,6 +291,8 @@ const EmployerStatistics: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Werkgeverstatistieken</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">Overzicht van {selectedCompany.name}</p>
       </div>
+
+      <PeriodSelector />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
