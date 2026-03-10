@@ -2248,6 +2248,51 @@ const calculateNextOccurrence = (
 };
 
 /**
+ * Haal taken op die zijn toegewezen aan een specifieke gebruiker (via assignedTo array)
+ */
+export const getTasksAssignedToUser = async (
+  userUid: string,
+  companyId?: string
+): Promise<BusinessTask[]> => {
+  try {
+    let q;
+    if (companyId) {
+      q = query(
+        collection(db, 'businessTasks'),
+        where('assignedTo', 'array-contains', userUid),
+        where('companyId', '==', companyId),
+        orderBy('dueDate', 'asc')
+      );
+    } else {
+      q = query(
+        collection(db, 'businessTasks'),
+        where('assignedTo', 'array-contains', userUid),
+        orderBy('dueDate', 'asc')
+      );
+    }
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        dueDate: data.dueDate?.toDate ? data.dueDate.toDate() : data.dueDate ? new Date(data.dueDate) : new Date(),
+        startDate: data.startDate?.toDate ? data.startDate.toDate() : data.startDate ? new Date(data.startDate) : undefined,
+        completedDate: data.completedDate?.toDate ? data.completedDate.toDate() : data.completedDate ? new Date(data.completedDate) : undefined,
+        nextOccurrence: data.nextOccurrence?.toDate ? data.nextOccurrence.toDate() : data.nextOccurrence ? new Date(data.nextOccurrence) : undefined,
+        lastGenerated: data.lastGenerated?.toDate ? data.lastGenerated.toDate() : data.lastGenerated ? new Date(data.lastGenerated) : undefined,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+      } as BusinessTask;
+    });
+  } catch (error) {
+    console.error('Error fetching tasks assigned to user:', error);
+    return [];
+  }
+};
+
+/**
  * ========================================
  * INCOMING POST MANAGEMENT
  * ========================================
