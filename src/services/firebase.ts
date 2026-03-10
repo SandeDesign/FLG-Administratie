@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   Timestamp,
+  arrayUnion,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -298,7 +299,7 @@ export const deleteBranch = async (id: string, userId: string): Promise<void> =>
 // Employees
 export const getEmployees = async (userId: string, companyId?: string, branchId?: string): Promise<Employee[]> => {
   let q;
-  
+
   if (companyId && branchId) {
     q = query(
       collection(db, 'employees'),
@@ -321,12 +322,43 @@ export const getEmployees = async (userId: string, companyId?: string, branchId?
       orderBy('createdAt', 'desc')
     );
   }
-  
+
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...convertTimestamps(doc.data())
+  const employees = querySnapshot.docs.map(empDoc => ({
+    id: empDoc.id,
+    ...convertTimestamps(empDoc.data())
   } as Employee));
+
+  // Sync hasAccount: controleer of werknemers zonder hasAccount toch een account hebben
+  const employeesWithoutAccount = employees.filter(emp => !emp.hasAccount);
+  if (employeesWithoutAccount.length > 0) {
+    const empIds = employeesWithoutAccount.map(emp => emp.id);
+    const linkedEmpIds = new Set<string>();
+
+    for (let i = 0; i < empIds.length; i += 30) {
+      const batch = empIds.slice(i, i + 30);
+      const uQ = query(collection(db, 'users'), where('employeeId', 'in', batch));
+      const uSnapshot = await getDocs(uQ);
+      for (const uDoc of uSnapshot.docs) {
+        const empId = uDoc.data().employeeId;
+        if (empId) linkedEmpIds.add(empId);
+      }
+    }
+
+    // Repareer employees die wél een account blijken te hebben
+    for (const emp of employeesWithoutAccount) {
+      if (linkedEmpIds.has(emp.id)) {
+        emp.hasAccount = true;
+        const empRef = doc(db, 'employees', emp.id);
+        updateDoc(empRef, {
+          hasAccount: true,
+          updatedAt: Timestamp.fromDate(new Date())
+        }).catch(err => console.error('Error syncing hasAccount:', err));
+      }
+    }
+  }
+
+  return employees;
 };
 
 // Get employees with their project companies populated
@@ -576,20 +608,22 @@ export const updateTimeEntry = async (id: string, userId: string, updates: Parti
 
 // User Roles
 export const createUserRole = async (
-  uid: string, 
-  role: 'admin' | 'manager' | 'employee', 
+  uid: string,
+  role: 'admin' | 'manager' | 'employee',
   employeeId?: string,
   userData?: {
     firstName?: string;
     lastName?: string;
     email?: string;
     assignedCompanyId?: string;
+    adminUserId?: string;
   }
 ): Promise<void> => {
   const roleData = convertToTimestamps({
     uid,
     role,
     employeeId: employeeId || null,
+    adminUserId: userData?.adminUserId || null,
     firstName: userData?.firstName || '',
     lastName: userData?.lastName || '',
     email: userData?.email || '',
@@ -657,8 +691,18 @@ export const createEmployeeAuthAccount = async (
       firstName: employee?.personalInfo.firstName,
       lastName: employee?.personalInfo.lastName,
       email: employee?.personalInfo.contactInfo.email,
+      adminUserId: userId,
     });
-    
+
+    // Voeg de nieuwe user toe aan allowedUsers van het bedrijf
+    const employeeData = employeeSnap.data();
+    if (employeeData.companyId) {
+      const companyRef = doc(db, 'companies', employeeData.companyId);
+      await updateDoc(companyRef, {
+        allowedUsers: arrayUnion(newUserId)
+      });
+    }
+
     return newUserId;
   } catch (error) {
     console.error('Error creating employee account:', error);
