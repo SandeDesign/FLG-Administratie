@@ -664,8 +664,8 @@ const Dashboard: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-green-700">Productie Waarde</p>
-                  <p className="text-2xl font-bold text-green-900 mt-2">{formatCurrency(projectStats.productionValue)}</p>
-                  <p className="text-xs text-green-600 mt-2">{formatCurrency(projectStats.hourlyRate)}/uur</p>
+                  <p className="text-2xl font-bold text-green-900 mt-2">€{Number(projectStats.productionValue).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="text-xs text-green-600 mt-2">€{Number(projectStats.hourlyRate).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/uur</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-300" />
               </div>
