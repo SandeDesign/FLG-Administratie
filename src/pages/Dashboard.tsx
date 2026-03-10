@@ -48,7 +48,7 @@ const formatCurrency = (amount: number): string => {
 };
 
 const Dashboard: React.FC = () => {
-  const { employees, companies, loading, selectedCompany } = useApp();
+  const { employees, companies, loading, selectedCompany, selectedYear } = useApp();
   const { user, userRole, currentEmployeeId, adminUserId } = useAuth();
   const navigate = useNavigate();
   usePageTitle('Dashboard');
@@ -394,63 +394,35 @@ const Dashboard: React.FC = () => {
 
       try {
         setLoadingProjectStats(true);
-        console.log('🏭 Loading project stats for:', selectedCompany.name);
 
         const { collection, query, where, getDocs } = await import('firebase/firestore');
         const { db } = await import('../lib/firebase');
 
-        console.log('⏱️ Querying timeEntries for workCompanyId:', selectedCompany.id);
-        const timeEntriesQuery = query(
-          collection(db, 'timeEntries'),
-          where('workCompanyId', '==', selectedCompany.id)
+        // Productie uren ophalen uit productionWeeks collectie
+        const productionWeeksQuery = query(
+          collection(db, 'productionWeeks'),
+          where('userId', '==', adminUserId),
+          where('companyId', '==', selectedCompany.id),
+          where('year', '==', selectedYear)
         );
-        const timeEntriesSnap = await getDocs(timeEntriesQuery);
-        console.log('⏱️ TimeEntries found:', timeEntriesSnap.size);
+        const productionWeeksSnap = await getDocs(productionWeeksQuery);
 
         let totalHours = 0;
-        let totalOvertimeHours = 0;
-        let totalWeekendHours = 0;
-        const employeeIds = new Set();
-
-        timeEntriesSnap.forEach(doc => {
+        productionWeeksSnap.forEach(doc => {
           const data = doc.data();
-          totalHours += data.regularHours || 0;
-          totalOvertimeHours += data.overtimeHours || 0;
-          totalWeekendHours += data.weekendHours || 0;
-          if (data.employeeId) employeeIds.add(data.employeeId);
+          totalHours += data.totalHours || 0;
         });
 
-        console.log('📊 Total hours:', totalHours);
-        console.log('👥 Unique employees:', employeeIds.size);
-
-        console.log('💰 Querying invoices for companyId:', selectedCompany.id);
-        const invoicesQuery = query(
-          collection(db, 'outgoingInvoices'),
-          where('companyId', '==', selectedCompany.id)
-        );
-        const invoicesSnap = await getDocs(invoicesQuery);
-        console.log('💰 Invoices found:', invoicesSnap.size);
-
-        let totalRevenue = 0;
-        invoicesSnap.forEach(doc => {
-          const data = doc.data();
-          if (data.status !== 'cancelled') {
-            totalRevenue += data.totalAmount || data.amount || 0;
-          }
-        });
-
-        console.log('💵 Total revenue:', totalRevenue);
+        // Uurtarief van het project bedrijf
+        const companyHourlyRate = selectedCompany.hourlyRate || 0;
+        const productionValue = totalHours * companyHourlyRate;
 
         const stats = {
           totalHours,
-          totalOvertimeHours,
-          totalWeekendHours,
-          totalRevenue,
-          activeEmployees: employeeIds.size,
-          revenuePerHour: totalHours > 0 ? totalRevenue / totalHours : 0,
+          productionValue,
+          hourlyRate: companyHourlyRate,
         };
 
-        console.log('✅ Project stats:', stats);
         setProjectStats(stats);
 
         // Also load invoice stats
@@ -463,7 +435,7 @@ const Dashboard: React.FC = () => {
     };
 
     loadProjectStats();
-  }, [user, selectedCompany?.id, selectedCompany?.companyType, loadInvoiceStats]);
+  }, [user, adminUserId, selectedCompany?.id, selectedCompany?.companyType, selectedYear, loadInvoiceStats]);
 
   // ========== LOAD EMPLOYEE STATS ==========
   useEffect(() => {
@@ -672,7 +644,7 @@ const Dashboard: React.FC = () => {
 
         {/* Project Stats */}
         {projectStats && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
               <div className="flex items-start justify-between">
                 <div>
@@ -688,32 +660,10 @@ const Dashboard: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-green-700">Productie Waarde</p>
-                  <p className="text-2xl font-bold text-green-900 mt-2">{projectStats.totalHours > 0 ? formatCurrency(projectStats.totalRevenue) : '€0'}</p>
-                  <p className="text-xs text-green-600 mt-2">{formatCurrency(projectStats.revenuePerHour)}/uur</p>
+                  <p className="text-2xl font-bold text-green-900 mt-2">{formatCurrency(projectStats.productionValue)}</p>
+                  <p className="text-xs text-green-600 mt-2">{formatCurrency(projectStats.hourlyRate)}/uur</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-300" />
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-purple-700">€/Uur</p>
-                  <p className="text-2xl font-bold text-purple-900 mt-2">€{projectStats.revenuePerHour.toFixed(0)}</p>
-                  <p className="text-xs text-purple-600 mt-2">gemiddeld</p>
-                </div>
-                <Euro className="h-8 w-8 text-purple-300" />
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-orange-700">Medewerkers</p>
-                  <p className="text-2xl font-bold text-orange-900 mt-2">{projectStats.activeEmployees}</p>
-                  <p className="text-xs text-orange-600 mt-2">actief</p>
-                </div>
-                <Users className="h-8 w-8 text-orange-300" />
               </div>
             </Card>
           </div>
