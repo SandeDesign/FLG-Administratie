@@ -16,6 +16,8 @@ import {
   FileText,
   Link2,
   Link2Off,
+  Eye,
+  Smartphone,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -152,7 +154,7 @@ const Settings: React.FC = () => {
   const { success, error: showError } = useToast();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   usePageTitle('Instellingen');
-  const [activeTab, setActiveTab] = useState<'account' | 'company'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'visibility' | 'default-company' | 'year-filter' | 'invoice' | 'co-admins' | 'favorites' | 'mobile-nav'>('account');
   const [loading, setLoading] = useState(false);
   const [selectedDefaultCompanyId, setSelectedDefaultCompanyId] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -541,9 +543,18 @@ const Settings: React.FC = () => {
     }
   };
 
+  const isAdminOrManager = userRole === 'admin' || userRole === 'manager';
   const tabs = [
     { id: 'account', name: 'Account', icon: User },
-    ...((userRole === 'admin' || userRole === 'manager') ? [{ id: 'company', name: 'Bedrijf', icon: Building2 }] : []),
+    ...(isAdminOrManager ? [
+      { id: 'visibility', name: 'Zichtbaarheid', icon: Eye },
+      { id: 'default-company', name: 'Standaard Bedrijf', icon: Building2 },
+      { id: 'year-filter', name: 'Jaar Filter', icon: Calendar },
+      { id: 'invoice', name: 'Factuurnummer', icon: FileText },
+      { id: 'co-admins', name: 'Co-Admins', icon: UserPlus },
+      { id: 'favorites', name: 'Favorieten', icon: Star },
+      { id: 'mobile-nav', name: 'Mobiele Nav', icon: Smartphone },
+    ] : []),
   ];
 
   return (
@@ -789,16 +800,18 @@ const Settings: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'company' && (userRole === 'admin' || userRole === 'manager') && (
+      {activeTab === 'visibility' && isAdminOrManager && (
         <div className="space-y-6">
-          {/* Companies Visibility Settings */}
           <Card>
             <div className="p-6">
               <CompaniesVisibilitySettings />
             </div>
           </Card>
+        </div>
+      )}
 
-          {/* Default Company */}
+      {activeTab === 'default-company' && isAdminOrManager && (
+        <div className="space-y-6">
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -838,8 +851,11 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </Card>
+        </div>
+      )}
 
-          {/* Year Selector */}
+      {activeTab === 'year-filter' && isAdminOrManager && (
+        <div className="space-y-6">
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
@@ -883,8 +899,11 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </Card>
+        </div>
+      )}
 
-          {/* Invoice Number Preview */}
+      {activeTab === 'invoice' && isAdminOrManager && (
+        <div className="space-y-6">
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
@@ -947,8 +966,11 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </Card>
+        </div>
+      )}
 
-          {/* Co-Admins */}
+      {activeTab === 'co-admins' && isAdminOrManager && (
+        <div className="space-y-6">
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
@@ -1023,8 +1045,11 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </Card>
+        </div>
+      )}
 
-          {/* Favorite Pages */}
+      {activeTab === 'favorites' && isAdminOrManager && (
+        <div className="space-y-6">
           <Card>
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
@@ -1118,8 +1143,11 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </Card>
+        </div>
+      )}
 
-          {/* Bottom Navigation Settings */}
+      {activeTab === 'mobile-nav' && isAdminOrManager && (
+        <div className="space-y-6">
           <BottomNavSettings />
         </div>
       )}
