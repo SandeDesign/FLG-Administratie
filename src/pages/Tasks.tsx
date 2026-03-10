@@ -18,6 +18,12 @@ import {
   DollarSign,
   Users,
   Folder,
+  MoreHorizontal,
+  Circle,
+  AlertCircle,
+  PlayCircle,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
