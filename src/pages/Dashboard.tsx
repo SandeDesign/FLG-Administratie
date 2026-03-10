@@ -39,7 +39,7 @@ import {
 import { getPendingTimesheets } from '../services/timesheetService';
 import { getPayrollCalculations } from '../services/payrollService';
 import { usePageTitle } from '../contexts/PageTitleContext';
-import PeriodSelector from '../components/ui/PeriodSelector';
+
 import { isInQuarter, isWeekInQuarter } from '../utils/dateFilters';
 
 const formatCurrency = (amount: number): string => {
@@ -497,7 +497,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <PeriodSelector />
 
         {/* Key Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -613,7 +612,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <PeriodSelector />
 
         {/* Alert Banner */}
         {totalPending > 0 && (
@@ -846,7 +844,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <PeriodSelector />
 
         {/* Alert Banner */}
         {totalPending > 0 && (

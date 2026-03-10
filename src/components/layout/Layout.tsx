@@ -2,12 +2,16 @@ import React, { useState, useRef } from 'react';
 import {
   ArrowLeft,
   Building2,
-  ChevronDown
+  Calendar,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import { usePageTitleValue } from '../../contexts/PageTitleContext';
+import { getQuarterLabel } from '../../utils/dateFilters';
 import Sidebar from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileFullScreenMenu } from './MobileFullScreenMenu';
@@ -20,8 +24,9 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
+  const [periodDropdownOpen, setPeriodDropdownOpen] = useState(false);
   const { userRole } = useAuth();
-  const { companies, selectedCompany, setSelectedCompany } = useApp();
+  const { companies, selectedCompany, setSelectedCompany, selectedYear, setSelectedYear, selectedQuarter, setSelectedQuarter } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const tasksReminderRef = useRef<WeeklyTasksReminderRef>(null);
@@ -91,14 +96,25 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           {/* RIGHT: Company Selector */}
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex justify-end items-center gap-1">
+            {/* Period indicator (small, tappable — opens full selector in mobile menu) */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Calendar className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                {selectedQuarter ? `Q${selectedQuarter}` : selectedYear}
+              </span>
+            </button>
+
             <div className="relative">
               <button
                 onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
                 className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <Building2 className="h-5 w-5 text-primary-600" />
-                <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 dark:text-gray-500 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Dropdown Menu - Opens LEFT on mobile */}
@@ -138,11 +154,59 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </header>
 
         {/* Desktop Header */}
-        <header className="hidden lg:flex lg:items-center lg:justify-end lg:px-6 lg:py-4 lg:bg-white dark:lg:bg-gray-800 lg:border-b lg:border-gray-200 dark:lg:border-gray-700">
-          {/* RIGHT: Company Selector */}
+        <header className="hidden lg:flex lg:items-center lg:justify-end lg:gap-2 lg:px-6 lg:py-4 lg:bg-white dark:lg:bg-gray-800 lg:border-b lg:border-gray-200 dark:lg:border-gray-700">
+          {/* Period Selector */}
           <div className="relative">
             <button
-              onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
+              onClick={() => { setPeriodDropdownOpen(!periodDropdownOpen); setCompanyDropdownOpen(false); }}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Calendar className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {selectedYear} {selectedQuarter ? `Q${selectedQuarter}` : 'Heel jaar'}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${periodDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {periodDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setPeriodDropdownOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 w-56 p-3">
+                  {/* Year selector */}
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setSelectedYear(selectedYear - 1)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{selectedYear}</span>
+                    <button onClick={() => setSelectedYear(selectedYear + 1)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {/* Quarter pills */}
+                  <div className="grid grid-cols-5 gap-1 bg-gray-100 dark:bg-gray-900 rounded-lg p-1">
+                    {([null, 1, 2, 3, 4] as (number | null)[]).map((q) => (
+                      <button
+                        key={q ?? 'all'}
+                        onClick={() => { setSelectedQuarter(q); setPeriodDropdownOpen(false); }}
+                        className={`px-2 py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
+                          selectedQuarter === q
+                            ? 'bg-primary-600 text-white shadow-sm'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {getQuarterLabel(q)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Company Selector */}
+          <div className="relative">
+            <button
+              onClick={() => { setCompanyDropdownOpen(!companyDropdownOpen); setPeriodDropdownOpen(false); }}
               className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
@@ -150,7 +214,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Dropdown Menu */}
             {companyDropdownOpen && (
               <>
                 <div
