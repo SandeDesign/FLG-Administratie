@@ -736,9 +736,8 @@ export default function Timesheets() {
             </select>
           )}
 
-          {/* Import Button - ✅ Admin/Manager kunnen ophalen voor geselecteerde employee, Employee voor zichzelf */}
-          {effectiveEmployeeId && selectedCompany &&
-           (selectedCompany.name.toLowerCase().includes('itknecht') || selectedCompany.name.toLowerCase().includes('buddy')) && (
+          {/* Import Button - Altijd tonen voor alle bedrijven */}
+          {effectiveEmployeeId && selectedCompany && (
             <Button
               onClick={handleImportFromITKnecht}
               disabled={importing || saving}
