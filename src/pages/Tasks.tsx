@@ -44,6 +44,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
 import Modal from '../components/ui/Modal';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import { isInQuarter } from '../utils/dateFilters';
 
 // Category configuratie
 const CATEGORY_CONFIG: Record<TaskCategory, {
@@ -97,7 +98,7 @@ const FREQUENCY_LABELS: Record<TaskFrequency, string> = {
 
 const Tasks: React.FC = () => {
   const { user } = useAuth();
-  const { selectedCompany } = useApp();
+  const { selectedCompany, selectedYear, selectedQuarter } = useApp();
   const { success, error } = useToast();
   usePageTitle('Taken');
 
@@ -287,6 +288,12 @@ const Tasks: React.FC = () => {
 
   // Filter taken
   const filteredTasks = tasks.filter(task => {
+    // Period filter on dueDate
+    if (task.dueDate) {
+      const taskDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+      if (!isInQuarter(taskDate, selectedYear, selectedQuarter)) return false;
+    }
+
     if (filterStatus !== 'all' && task.status !== filterStatus) return false;
     if (filterCategory !== 'all' && task.category !== filterCategory) return false;
     if (filterPriority !== 'all' && task.priority !== filterPriority) return false;

@@ -11,6 +11,7 @@ import { outgoingInvoiceService, OutgoingInvoice, CompanyInfo } from '../service
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import { isInQuarter } from '../utils/dateFilters';
 
 const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/ttdixmxlu9n7rvbnxgfomilht2ihllc2';
 
@@ -51,7 +52,7 @@ interface ProductionWeek {
 
 const OutgoingInvoices: React.FC = () => {
   const { user } = useAuth();
-  const { selectedCompany, employees, queryUserId } = useApp();
+  const { selectedCompany, employees, queryUserId, selectedYear, selectedQuarter } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('Facturen');
 
@@ -649,12 +650,15 @@ const OutgoingInvoices: React.FC = () => {
     return texts[status] || status;
   };
 
-  const filteredInvoices = invoices.filter(
-    inv =>
-      (inv.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) &&
-      (statusFilter === 'all' || inv.status === statusFilter)
-  );
+  const filteredInvoices = invoices.filter(inv => {
+    // Period filter
+    const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+    if (!isInQuarter(invDate, selectedYear, selectedQuarter)) return false;
+    // Search + status filter
+    return (inv.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) &&
+      (statusFilter === 'all' || inv.status === statusFilter);
+  });
 
   const totalAmount = filteredInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
   const draftCount = filteredInvoices.filter(inv => inv.status === 'draft').length;
