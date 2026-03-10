@@ -299,7 +299,7 @@ export const deleteBranch = async (id: string, userId: string): Promise<void> =>
 // Employees
 export const getEmployees = async (userId: string, companyId?: string, branchId?: string): Promise<Employee[]> => {
   let q;
-  
+
   if (companyId && branchId) {
     q = query(
       collection(db, 'employees'),
@@ -345,6 +345,7 @@ export const getEmployees = async (userId: string, companyId?: string, branchId?
       }
     }
 
+    // Repareer employees die wél een account blijken te hebben
     for (const emp of employeesWithoutAccount) {
       if (linkedEmpIds.has(emp.id)) {
         emp.hasAccount = true;
