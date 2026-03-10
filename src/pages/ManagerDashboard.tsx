@@ -159,17 +159,17 @@ const ManagerDashboard: React.FC = () => {
   return (
     <div className="space-y-8 pb-24 sm:pb-0">
       {/* Header */}
-      <div className={`hidden lg:block bg-gradient-to-r ${isProjectCompany ? 'from-emerald-600 to-emerald-700' : 'from-indigo-600 to-indigo-700'} rounded-2xl p-8 text-white shadow-lg`}>
+      <div className={`hidden lg:block bg-gradient-to-r ${isProjectCompany ? 'from-emerald-600 to-emerald-700' : 'from-indigo-600 to-indigo-700'} dark:from-gray-800 dark:to-gray-800 dark:border dark:border-gray-700 rounded-2xl p-8 text-white shadow-lg`}>
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-4xl font-bold mb-2">{isProjectCompany ? 'Project Dashboard' : 'Manager Dashboard'}</h1>
-            <p className={`${isProjectCompany ? 'text-emerald-100' : 'text-indigo-100'} flex items-center gap-2`}>
+            <p className={`${isProjectCompany ? 'text-emerald-100' : 'text-indigo-100'} dark:text-gray-400 flex items-center gap-2`}>
               {isProjectCompany ? <Factory className="h-4 w-4" /> : <Users className="h-4 w-4" />}
               {selectedCompany?.name || 'Bedrijf'}
             </p>
           </div>
-          <div className="h-16 w-16 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-            {isProjectCompany ? <Factory className="h-8 w-8 text-white" /> : <Users className="h-8 w-8 text-white" />}
+          <div className="h-16 w-16 rounded-full bg-white/20 dark:bg-gray-700 flex items-center justify-center">
+            {isProjectCompany ? <Factory className="h-8 w-8 text-white dark:text-gray-300" /> : <Users className="h-8 w-8 text-white dark:text-gray-300" />}
           </div>
         </div>
 
@@ -315,7 +315,7 @@ const ManagerDashboard: React.FC = () => {
                     </div>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">Week {week.weekNumber}</span>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${week.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${week.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'}`}>
                     {week.status === 'completed' ? 'Afgerond' : 'Open'}
                   </span>
                 </div>
@@ -349,7 +349,7 @@ const ManagerDashboard: React.FC = () => {
           </div>
           <Card className="divide-y divide-gray-100 dark:divide-gray-700">
             {incomingInvoices.map((invoice) => (
-              <div key={invoice.id} className="p-4 hover:bg-gray-50 dark:bg-gray-900 transition flex items-center justify-between">
+              <div key={invoice.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-primary-100 rounded-lg">
                     <Upload className="h-4 w-4 text-primary-600" />
@@ -361,23 +361,23 @@ const ManagerDashboard: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-gray-900 dark:text-gray-100">€{(invoice.totalAmount || 0).toFixed(2)}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${ invoice.status === 'approved' ? 'bg-green-100 text-green-700' : invoice.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700' }`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${ invoice.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : invoice.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' }`}>
                     {invoice.status === 'approved' ? 'Goedgekeurd' : invoice.status === 'rejected' ? 'Afgewezen' : 'In behandeling'}
                   </span>
                 </div>
               </div>
             ))}
           </Card>
-          <Card className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-primary-100 border-l-4 border-primary-500">
+          <Card className="mt-4 p-4 bg-primary-50 dark:bg-gray-800 border-l-4 border-primary-500">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Euro className="h-6 w-6 text-primary-600" />
+                <Euro className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                 <div>
-                  <p className="text-sm text-primary-700">Totaal Inkoop {selectedQuarter ? `Q${selectedQuarter}` : ''} {selectedYear}</p>
-                  <p className="text-2xl font-bold text-primary-900">€{stats.totalInvoiceAmount.toFixed(2)}</p>
+                  <p className="text-sm text-primary-700 dark:text-gray-400">Totaal Inkoop {selectedQuarter ? `Q${selectedQuarter}` : ''} {selectedYear}</p>
+                  <p className="text-2xl font-bold text-primary-900 dark:text-gray-100">€{stats.totalInvoiceAmount.toFixed(2)}</p>
                 </div>
               </div>
-              <p className="text-sm text-primary-700">{stats.totalInvoices} facturen</p>
+              <p className="text-sm text-primary-700 dark:text-gray-400">{stats.totalInvoices} facturen</p>
             </div>
           </Card>
         </div>

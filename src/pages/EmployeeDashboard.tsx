@@ -191,24 +191,24 @@ const EmployeeDashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header Section */}
-      <div className="hidden lg:block bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white shadow-lg">
+      <div className="hidden lg:block bg-gradient-to-r from-primary-600 to-primary-700 dark:from-gray-800 dark:to-gray-800 dark:border dark:border-gray-700 rounded-2xl p-8 text-white shadow-lg">
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-4xl font-bold mb-2">
               {getGreeting()}, {getFirstName()}!
             </h1>
-            <p className="text-primary-100 flex items-center gap-2">
+            <p className="text-primary-100 dark:text-gray-400 flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
               {selectedCompany?.name || 'FLG-Administratie'}
             </p>
             {employeeData?.personalInfo?.firstName && (
-              <p className="text-primary-200 text-sm mt-2">
+              <p className="text-primary-200 dark:text-gray-500 text-sm mt-2">
                 {getFullName()}
               </p>
             )}
           </div>
-          <div className="h-16 w-16 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-            <User className="h-8 w-8 text-white" />
+          <div className="h-16 w-16 rounded-full bg-white/20 dark:bg-gray-700 flex items-center justify-center">
+            <User className="h-8 w-8 text-white dark:text-gray-300" />
           </div>
         </div>
 
@@ -222,10 +222,10 @@ const EmployeeDashboard: React.FC = () => {
           ].map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="bg-white dark:bg-gray-800 backdrop-blur-sm rounded-lg p-4">
+              <div key={index} className="bg-white/20 dark:bg-gray-700/50 backdrop-blur-sm rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Icon className="h-4 w-4 text-primary-100" />
-                  <p className="text-xs text-primary-100">{stat.label}</p>
+                  <Icon className="h-4 w-4 text-white/80 dark:text-gray-400" />
+                  <p className="text-xs text-white/80 dark:text-gray-400">{stat.label}</p>
                 </div>
                 <p className="text-2xl font-bold text-white">{stat.value}</p>
               </div>
@@ -415,7 +415,7 @@ const EmployeeDashboard: React.FC = () => {
           ].map((item, index) => {
             const Icon = item.icon;
             return (
-              <div key={index} className={`bg-gradient-to-br ${item.color} rounded-xl p-6 border border-gray-200 dark:border-gray-700`}>
+              <div key={index} className={`bg-gradient-to-br ${item.color} dark:from-gray-800 dark:to-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{item.title}</p>

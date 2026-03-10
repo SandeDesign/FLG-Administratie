@@ -134,13 +134,13 @@ const EmployeesNew: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
       case 'inactive':
         return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200';
       case 'on_leave':
-        return 'bg-primary-100 text-primary-800';
+        return 'bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300';
       case 'sick':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
       default:
         return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200';
     }
@@ -256,10 +256,10 @@ const EmployeesNew: React.FC = () => {
 
               {/* Account Status Alert */}
               {!employee.hasAccount && (
-                <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="mb-4 p-3 bg-amber-50 dark:bg-gray-700 rounded-lg border border-amber-200 dark:border-gray-600">
                   <div className="flex items-start gap-2 text-xs md:text-sm">
-                    <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-amber-700">Geen account</span>
+                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-amber-700 dark:text-amber-300">Geen account</span>
                   </div>
                 </div>
               )}
@@ -291,7 +291,7 @@ const EmployeesNew: React.FC = () => {
                     variant="outline"
                     onClick={() => handleCreateAccount(employee)}
                     disabled={creatingAccount === employee.id}
-                    className="col-span-2 text-xs md:text-sm bg-primary-50 border-primary-200 hover:bg-primary-100 text-primary-700"
+                    className="col-span-2 text-xs md:text-sm bg-primary-50 dark:bg-gray-700 border-primary-200 dark:border-gray-600 hover:bg-primary-100 dark:hover:bg-gray-600 text-primary-700 dark:text-primary-300"
                   >
                     <LogIn className="h-4 w-4 mr-1" />
                     {creatingAccount === employee.id ? 'Aanmaken...' : 'Account aanmaken'}
@@ -299,7 +299,7 @@ const EmployeesNew: React.FC = () => {
                 )}
 
                 {employee.hasAccount && (
-                  <div className="col-span-2 text-xs text-green-600 text-center py-2 px-3 bg-green-50 rounded-lg border border-green-200">
+                  <div className="col-span-2 text-xs text-green-600 dark:text-green-400 text-center py-2 px-3 bg-green-50 dark:bg-gray-700 rounded-lg border border-green-200 dark:border-gray-600">
                     ✓ Account actief
                   </div>
                 )}
