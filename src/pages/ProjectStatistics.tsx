@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Factory, Euro, TrendingUp, Package, Clock } from 'lucide-react';
 import Card from '../components/ui/Card';
@@ -20,7 +20,8 @@ const ProjectStatistics: React.FC = () => {
     totalRevenue: 0,
     totalCosts: 0,
     totalInvoices: 0,
-    averageHourlyRate: 0,
+    hourlyRate: 0,
+    productionValue: 0,
   });
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
 
@@ -38,7 +39,10 @@ const ProjectStatistics: React.FC = () => {
 
     setLoading(true);
     try {
-      console.log('📊 Loading project statistics...');
+      // Vers uurtarief ophalen uit Firestore
+      const companyDocSnap = await getDoc(doc(db, 'companies', selectedCompany.id));
+      const companyData = companyDocSnap.data();
+      const companyHourlyRate = companyData?.hourlyRate || 0;
 
       // Production weeks (productie) - Load all production hours for this company
       const productionWeeksQuery = query(
@@ -114,7 +118,7 @@ const ProjectStatistics: React.FC = () => {
         monthlyHoursMap.set(monthKey, (monthlyHoursMap.get(monthKey) || 0) + hours);
       });
 
-      const averageHourlyRate = totalHours > 0 ? totalRevenue / totalHours : 0;
+      const productionValue = totalHours * companyHourlyRate;
 
       // ✅ YEAR FILTERING: Count only invoices from selected year
       const totalInvoicesForYear = Array.from(outgoingSnap.docs).filter(doc => {
@@ -129,7 +133,8 @@ const ProjectStatistics: React.FC = () => {
         totalRevenue,
         totalCosts,
         totalInvoices: totalInvoicesForYear,
-        averageHourlyRate,
+        hourlyRate: companyHourlyRate,
+        productionValue,
       });
 
       // Maandelijkse data voor chart
@@ -305,21 +310,24 @@ const ProjectStatistics: React.FC = () => {
       <Card>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Performance Indicatoren</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm font-medium text-blue-900">Omzet per Uur</p>
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-300">Uurtarief</p>
             <p className="text-2xl font-bold text-blue-600 mt-2">
-              €{stats.averageHourlyRate.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
+              €{stats.hourlyRate.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
+            <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">excl. BTW</p>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <p className="text-sm font-medium text-green-900">Winstmarge</p>
-            <p className="text-2xl font-bold text-green-600 mt-2">{profitMargin.toFixed(1)}%</p>
-          </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <p className="text-sm font-medium text-purple-900">Totale Productie</p>
-            <p className="text-2xl font-bold text-purple-600 mt-2">
-              {stats.totalProductionHours.toLocaleString('nl-NL')} uur
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+            <p className="text-sm font-medium text-green-900 dark:text-green-300">Productie Waarde</p>
+            <p className="text-2xl font-bold text-green-600 mt-2">
+              €{stats.productionValue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
+            <p className="text-xs text-green-700 dark:text-green-400 mt-1">{stats.totalProductionHours.toLocaleString('nl-NL')} uur × €{stats.hourlyRate.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</p>
+          </div>
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+            <p className="text-sm font-medium text-purple-900 dark:text-purple-300">Winstmarge</p>
+            <p className={`text-2xl font-bold mt-2 ${profitMargin >= 0 ? 'text-purple-600' : 'text-red-600'}`}>{profitMargin.toFixed(1)}%</p>
+            <p className="text-xs text-purple-700 dark:text-purple-400 mt-1">€{profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })} winst</p>
           </div>
         </div>
       </Card>

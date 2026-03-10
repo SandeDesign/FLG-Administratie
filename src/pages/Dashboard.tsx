@@ -398,6 +398,12 @@ const Dashboard: React.FC = () => {
         const { collection, query, where, getDocs } = await import('firebase/firestore');
         const { db } = await import('../lib/firebase');
 
+        // Vers bedrijf ophalen uit Firestore voor actueel uurtarief
+        const { doc: docRef, getDoc } = await import('firebase/firestore');
+        const companyDocSnap = await getDoc(docRef(db, 'companies', selectedCompany.id));
+        const companyData = companyDocSnap.data();
+        const companyHourlyRate = companyData?.hourlyRate || 0;
+
         // Productie uren ophalen uit productionWeeks collectie
         const productionWeeksQuery = query(
           collection(db, 'productionWeeks'),
@@ -413,8 +419,6 @@ const Dashboard: React.FC = () => {
           totalHours += data.totalHours || 0;
         });
 
-        // Uurtarief van het project bedrijf
-        const companyHourlyRate = selectedCompany.hourlyRate || 0;
         const productionValue = totalHours * companyHourlyRate;
 
         const stats = {
