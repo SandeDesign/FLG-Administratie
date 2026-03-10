@@ -209,7 +209,12 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
 
       // Uurtarief voor project bedrijven
       if (data.companyType === 'project' && data.hourlyRate) {
-        companyData.hourlyRate = Number(data.hourlyRate);
+        const rate = typeof data.hourlyRate === 'string'
+          ? parseFloat(data.hourlyRate.replace(',', '.'))
+          : Number(data.hourlyRate);
+        if (!isNaN(rate) && rate > 0) {
+          companyData.hourlyRate = rate;
+        }
       }
 
       if (company) {
