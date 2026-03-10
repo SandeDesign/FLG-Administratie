@@ -1,18 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Check, X, Clock, Building2, ChevronRight, AlertCircle, CheckCircle, User, ChevronDown, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Check, X, Clock, ChevronDown, AlertCircle, CheckCircle, User, Calendar, MapPin, TrendingDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import Modal from '../components/ui/Modal';
 import { WeeklyTimesheet } from '../types/timesheet';
 import {
   getAllPendingTimesheets,
   approveWeeklyTimesheet,
   rejectWeeklyTimesheet
 } from '../services/timesheetService';
-import { getEmployees } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
@@ -32,6 +30,14 @@ interface EmployeeTimesheetSummary {
   totalAllHours?: number;
 }
 
+function formatFirebaseDate(dateVal: any, options?: Intl.DateTimeFormatOptions): string {
+  const opts = options || {};
+  if (typeof dateVal === 'string') return new Date(dateVal).toLocaleDateString('nl-NL', opts);
+  if (dateVal instanceof Date) return dateVal.toLocaleDateString('nl-NL', opts);
+  if (typeof dateVal?.toDate === 'function') return dateVal.toDate().toLocaleDateString('nl-NL', opts);
+  return 'onbekende datum';
+}
+
 export default function TimesheetApprovals() {
   const { user, adminUserId } = useAuth();
   const { selectedCompany, employees } = useApp();
@@ -39,17 +45,14 @@ export default function TimesheetApprovals() {
   usePageTitle('Uren goedkeuren');
 
   const [loading, setLoading] = useState(true);
-  const [timesheets, setTimesheets] = useState<WeeklyTimesheet[]>([]);
-  const [allTimesheets, setAllTimesheets] = useState<WeeklyTimesheet[]>([]);
-  const [selectedTimesheet, setSelectedTimesheet] = useState<WeeklyTimesheet | null>(null);
-  const [showRejectModal, setShowRejectModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
   const [employeeSummaries, setEmployeeSummaries] = useState<EmployeeTimesheetSummary[]>([]);
-  const [expandedEmployee, setExpandedEmployee] = useState<string | null>(null);
-  const [dashboardEmployeeId, setDashboardEmployeeId] = useState<string | null>(null);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'pending' | 'all'>('pending');
+  const [expandedWeekId, setExpandedWeekId] = useState<string | null>(null);
+  const [rejectingWeekId, setRejectingWeekId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const pillBarRef = useRef<HTMLDivElement>(null);
 
-  // 🔥 Load ALL timesheets from Firebase (not just pending)
   const loadAllTimesheets = useCallback(async (userId: string, companyId: string) => {
     try {
       const q = query(
@@ -58,7 +61,7 @@ export default function TimesheetApprovals() {
         where('companyId', '==', companyId)
       );
       const querySnapshot = await getDocs(q);
-      const docs = querySnapshot.docs.map(doc => {
+      return querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -68,11 +71,12 @@ export default function TimesheetApprovals() {
             date: entry.date instanceof Timestamp ? entry.date.toDate() : new Date(entry.date)
           })),
           submittedAt: data.submittedAt instanceof Timestamp ? data.submittedAt.toDate() : data.submittedAt,
+          approvedAt: data.approvedAt instanceof Timestamp ? data.approvedAt.toDate() : data.approvedAt,
+          rejectedAt: data.rejectedAt instanceof Timestamp ? data.rejectedAt.toDate() : data.rejectedAt,
           createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
           updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : data.updatedAt
         } as WeeklyTimesheet;
       });
-      return docs;
     } catch (error) {
       console.error('Error loading all timesheets:', error);
       return [];
@@ -88,28 +92,20 @@ export default function TimesheetApprovals() {
     try {
       setLoading(true);
 
-      // Get ALL pending timesheets (not filtered by company - admin sees everything)
       const pendingTimesheets = await getAllPendingTimesheets(adminUserId);
-      setTimesheets(pendingTimesheets);
-
-      // Get ALL timesheets - use first company or skip if none
       const companyIdForAll = selectedCompany?.id || '';
       const allTimesheetsData = companyIdForAll ? await loadAllTimesheets(adminUserId, companyIdForAll) : [];
-      setAllTimesheets(allTimesheetsData);
 
       const summaries: EmployeeTimesheetSummary[] = [];
 
       employees.forEach(employee => {
         const employeePendingTimesheets = pendingTimesheets.filter(t => t.employeeId === employee.id);
         const employeeAllTimesheets = allTimesheetsData.filter(t => t.employeeId === employee.id);
-        
-        // Calculate pending totals
+
         const totalPendingHours = employeePendingTimesheets.reduce((sum, t) => sum + t.totalRegularHours, 0);
         const contractHours = employee.contractInfo?.hoursPerWeek || 40;
         const expectedHours = contractHours * employeePendingTimesheets.length;
         const hoursLacking = Math.max(0, expectedHours - totalPendingHours);
-
-        // Calculate all timesheets totals
         const totalAllHours = employeeAllTimesheets.reduce((sum, t) => sum + t.totalRegularHours, 0);
 
         summaries.push({
@@ -126,31 +122,52 @@ export default function TimesheetApprovals() {
         });
       });
 
-      setEmployeeSummaries(summaries.sort((a, b) => {
+      const sorted = summaries.sort((a, b) => {
         if (a.hasPending && !b.hasPending) return -1;
         if (!a.hasPending && b.hasPending) return 1;
         return a.firstName.localeCompare(b.firstName);
-      }));
+      });
+
+      setEmployeeSummaries(sorted);
+
+      // Auto-select first employee with pending, or first employee
+      if (!selectedEmployeeId || !sorted.find(s => s.employeeId === selectedEmployeeId)) {
+        const firstWithPending = sorted.find(s => s.hasPending);
+        const autoId = firstWithPending?.employeeId || sorted[0]?.employeeId || null;
+        if (autoId) {
+          setSelectedEmployeeId(autoId);
+          const emp = sorted.find(s => s.employeeId === autoId);
+          setActiveTab(emp?.hasPending ? 'pending' : 'all');
+          setExpandedWeekId(emp?.pendingTimesheets[0]?.id || null);
+        }
+      }
     } catch (error) {
       console.error('Error loading timesheet approvals:', error);
       showError('Fout bij laden', 'Kon urenregistratie goedkeuringen niet laden');
     } finally {
       setLoading(false);
     }
-  }, [user, adminUserId, selectedCompany?.id, employees, showError, loadAllTimesheets]);
+  }, [user, adminUserId, selectedCompany?.id, employees, showError, loadAllTimesheets, selectedEmployeeId]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
+  const selectEmployee = (employeeId: string) => {
+    setSelectedEmployeeId(employeeId);
+    const emp = employeeSummaries.find(s => s.employeeId === employeeId);
+    setActiveTab(emp?.hasPending ? 'pending' : 'all');
+    setExpandedWeekId(emp?.pendingTimesheets[0]?.id || null);
+    setRejectingWeekId(null);
+    setRejectionReason('');
+  };
+
   const handleApprove = async (timesheet: WeeklyTimesheet) => {
     if (!user || !adminUserId) return;
-
     try {
       await approveWeeklyTimesheet(timesheet.id!, timesheet.userId, adminUserId);
       success('Uren goedgekeurd', `Week ${timesheet.weekNumber} goedgekeurd`);
-      setShowDetailsModal(false);
-      setSelectedTimesheet(null);
+      setExpandedWeekId(null);
       await loadData();
     } catch (error) {
       console.error('Error approving timesheet:', error);
@@ -158,40 +175,22 @@ export default function TimesheetApprovals() {
     }
   };
 
-  const handleRejectClick = () => {
-    setShowRejectModal(true);
-  };
-
-  const handleRejectConfirm = async () => {
-    if (!selectedTimesheet || !user || !adminUserId || !rejectionReason.trim()) {
+  const handleRejectConfirm = async (timesheet: WeeklyTimesheet) => {
+    if (!user || !adminUserId || !rejectionReason.trim()) {
       showError('Fout', 'Reden voor afwijzing is verplicht.');
       return;
     }
-
     try {
-      await rejectWeeklyTimesheet(
-        selectedTimesheet.id!,
-        selectedTimesheet.userId,
-        adminUserId,
-        rejectionReason
-      );
-      success('Uren afgekeurd', `Week ${selectedTimesheet.weekNumber} afgekeurd`);
-      setShowRejectModal(false);
+      await rejectWeeklyTimesheet(timesheet.id!, timesheet.userId, adminUserId, rejectionReason);
+      success('Uren afgekeurd', `Week ${timesheet.weekNumber} afgekeurd`);
+      setRejectingWeekId(null);
       setRejectionReason('');
-      setShowDetailsModal(false);
-      setSelectedTimesheet(null);
+      setExpandedWeekId(null);
       await loadData();
     } catch (error) {
       console.error('Error rejecting timesheet:', error);
       showError('Fout bij afwijzen', 'Kon urenregistratie niet afwijzen');
     }
-  };
-
-  const closeDetailsModal = () => {
-    setShowDetailsModal(false);
-    setSelectedTimesheet(null);
-    setRejectionReason('');
-    setShowRejectModal(false);
   };
 
   if (loading) {
@@ -202,11 +201,10 @@ export default function TimesheetApprovals() {
     );
   }
 
-  // No longer require company selection - admin sees all pending timesheets
-
   const pendingCount = employeeSummaries.reduce((sum, e) => sum + e.pendingTimesheets.length, 0);
   const employeesWithPending = employeeSummaries.filter(e => e.hasPending).length;
   const approvedCount = employees.length - employeesWithPending;
+  const selectedEmployee = employeeSummaries.find(s => s.employeeId === selectedEmployeeId);
 
   return (
     <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
@@ -218,23 +216,22 @@ export default function TimesheetApprovals() {
         </p>
       </div>
 
-      {/* Minimale Stats Cards - Veel kleiner */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-2">
-        <Card className="p-3 bg-white dark:bg-gray-800">
+        <Card className="!p-3 bg-white dark:bg-gray-800">
           <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Wachten</p>
           <p className="text-xl font-bold text-orange-600 mt-1">{pendingCount}</p>
         </Card>
-        <Card className="p-3 bg-white dark:bg-gray-800">
+        <Card className="!p-3 bg-white dark:bg-gray-800">
           <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Medewerkers</p>
           <p className="text-xl font-bold text-primary-600 mt-1">{employeesWithPending}</p>
         </Card>
-        <Card className="p-3 bg-white dark:bg-gray-800">
+        <Card className="!p-3 bg-white dark:bg-gray-800">
           <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Klaar</p>
           <p className="text-xl font-bold text-green-600 mt-1">{approvedCount}</p>
         </Card>
       </div>
 
-      {/* Employee List */}
       {employeeSummaries.length === 0 ? (
         <Card>
           <EmptyState
@@ -244,478 +241,538 @@ export default function TimesheetApprovals() {
           />
         </Card>
       ) : (
-        <div className="space-y-3">
-          {employeeSummaries.map((summary) => {
-            const isExpanded = expandedEmployee === summary.employeeId;
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+          {/* ===== MOBILE: Horizontal pill bar ===== */}
+          <div className="lg:hidden">
+            <div
+              ref={pillBarRef}
+              className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {employeeSummaries.map((emp) => {
+                const isSelected = emp.employeeId === selectedEmployeeId;
+                return (
+                  <button
+                    key={emp.employeeId}
+                    onClick={() => selectEmployee(emp.employeeId)}
+                    className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                      isSelected
+                        ? emp.hasPending
+                          ? 'bg-orange-600 text-white shadow-md'
+                          : 'bg-primary-600 text-white shadow-md'
+                        : emp.hasPending
+                          ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                          : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                    }`}
+                  >
+                    {emp.firstName}
+                    {emp.hasPending ? (
+                      <span className={`ml-1.5 inline-flex items-center justify-center h-5 w-5 rounded-full text-xs font-bold ${
+                        isSelected ? 'bg-white/30 text-white' : 'bg-orange-200 text-orange-800'
+                      }`}>
+                        {emp.pendingTimesheets.length}
+                      </span>
+                    ) : (
+                      <CheckCircle className={`ml-1.5 h-4 w-4 inline ${isSelected ? 'text-white/80' : 'text-green-500'}`} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-            return (
-              <div key={summary.employeeId} className="space-y-2">
-                {/* Employee Card - ALTIJD MET DASHBOARD BUTTON */}
-                <div className={`w-full p-4 sm:p-5 rounded-lg border-2 transition-all text-left ${ summary.hasPending ? 'border-orange-300 bg-white dark:bg-gray-800 hover:bg-orange-50' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800' }`}>
-                  <div className="flex items-center justify-between gap-3">
-                    {/* Left section - expandable */}
+          {/* ===== DESKTOP: Sidebar ===== */}
+          <div className="hidden lg:block w-72 flex-shrink-0">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Medewerkers</h3>
+              </div>
+              <div className="max-h-[calc(100vh-320px)] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+                {employeeSummaries.map((emp) => {
+                  const isSelected = emp.employeeId === selectedEmployeeId;
+                  return (
                     <button
-                      onClick={() => {
-                        if (summary.hasPending) {
-                          setExpandedEmployee(isExpanded ? null : summary.employeeId);
-                        }
-                      }}
-                      className={`flex-1 flex items-center gap-3 min-w-0 text-left ${summary.hasPending ? 'cursor-pointer' : 'cursor-default'}`}
+                      key={emp.employeeId}
+                      onClick={() => selectEmployee(emp.employeeId)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${
+                        isSelected
+                          ? 'bg-primary-50 dark:bg-primary-900/20 border-l-4 border-primary-500'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 border-l-4 border-transparent'
+                      }`}
                     >
-                      <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center flex-shrink-0">
-                        <User className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
+                      <div className={`h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        emp.hasPending
+                          ? 'bg-orange-100 dark:bg-orange-900/30'
+                          : 'bg-green-100 dark:bg-green-900/30'
+                      }`}>
+                        <User className={`h-4 w-4 ${emp.hasPending ? 'text-orange-600' : 'text-green-600'}`} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">
-                          {summary.firstName} {summary.lastName}
+                        <p className={`text-sm font-medium truncate ${
+                          isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-gray-100'
+                        }`}>
+                          {emp.firstName} {emp.lastName}
                         </p>
-                        {/* Info sous le nom - TOUJOURS visible */}
-                        <div className="flex flex-col gap-1 mt-2 text-xs">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {summary.hasPending ? (
-                              <>
-                                <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold whitespace-nowrap">
-                                  {summary.pendingTimesheets.length} week{summary.pendingTimesheets.length !== 1 ? 'en' : ''}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 font-semibold whitespace-nowrap">
-                                  {summary.totalPendingHours}u uren
-                                </span>
-                                {summary.hoursLacking && summary.hoursLacking > 0 && (
-                                  <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-semibold whitespace-nowrap flex items-center gap-1">
-                                    <TrendingDown className="h-3 w-3" />
-                                    -{summary.hoursLacking.toFixed(1)}u
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold whitespace-nowrap">
-                                  {summary.allTimesheets.length} weken
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold whitespace-nowrap flex items-center gap-1">
-                                  <CheckCircle className="h-3 w-3" />
-                                  {summary.totalAllHours}u totaal
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          {emp.hasPending ? (
+                            <span className="text-orange-600 dark:text-orange-400 font-medium">
+                              {emp.pendingTimesheets.length} wachtend
+                            </span>
+                          ) : (
+                            <span className="text-green-600 dark:text-green-400">{emp.allTimesheets.length} weken</span>
+                          )}
+                          <span className="mx-1">·</span>
+                          {emp.contractHoursPerWeek}u/week
+                        </p>
                       </div>
+                      {emp.hasPending && (
+                        <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-orange-500 text-white text-xs font-bold flex-shrink-0">
+                          {emp.pendingTimesheets.length}
+                        </span>
+                      )}
+                      {!emp.hasPending && (
+                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      )}
                     </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
-                    {/* Right section - Buttons Container - ALWAYS clickable */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => {
-                          setDashboardEmployeeId(summary.employeeId);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-primary-100 text-primary-700 text-xs font-semibold hover:bg-primary-200 active:bg-primary-300 flex items-center gap-1 whitespace-nowrap transition-colors"
-                        title="Dashboard met alle weken"
-                      >
-                        <BarChart3 className="h-3 w-3" />
-                        Dashboard
-                      </button>
-                      {summary.hasPending && (
-                        <>
-                          <span className="inline-flex items-center justify-center h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-orange-100 text-orange-700 text-xs sm:text-sm font-bold">
-                            {summary.pendingTimesheets.length}
-                          </span>
-                          <ChevronDown
-                            className={`h-5 w-5 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 cursor-pointer ${isExpanded ? 'rotate-180' : ''}`}
-                          />
-                        </>
-                      )}
-                      {!summary.hasPending && (
-                        <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
-                      )}
+          {/* ===== DETAIL PANEL ===== */}
+          <div className="flex-1 min-w-0">
+            {selectedEmployee ? (
+              <div className="space-y-4">
+                {/* Employee Header */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-11 w-11 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-800 dark:to-primary-700 flex items-center justify-center flex-shrink-0">
+                      <User className="h-5 w-5 text-primary-600 dark:text-primary-300" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        {selectedEmployee.firstName} {selectedEmployee.lastName}
+                      </h2>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Contract: {selectedEmployee.contractHoursPerWeek}u/week
+                      </p>
+                    </div>
+                  </div>
+                  {/* Mini stats */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="text-center p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Weken</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{selectedEmployee.allTimesheets.length}</p>
+                    </div>
+                    <div className="text-center p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Totaal</p>
+                      <p className="text-lg font-bold text-green-600">{selectedEmployee.totalAllHours || 0}u</p>
+                    </div>
+                    <div className="text-center p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Wachten</p>
+                      <p className="text-lg font-bold text-orange-600">{selectedEmployee.pendingTimesheets.length}</p>
+                    </div>
+                    <div className="text-center p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Gem/week</p>
+                      <p className="text-lg font-bold text-primary-600">
+                        {selectedEmployee.allTimesheets.length > 0
+                          ? ((selectedEmployee.totalAllHours || 0) / selectedEmployee.allTimesheets.length).toFixed(1)
+                          : '0'}u
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Expanded Pending Timesheets */}
-                {isExpanded && summary.hasPending && (
-                  <div className="space-y-2 ml-4 sm:ml-6 border-l-3 border-orange-300 pl-4">
-                    {summary.pendingTimesheets.map((timesheet) => {
-                      const hoursPercentage = (timesheet.totalRegularHours / summary.contractHoursPerWeek) * 100;
-                      const isUnder = hoursPercentage < 85;
-                      const workDays = timesheet.entries.filter(e => e.regularHours > 0).length;
-                      const avgPerDay = workDays > 0 ? (timesheet.totalRegularHours / workDays).toFixed(1) : '0';
+                {/* Tab Bar */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="flex border-b border-gray-200 dark:border-gray-700">
+                    <button
+                      onClick={() => setActiveTab('pending')}
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-all relative ${
+                        activeTab === 'pending'
+                          ? 'text-primary-600 dark:text-primary-400'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      Wachten op goedkeuring
+                      {selectedEmployee.pendingTimesheets.length > 0 && (
+                        <span className={`ml-1.5 inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1 rounded-full text-xs font-bold ${
+                          activeTab === 'pending'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400'
+                        }`}>
+                          {selectedEmployee.pendingTimesheets.length}
+                        </span>
+                      )}
+                      {activeTab === 'pending' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('all')}
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-all relative ${
+                        activeTab === 'all'
+                          ? 'text-primary-600 dark:text-primary-400'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      Alle weken
+                      <span className={`ml-1.5 text-xs ${
+                        activeTab === 'all' ? 'text-primary-500' : 'text-gray-400'
+                      }`}>
+                        ({selectedEmployee.allTimesheets.length})
+                      </span>
+                      {activeTab === 'all' && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
+                      )}
+                    </button>
+                  </div>
 
-                      return (
-                        <button
-                          key={timesheet.id}
-                          onClick={() => {
-                            setSelectedTimesheet(timesheet);
-                            setShowDetailsModal(true);
-                          }}
-                          className="w-full p-4 bg-white dark:bg-gray-800 border-2 border-orange-200 rounded-lg hover:shadow-md active:shadow-sm transition-all text-left"
-                        >
-                          <div className="space-y-3">
-                            {/* Week Header */}
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base">
-                                  Week {timesheet.weekNumber}, {timesheet.year}
-                                </p>
-                                {timesheet.submittedAt && (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Ingediend: {
-                                      typeof timesheet.submittedAt === 'string'
-                                        ? new Date(timesheet.submittedAt).toLocaleDateString('nl-NL')
-                                        : (timesheet.submittedAt instanceof Date)
-                                          ? timesheet.submittedAt.toLocaleDateString('nl-NL')
-                                          : typeof timesheet.submittedAt.toDate === 'function'
-                                            ? timesheet.submittedAt.toDate().toLocaleDateString('nl-NL')
-                                            : 'onbekende datum'
-                                    }
-                                  </p>
+                  {/* Tab Content */}
+                  <div className="p-4">
+                    {/* ===== PENDING TAB ===== */}
+                    {activeTab === 'pending' && (
+                      <div className="space-y-3">
+                        {selectedEmployee.pendingTimesheets.length === 0 ? (
+                          <div className="text-center py-8">
+                            <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
+                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Geen wachtende uren
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                              Alle uren van {selectedEmployee.firstName} zijn goedgekeurd
+                            </p>
+                          </div>
+                        ) : (
+                          selectedEmployee.pendingTimesheets.map((timesheet) => {
+                            const isExpanded = expandedWeekId === timesheet.id;
+                            const isRejecting = rejectingWeekId === timesheet.id;
+                            const hoursPercentage = (timesheet.totalRegularHours / selectedEmployee.contractHoursPerWeek) * 100;
+                            const isUnder = hoursPercentage < 85;
+                            const workDays = timesheet.entries.filter(e => e.regularHours > 0).length;
+                            const avgPerDay = workDays > 0 ? (timesheet.totalRegularHours / workDays).toFixed(1) : '0';
+
+                            return (
+                              <div key={timesheet.id} className="border-2 border-orange-200 dark:border-orange-800 rounded-lg overflow-hidden">
+                                {/* Collapsed header - always visible */}
+                                <button
+                                  onClick={() => {
+                                    setExpandedWeekId(isExpanded ? null : timesheet.id!);
+                                    setRejectingWeekId(null);
+                                    setRejectionReason('');
+                                  }}
+                                  className="w-full p-3 sm:p-4 flex items-center gap-3 text-left hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-colors"
+                                >
+                                  <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base">
+                                        Week {timesheet.weekNumber}, {timesheet.year}
+                                      </span>
+                                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400">
+                                        Wachten
+                                      </span>
+                                    </div>
+                                    {timesheet.submittedAt && (
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                        Ingediend: {formatFirebaseDate(timesheet.submittedAt)}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className={`text-lg font-bold ${isUnder ? 'text-red-600' : 'text-green-600'}`}>
+                                      {timesheet.totalRegularHours}u
+                                    </span>
+                                    {isUnder && <AlertCircle className="h-4 w-4 text-red-500" />}
+                                  </div>
+                                </button>
+
+                                {/* Progress bar - always visible */}
+                                <div className="px-4 pb-2">
+                                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                                    <div
+                                      className={`h-1.5 rounded-full transition-all ${isUnder ? 'bg-red-500' : 'bg-green-500'}`}
+                                      style={{ width: `${Math.min(hoursPercentage, 100)}%` }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Expanded content */}
+                                {isExpanded && (
+                                  <div className="border-t border-orange-200 dark:border-orange-800 p-4 space-y-4 bg-white dark:bg-gray-800">
+                                    {/* Summary Stats */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                      <div className="text-center p-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Totaal uren</p>
+                                        <p className={`text-xl font-bold ${isUnder ? 'text-red-600' : 'text-green-600'}`}>
+                                          {timesheet.totalRegularHours}u
+                                        </p>
+                                        <p className="text-xs text-gray-400 mt-0.5">{hoursPercentage.toFixed(0)}% van {selectedEmployee.contractHoursPerWeek}u</p>
+                                      </div>
+                                      <div className="text-center p-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Reiskilometers</p>
+                                        <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{timesheet.totalTravelKilometers}km</p>
+                                      </div>
+                                      <div className="text-center p-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Werkdagen</p>
+                                        <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{workDays}</p>
+                                      </div>
+                                      <div className="text-center p-2.5 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">Gem/dag</p>
+                                        <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{avgPerDay}u</p>
+                                      </div>
+                                    </div>
+
+                                    {/* Low Hours Warning */}
+                                    {isUnder && (
+                                      <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                        <div className="flex gap-2">
+                                          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                          <div>
+                                            <p className="text-sm font-semibold text-red-900 dark:text-red-300">Onder contract uren</p>
+                                            <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">
+                                              {timesheet.totalRegularHours}u van {selectedEmployee.contractHoursPerWeek}u ({hoursPercentage.toFixed(0)}%)
+                                            </p>
+                                            {(timesheet as any).lowHoursExplanation && (
+                                              <p className="text-xs text-red-600 dark:text-red-400 mt-1.5 italic">
+                                                Verklaring: {(timesheet as any).lowHoursExplanation}
+                                              </p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Daily Details */}
+                                    <div>
+                                      <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
+                                        <Calendar className="h-4 w-4" />
+                                        Dagelijkse details
+                                      </h4>
+                                      <div className="space-y-1.5">
+                                        {timesheet.entries.map((entry, idx) => (
+                                          <div key={idx} className={`p-2.5 rounded-lg border ${
+                                            entry.regularHours > 0
+                                              ? 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'
+                                              : 'bg-gray-50/50 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800'
+                                          }`}>
+                                            <div className="flex justify-between items-baseline">
+                                              <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                                                {formatFirebaseDate(entry.date, { weekday: 'short', day: '2-digit', month: 'short' })}
+                                              </span>
+                                              <span className={`text-sm font-bold ${entry.regularHours > 0 ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}`}>
+                                                {entry.regularHours}u
+                                              </span>
+                                            </div>
+                                            {entry.travelKilometers > 0 && (
+                                              <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                <MapPin className="h-3 w-3" />
+                                                {entry.travelKilometers}km
+                                              </div>
+                                            )}
+                                            {(entry as any).workActivities && (entry as any).workActivities.length > 0 && (
+                                              <div className="space-y-1 mt-1.5 pl-3 border-l-2 border-gray-300 dark:border-gray-600">
+                                                {(entry as any).workActivities.map((activity: any, actIdx: number) => (
+                                                  <div key={actIdx} className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                                                    <span className="truncate mr-2">{activity.description}</span>
+                                                    <span className="font-semibold flex-shrink-0">{activity.hours}u</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    {!isRejecting && (
+                                      <div className="flex gap-3 pt-2">
+                                        <Button
+                                          onClick={() => handleApprove(timesheet)}
+                                          variant="success"
+                                          className="flex-1"
+                                          size="lg"
+                                        >
+                                          <Check className="h-4 w-4 mr-2" />
+                                          Goedkeuren
+                                        </Button>
+                                        <Button
+                                          onClick={() => setRejectingWeekId(timesheet.id!)}
+                                          variant="danger"
+                                          className="flex-1"
+                                          size="lg"
+                                        >
+                                          <X className="h-4 w-4 mr-2" />
+                                          Afkeuren
+                                        </Button>
+                                      </div>
+                                    )}
+
+                                    {/* Inline Rejection Form */}
+                                    {isRejecting && (
+                                      <div className="space-y-3 p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg">
+                                        <h4 className="font-semibold text-red-900 dark:text-red-300">Reden voor afkeuring</h4>
+                                        <textarea
+                                          value={rejectionReason}
+                                          onChange={(e) => setRejectionReason(e.target.value)}
+                                          className="w-full px-3 py-2 border-2 border-red-300 dark:border-red-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                          rows={3}
+                                          placeholder="Bijvoorbeeld: Ongeldige uren op donderdag..."
+                                          autoFocus
+                                        />
+                                        <div className="flex gap-3">
+                                          <Button
+                                            onClick={() => {
+                                              setRejectingWeekId(null);
+                                              setRejectionReason('');
+                                            }}
+                                            variant="secondary"
+                                            className="flex-1"
+                                          >
+                                            Annuleren
+                                          </Button>
+                                          <Button
+                                            onClick={() => handleRejectConfirm(timesheet)}
+                                            disabled={!rejectionReason.trim()}
+                                            variant="danger"
+                                            className="flex-1"
+                                          >
+                                            Bevestigen
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
                               </div>
-                              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 flex-shrink-0">
-                                Wachten
-                              </span>
-                            </div>
-
-                            {/* Hours Info */}
-                            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 space-y-2">
-                              <div className="flex items-baseline justify-between">
-                                <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">Uren geregistreerd</span>
-                                <span className={`text-lg sm:text-xl font-bold ${isUnder ? 'text-red-600' : 'text-green-600'}`}>
-                                  {timesheet.totalRegularHours}u
-                                </span>
-                              </div>
-                              <div className="flex items-baseline justify-between text-xs text-gray-600 dark:text-gray-400">
-                                <span>Contract: {summary.contractHoursPerWeek}u/week</span>
-                                <span className="font-semibold">{hoursPercentage.toFixed(0)}%</span>
-                              </div>
-
-                              {/* Progress Bar */}
-                              <div className="w-full bg-gray-300 rounded-full h-2 overflow-hidden mt-2">
-                                <div
-                                  className={`h-2 rounded-full transition-all ${isUnder ? 'bg-red-500' : 'bg-green-500'}`}
-                                  style={{ width: `${Math.min(hoursPercentage, 100)}%` }}
-                                />
-                              </div>
-
-                              {isUnder && (
-                                <div className="flex items-center gap-1 pt-1 text-xs text-red-600 font-medium">
-                                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                                  Onder contract uren
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Quick Stats */}
-                            <div className="grid grid-cols-3 gap-2 text-center">
-                              <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                                <p className="text-xs text-gray-600 dark:text-gray-400">Werkdagen</p>
-                                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{workDays}</p>
-                              </div>
-                              <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                                <p className="text-xs text-gray-600 dark:text-gray-400">Gem./dag</p>
-                                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{avgPerDay}u</p>
-                              </div>
-                              <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                                <p className="text-xs text-gray-600 dark:text-gray-400">Kilometer</p>
-                                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{timesheet.totalTravelKilometers}</p>
-                              </div>
-                            </div>
-
-                            {/* CTA */}
-                            <div className="flex items-center justify-between pt-2 border-t border-orange-100 text-primary-600 text-xs font-medium">
-                              <span>Klik voor volledige details</span>
-                              <ChevronRight className="h-4 w-4" />
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* DASHBOARD MODAL - ALLE WEKEN UIT FIREBASE */}
-      <Modal
-        isOpen={!!dashboardEmployeeId}
-        onClose={() => {
-          setDashboardEmployeeId(null);
-        }}
-        title={dashboardEmployeeId ? `Dashboard - ${employeeSummaries.find(e => e.employeeId === dashboardEmployeeId)?.firstName} ${employeeSummaries.find(e => e.employeeId === dashboardEmployeeId)?.lastName}` : 'Dashboard'}
-      >
-        {dashboardEmployeeId && (() => {
-          const emp = employeeSummaries.find(e => e.employeeId === dashboardEmployeeId);
-          if (!emp) return null;
-
-          return (
-            <div className="space-y-4 max-h-[75vh] overflow-y-auto">
-              {/* Header Info */}
-              <div className="p-4 bg-gradient-to-r from-primary-50 to-indigo-50 rounded-lg border border-primary-200">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                    <User className="h-6 w-6 text-primary-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">{emp.firstName} {emp.lastName}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Contract: {emp.contractHoursPerWeek}u/week</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <Card className="p-3 bg-white dark:bg-gray-800">
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Totaal weken</p>
-                  <p className="text-2xl font-bold text-primary-600">{emp.allTimesheets.length}</p>
-                </Card>
-                <Card className="p-3 bg-white dark:bg-gray-800">
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Totaal uren</p>
-                  <p className="text-2xl font-bold text-green-600">{emp.totalAllHours || 0}u</p>
-                </Card>
-                <Card className="p-3 bg-white dark:bg-gray-800">
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Wachten</p>
-                  <p className="text-2xl font-bold text-orange-600">{emp.pendingTimesheets.length}</p>
-                </Card>
-                <Card className="p-3 bg-white dark:bg-gray-800">
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Gemiddeld/week</p>
-                  <p className="text-2xl font-bold text-indigo-600">
-                    {emp.allTimesheets.length > 0 
-                      ? (emp.totalAllHours! / emp.allTimesheets.length).toFixed(1)
-                      : '0'}u
-                  </p>
-                </Card>
-              </div>
-
-              {/* Alle Weken uit Firebase */}
-              <div>
-                <h4 className="font-semibold text-sm mb-2">Alle Ingevoerde Weken</h4>
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {emp.allTimesheets.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">Geen weken ingevoerd</p>
-                  ) : (
-                    emp.allTimesheets.map((timesheet) => {
-                      const percentage = (timesheet.totalRegularHours / emp.contractHoursPerWeek) * 100;
-                      const isPending = emp.pendingTimesheets.some(t => t.id === timesheet.id);
-                      return (
-                        <div key={timesheet.id} className={`p-3 rounded-lg border ${isPending ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'}`}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="font-medium text-sm">Week {timesheet.weekNumber} ({timesheet.year})</span>
-                            <div className="flex items-center gap-2">
-                              <span className={`font-bold text-sm ${percentage < 85 ? 'text-red-600' : 'text-green-600'}`}>
-                                {timesheet.totalRegularHours}u
-                              </span>
-                              {timesheet.status === 'approved' && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-green-200 text-green-700 font-semibold flex items-center gap-1">
-                                  <CheckCircle className="h-3 w-3" />
-                                  Goedgekeurd
-                                </span>
-                              )}
-                              {isPending && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-orange-200 text-orange-700 font-semibold">
-                                  Wachten
-                                </span>
-                              )}
-                              {timesheet.status === 'rejected' && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-red-200 text-red-700 font-semibold">
-                                  Afgekeurd
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="w-full bg-gray-300 h-1.5 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-1.5 rounded-full ${percentage < 85 ? 'bg-red-500' : 'bg-green-500'}`}
-                              style={{ width: `${Math.min(percentage, 100)}%` }}
-                            />
-                          </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex justify-between">
-                            <span>{percentage.toFixed(0)}% van contract ({emp.contractHoursPerWeek}u)</span>
-                            <span>{timesheet.totalTravelKilometers}km</span>
-                          </div>
-                          {timesheet.lowHoursExplanation && (
-                            <p className="text-xs text-red-600 mt-1 italic">⚠️ {timesheet.lowHoursExplanation}</p>
-                          )}
-                          {timesheet.approvedAt && (
-                            <p className="text-xs text-green-600 mt-1 font-semibold">
-                              ✓ Goedgekeurd op {
-                                typeof timesheet.approvedAt === 'string' 
-                                  ? new Date(timesheet.approvedAt).toLocaleDateString('nl-NL')
-                                  : (timesheet.approvedAt instanceof Date)
-                                    ? timesheet.approvedAt.toLocaleDateString('nl-NL')
-                                    : typeof timesheet.approvedAt.toDate === 'function'
-                                      ? timesheet.approvedAt.toDate().toLocaleDateString('nl-NL')
-                                      : 'onbekende datum'
-                              }
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-      </Modal>
-
-      {/* Details Modal */}
-      <Modal
-        isOpen={showDetailsModal}
-        onClose={closeDetailsModal}
-        title={selectedTimesheet ? `Week ${selectedTimesheet.weekNumber}, ${selectedTimesheet.year}` : 'Uren details'}
-      >
-        {selectedTimesheet && (
-          <div className="space-y-4 max-h-[75vh] overflow-y-auto">
-            {/* Summary Stats */}
-            <div className="grid grid-cols-2 gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg">
-              <div className="text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Totaal uren</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{selectedTimesheet.totalRegularHours}u</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Reiskilometers</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{selectedTimesheet.totalTravelKilometers}km</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Werkdagen</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {selectedTimesheet.entries.filter(e => e.regularHours > 0).length}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Gemiddeld/dag</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {(() => {
-                    const workDays = selectedTimesheet.entries.filter(e => e.regularHours > 0).length;
-                    return workDays > 0 ? (selectedTimesheet.totalRegularHours / workDays).toFixed(1) : '0';
-                  })()} u
-                </p>
-              </div>
-            </div>
-
-            {/* Low Hours Warning */}
-            {(() => {
-              const employee = employees.find(emp => emp.id === selectedTimesheet.employeeId);
-              const contractHours = employee?.contractInfo?.hoursPerWeek || 40;
-              const actual = selectedTimesheet.totalRegularHours;
-              const threshold = contractHours * 0.85;
-
-              if (actual < threshold) {
-                return (
-                  <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg space-y-2">
-                    <div className="flex gap-2">
-                      <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="font-semibold text-red-900">⚠️ Onder contract uren</h4>
-                        <p className="text-sm text-red-700 mt-1">
-                          {actual}u van {contractHours}u contract ({(actual / contractHours * 100).toFixed(0)}%)
-                        </p>
-                        {selectedTimesheet.lowHoursExplanation && (
-                          <p className="text-xs text-red-600 mt-2">
-                            <strong>Verklaring:</strong> {selectedTimesheet.lowHoursExplanation}
-                          </p>
+                            );
+                          })
                         )}
                       </div>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+                    )}
 
-            {/* Daily Details */}
-            <div>
-              <h4 className="font-semibold text-sm mb-3">Dagelijkse details</h4>
-              <div className="space-y-2">
-                {selectedTimesheet.entries.map((entry, idx) => (
-                  <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-baseline mb-2">
-                      <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                        {
-                          typeof entry.date === 'string'
-                            ? new Date(entry.date).toLocaleDateString('nl-NL', { weekday: 'short', day: '2-digit', month: 'short' })
-                            : (entry.date instanceof Date)
-                              ? entry.date.toLocaleDateString('nl-NL', { weekday: 'short', day: '2-digit', month: 'short' })
-                              : typeof entry.date.toDate === 'function'
-                                ? entry.date.toDate().toLocaleDateString('nl-NL', { weekday: 'short', day: '2-digit', month: 'short' })
-                                : 'onbekende datum'
-                        }
-                      </span>
-                      <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{entry.regularHours}u</span>
-                    </div>
-                    {entry.workActivities && entry.workActivities.length > 0 && (
-                      <div className="space-y-1 mt-2 pl-3 border-l-2 border-gray-300 dark:border-gray-600">
-                        {entry.workActivities.map((activity, actIdx) => (
-                          <div key={actIdx} className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                            <span>{activity.description}</span>
-                            <span className="font-semibold ml-2">{activity.hours}u</span>
+                    {/* ===== ALL WEEKS TAB ===== */}
+                    {activeTab === 'all' && (
+                      <div className="space-y-2">
+                        {selectedEmployee.allTimesheets.length === 0 ? (
+                          <div className="text-center py-8">
+                            <Calendar className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Geen weken ingevoerd
+                            </p>
                           </div>
-                        ))}
+                        ) : (
+                          selectedEmployee.allTimesheets
+                            .sort((a, b) => {
+                              if (a.year !== b.year) return b.year - a.year;
+                              return b.weekNumber - a.weekNumber;
+                            })
+                            .map((timesheet) => {
+                              const percentage = (timesheet.totalRegularHours / selectedEmployee.contractHoursPerWeek) * 100;
+                              const isPending = selectedEmployee.pendingTimesheets.some(t => t.id === timesheet.id);
+
+                              return (
+                                <button
+                                  key={timesheet.id}
+                                  onClick={() => {
+                                    if (isPending) {
+                                      setActiveTab('pending');
+                                      setExpandedWeekId(timesheet.id!);
+                                    }
+                                  }}
+                                  className={`w-full p-3 rounded-lg border text-left transition-all ${
+                                    isPending
+                                      ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/20 cursor-pointer'
+                                      : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 cursor-default'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-center mb-1.5">
+                                    <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                                      Week {timesheet.weekNumber}, {timesheet.year}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`font-bold text-sm ${percentage < 85 ? 'text-red-600' : 'text-green-600'}`}>
+                                        {timesheet.totalRegularHours}u
+                                      </span>
+                                      {timesheet.status === 'approved' && (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 font-semibold flex items-center gap-1">
+                                          <CheckCircle className="h-3 w-3" />
+                                          Goedgekeurd
+                                        </span>
+                                      )}
+                                      {isPending && (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 font-semibold">
+                                          Wachten
+                                        </span>
+                                      )}
+                                      {timesheet.status === 'rejected' && (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 font-semibold">
+                                          Afgekeurd
+                                        </span>
+                                      )}
+                                      {timesheet.status === 'processed' && (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 font-semibold">
+                                          Verwerkt
+                                        </span>
+                                      )}
+                                      {timesheet.status === 'draft' && (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-semibold">
+                                          Concept
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-1.5 rounded-full ${percentage < 85 ? 'bg-red-500' : 'bg-green-500'}`}
+                                      style={{ width: `${Math.min(percentage, 100)}%` }}
+                                    />
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 flex justify-between">
+                                    <span>{percentage.toFixed(0)}% van contract ({selectedEmployee.contractHoursPerWeek}u)</span>
+                                    <span>{timesheet.totalTravelKilometers}km</span>
+                                  </div>
+                                  {(timesheet as any).lowHoursExplanation && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1 italic">
+                                      Verklaring: {(timesheet as any).lowHoursExplanation}
+                                    </p>
+                                  )}
+                                  {timesheet.approvedAt && (
+                                    <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                                      Goedgekeurd op {formatFirebaseDate(timesheet.approvedAt)}
+                                    </p>
+                                  )}
+                                  {timesheet.rejectedAt && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">
+                                      Afgekeurd op {formatFirebaseDate(timesheet.rejectedAt)}
+                                      {timesheet.rejectionReason && (
+                                        <span className="italic"> — {timesheet.rejectionReason}</span>
+                                      )}
+                                    </p>
+                                  )}
+                                </button>
+                              );
+                            })
+                        )}
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            {!showRejectModal && (
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  onClick={() => handleApprove(selectedTimesheet)}
-                  variant="primary"
-                  className="flex-1"
-                >
-                  <Check className="h-4 w-4 mr-2" />
-                  Goedkeuren
-                </Button>
-                <Button
-                  onClick={handleRejectClick}
-                  variant="secondary"
-                  className="flex-1"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Afkeuren
-                </Button>
-              </div>
-            )}
-
-            {/* Rejection Form */}
-            {showRejectModal && (
-              <div className="space-y-3 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
-                <h4 className="font-semibold text-red-900">Reden voor afkeuring</h4>
-                <textarea
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-                  rows={4}
-                  placeholder="Bijvoorbeeld: Ongeldige uren op donderdag..."
-                />
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => setShowRejectModal(false)}
-                    variant="secondary"
-                    className="flex-1"
-                  >
-                    Annuleren
-                  </Button>
-                  <Button
-                    onClick={handleRejectConfirm}
-                    disabled={!rejectionReason.trim()}
-                    className="flex-1"
-                  >
-                    Bevestigen
-                  </Button>
                 </div>
               </div>
+            ) : (
+              <Card>
+                <EmptyState
+                  icon={User}
+                  title="Selecteer een medewerker"
+                  description="Kies een medewerker aan de linkerzijde om de uren te bekijken."
+                />
+              </Card>
             )}
           </div>
-        )}
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }
