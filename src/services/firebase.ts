@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   Timestamp,
+  arrayUnion,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -669,20 +670,22 @@ export const updateTimeEntry = async (id: string, userId: string, updates: Parti
 
 // User Roles
 export const createUserRole = async (
-  uid: string, 
-  role: 'admin' | 'manager' | 'employee', 
+  uid: string,
+  role: 'admin' | 'manager' | 'employee',
   employeeId?: string,
   userData?: {
     firstName?: string;
     lastName?: string;
     email?: string;
     assignedCompanyId?: string;
+    adminUserId?: string;
   }
 ): Promise<void> => {
   const roleData = convertToTimestamps({
     uid,
     role,
     employeeId: employeeId || null,
+    adminUserId: userData?.adminUserId || null,
     firstName: userData?.firstName || '',
     lastName: userData?.lastName || '',
     email: userData?.email || '',
@@ -750,8 +753,18 @@ export const createEmployeeAuthAccount = async (
       firstName: employee?.personalInfo.firstName,
       lastName: employee?.personalInfo.lastName,
       email: employee?.personalInfo.contactInfo.email,
+      adminUserId: userId,
     });
-    
+
+    // Voeg de nieuwe user toe aan allowedUsers van het bedrijf
+    const employeeData = employeeSnap.data();
+    if (employeeData.companyId) {
+      const companyRef = doc(db, 'companies', employeeData.companyId);
+      await updateDoc(companyRef, {
+        allowedUsers: arrayUnion(newUserId)
+      });
+    }
+
     return newUserId;
   } catch (error) {
     console.error('Error creating employee account:', error);
@@ -1876,13 +1889,43 @@ export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: s
       });
     }
 
-    console.log('\n🎯 ========================================');
-    console.log('🎯 SAMENVATTING getCompanyUsers:');
-    console.log('   - Totaal users gescand:', processedCount);
-    console.log('   - Users met toegang:', hasAccessCount);
-    console.log('   - Users toegevoegd:', addedCount);
-    console.log('   - Finale lijst:', allUsers.map(u => `${u.displayName} (${u.email})`));
-    console.log('🎯 ========================================\n');
+    // Fallback: zoek users gekoppeld aan employees van dit bedrijf
+    // (voor het geval ze niet in allowedUsers staan)
+    const empQ = query(
+      collection(db, 'employees'),
+      where('companyId', '==', companyId),
+      where('hasAccount', '==', true)
+    );
+    const empSnapshot = await getDocs(empQ);
+    const empIds = empSnapshot.docs.map(d => d.id);
+
+    for (let i = 0; i < empIds.length; i += 30) {
+      const batch = empIds.slice(i, i + 30);
+      const uQ = query(collection(db, 'users'), where('employeeId', 'in', batch));
+      const uSnapshot = await getDocs(uQ);
+      for (const uDoc of uSnapshot.docs) {
+        const uData = uDoc.data();
+        const existingUid = uData.uid;
+        if (!allUsers.find(u => u.uid === existingUid)) {
+          let name = '';
+          if (uData.firstName && uData.lastName) {
+            name = `${uData.firstName} ${uData.lastName}`;
+          } else if (uData.firstName) {
+            name = uData.firstName;
+          } else if (uData.email) {
+            name = uData.email.split('@')[0];
+          } else {
+            name = 'Onbekende gebruiker';
+          }
+
+          allUsers.push({
+            uid: existingUid,
+            email: uData.email || 'Onbekend',
+            displayName: name,
+          });
+        }
+      }
+    }
 
     return allUsers;
   } catch (error) {
