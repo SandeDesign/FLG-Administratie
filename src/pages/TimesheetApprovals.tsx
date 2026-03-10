@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Check, X, Clock, ChevronDown, AlertCircle, CheckCircle, User, Calendar, MapPin, TrendingDown } from 'lucide-react';
+import { Check, X, Clock, ChevronDown, AlertCircle, CheckCircle, User, Calendar, MapPin, Filter } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -16,6 +16,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import { isWeekInQuarter } from '../utils/dateFilters';
 
 interface EmployeeTimesheetSummary {
   employeeId: string;
@@ -40,7 +41,7 @@ function formatFirebaseDate(dateVal: any, options?: Intl.DateTimeFormatOptions):
 
 export default function TimesheetApprovals() {
   const { user, adminUserId } = useAuth();
-  const { selectedCompany, employees } = useApp();
+  const { selectedCompany, employees, selectedYear, selectedQuarter } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('Uren goedkeuren');
 
@@ -51,6 +52,7 @@ export default function TimesheetApprovals() {
   const [expandedWeekId, setExpandedWeekId] = useState<string | null>(null);
   const [rejectingWeekId, setRejectingWeekId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const pillBarRef = useRef<HTMLDivElement>(null);
 
   const loadAllTimesheets = useCallback(async (userId: string, companyId: string) => {
@@ -202,9 +204,19 @@ export default function TimesheetApprovals() {
   }
 
   const pendingCount = employeeSummaries.reduce((sum, e) => sum + e.pendingTimesheets.length, 0);
-  const employeesWithPending = employeeSummaries.filter(e => e.hasPending).length;
-  const approvedCount = employees.length - employeesWithPending;
   const selectedEmployee = employeeSummaries.find(s => s.employeeId === selectedEmployeeId);
+
+  // Filter "Alle weken" by year/quarter from header + local status filter
+  const getFilteredAllWeeks = (timesheets: WeeklyTimesheet[]) => {
+    return timesheets
+      .filter(t => t.year === selectedYear)
+      .filter(t => isWeekInQuarter(t.weekNumber, selectedQuarter))
+      .filter(t => statusFilter === 'all' || t.status === statusFilter)
+      .sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.weekNumber - a.weekNumber;
+      });
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
@@ -214,22 +226,6 @@ export default function TimesheetApprovals() {
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
           {pendingCount} aanvraag{pendingCount !== 1 ? 'en' : ''} wachtend op goedkeuring
         </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-2">
-        <Card className="!p-3 bg-white dark:bg-gray-800">
-          <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Wachten</p>
-          <p className="text-xl font-bold text-orange-600 mt-1">{pendingCount}</p>
-        </Card>
-        <Card className="!p-3 bg-white dark:bg-gray-800">
-          <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Medewerkers</p>
-          <p className="text-xl font-bold text-primary-600 mt-1">{employeesWithPending}</p>
-        </Card>
-        <Card className="!p-3 bg-white dark:bg-gray-800">
-          <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Klaar</p>
-          <p className="text-xl font-bold text-green-600 mt-1">{approvedCount}</p>
-        </Card>
       </div>
 
       {employeeSummaries.length === 0 ? (
@@ -421,7 +417,7 @@ export default function TimesheetApprovals() {
                       <span className={`ml-1.5 text-xs ${
                         activeTab === 'all' ? 'text-primary-500' : 'text-gray-400'
                       }`}>
-                        ({selectedEmployee.allTimesheets.length})
+                        ({getFilteredAllWeeks(selectedEmployee.allTimesheets).length})
                       </span>
                       {activeTab === 'all' && (
                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500" />
@@ -654,22 +650,54 @@ export default function TimesheetApprovals() {
                     )}
 
                     {/* ===== ALL WEEKS TAB ===== */}
-                    {activeTab === 'all' && (
-                      <div className="space-y-2">
-                        {selectedEmployee.allTimesheets.length === 0 ? (
+                    {activeTab === 'all' && (() => {
+                      const filteredWeeks = getFilteredAllWeeks(selectedEmployee.allTimesheets);
+                      const totalFilteredHours = filteredWeeks.reduce((sum, t) => sum + t.totalRegularHours, 0);
+
+                      return (
+                      <div className="space-y-3">
+                        {/* Filter bar */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                            <Filter className="h-3.5 w-3.5" />
+                            <span className="font-medium">Filter:</span>
+                          </div>
+                          <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="text-xs rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          >
+                            <option value="all">Alle statussen</option>
+                            <option value="submitted">Wachten</option>
+                            <option value="approved">Goedgekeurd</option>
+                            <option value="rejected">Afgekeurd</option>
+                            <option value="processed">Verwerkt</option>
+                            <option value="draft">Concept</option>
+                          </select>
+                          <div className="flex-1" />
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {filteredWeeks.length} week{filteredWeeks.length !== 1 ? 'en' : ''} · {totalFilteredHours}u
+                          </span>
+                        </div>
+
+                        {/* Hint: year/quarter is controlled by the header */}
+                        <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          Periode: {selectedYear} {selectedQuarter ? `Q${selectedQuarter}` : 'heel jaar'} — wijzig via de header
+                        </p>
+
+                        {filteredWeeks.length === 0 ? (
                           <div className="text-center py-8">
                             <Calendar className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                              Geen weken ingevoerd
+                              Geen weken gevonden
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                              Pas de periode of status filter aan
                             </p>
                           </div>
                         ) : (
-                          selectedEmployee.allTimesheets
-                            .sort((a, b) => {
-                              if (a.year !== b.year) return b.year - a.year;
-                              return b.weekNumber - a.weekNumber;
-                            })
-                            .map((timesheet) => {
+                          filteredWeeks.map((timesheet) => {
                               const percentage = (timesheet.totalRegularHours / selectedEmployee.contractHoursPerWeek) * 100;
                               const isPending = selectedEmployee.pendingTimesheets.some(t => t.id === timesheet.id);
 
@@ -757,7 +785,8 @@ export default function TimesheetApprovals() {
                             })
                         )}
                       </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
