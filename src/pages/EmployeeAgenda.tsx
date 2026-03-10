@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
+import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import { EventInput, EventClickArg, DateSelectArg } from '@fullcalendar/core';
 import {
   Link2,
@@ -49,6 +49,7 @@ const EmployeeAgenda: React.FC = () => {
   usePageTitle('Mijn Agenda');
 
   const calendarRef = useRef<FullCalendar>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   // State
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,29 @@ const EmployeeAgenda: React.FC = () => {
   );
   const scheduledTasks = allTasks.filter(t => t.isScheduled);
   const fridayDeadline = getNextFridayDeadline();
+
+  // Initialize FullCalendar Draggable on sidebar container
+  useEffect(() => {
+    if (sidebarRef.current) {
+      const draggable = new Draggable(sidebarRef.current, {
+        itemSelector: '[data-task-id]',
+        eventData: (eventEl) => {
+          const taskId = eventEl.getAttribute('data-task-id');
+          const taskTitle = eventEl.getAttribute('data-task-title') || 'Taak';
+          const taskColor = eventEl.getAttribute('data-task-color') || '#3b82f6';
+          return {
+            title: taskTitle,
+            duration: '01:00',
+            backgroundColor: taskColor,
+            borderColor: taskColor,
+            textColor: '#ffffff',
+            extendedProps: { taskId, type: 'task' },
+          };
+        },
+      });
+      return () => draggable.destroy();
+    }
+  }, []);
 
   // Load data
   useEffect(() => {
@@ -228,9 +252,9 @@ const EmployeeAgenda: React.FC = () => {
     }
   };
 
-  // Handle drop from external sidebar
-  const handleDrop = async (info: { date: Date; draggedEl: HTMLElement }) => {
-    // FullCalendar interaction plugin handles external drops
+  // Handle drop from external sidebar — remove element to prevent duplicates
+  const handleDrop = (info: { date: Date; draggedEl: HTMLElement }) => {
+    info.draggedEl.remove();
   };
 
   // Handle event receive (when external task is dropped on calendar)
@@ -466,7 +490,7 @@ const EmployeeAgenda: React.FC = () => {
       {/* Main content: Sidebar + Calendar */}
       <div className="flex gap-4">
         {/* Desktop Sidebar */}
-        <div className="hidden lg:block w-72 flex-shrink-0">
+        <div ref={sidebarRef} className="hidden lg:block w-72 flex-shrink-0">
           <Card className="h-[calc(100vh-250px)] overflow-hidden !p-0">
             <TaskScheduleSidebar
               tasks={unscheduledTasks}
@@ -519,6 +543,8 @@ const EmployeeAgenda: React.FC = () => {
               eventClick={handleEventClick}
               eventDrop={handleEventDrop}
               eventResize={handleEventResize}
+              eventReceive={handleEventReceive}
+              drop={handleDrop}
               select={handleDateSelect}
               datesSet={handleDatesSet}
               height="auto"

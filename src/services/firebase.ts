@@ -2159,7 +2159,25 @@ export const getTasksAssignedToUser = async (
   userUid: string,
   companyId?: string
 ): Promise<BusinessTask[]> => {
+  const convertTaskDoc = (docSnap: any) => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      ...data,
+      dueDate: data.dueDate?.toDate ? data.dueDate.toDate() : data.dueDate ? new Date(data.dueDate) : new Date(),
+      startDate: data.startDate?.toDate ? data.startDate.toDate() : data.startDate ? new Date(data.startDate) : undefined,
+      completedDate: data.completedDate?.toDate ? data.completedDate.toDate() : data.completedDate ? new Date(data.completedDate) : undefined,
+      nextOccurrence: data.nextOccurrence?.toDate ? data.nextOccurrence.toDate() : data.nextOccurrence ? new Date(data.nextOccurrence) : undefined,
+      lastGenerated: data.lastGenerated?.toDate ? data.lastGenerated.toDate() : data.lastGenerated ? new Date(data.lastGenerated) : undefined,
+      scheduledDate: data.scheduledDate?.toDate ? data.scheduledDate.toDate() : data.scheduledDate ? new Date(data.scheduledDate) : undefined,
+      scheduledAt: data.scheduledAt?.toDate ? data.scheduledAt.toDate() : data.scheduledAt ? new Date(data.scheduledAt) : undefined,
+      createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+      updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+    } as BusinessTask;
+  };
+
   try {
+    // Probeer eerst de samengestelde query (vereist Firestore composite index)
     let q;
     if (companyId) {
       q = query(
@@ -2177,23 +2195,32 @@ export const getTasksAssignedToUser = async (
     }
 
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        dueDate: data.dueDate?.toDate ? data.dueDate.toDate() : data.dueDate ? new Date(data.dueDate) : new Date(),
-        startDate: data.startDate?.toDate ? data.startDate.toDate() : data.startDate ? new Date(data.startDate) : undefined,
-        completedDate: data.completedDate?.toDate ? data.completedDate.toDate() : data.completedDate ? new Date(data.completedDate) : undefined,
-        nextOccurrence: data.nextOccurrence?.toDate ? data.nextOccurrence.toDate() : data.nextOccurrence ? new Date(data.nextOccurrence) : undefined,
-        lastGenerated: data.lastGenerated?.toDate ? data.lastGenerated.toDate() : data.lastGenerated ? new Date(data.lastGenerated) : undefined,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
-      } as BusinessTask;
-    });
-  } catch (error) {
-    console.error('Error fetching tasks assigned to user:', error);
-    return [];
+    return querySnapshot.docs.map(convertTaskDoc);
+  } catch (err: any) {
+    // Firestore composite index ontbreekt — fallback: query zonder orderBy
+    // en sorteer client-side
+    console.error('Error fetching tasks (trying fallback):', err?.message || err);
+    try {
+      let fallbackQ;
+      if (companyId) {
+        fallbackQ = query(
+          collection(db, 'businessTasks'),
+          where('assignedTo', 'array-contains', userUid),
+          where('companyId', '==', companyId)
+        );
+      } else {
+        fallbackQ = query(
+          collection(db, 'businessTasks'),
+          where('assignedTo', 'array-contains', userUid)
+        );
+      }
+      const fallbackSnapshot = await getDocs(fallbackQ);
+      const tasks = fallbackSnapshot.docs.map(convertTaskDoc);
+      return tasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    } catch (fallbackErr) {
+      console.error('Fallback query also failed:', fallbackErr);
+      return [];
+    }
   }
 };
 
