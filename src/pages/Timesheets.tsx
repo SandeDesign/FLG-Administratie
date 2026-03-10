@@ -737,8 +737,8 @@ export default function Timesheets() {
           )}
 
           {/* Import Button - ✅ Admin/Manager kunnen ophalen voor geselecteerde employee, Employee voor zichzelf */}
-          {(((userRole === 'admin' || userRole === 'manager') && selectedEmployeeId) || (userRole === 'employee' && currentEmployeeId)) &&
-           selectedCompany && (selectedCompany.name.toLowerCase().includes('itknecht') || selectedCompany.name.toLowerCase().includes('buddy')) && (
+          {effectiveEmployeeId && selectedCompany &&
+           (selectedCompany.name.toLowerCase().includes('itknecht') || selectedCompany.name.toLowerCase().includes('buddy')) && (
             <Button
               onClick={handleImportFromITKnecht}
               disabled={importing || saving}
