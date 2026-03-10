@@ -307,73 +307,73 @@ const EmployerStatistics: React.FC = () => {
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Werknemers</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{stats.activeEmployees}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">van {stats.totalEmployees} totaal</p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Werknemers</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1 break-words">{stats.activeEmployees}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">van {stats.totalEmployees} totaal</p>
             </div>
-            <Users className="h-8 w-8 text-blue-600" />
+            <Users className="h-7 w-7 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
           </div>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totaal Uren</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Totaal Uren</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1 break-words">
                 {stats.totalHours.toLocaleString('nl-NL')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                 {stats.totalOvertime > 0 ? `+${stats.totalOvertime.toFixed(0)} overuren` : 'productie uren'}
               </p>
             </div>
-            <Clock className="h-8 w-8 text-purple-600" />
+            <Clock className="h-7 w-7 sm:h-8 sm:w-8 text-purple-600 flex-shrink-0" />
           </div>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Productiewaarde</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Productiewaarde</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1 break-words">
                 {formatCurrency(stats.productionValue)}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                 {stats.hourlyRate > 0 ? `€${stats.hourlyRate}/uur` : 'geen tarief'}
               </p>
             </div>
-            <Factory className="h-8 w-8 text-indigo-600" />
+            <Factory className="h-7 w-7 sm:h-8 sm:w-8 text-indigo-600 flex-shrink-0" />
           </div>
         </Card>
 
         <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Loonkosten /mnd</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Loonkosten /mnd</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1 break-words">
                 {formatCurrency(stats.estimatedMonthlyPayroll)}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                 ~€{AVERAGE_MONTHLY_COST_PER_EMPLOYEE.toLocaleString('nl-NL')} p.p.
               </p>
             </div>
-            <Euro className="h-8 w-8 text-green-600" />
+            <Euro className="h-7 w-7 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
           </div>
         </Card>
 
         <Card className={stats.sickPercentage > 5 ? 'border-red-300 dark:border-red-700' : ''}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Ziekteverzuim</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Ziekteverzuim</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1 break-words">
                 {(stats.sickPercentage || 0).toFixed(1)}%
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                 {stats.activeSickCount} ziek • {stats.totalSickDays} dagen totaal
               </p>
             </div>
-            <HeartPulse className={`h-8 w-8 ${stats.sickPercentage > 5 ? 'text-red-600' : 'text-orange-500'}`} />
+            <HeartPulse className={`h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0 ${stats.sickPercentage > 5 ? 'text-red-600' : 'text-orange-500'}`} />
           </div>
         </Card>
       </div>
@@ -381,27 +381,27 @@ const EmployerStatistics: React.FC = () => {
       {/* Financieel Overzicht */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totale Omzet</p>
-            <p className="text-2xl font-bold text-green-600 mt-1">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Totale Omzet</p>
+            <p className="text-xl sm:text-2xl font-bold text-green-600 mt-1 break-words">
               €{stats.totalRevenue.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
           </div>
         </Card>
 
         <Card>
-          <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Totale Kosten</p>
-            <p className="text-2xl font-bold text-red-600 mt-1">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Totale Kosten</p>
+            <p className="text-xl sm:text-2xl font-bold text-red-600 mt-1 break-words">
               €{stats.totalCosts.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
           </div>
         </Card>
 
         <Card>
-          <div>
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Winst</p>
-            <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Winst</p>
+            <p className={`text-xl sm:text-2xl font-bold mt-1 break-words ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               €{profit.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}
             </p>
           </div>
