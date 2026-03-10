@@ -6,7 +6,7 @@ import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import ExpenseModal from '../components/expense/ExpenseModal';
-import { Expense } from '../types';
+import { Expense, Employee } from '../types';
 import * as firebaseService from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/useToast';
@@ -16,32 +16,36 @@ import { useApp } from '../contexts/AppContext';
 const Expenses: React.FC = () => {
   usePageTitle('Declaraties');
   const { user, currentEmployeeId, adminUserId } = useAuth();
-  const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
+  const { selectedCompany, companies } = useApp();
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
+
+  const employerCompany = currentEmployee?.companyId
+    ? companies.find(c => c.id === currentEmployee.companyId)
+    : null;
 
   const loadExpenses = useCallback(async () => {
     if (!user || !adminUserId || !currentEmployeeId || !selectedCompany) {
       setLoading(false);
       return;
     }
-    
+
     try {
       setLoading(true);
-      
-      // Get employee data to find the admin userId (if different from current user.uid)
-      // In this setup, user.uid is the adminUserId for all data.
-      const currentEmployee = await firebaseService.getEmployeeById(currentEmployeeId);
-      if (!currentEmployee) {
+
+      const employee = await firebaseService.getEmployeeById(currentEmployeeId);
+      if (!employee) {
         showError('Fout', 'Werknemergegevens niet gevonden.');
         setLoading(false);
         return;
       }
-      
+      setCurrentEmployee(employee);
+
       const data = await firebaseService.getExpenses(adminUserId, currentEmployeeId);
       setExpenses(data);
     } catch (err) {
@@ -148,7 +152,7 @@ const Expenses: React.FC = () => {
         <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Declaraties</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Beheer je onkostendeclaraties
+            Beheer je onkostendeclaraties{employerCompany ? ` via ${employerCompany.name}` : ''}
           </p>
         </div>
         <Button onClick={() => setIsModalOpen(true)}>

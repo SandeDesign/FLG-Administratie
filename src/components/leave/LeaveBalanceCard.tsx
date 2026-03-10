@@ -11,8 +11,10 @@ interface LeaveBalanceCardProps {
 
 const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({ balance, onRequestLeave }) => {
   const { holidayDays, advDays, seniorDays, snipperDays } = balance;
-  const daysUntilExpiry = getDaysUntilExpiry(new Date(holidayDays.expires));
-  const showExpiryWarning = shouldWarnAboutExpiry(new Date(holidayDays.expires));
+  const expiryDate = holidayDays.expires ? new Date(holidayDays.expires) : null;
+  const isValidExpiry = expiryDate && !isNaN(expiryDate.getTime());
+  const daysUntilExpiry = isValidExpiry ? getDaysUntilExpiry(expiryDate) : 0;
+  const showExpiryWarning = isValidExpiry ? shouldWarnAboutExpiry(expiryDate) : false;
 
   const totalRemaining = holidayDays.remaining + (advDays?.remaining || 0) + seniorDays + snipperDays;
 

@@ -177,8 +177,8 @@ export const generatePayrollExcel = (calculations: PayrollCalculation[]): string
 
   const rows = calculations.map(calc => [
     calc.employeeId,
-    calc.periodStartDate.toISOString().split('T'),
-    calc.periodEndDate.toISOString().split('T'),
+    calc.periodStartDate.toISOString().split('T')[0],
+    calc.periodEndDate.toISOString().split('T')[0],
     calc.regularHours,
     calc.regularPay,
     calc.overtimeHours,

@@ -31,7 +31,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<SickLeaveFormData>({
-    startDate: new Date().toISOString().split('T'),
+    startDate: new Date().toISOString().split('T')[0],
     workCapacityPercentage: 0,
     notes: '',
   });
@@ -63,7 +63,7 @@ const SickLeaveModal: React.FC<SickLeaveModalProps> = ({
 
   const handleClose = () => {
     setFormData({
-      startDate: new Date().toISOString().split('T'),
+      startDate: new Date().toISOString().split('T')[0],
       workCapacityPercentage: 0,
       notes: '',
     });
