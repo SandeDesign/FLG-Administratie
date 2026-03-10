@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   Timestamp,
+  arrayUnion,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -321,12 +322,42 @@ export const getEmployees = async (userId: string, companyId?: string, branchId?
       orderBy('createdAt', 'desc')
     );
   }
-  
+
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...convertTimestamps(doc.data())
+  const employees = querySnapshot.docs.map(empDoc => ({
+    id: empDoc.id,
+    ...convertTimestamps(empDoc.data())
   } as Employee));
+
+  // Sync hasAccount: controleer of werknemers zonder hasAccount toch een account hebben
+  const employeesWithoutAccount = employees.filter(emp => !emp.hasAccount);
+  if (employeesWithoutAccount.length > 0) {
+    const empIds = employeesWithoutAccount.map(emp => emp.id);
+    const linkedEmpIds = new Set<string>();
+
+    for (let i = 0; i < empIds.length; i += 30) {
+      const batch = empIds.slice(i, i + 30);
+      const uQ = query(collection(db, 'users'), where('employeeId', 'in', batch));
+      const uSnapshot = await getDocs(uQ);
+      for (const uDoc of uSnapshot.docs) {
+        const empId = uDoc.data().employeeId;
+        if (empId) linkedEmpIds.add(empId);
+      }
+    }
+
+    for (const emp of employeesWithoutAccount) {
+      if (linkedEmpIds.has(emp.id)) {
+        emp.hasAccount = true;
+        const empRef = doc(db, 'employees', emp.id);
+        updateDoc(empRef, {
+          hasAccount: true,
+          updatedAt: Timestamp.fromDate(new Date())
+        }).catch(err => console.error('Error syncing hasAccount:', err));
+      }
+    }
+  }
+
+  return employees;
 };
 
 // Get employees with their project companies populated
@@ -576,20 +607,22 @@ export const updateTimeEntry = async (id: string, userId: string, updates: Parti
 
 // User Roles
 export const createUserRole = async (
-  uid: string, 
-  role: 'admin' | 'manager' | 'employee', 
+  uid: string,
+  role: 'admin' | 'manager' | 'employee',
   employeeId?: string,
   userData?: {
     firstName?: string;
     lastName?: string;
     email?: string;
     assignedCompanyId?: string;
+    adminUserId?: string;
   }
 ): Promise<void> => {
   const roleData = convertToTimestamps({
     uid,
     role,
     employeeId: employeeId || null,
+    adminUserId: userData?.adminUserId || null,
     firstName: userData?.firstName || '',
     lastName: userData?.lastName || '',
     email: userData?.email || '',
@@ -657,8 +690,18 @@ export const createEmployeeAuthAccount = async (
       firstName: employee?.personalInfo.firstName,
       lastName: employee?.personalInfo.lastName,
       email: employee?.personalInfo.contactInfo.email,
+      adminUserId: userId,
     });
-    
+
+    // Voeg de nieuwe user toe aan allowedUsers van het bedrijf
+    const employeeData = employeeSnap.data();
+    if (employeeData.companyId) {
+      const companyRef = doc(db, 'companies', employeeData.companyId);
+      await updateDoc(companyRef, {
+        allowedUsers: arrayUnion(newUserId)
+      });
+    }
+
     return newUserId;
   } catch (error) {
     console.error('Error creating employee account:', error);
@@ -1649,19 +1692,37 @@ export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: s
     const usersSnapshot = await getDocs(collection(db, 'users'));
     const allUsers: Array<{ uid: string; email: string; displayName: string; role?: string }> = [];
 
-    // Haal ook alle employees op voor naam-resolutie (batch in plaats van per user)
+    // Haal alle employees op voor naam-resolutie en company-koppeling (batch)
     const employeesSnapshot = await getDocs(collection(db, 'employees'));
     const employeesMap = new Map<string, any>();
     employeesSnapshot.docs.forEach(empDoc => {
       employeesMap.set(empDoc.id, empDoc.data());
     });
 
+    // Bouw set van UIDs die toegang hebben tot dit bedrijf
+    const accessUIDs = new Set<string>();
+    accessUIDs.add(companyOwner);
+    allowedUsers.forEach((uid: string) => accessUIDs.add(uid));
+
+    // Voeg ook users toe die een employee record hebben voor dit bedrijf
+    for (const [empId, empData] of employeesMap) {
+      if (empData.companyId === companyId || empData.projectCompanies?.includes(companyId)) {
+        // Zoek user die via employeeId aan deze employee gekoppeld is
+        for (const uDoc of usersSnapshot.docs) {
+          if (uDoc.data().employeeId === empId) {
+            accessUIDs.add(uDoc.id);
+          }
+        }
+        // Check ook accountUserId op het employee record
+        if (empData.accountUserId) accessUIDs.add(empData.accountUserId);
+      }
+    }
+
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
       const uid = userDoc.id;
 
-      const hasAccess = uid === companyOwner || allowedUsers.includes(uid);
-      if (!hasAccess) continue;
+      if (!accessUIDs.has(uid)) continue;
 
       let displayName = '';
 
