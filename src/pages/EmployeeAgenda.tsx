@@ -53,7 +53,7 @@ const EmployeeAgenda: React.FC = () => {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // State
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [allTasks, setAllTasks] = useState<BusinessTask[]>([]);
   const [microsoftEvents, setMicrosoftEvents] = useState<MicrosoftCalendarEvent[]>([]);
   const [msConnected, setMsConnected] = useState(false);
@@ -105,19 +105,29 @@ const EmployeeAgenda: React.FC = () => {
   }, [user, selectedCompany]);
 
   const loadTasks = async () => {
-    if (!user || !selectedCompany) return;
+    if (!user || !selectedCompany) {
+      console.warn('[Agenda] Kan taken niet laden:', { user: !!user, selectedCompany: selectedCompany?.id });
+      return;
+    }
     try {
       setLoading(true);
-      // Haal alle bedrijfstaken op en filter client-side:
-      // - taken expliciet toegewezen aan deze gebruiker
-      // - taken zonder toewijzing (zichtbaar voor iedereen in het bedrijf)
+      console.log('[Agenda] Laden taken voor:', { uid: user.uid, companyId: selectedCompany.id });
+
+      // Haal alle bedrijfstaken op
       const allCompanyTasks = await getAllCompanyTasks(selectedCompany.id, user.uid);
-      const myTasks = allCompanyTasks.filter(task =>
-        !task.assignedTo || task.assignedTo.length === 0 || task.assignedTo.includes(user.uid)
-      );
-      setAllTasks(myTasks as BusinessTask[]);
+      console.log('[Agenda] getAllCompanyTasks resultaat:', allCompanyTasks.length);
+
+      if (allCompanyTasks.length > 0) {
+        setAllTasks(allCompanyTasks as BusinessTask[]);
+      } else {
+        // Fallback: als bedrijfs-query leeg is (mogelijk Firestore rules), probeer via assignedTo
+        console.warn('[Agenda] Geen taken via bedrijfs-query, probeer assignedTo fallback');
+        const assignedTasks = await getTasksAssignedToUser(user.uid, selectedCompany.id);
+        console.log('[Agenda] getTasksAssignedToUser resultaat:', assignedTasks.length);
+        setAllTasks(assignedTasks as BusinessTask[]);
+      }
     } catch (err) {
-      console.error('Error loading tasks:', err);
+      console.error('[Agenda] Error laden taken:', err);
       error('Fout bij laden van taken');
     } finally {
       setLoading(false);
