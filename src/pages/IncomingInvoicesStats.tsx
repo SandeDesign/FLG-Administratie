@@ -14,7 +14,8 @@ import {
   Mail,
   RotateCw,
   MoreVertical,
-  Upload
+  Upload,
+  Filter
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -58,6 +59,7 @@ const IncomingInvoicesStats: React.FC = () => {
   const [isFetchingFromEmail, setIsFetchingFromEmail] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; invoice: IncomingInvoice } | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Load Invoices from Firestore
   const loadInvoices = useCallback(async () => {
@@ -658,111 +660,75 @@ const IncomingInvoicesStats: React.FC = () => {
             Controleer alle inkoop bonnen.
           </p>
         </div>
-        {(isAdmin || isManager) && (
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setShowUploadModal(true)}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Uploaden
-            </Button>
-            <Button
-              onClick={handleFetchFromEmail}
-              loading={isFetchingFromEmail}
-              disabled={isFetchingFromEmail || !selectedCompany}
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              Mail
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          {
-            label: 'Totaal',
-            amount: statistics.total,
-            count: statistics.count,
-            icon: TrendingUp,
-            color: 'bg-gradient-to-br from-primary-500 to-primary-600',
-          },
-          {
-            label: 'In Behandeling',
-            amount: statistics.pending,
-            count: statistics.pendingCount,
-            icon: Clock,
-            color: 'bg-gradient-to-br from-yellow-500 to-yellow-600',
-          },
-          {
-            label: 'Goedgekeurd',
-            amount: statistics.approved,
-            count: statistics.approvedCount,
-            icon: CheckCircle,
-            color: 'bg-gradient-to-br from-primary-500 to-cyan-600',
-          },
-          {
-            label: 'Betaald',
-            amount: statistics.paid,
-            count: statistics.paidCount,
-            icon: CheckCircle,
-            color: 'bg-gradient-to-br from-green-500 to-emerald-600',
-          },
-        ].map((stat, index) => (
-          <Card key={index} className="overflow-hidden">
-            <div className={`${stat.color} p-4 text-white`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium opacity-90">{stat.label}</p>
-                  <p className="text-2xl font-bold mt-1">{formatCurrency(stat.amount)}</p>
-                  <p className="text-xs opacity-75 mt-2">{stat.count} facturen</p>
-                </div>
-                <stat.icon className="w-12 h-12 opacity-20" />
-              </div>
-            </div>
-          </Card>
-        ))}
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filter
+          </Button>
+          {(isAdmin || isManager) && (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => setShowUploadModal(true)}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Uploaden
+              </Button>
+              <Button
+                onClick={handleFetchFromEmail}
+                loading={isFetchingFromEmail}
+                disabled={isFetchingFromEmail || !selectedCompany}
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Mail
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
-            <input
-              type="text"
-              placeholder="Zoeken op leverancier, factuurnummer..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+      {showFilters && (
+        <Card className="p-4">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400 dark:text-gray-500" />
+              <input
+                type="text"
+                placeholder="Zoeken op leverancier, factuurnummer..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="all">Alle statussen</option>
+              <option value="pending">In behandeling</option>
+              <option value="approved">Goedgekeurd</option>
+              <option value="paid">Betaald</option>
+              <option value="rejected">Afgewezen</option>
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value as any)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="date">Sorteer op datum</option>
+              <option value="amount">Sorteer op bedrag</option>
+              <option value="status">Sorteer op status</option>
+            </select>
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="all">Alle statussen</option>
-            <option value="pending">In behandeling</option>
-            <option value="approved">Goedgekeurd</option>
-            <option value="paid">Betaald</option>
-            <option value="rejected">Afgewezen</option>
-          </select>
-
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as any)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="date">Sorteer op datum</option>
-            <option value="amount">Sorteer op bedrag</option>
-            <option value="status">Sorteer op status</option>
-          </select>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Table */}
       {filteredInvoices.length === 0 ? (
@@ -1008,6 +974,53 @@ const IncomingInvoicesStats: React.FC = () => {
         </div>
         </>
       )}
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          {
+            label: 'Totaal',
+            amount: statistics.total,
+            count: statistics.count,
+            icon: TrendingUp,
+            color: 'bg-gradient-to-br from-primary-500 to-primary-600',
+          },
+          {
+            label: 'In Behandeling',
+            amount: statistics.pending,
+            count: statistics.pendingCount,
+            icon: Clock,
+            color: 'bg-gradient-to-br from-yellow-500 to-yellow-600',
+          },
+          {
+            label: 'Goedgekeurd',
+            amount: statistics.approved,
+            count: statistics.approvedCount,
+            icon: CheckCircle,
+            color: 'bg-gradient-to-br from-primary-500 to-cyan-600',
+          },
+          {
+            label: 'Betaald',
+            amount: statistics.paid,
+            count: statistics.paidCount,
+            icon: CheckCircle,
+            color: 'bg-gradient-to-br from-green-500 to-emerald-600',
+          },
+        ].map((stat, index) => (
+          <Card key={index} className="overflow-hidden">
+            <div className={`${stat.color} p-4 text-white`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium opacity-90">{stat.label}</p>
+                  <p className="text-2xl font-bold mt-1">{formatCurrency(stat.amount)}</p>
+                  <p className="text-xs opacity-75 mt-2">{stat.count} facturen</p>
+                </div>
+                <stat.icon className="w-12 h-12 opacity-20" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
 
       {/* Edit Modal */}
       {editingInvoice && editFormData && (
