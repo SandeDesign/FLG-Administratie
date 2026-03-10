@@ -25,14 +25,17 @@ const TaskScheduleSidebar: React.FC<TaskScheduleSidebarProps> = ({ tasks, onTask
   const renderTaskItem = (task: BusinessTask) => {
     const priorityConfig = PRIORITY_CONFIG[task.priority];
 
+    const taskColor = task.priority === 'urgent' ? '#ef4444'
+      : task.priority === 'high' ? '#f97316'
+      : task.priority === 'medium' ? '#3b82f6'
+      : '#6b7280';
+
     return (
       <div
         key={task.id}
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData('taskId', task.id);
-          e.dataTransfer.effectAllowed = 'move';
-        }}
+        data-task-id={task.id}
+        data-task-title={task.title}
+        data-task-color={taskColor}
         onClick={() => onTaskClick(task)}
         className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow group"
       >
