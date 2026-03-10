@@ -12,13 +12,15 @@ interface AppContextType {
   employees: Employee[];
   branches: Branch[];
   selectedCompany: Company | null;
-  selectedYear: number; // ✅ YEAR FILTERING: Selected year for data queries
+  selectedYear: number;
+  selectedQuarter: number | null; // null = heel jaar, 1-4 = Q1-Q4
   dashboardStats: DashboardStats;
   loading: boolean;
   currentEmployeeId: string | null;
-  queryUserId: string | null; // ✅ NIEUW: userId voor data queries (voor managers = company owner, voor admins = eigen uid)
+  queryUserId: string | null;
   setSelectedCompany: (company: Company | null) => void;
-  setSelectedYear: (year: number) => void; // ✅ YEAR FILTERING: Set selected year
+  setSelectedYear: (year: number) => void;
+  setSelectedQuarter: (quarter: number | null) => void;
   refreshDashboardStats: () => Promise<void>;
 }
 
@@ -30,7 +32,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [selectedYear, setSelectedYearState] = useState<number>(new Date().getFullYear()); // ✅ YEAR FILTERING: Default to current year
+  const [selectedYear, setSelectedYearState] = useState<number>(new Date().getFullYear());
+  const [selectedQuarter, setSelectedQuarterState] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [queryUserId, setQueryUserId] = useState<string | null>(null); // ✅ NIEUW: userId voor data queries
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
@@ -245,13 +248,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         defaultCompanyId = storedDefault || null;
       }
 
-      // ✅ YEAR FILTERING: Load selected year from localStorage
       const storedYear = localStorage.getItem(`selectedYear_${adminUserId}`);
       if (storedYear) {
         const year = parseInt(storedYear, 10);
         if (!isNaN(year) && year >= 2020 && year <= 2050) {
           setSelectedYearState(year);
-          console.log('Loaded selected year from localStorage:', year);
+        }
+      }
+
+      const storedQuarter = localStorage.getItem(`selectedQuarter_${adminUserId}`);
+      if (storedQuarter) {
+        const q = parseInt(storedQuarter, 10);
+        if (q >= 1 && q <= 4) {
+          setSelectedQuarterState(q);
         }
       }
 
@@ -310,12 +319,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [userRole, companies, employees, branches, adminUserId, calculateDashboardStats]);
 
-  // ✅ YEAR FILTERING: Wrapper function to save year to localStorage
   const setSelectedYear = useCallback((year: number) => {
     setSelectedYearState(year);
     if (adminUserId) {
       localStorage.setItem(`selectedYear_${adminUserId}`, String(year));
-      console.log('Saved selected year to localStorage:', year);
+    }
+  }, [adminUserId]);
+
+  const setSelectedQuarter = useCallback((quarter: number | null) => {
+    setSelectedQuarterState(quarter);
+    if (adminUserId) {
+      if (quarter === null) {
+        localStorage.removeItem(`selectedQuarter_${adminUserId}`);
+      } else {
+        localStorage.setItem(`selectedQuarter_${adminUserId}`, String(quarter));
+      }
     }
   }, [adminUserId]);
 
@@ -342,13 +360,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         employees,
         branches,
         selectedCompany,
-        selectedYear, // ✅ YEAR FILTERING: Expose selected year
+        selectedYear,
+        selectedQuarter,
         dashboardStats,
         loading,
         currentEmployeeId,
-        queryUserId, // ✅ NIEUW: userId voor data queries
+        queryUserId,
         setSelectedCompany,
-        setSelectedYear, // ✅ YEAR FILTERING: Expose setter
+        setSelectedYear,
+        setSelectedQuarter,
         refreshDashboardStats,
       }}
     >

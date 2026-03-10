@@ -39,6 +39,8 @@ import {
 import { getPendingTimesheets } from '../services/timesheetService';
 import { getPayrollCalculations } from '../services/payrollService';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import PeriodSelector from '../components/ui/PeriodSelector';
+import { isInQuarter, isWeekInQuarter } from '../utils/dateFilters';
 
 const formatCurrency = (amount: number): string => {
   if (Math.abs(amount) >= 100000) {
@@ -48,7 +50,7 @@ const formatCurrency = (amount: number): string => {
 };
 
 const Dashboard: React.FC = () => {
-  const { employees, companies, loading, selectedCompany, selectedYear } = useApp();
+  const { employees, companies, loading, selectedCompany, selectedYear, selectedQuarter } = useApp();
   const { user, userRole, currentEmployeeId, adminUserId } = useAuth();
   const navigate = useNavigate();
   usePageTitle('Dashboard');
@@ -100,65 +102,46 @@ const Dashboard: React.FC = () => {
       // Uitgaande facturen (Verkoop)
       const outgoingQuery = query(
         collection(db, 'outgoingInvoices'),
+        where('userId', '==', adminUserId),
         where('companyId', '==', selectedCompany.id)
       );
       const outgoingSnap = await getDocs(outgoingQuery);
-      console.log('✅ Outgoing invoices total:', outgoingSnap.size);
 
       let outgoingCount = 0;
       let outgoingTotal = 0;
-      let outgoingThisMonth = 0;
-      let outgoingTotalThisMonth = 0;
 
       outgoingSnap.forEach(doc => {
         const data = doc.data();
         const docDate = data.invoiceDate || data.createdAt;
         const date = docDate ? (typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate) : null;
 
-        // Filter op geselecteerd jaar
-        if (date && date.getFullYear() !== selectedYear) return;
+        if (!date || !isInQuarter(date, selectedYear, selectedQuarter)) return;
 
         outgoingCount++;
         outgoingTotal += data.totalAmount || data.amount || 0;
-
-        if (date && date >= startOfMonth) {
-          outgoingThisMonth++;
-          outgoingTotalThisMonth += data.totalAmount || data.amount || 0;
-        }
       });
 
       // Inkomende facturen (Inkoop)
       const incomingQuery = query(
         collection(db, 'incomingInvoices'),
+        where('userId', '==', adminUserId),
         where('companyId', '==', selectedCompany.id)
       );
       const incomingSnap = await getDocs(incomingQuery);
-      console.log('✅ Incoming invoices total:', incomingSnap.size);
 
       let incomingCount = 0;
       let incomingTotal = 0;
-      let incomingThisMonth = 0;
-      let incomingTotalThisMonth = 0;
 
       incomingSnap.forEach(doc => {
         const data = doc.data();
         const docDate = data.invoiceDate || data.createdAt;
         const date = docDate ? (typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate) : null;
 
-        // Filter op geselecteerd jaar
-        if (date && date.getFullYear() !== selectedYear) return;
+        if (!date || !isInQuarter(date, selectedYear, selectedQuarter)) return;
 
         incomingCount++;
         incomingTotal += data.totalAmount || data.amount || 0;
-
-        if (date && date >= startOfMonth) {
-          incomingThisMonth++;
-          incomingTotalThisMonth += data.totalAmount || data.amount || 0;
-        }
       });
-
-      console.log('💰 Outgoing stats:', { count: outgoingCount, total: outgoingTotal, thisMonth: outgoingThisMonth, totalThisMonth: outgoingTotalThisMonth });
-      console.log('💰 Incoming stats:', { count: incomingCount, total: incomingTotal, thisMonth: incomingThisMonth, totalThisMonth: incomingTotalThisMonth });
 
       setStats(prev => ({
         ...prev,
@@ -170,7 +153,7 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.error('❌ Error loading invoice stats:', error);
     }
-  }, [user, selectedCompany, selectedYear]);
+  }, [user, adminUserId, selectedCompany, selectedYear, selectedQuarter]);
 
   // ========== LOAD HOLDING DATA ==========
   const loadHoldingData = useCallback(async () => {
@@ -186,40 +169,42 @@ const Dashboard: React.FC = () => {
 
       console.log('🏢 Loading holding data for:', selectedCompany.name);
 
-      // Uitgaande facturen deze maand
+      // Uitgaande facturen
       const outgoingQuery = query(
         collection(db, 'outgoingInvoices'),
+        where('userId', '==', adminUserId),
         where('companyId', '==', selectedCompany.id)
       );
       const outgoingSnap = await getDocs(outgoingQuery);
 
-      let outgoingThisMonth = 0;
+      let outgoingFiltered = 0;
       outgoingSnap.forEach(doc => {
         const data = doc.data();
         const docDate = data.invoiceDate || data.createdAt;
         if (docDate) {
           const date = typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate;
-          if (date >= startOfMonth) {
-            outgoingThisMonth++;
+          if (isInQuarter(date, selectedYear, selectedQuarter)) {
+            outgoingFiltered++;
           }
         }
       });
 
-      // Inkomende facturen deze maand
+      // Inkomende facturen
       const incomingQuery = query(
         collection(db, 'incomingInvoices'),
+        where('userId', '==', adminUserId),
         where('companyId', '==', selectedCompany.id)
       );
       const incomingSnap = await getDocs(incomingQuery);
 
-      let incomingThisMonth = 0;
+      let incomingFiltered = 0;
       incomingSnap.forEach(doc => {
         const data = doc.data();
         const docDate = data.invoiceDate || data.createdAt;
         if (docDate) {
           const date = typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate;
-          if (date >= startOfMonth) {
-            incomingThisMonth++;
+          if (isInQuarter(date, selectedYear, selectedQuarter)) {
+            incomingFiltered++;
           }
         }
       });
@@ -227,16 +212,15 @@ const Dashboard: React.FC = () => {
       // Budget items
       const budgetQuery = query(
         collection(db, 'budgetItems'),
+        where('userId', '==', adminUserId),
         where('companyId', '==', selectedCompany.id),
         where('isActive', '==', true)
       );
       const budgetSnap = await getDocs(budgetQuery);
 
-      console.log('✅ Holding stats:', { outgoing: outgoingThisMonth, incoming: incomingThisMonth, budget: budgetSnap.size });
-
       setHoldingStats({
-        outgoingInvoices: outgoingThisMonth,
-        incomingInvoices: incomingThisMonth,
+        outgoingInvoices: outgoingFiltered,
+        incomingInvoices: incomingFiltered,
         budgetItems: budgetSnap.size,
       });
     } catch (error) {
@@ -244,7 +228,7 @@ const Dashboard: React.FC = () => {
     } finally {
       setDashLoading(false);
     }
-  }, [user, selectedCompany, userRole]);
+  }, [user, adminUserId, selectedCompany, userRole, selectedYear, selectedQuarter]);
 
   // ========== LOAD ADMIN DATA ==========
   const loadAdminData = useCallback(async () => {
@@ -418,10 +402,11 @@ const Dashboard: React.FC = () => {
         let totalHours = 0;
         productionWeeksSnap.forEach(doc => {
           const data = doc.data();
+          if (!isWeekInQuarter(data.week, selectedQuarter)) return;
           totalHours += data.totalHours || 0;
         });
 
-        const productionValue = totalHours * companyHourlyRate;
+        const productionValue = totalHours * companyHourlyRate * 1.21;
 
         const stats = {
           totalHours,
@@ -441,7 +426,7 @@ const Dashboard: React.FC = () => {
     };
 
     loadProjectStats();
-  }, [user, adminUserId, selectedCompany?.id, selectedCompany?.companyType, selectedYear, loadInvoiceStats]);
+  }, [user, adminUserId, selectedCompany?.id, selectedCompany?.companyType, selectedYear, selectedQuarter, loadInvoiceStats]);
 
   // ========== LOAD EMPLOYEE STATS ==========
   useEffect(() => {
@@ -511,6 +496,8 @@ const Dashboard: React.FC = () => {
             <Briefcase className="h-12 w-12 text-primary-100 opacity-50" />
           </div>
         </div>
+
+        <PeriodSelector />
 
         {/* Key Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -626,6 +613,8 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        <PeriodSelector />
+
         {/* Alert Banner */}
         {totalPending > 0 && (
           <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg flex items-start gap-3">
@@ -665,9 +654,9 @@ const Dashboard: React.FC = () => {
             <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-green-700">Productie Waarde</p>
+                  <p className="text-xs font-medium text-green-700">Productie Waarde (incl. BTW)</p>
                   <p className="text-2xl font-bold text-green-900 mt-2">€{Number(projectStats.productionValue).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <p className="text-xs text-green-600 mt-2">€{Number(projectStats.hourlyRate).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/uur</p>
+                  <p className="text-xs text-green-600 mt-2">€{Number(projectStats.hourlyRate).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/uur excl. BTW</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-300" />
               </div>
@@ -856,6 +845,8 @@ const Dashboard: React.FC = () => {
             <TrendingUp className="h-12 w-12 text-primary-200 opacity-50" />
           </div>
         </div>
+
+        <PeriodSelector />
 
         {/* Alert Banner */}
         {totalPending > 0 && (
