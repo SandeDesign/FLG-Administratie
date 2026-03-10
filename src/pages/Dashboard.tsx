@@ -652,7 +652,7 @@ const Dashboard: React.FC = () => {
             <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-green-700">Productie Waarde (incl. BTW)</p>
+                  <p className="text-xs font-medium text-green-700">Productie Waarde (HUIDIG) (incl. BTW)</p>
                   <p className="text-2xl font-bold text-green-900 mt-2">€{Number(projectStats.productionValue).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   <p className="text-xs text-green-600 mt-2">€{Number(projectStats.hourlyRate).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/uur excl. BTW</p>
                 </div>
