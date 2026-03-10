@@ -38,154 +38,61 @@ const removeUndefinedValues = (obj: any): any => {
   return cleaned;
 };
 
-// Helper function to convert Firestore timestamps to Date objects
-const convertTimestamps = (data: any) => {
-  const converted = { ...data };
-  
-  // Convert top-level timestamps
-  if (converted.createdAt && typeof converted.createdAt.toDate === 'function') {
-    converted.createdAt = converted.createdAt.toDate();
-  }
-  if (converted.updatedAt && typeof converted.updatedAt.toDate === 'function') {
-    converted.updatedAt = converted.updatedAt.toDate();
-  }
-  if (converted.date && typeof converted.date.toDate === 'function') {
-    converted.date = converted.date.toDate();
-  }
-  
-  // Convert leave request specific dates
-  if (converted.startDate && typeof converted.startDate.toDate === 'function') {
-    converted.startDate = converted.startDate.toDate();
-  }
-  if (converted.endDate && typeof converted.endDate.toDate === 'function') {
-    converted.endDate = converted.endDate.toDate();
-  }
-  if (converted.approvedAt && typeof converted.approvedAt.toDate === 'function') {
-    converted.approvedAt = converted.approvedAt.toDate();
-  }
-  if (converted.reportedAt && typeof converted.reportedAt.toDate === 'function') {
-    converted.reportedAt = converted.reportedAt.toDate();
-  }
-  if (converted.actualReturnDate && typeof converted.actualReturnDate.toDate === 'function') {
-    converted.actualReturnDate = converted.actualReturnDate.toDate();
-  }
-  
-  // Convert nested timestamps in personalInfo
-  if (converted.personalInfo?.dateOfBirth && typeof converted.personalInfo.dateOfBirth.toDate === 'function') {
-    converted.personalInfo.dateOfBirth = converted.personalInfo.dateOfBirth.toDate();
-  }
-  
-  // Convert nested timestamps in contractInfo
-  if (converted.contractInfo?.startDate && typeof converted.contractInfo.startDate.toDate === 'function') {
-    converted.contractInfo.startDate = converted.contractInfo.startDate.toDate();
-  }
-  if (converted.contractInfo?.endDate && typeof converted.contractInfo.endDate.toDate === 'function') {
-    converted.contractInfo.endDate = converted.contractInfo.endDate.toDate();
-  }
-  if (converted.contractInfo?.noticeDate && typeof converted.contractInfo.noticeDate.toDate === 'function') {
-    converted.contractInfo.noticeDate = converted.contractInfo.noticeDate.toDate();
-  }
-  
-  // Convert nested timestamps in leaveInfo
-  if (converted.leaveInfo?.holidayDays?.expiryDate && typeof converted.leaveInfo.holidayDays.expiryDate.toDate === 'function') {
-    converted.leaveInfo.holidayDays.expiryDate = converted.leaveInfo.holidayDays.expiryDate.toDate();
-  }
-  
-  // Convert accountCreatedAt if present
-  if (converted.accountCreatedAt && typeof converted.accountCreatedAt.toDate === 'function') {
-    converted.accountCreatedAt = converted.accountCreatedAt.toDate();
+// Helper function to recursively convert Firestore timestamps to Date objects
+const convertTimestamps = (data: any): any => {
+  if (data === null || data === undefined) return data;
+
+  // Convert Firestore Timestamp to Date
+  if (typeof data.toDate === 'function') {
+    return data.toDate();
   }
 
-  // Convert BusinessTask specific dates
-  if (converted.dueDate && typeof converted.dueDate.toDate === 'function') {
-    converted.dueDate = converted.dueDate.toDate();
-  }
-  if (converted.completedDate && typeof converted.completedDate.toDate === 'function') {
-    converted.completedDate = converted.completedDate.toDate();
-  }
-  if (converted.nextOccurrence && typeof converted.nextOccurrence.toDate === 'function') {
-    converted.nextOccurrence = converted.nextOccurrence.toDate();
-  }
-  if (converted.lastGenerated && typeof converted.lastGenerated.toDate === 'function') {
-    converted.lastGenerated = converted.lastGenerated.toDate();
+  // Handle serialized Firestore Timestamps (objects with seconds/nanoseconds)
+  if (typeof data === 'object' && !Array.isArray(data) && data.seconds !== undefined && data.nanoseconds !== undefined && Object.keys(data).length === 2) {
+    return new Date(data.seconds * 1000 + data.nanoseconds / 1000000);
   }
 
-  return converted;
+  // Recursively convert arrays
+  if (Array.isArray(data)) {
+    return data.map(item => convertTimestamps(item));
+  }
+
+  // Recursively convert objects
+  if (typeof data === 'object' && !(data instanceof Date)) {
+    const converted: any = {};
+    for (const key of Object.keys(data)) {
+      converted[key] = convertTimestamps(data[key]);
+    }
+    return converted;
+  }
+
+  return data;
 };
 
-// Helper function to convert Date objects to Firestore timestamps
-const convertToTimestamps = (data: any) => {
-  const converted = { ...data };
-  
-  // Convert Date objects to Timestamps
-  if (converted.createdAt instanceof Date) {
-    converted.createdAt = Timestamp.fromDate(converted.createdAt);
-  }
-  if (converted.updatedAt instanceof Date) {
-    converted.updatedAt = Timestamp.fromDate(converted.updatedAt);
-  }
-  if (converted.date instanceof Date) {
-    converted.date = Timestamp.fromDate(converted.date);
-  }
-  
-  // Convert leave request dates
-  if (converted.startDate instanceof Date) {
-    converted.startDate = Timestamp.fromDate(converted.startDate);
-  }
-  if (converted.endDate instanceof Date) {
-    converted.endDate = Timestamp.fromDate(converted.endDate);
-  }
-  if (converted.approvedAt instanceof Date) {
-    converted.approvedAt = Timestamp.fromDate(converted.approvedAt);
-  }
-  if (converted.reportedAt instanceof Date) {
-    converted.reportedAt = Timestamp.fromDate(converted.reportedAt);
-  }
-  if (converted.actualReturnDate instanceof Date) {
-    converted.actualReturnDate = Timestamp.fromDate(converted.actualReturnDate);
-  }
-  
-  // Convert nested dates in personalInfo
-  if (converted.personalInfo?.dateOfBirth instanceof Date) {
-    converted.personalInfo.dateOfBirth = Timestamp.fromDate(converted.personalInfo.dateOfBirth);
-  }
-  
-  // Convert nested dates in contractInfo
-  if (converted.contractInfo?.startDate instanceof Date) {
-    converted.contractInfo.startDate = Timestamp.fromDate(converted.contractInfo.startDate);
-  }
-  if (converted.contractInfo?.endDate instanceof Date) {
-    converted.contractInfo.endDate = Timestamp.fromDate(converted.contractInfo.endDate);
-  }
-  if (converted.contractInfo?.noticeDate instanceof Date) {
-    converted.contractInfo.noticeDate = Timestamp.fromDate(converted.contractInfo.noticeDate);
-  }
-  
-  // Convert nested dates in leaveInfo
-  if (converted.leaveInfo?.holidayDays?.expiryDate instanceof Date) {
-    converted.leaveInfo.holidayDays.expiryDate = Timestamp.fromDate(converted.leaveInfo.holidayDays.expiryDate);
-  }
-  
-  // Convert accountCreatedAt if present
-  if (converted.accountCreatedAt instanceof Date) {
-    converted.accountCreatedAt = Timestamp.fromDate(converted.accountCreatedAt);
+// Helper function to recursively convert Date objects to Firestore timestamps
+const convertToTimestamps = (data: any): any => {
+  if (data === null || data === undefined) return data;
+
+  // Convert Date to Firestore Timestamp
+  if (data instanceof Date) {
+    return Timestamp.fromDate(data);
   }
 
-  // Convert BusinessTask specific dates
-  if (converted.dueDate instanceof Date) {
-    converted.dueDate = Timestamp.fromDate(converted.dueDate);
-  }
-  if (converted.completedDate instanceof Date) {
-    converted.completedDate = Timestamp.fromDate(converted.completedDate);
-  }
-  if (converted.nextOccurrence instanceof Date) {
-    converted.nextOccurrence = Timestamp.fromDate(converted.nextOccurrence);
-  }
-  if (converted.lastGenerated instanceof Date) {
-    converted.lastGenerated = Timestamp.fromDate(converted.lastGenerated);
+  // Recursively convert arrays
+  if (Array.isArray(data)) {
+    return data.map(item => convertToTimestamps(item));
   }
 
-  return converted;
+  // Recursively convert objects
+  if (typeof data === 'object') {
+    const converted: any = {};
+    for (const key of Object.keys(data)) {
+      converted[key] = convertToTimestamps(data[key]);
+    }
+    return converted;
+  }
+
+  return data;
 };
 
 // Companies
@@ -1776,192 +1683,97 @@ export const getAllCompanyTasks = async (companyId: string, userId?: string): Pr
  */
 export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: string; email: string; displayName?: string }>> => {
   try {
-    console.log('🔍 ========================================');
-    console.log('🔍 getCompanyUsers START voor company:', companyId);
-    console.log('🔍 ========================================');
-
-    // Haal bedrijf op om owner en allowed users te krijgen
     const companyDoc = await getDoc(doc(db, 'companies', companyId));
-    if (!companyDoc.exists()) {
-      console.error('❌ FOUT: Company niet gevonden:', companyId);
-      return [];
-    }
+    if (!companyDoc.exists()) return [];
 
     const companyData = companyDoc.data();
     const companyOwner = companyData.userId;
     const allowedUsers = companyData.allowedUsers || [];
 
-    console.log('📋 Company Gegevens:');
-    console.log('   - Owner ID:', companyOwner);
-    console.log('   - AllowedUsers:', allowedUsers);
-    console.log('   - AllowedUsers count:', allowedUsers.length);
-    console.log('   - Company name:', companyData.name);
-
-    // Haal ALLE users op uit de users collectie
     const usersSnapshot = await getDocs(collection(db, 'users'));
-    console.log('👥 Totaal users in database:', usersSnapshot.size);
-    console.log('');
-
     const allUsers: Array<{ uid: string; email: string; displayName: string; role?: string }> = [];
-    let processedCount = 0;
-    let hasAccessCount = 0;
-    let addedCount = 0;
+
+    // Haal ook alle employees op voor naam-resolutie (batch in plaats van per user)
+    const employeesSnapshot = await getDocs(collection(db, 'employees'));
+    const employeesMap = new Map<string, any>();
+    employeesSnapshot.docs.forEach(empDoc => {
+      employeesMap.set(empDoc.id, empDoc.data());
+    });
 
     for (const userDoc of usersSnapshot.docs) {
       const userData = userDoc.data();
       const uid = userDoc.id;
-      processedCount++;
 
-      console.log(`\n👤 User ${processedCount}/${usersSnapshot.size}:`);
-      console.log('   - UID:', uid);
-      console.log('   - Email:', userData.email);
-      console.log('   - Role:', userData.role || 'GEEN ROLE');
-      console.log('   - EmployeeId:', userData.employeeId || 'geen');
+      const hasAccess = uid === companyOwner || allowedUsers.includes(uid);
+      if (!hasAccess) continue;
 
-      // Controleer of deze user toegang heeft tot dit bedrijf
-      const isOwner = uid === companyOwner;
-      const inAllowedUsers = allowedUsers.includes(uid);
-      const hasAccess = isOwner || inAllowedUsers;
-
-      console.log('   - Is Owner:', isOwner);
-      console.log('   - In AllowedUsers:', inAllowedUsers);
-      console.log('   - Has Access:', hasAccess);
-
-      if (!hasAccess) {
-        console.log('   ⏭️  SKIPPED: Geen toegang tot bedrijf');
-        continue;
-      }
-
-      hasAccessCount++;
-      console.log('   ✓ Heeft toegang! User wordt toegevoegd...');
-
-      // Haal role op voor weergave (maar filter er NIET op!)
-      const role = userData.role;
-      console.log('   - Role:', role || 'geen');
-
-      // Haal naam op uit verschillende bronnen
       let displayName = '';
 
-      // Probeer eerst employeeId veld met Name sub-field
+      // 1. Probeer employee data (personalInfo structuur)
       if (userData.employeeId) {
-        console.log('   - Ophalen employee data voor ID:', userData.employeeId);
-        try {
-          const employeeDoc = await getDoc(doc(db, 'employees', userData.employeeId));
-          if (employeeDoc.exists()) {
-            const employeeData = employeeDoc.data();
-            console.log('   - Employee data gevonden');
-            console.log('   - Employee.Name:', employeeData.Name);
-            console.log('   - Employee.firstName:', employeeData.firstName);
-            console.log('   - Employee.lastName:', employeeData.lastName);
-
-            // Probeer Name field
-            if (employeeData.Name) {
-              displayName = employeeData.Name;
-              console.log('   ✓ Naam uit Employee.Name:', displayName);
-            } else if (employeeData.firstName && employeeData.lastName) {
-              displayName = `${employeeData.firstName} ${employeeData.lastName}`;
-              console.log('   ✓ Naam uit Employee firstName+lastName:', displayName);
-            } else if (employeeData.firstName) {
-              displayName = employeeData.firstName;
-              console.log('   ✓ Naam uit Employee.firstName:', displayName);
-            }
-          } else {
-            console.log('   ⚠️  Employee document niet gevonden');
+        const employeeData = employeesMap.get(userData.employeeId);
+        if (employeeData) {
+          if (employeeData.personalInfo?.firstName && employeeData.personalInfo?.lastName) {
+            displayName = `${employeeData.personalInfo.firstName} ${employeeData.personalInfo.lastName}`;
+          } else if (employeeData.personalInfo?.firstName) {
+            displayName = employeeData.personalInfo.firstName;
           }
-        } catch (err) {
-          console.log('   ⚠️  Error bij ophalen employee:', err);
+          // Legacy velden op root niveau
+          if (!displayName && employeeData.Name) {
+            displayName = employeeData.Name;
+          } else if (!displayName && employeeData.firstName && employeeData.lastName) {
+            displayName = `${employeeData.firstName} ${employeeData.lastName}`;
+          }
         }
       }
 
-      // Fallback naar user document zelf
+      // 2. Fallback: zoek employee gekoppeld aan deze user via userId veld
       if (!displayName) {
-        console.log('   - Fallback naar user document zelf');
+        for (const [, empData] of employeesMap) {
+          if (empData.userId === uid || empData.accountUserId === uid) {
+            if (empData.personalInfo?.firstName && empData.personalInfo?.lastName) {
+              displayName = `${empData.personalInfo.firstName} ${empData.personalInfo.lastName}`;
+            } else if (empData.personalInfo?.firstName) {
+              displayName = empData.personalInfo.firstName;
+            }
+            if (displayName) break;
+          }
+        }
+      }
+
+      // 3. Fallback naar user document zelf
+      if (!displayName) {
         if (userData.displayName) {
           displayName = userData.displayName;
-          console.log('   ✓ Naam uit user.displayName:', displayName);
         } else if (userData.firstName && userData.lastName) {
           displayName = `${userData.firstName} ${userData.lastName}`;
-          console.log('   ✓ Naam uit user firstName+lastName:', displayName);
         } else if (userData.firstName) {
           displayName = userData.firstName;
-          console.log('   ✓ Naam uit user.firstName:', displayName);
         } else if (userData.name) {
           displayName = userData.name;
-          console.log('   ✓ Naam uit user.name:', displayName);
         }
       }
 
-      // Laatste fallback naar email
+      // 4. Laatste fallback: email prefix
       if (!displayName && userData.email) {
         displayName = userData.email.split('@')[0];
-        console.log('   ✓ Naam uit email prefix:', displayName);
       }
 
       if (!displayName) {
         displayName = 'Onbekende gebruiker';
-        console.log('   ⚠️  Geen naam gevonden, gebruik fallback');
       }
 
-      const userToAdd = {
+      allUsers.push({
         uid,
         email: userData.email || 'Onbekend',
-        displayName: displayName,
-        role: role
-      };
-
-      allUsers.push(userToAdd);
-      addedCount++;
-
-      console.log('   ✅ USER TOEGEVOEGD:', {
-        uid,
-        email: userData.email,
         displayName,
-        role
+        role: userData.role
       });
-    }
-
-    // Fallback: zoek users gekoppeld aan employees van dit bedrijf
-    // (voor het geval ze niet in allowedUsers staan)
-    const empQ = query(
-      collection(db, 'employees'),
-      where('companyId', '==', companyId),
-      where('hasAccount', '==', true)
-    );
-    const empSnapshot = await getDocs(empQ);
-    const empIds = empSnapshot.docs.map(d => d.id);
-
-    for (let i = 0; i < empIds.length; i += 30) {
-      const batch = empIds.slice(i, i + 30);
-      const uQ = query(collection(db, 'users'), where('employeeId', 'in', batch));
-      const uSnapshot = await getDocs(uQ);
-      for (const uDoc of uSnapshot.docs) {
-        const uData = uDoc.data();
-        const existingUid = uData.uid;
-        if (!allUsers.find(u => u.uid === existingUid)) {
-          let name = '';
-          if (uData.firstName && uData.lastName) {
-            name = `${uData.firstName} ${uData.lastName}`;
-          } else if (uData.firstName) {
-            name = uData.firstName;
-          } else if (uData.email) {
-            name = uData.email.split('@')[0];
-          } else {
-            name = 'Onbekende gebruiker';
-          }
-
-          allUsers.push({
-            uid: existingUid,
-            email: uData.email || 'Onbekend',
-            displayName: name,
-          });
-        }
-      }
     }
 
     return allUsers;
   } catch (error) {
-    console.error('❌ ERROR in getCompanyUsers:', error);
-    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('Error in getCompanyUsers:', error);
     return [];
   }
 };
