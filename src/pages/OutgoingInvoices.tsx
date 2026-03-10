@@ -274,7 +274,7 @@ const OutgoingInvoices: React.FC = () => {
       ? `${employee.personalInfo.firstName} ${employee.personalInfo.lastName}`
       : 'Onbekend';
 
-    const rate = 41.31;
+    const rate = selectedCompany?.hourlyRate || 41.31;
     const newItems: InvoiceItem[] = [];
 
     selectedProductionWeeks.forEach(week => {
