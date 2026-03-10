@@ -37,154 +37,61 @@ const removeUndefinedValues = (obj: any): any => {
   return cleaned;
 };
 
-// Helper function to convert Firestore timestamps to Date objects
-const convertTimestamps = (data: any) => {
-  const converted = { ...data };
-  
-  // Convert top-level timestamps
-  if (converted.createdAt && typeof converted.createdAt.toDate === 'function') {
-    converted.createdAt = converted.createdAt.toDate();
-  }
-  if (converted.updatedAt && typeof converted.updatedAt.toDate === 'function') {
-    converted.updatedAt = converted.updatedAt.toDate();
-  }
-  if (converted.date && typeof converted.date.toDate === 'function') {
-    converted.date = converted.date.toDate();
-  }
-  
-  // Convert leave request specific dates
-  if (converted.startDate && typeof converted.startDate.toDate === 'function') {
-    converted.startDate = converted.startDate.toDate();
-  }
-  if (converted.endDate && typeof converted.endDate.toDate === 'function') {
-    converted.endDate = converted.endDate.toDate();
-  }
-  if (converted.approvedAt && typeof converted.approvedAt.toDate === 'function') {
-    converted.approvedAt = converted.approvedAt.toDate();
-  }
-  if (converted.reportedAt && typeof converted.reportedAt.toDate === 'function') {
-    converted.reportedAt = converted.reportedAt.toDate();
-  }
-  if (converted.actualReturnDate && typeof converted.actualReturnDate.toDate === 'function') {
-    converted.actualReturnDate = converted.actualReturnDate.toDate();
-  }
-  
-  // Convert nested timestamps in personalInfo
-  if (converted.personalInfo?.dateOfBirth && typeof converted.personalInfo.dateOfBirth.toDate === 'function') {
-    converted.personalInfo.dateOfBirth = converted.personalInfo.dateOfBirth.toDate();
-  }
-  
-  // Convert nested timestamps in contractInfo
-  if (converted.contractInfo?.startDate && typeof converted.contractInfo.startDate.toDate === 'function') {
-    converted.contractInfo.startDate = converted.contractInfo.startDate.toDate();
-  }
-  if (converted.contractInfo?.endDate && typeof converted.contractInfo.endDate.toDate === 'function') {
-    converted.contractInfo.endDate = converted.contractInfo.endDate.toDate();
-  }
-  if (converted.contractInfo?.noticeDate && typeof converted.contractInfo.noticeDate.toDate === 'function') {
-    converted.contractInfo.noticeDate = converted.contractInfo.noticeDate.toDate();
-  }
-  
-  // Convert nested timestamps in leaveInfo
-  if (converted.leaveInfo?.holidayDays?.expiryDate && typeof converted.leaveInfo.holidayDays.expiryDate.toDate === 'function') {
-    converted.leaveInfo.holidayDays.expiryDate = converted.leaveInfo.holidayDays.expiryDate.toDate();
-  }
-  
-  // Convert accountCreatedAt if present
-  if (converted.accountCreatedAt && typeof converted.accountCreatedAt.toDate === 'function') {
-    converted.accountCreatedAt = converted.accountCreatedAt.toDate();
+// Helper function to recursively convert Firestore timestamps to Date objects
+const convertTimestamps = (data: any): any => {
+  if (data === null || data === undefined) return data;
+
+  // Convert Firestore Timestamp to Date
+  if (typeof data.toDate === 'function') {
+    return data.toDate();
   }
 
-  // Convert BusinessTask specific dates
-  if (converted.dueDate && typeof converted.dueDate.toDate === 'function') {
-    converted.dueDate = converted.dueDate.toDate();
-  }
-  if (converted.completedDate && typeof converted.completedDate.toDate === 'function') {
-    converted.completedDate = converted.completedDate.toDate();
-  }
-  if (converted.nextOccurrence && typeof converted.nextOccurrence.toDate === 'function') {
-    converted.nextOccurrence = converted.nextOccurrence.toDate();
-  }
-  if (converted.lastGenerated && typeof converted.lastGenerated.toDate === 'function') {
-    converted.lastGenerated = converted.lastGenerated.toDate();
+  // Handle serialized Firestore Timestamps (objects with seconds/nanoseconds)
+  if (typeof data === 'object' && !Array.isArray(data) && data.seconds !== undefined && data.nanoseconds !== undefined && Object.keys(data).length === 2) {
+    return new Date(data.seconds * 1000 + data.nanoseconds / 1000000);
   }
 
-  return converted;
+  // Recursively convert arrays
+  if (Array.isArray(data)) {
+    return data.map(item => convertTimestamps(item));
+  }
+
+  // Recursively convert objects
+  if (typeof data === 'object' && !(data instanceof Date)) {
+    const converted: any = {};
+    for (const key of Object.keys(data)) {
+      converted[key] = convertTimestamps(data[key]);
+    }
+    return converted;
+  }
+
+  return data;
 };
 
-// Helper function to convert Date objects to Firestore timestamps
-const convertToTimestamps = (data: any) => {
-  const converted = { ...data };
-  
-  // Convert Date objects to Timestamps
-  if (converted.createdAt instanceof Date) {
-    converted.createdAt = Timestamp.fromDate(converted.createdAt);
-  }
-  if (converted.updatedAt instanceof Date) {
-    converted.updatedAt = Timestamp.fromDate(converted.updatedAt);
-  }
-  if (converted.date instanceof Date) {
-    converted.date = Timestamp.fromDate(converted.date);
-  }
-  
-  // Convert leave request dates
-  if (converted.startDate instanceof Date) {
-    converted.startDate = Timestamp.fromDate(converted.startDate);
-  }
-  if (converted.endDate instanceof Date) {
-    converted.endDate = Timestamp.fromDate(converted.endDate);
-  }
-  if (converted.approvedAt instanceof Date) {
-    converted.approvedAt = Timestamp.fromDate(converted.approvedAt);
-  }
-  if (converted.reportedAt instanceof Date) {
-    converted.reportedAt = Timestamp.fromDate(converted.reportedAt);
-  }
-  if (converted.actualReturnDate instanceof Date) {
-    converted.actualReturnDate = Timestamp.fromDate(converted.actualReturnDate);
-  }
-  
-  // Convert nested dates in personalInfo
-  if (converted.personalInfo?.dateOfBirth instanceof Date) {
-    converted.personalInfo.dateOfBirth = Timestamp.fromDate(converted.personalInfo.dateOfBirth);
-  }
-  
-  // Convert nested dates in contractInfo
-  if (converted.contractInfo?.startDate instanceof Date) {
-    converted.contractInfo.startDate = Timestamp.fromDate(converted.contractInfo.startDate);
-  }
-  if (converted.contractInfo?.endDate instanceof Date) {
-    converted.contractInfo.endDate = Timestamp.fromDate(converted.contractInfo.endDate);
-  }
-  if (converted.contractInfo?.noticeDate instanceof Date) {
-    converted.contractInfo.noticeDate = Timestamp.fromDate(converted.contractInfo.noticeDate);
-  }
-  
-  // Convert nested dates in leaveInfo
-  if (converted.leaveInfo?.holidayDays?.expiryDate instanceof Date) {
-    converted.leaveInfo.holidayDays.expiryDate = Timestamp.fromDate(converted.leaveInfo.holidayDays.expiryDate);
-  }
-  
-  // Convert accountCreatedAt if present
-  if (converted.accountCreatedAt instanceof Date) {
-    converted.accountCreatedAt = Timestamp.fromDate(converted.accountCreatedAt);
+// Helper function to recursively convert Date objects to Firestore timestamps
+const convertToTimestamps = (data: any): any => {
+  if (data === null || data === undefined) return data;
+
+  // Convert Date to Firestore Timestamp
+  if (data instanceof Date) {
+    return Timestamp.fromDate(data);
   }
 
-  // Convert BusinessTask specific dates
-  if (converted.dueDate instanceof Date) {
-    converted.dueDate = Timestamp.fromDate(converted.dueDate);
-  }
-  if (converted.completedDate instanceof Date) {
-    converted.completedDate = Timestamp.fromDate(converted.completedDate);
-  }
-  if (converted.nextOccurrence instanceof Date) {
-    converted.nextOccurrence = Timestamp.fromDate(converted.nextOccurrence);
-  }
-  if (converted.lastGenerated instanceof Date) {
-    converted.lastGenerated = Timestamp.fromDate(converted.lastGenerated);
+  // Recursively convert arrays
+  if (Array.isArray(data)) {
+    return data.map(item => convertToTimestamps(item));
   }
 
-  return converted;
+  // Recursively convert objects
+  if (typeof data === 'object') {
+    const converted: any = {};
+    for (const key of Object.keys(data)) {
+      converted[key] = convertToTimestamps(data[key]);
+    }
+    return converted;
+  }
+
+  return data;
 };
 
 // Companies
