@@ -97,17 +97,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* RIGHT: Company Selector */}
           <div className="flex-1 flex justify-end items-center gap-1">
-            {/* Period indicator (small, tappable — opens full selector in mobile menu) */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <Calendar className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                {selectedQuarter ? `Q${selectedQuarter}` : selectedYear}
-              </span>
-            </button>
-
             <div className="relative">
               <button
                 onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
