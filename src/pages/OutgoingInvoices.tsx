@@ -661,6 +661,8 @@ const OutgoingInvoices: React.FC = () => {
   });
 
   const totalAmount = filteredInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+  const totalVatAmount = filteredInvoices.reduce((sum, inv) => sum + (inv.vatAmount || 0), 0);
+  const totalExclBtw = filteredInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
   const draftCount = filteredInvoices.filter(inv => inv.status === 'draft').length;
   const sentCount = filteredInvoices.filter(inv => inv.status === 'sent').length;
   const paidCount = filteredInvoices.filter(inv => inv.status === 'paid').length;
@@ -1250,8 +1252,9 @@ const OutgoingInvoices: React.FC = () => {
           {/* Compact Table Header */}
           <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 sticky top-0 z-10">
             <div className="col-span-2">Nummer</div>
-            <div className="col-span-4">Klant</div>
-            <div className="col-span-2">Bedrag</div>
+            <div className="col-span-3">Klant</div>
+            <div className="col-span-2">Bedrag excl.</div>
+            <div className="col-span-1">BTW</div>
             <div className="col-span-2">Datum</div>
             <div className="col-span-2">Status</div>
           </div>
@@ -1268,8 +1271,9 @@ const OutgoingInvoices: React.FC = () => {
                   <div className="hidden md:grid grid-cols-12 gap-2 items-center p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-sm transition-all cursor-pointer"
                     onClick={() => setExpandedInvoice(isExpanded ? null : invoice.id)}>
                     <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</div>
-                    <div className="col-span-4 text-xs text-gray-700 dark:text-gray-300">{invoice.clientName}</div>
-                    <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">€{invoice.totalAmount.toFixed(2)}</div>
+                    <div className="col-span-3 text-xs text-gray-700 dark:text-gray-300">{invoice.clientName}</div>
+                    <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">€{(invoice.amount || 0).toFixed(2)}</div>
+                    <div className="col-span-1 text-xs text-gray-600 dark:text-gray-400">€{(invoice.vatAmount || 0).toFixed(2)}</div>
                     <div className="col-span-2 text-xs text-gray-600 dark:text-gray-400">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div>
                     <div className="col-span-1">
                       <span className={`inline-flex items-center gap-0.5 px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(invoice.status)}`}>
@@ -1320,9 +1324,19 @@ const OutgoingInvoices: React.FC = () => {
                           {invoice.items.length > 3 && (
                             <p className="text-gray-500 dark:text-gray-400 italic">+{invoice.items.length - 3} meer</p>
                           )}
-                          <div className="border-t border-gray-200 dark:border-gray-700 pt-1 mt-1 font-semibold text-gray-900 dark:text-gray-100 flex justify-between">
-                            <span>Totaal:</span>
-                            <span>€{invoice.totalAmount.toFixed(2)}</span>
+                          <div className="border-t border-gray-200 dark:border-gray-700 pt-1 mt-1 space-y-0.5">
+                            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                              <span>Subtotaal:</span>
+                              <span>€{(invoice.amount || 0).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                              <span>BTW:</span>
+                              <span>€{(invoice.vatAmount || 0).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between font-semibold text-gray-900 dark:text-gray-100">
+                              <span>Totaal:</span>
+                              <span>€{invoice.totalAmount.toFixed(2)}</span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1392,9 +1406,17 @@ const OutgoingInvoices: React.FC = () => {
           </div>
 
           {/* Compact Summary Footer */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs">
             <div>
-              <p className="text-gray-600 dark:text-gray-400 font-medium">Totaal</p>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">Excl. BTW</p>
+              <p className="font-bold text-gray-900 dark:text-gray-100">€{totalExclBtw.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">BTW</p>
+              <p className="font-bold text-gray-900 dark:text-gray-100">€{totalVatAmount.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">Totaal incl.</p>
               <p className="font-bold text-gray-900 dark:text-gray-100">€{totalAmount.toFixed(2)}</p>
             </div>
             <div>

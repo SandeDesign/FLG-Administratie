@@ -18,8 +18,9 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import { isWeekInQuarter, isInQuarter } from '../utils/dateFilters';
 
 interface ProductionWeek {
   id: string;
@@ -42,7 +43,7 @@ interface IncomingInvoice {
 
 const ManagerDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { selectedCompany, queryUserId, employees } = useApp();
+  const { selectedCompany, queryUserId, employees, selectedYear, selectedQuarter } = useApp();
   const navigate = useNavigate();
   usePageTitle('Manager Dashboard');
 
@@ -89,11 +90,14 @@ const ManagerDashboard: React.FC = () => {
           const productionQuery = query(
             collection(db, 'productionWeeks'),
             where('companyId', '==', selectedCompany.id),
-            orderBy('createdAt', 'desc'),
-            limit(5)
+            orderBy('createdAt', 'desc')
           );
           const productionSnap = await getDocs(productionQuery);
-          productionData = productionSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductionWeek));
+          const allProduction = productionSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductionWeek));
+          productionData = allProduction.filter(pw => {
+            if (pw.year !== selectedYear) return false;
+            return isWeekInQuarter(pw.weekNumber, selectedQuarter);
+          });
           productionData.forEach(pw => {
             totalProduction += pw.totalProduced || 0;
             totalProductionValue += pw.totalValue || 0;
@@ -111,11 +115,15 @@ const ManagerDashboard: React.FC = () => {
         const invoiceQuery = query(
           collection(db, 'incomingInvoices'),
           where('companyId', '==', selectedCompany.id),
-          orderBy('createdAt', 'desc'),
-          limit(5)
+          orderBy('createdAt', 'desc')
         );
         const invoiceSnap = await getDocs(invoiceQuery);
-        invoiceData = invoiceSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as IncomingInvoice));
+        const allInvoices = invoiceSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as IncomingInvoice));
+        invoiceData = allInvoices.filter(inv => {
+          const docDate = inv.createdAt;
+          const date = docDate ? (typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate) : null;
+          return date && isInQuarter(date, selectedYear, selectedQuarter);
+        });
         invoiceData.forEach(inv => { totalInvoiceAmount += inv.totalAmount || 0; });
       } catch (e) {
         console.log('Could not load invoice data:', e);
@@ -136,7 +144,7 @@ const ManagerDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, queryUserId, employees, isProjectCompany]);
+  }, [user, selectedCompany, queryUserId, employees, isProjectCompany, selectedYear, selectedQuarter]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -365,7 +373,7 @@ const ManagerDashboard: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Euro className="h-6 w-6 text-primary-600" />
                 <div>
-                  <p className="text-sm text-primary-700">Totaal Inkoop (laatste 5)</p>
+                  <p className="text-sm text-primary-700">Totaal Inkoop {selectedQuarter ? `Q${selectedQuarter}` : ''} {selectedYear}</p>
                   <p className="text-2xl font-bold text-primary-900">€{stats.totalInvoiceAmount.toFixed(2)}</p>
                 </div>
               </div>
