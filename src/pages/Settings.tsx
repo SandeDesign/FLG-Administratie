@@ -14,6 +14,8 @@ import {
   Sun,
   Calendar,
   FileText,
+  Link2,
+  Link2Off,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -33,6 +35,116 @@ import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibil
 import { BottomNavSettings } from '../components/settings/BottomNavSettings';
 import { outgoingInvoiceService } from '../services/outgoingInvoiceService';
 // ✅ Ensure this component is placed at: src/components/settings/CompaniesVisibilitySettings.tsx
+
+// Microsoft Koppeling Component
+const MicrosoftConnectionCard: React.FC = () => {
+  const { user } = useAuth();
+  const { success: showSuccess, error: showErr } = useToast();
+  const [msConnected, setMsConnected] = React.useState(false);
+  const [msEmail, setMsEmail] = React.useState('');
+  const [msLoading, setMsLoading] = React.useState(false);
+  const [checking, setChecking] = React.useState(true);
+
+  React.useEffect(() => {
+    checkConnection();
+  }, []);
+
+  const checkConnection = async () => {
+    try {
+      const { isMicrosoftConnected: isConnected, getMicrosoftAccount: getAccount } = await import('../services/microsoftService');
+      const connected = await isConnected();
+      setMsConnected(connected);
+      if (connected) {
+        const account = await getAccount();
+        setMsEmail(account?.username || '');
+      }
+    } catch {
+      // Microsoft niet beschikbaar
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    if (!user) return;
+    setMsLoading(true);
+    try {
+      const { loginMicrosoft, saveMicrosoftConnection } = await import('../services/microsoftService');
+      const account = await loginMicrosoft();
+      if (account) {
+        await saveMicrosoftConnection(user.uid, account);
+        setMsConnected(true);
+        setMsEmail(account.username || '');
+        showSuccess('Microsoft account gekoppeld');
+      }
+    } catch {
+      showErr('Fout bij koppelen van Microsoft account');
+    } finally {
+      setMsLoading(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!user) return;
+    setMsLoading(true);
+    try {
+      const { disconnectMicrosoft } = await import('../services/microsoftService');
+      await disconnectMicrosoft(user.uid);
+      setMsConnected(false);
+      setMsEmail('');
+      showSuccess('Microsoft account ontkoppeld');
+    } catch {
+      showErr('Fout bij ontkoppelen');
+    } finally {
+      setMsLoading(false);
+    }
+  };
+
+  if (checking) return null;
+
+  return (
+    <Card>
+      <div className="p-6">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+          <Link2 className="h-5 w-5 text-primary-600" />
+          Microsoft Account
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Koppel je Microsoft account om je Outlook-agenda te zien in de takenagenda. Zo kun je taken realistisch inplannen rondom je bestaande afspraken.
+        </p>
+        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div>
+            <p className="font-medium text-gray-900 dark:text-gray-100">
+              {msConnected ? 'Gekoppeld' : 'Niet gekoppeld'}
+            </p>
+            {msEmail && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">{msEmail}</p>
+            )}
+          </div>
+          {msConnected ? (
+            <button
+              onClick={handleDisconnect}
+              disabled={msLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
+            >
+              <Link2Off className="h-4 w-4" />
+              {msLoading ? 'Bezig...' : 'Ontkoppelen'}
+            </button>
+          ) : (
+            <button
+              onClick={handleConnect}
+              disabled={msLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors disabled:opacity-50"
+            >
+              <Link2 className="h-4 w-4" />
+              {msLoading ? 'Verbinden...' : 'Koppelen'}
+            </button>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+};
 
 const Settings: React.FC = () => {
   const { user, userRole } = useAuth();
@@ -554,6 +666,9 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </Card>
+
+          {/* Microsoft Koppeling */}
+          <MicrosoftConnectionCard />
 
           {/* Change Email */}
           <Card>

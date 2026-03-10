@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Calendar, HeartPulse, Receipt, Clock, Menu, X, Home, Settings, ListChecks } from 'lucide-react';
+import { User, LogOut, Calendar, HeartPulse, Receipt, Clock, Menu, X, Home, Settings, ListChecks, CalendarDays } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -17,6 +17,7 @@ const navigation = [
   { name: 'Declaraties', href: '/employee-dashboard/expenses', icon: Receipt },
   { name: 'Uren', href: '/employee-dashboard/timesheets', icon: Clock },
   { name: 'Taken', href: '/employee-dashboard/tasks', icon: ListChecks },
+  { name: 'Agenda', href: '/employee-dashboard/agenda', icon: CalendarDays },
 ];
 
 // Mobile bottom nav - 4 main items

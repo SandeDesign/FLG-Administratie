@@ -10,6 +10,11 @@ import {
   MoreHorizontal,
   XCircle,
   PlayCircle,
+  Clock,
+  CalendarDays,
+  CalendarRange,
+  CalendarClock,
+  Repeat,
 } from 'lucide-react';
 import { TaskCategory, TaskPriority, TaskStatus, TaskFrequency } from '../types';
 
@@ -61,4 +66,18 @@ export const FREQUENCY_LABELS: Record<TaskFrequency, string> = {
   monthly: 'Maandelijks',
   quarterly: 'Kwartaal',
   yearly: 'Jaarlijks',
+};
+
+// Frequency configuratie met iconen en kleuren
+export const FREQUENCY_CONFIG: Record<TaskFrequency, {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  color: string;
+  bgColor: string;
+}> = {
+  daily: { icon: Clock, label: 'Dagelijks', color: 'text-rose-700 dark:text-rose-400', bgColor: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400' },
+  weekly: { icon: CalendarDays, label: 'Wekelijks', color: 'text-sky-700 dark:text-sky-400', bgColor: 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400' },
+  monthly: { icon: CalendarRange, label: 'Maandelijks', color: 'text-violet-700 dark:text-violet-400', bgColor: 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400' },
+  quarterly: { icon: CalendarClock, label: 'Kwartaal', color: 'text-amber-700 dark:text-amber-400', bgColor: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+  yearly: { icon: Repeat, label: 'Jaarlijks', color: 'text-emerald-700 dark:text-emerald-400', bgColor: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
 };
