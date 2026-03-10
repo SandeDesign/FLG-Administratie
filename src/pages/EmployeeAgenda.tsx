@@ -19,6 +19,7 @@ import { BusinessTask } from '../types';
 import { MicrosoftCalendarEvent } from '../types/microsoft';
 import {
   getTasksAssignedToUser,
+  getAllCompanyTasks,
   scheduleTask,
   unscheduleTask,
   updateTask,
@@ -107,8 +108,14 @@ const EmployeeAgenda: React.FC = () => {
     if (!user || !selectedCompany) return;
     try {
       setLoading(true);
-      const tasks = await getTasksAssignedToUser(user.uid, selectedCompany.id);
-      setAllTasks(tasks);
+      // Haal alle bedrijfstaken op en filter client-side:
+      // - taken expliciet toegewezen aan deze gebruiker
+      // - taken zonder toewijzing (zichtbaar voor iedereen in het bedrijf)
+      const allCompanyTasks = await getAllCompanyTasks(selectedCompany.id, user.uid);
+      const myTasks = allCompanyTasks.filter(task =>
+        !task.assignedTo || task.assignedTo.length === 0 || task.assignedTo.includes(user.uid)
+      );
+      setAllTasks(myTasks as BusinessTask[]);
     } catch (err) {
       console.error('Error loading tasks:', err);
       error('Fout bij laden van taken');
