@@ -1836,6 +1836,7 @@ export const createTask = async (userId: string, taskData: any): Promise<string>
       status: taskData.status || 'pending',
       progress: taskData.progress || 0,
       isRecurring: taskData.isRecurring || false,
+      isScheduled: taskData.isScheduled || false,
       createdAt: now,
       updatedAt: now,
     };
@@ -2192,6 +2193,134 @@ export const getTasksAssignedToUser = async (
     });
   } catch (error) {
     console.error('Error fetching tasks assigned to user:', error);
+    return [];
+  }
+};
+
+/**
+ * Plan een taak in op een specifieke datum/tijd (door werknemer)
+ */
+export const scheduleTask = async (
+  taskId: string,
+  userId: string,
+  scheduledDate: Date,
+  scheduledStartTime: string,
+  scheduledEndTime: string
+): Promise<void> => {
+  try {
+    const taskRef = doc(db, 'businessTasks', taskId);
+    const taskSnap = await getDoc(taskRef);
+
+    if (!taskSnap.exists()) {
+      throw new Error('Taak niet gevonden');
+    }
+
+    const taskData = taskSnap.data();
+
+    // Verificatie: gebruiker moet toegewezen zijn
+    if (taskData.userId !== userId && !taskData.assignedTo?.includes(userId)) {
+      throw new Error('Geen toegang tot deze taak');
+    }
+
+    const now = new Date();
+    const dataToSave = convertToTimestamps({
+      scheduledDate,
+      scheduledStartTime,
+      scheduledEndTime,
+      scheduledBy: userId,
+      scheduledAt: now,
+      isScheduled: true,
+      updatedAt: now,
+    });
+
+    await updateDoc(taskRef, dataToSave);
+
+    await AuditService.logAction(
+      userId,
+      'update' as any,
+      'task' as any,
+      taskId,
+      {
+        companyId: taskData.companyId,
+        metadata: { description: `Taak ingepland: ${taskData.title} op ${scheduledDate.toLocaleDateString('nl-NL')} ${scheduledStartTime}-${scheduledEndTime}` },
+      }
+    );
+  } catch (error) {
+    console.error('Error scheduling task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Verwijder inplanning van een taak
+ */
+export const unscheduleTask = async (taskId: string, userId: string): Promise<void> => {
+  try {
+    const taskRef = doc(db, 'businessTasks', taskId);
+    const taskSnap = await getDoc(taskRef);
+
+    if (!taskSnap.exists()) {
+      throw new Error('Taak niet gevonden');
+    }
+
+    const taskData = taskSnap.data();
+
+    if (taskData.userId !== userId && !taskData.assignedTo?.includes(userId)) {
+      throw new Error('Geen toegang tot deze taak');
+    }
+
+    await updateDoc(taskRef, {
+      scheduledDate: null,
+      scheduledStartTime: null,
+      scheduledEndTime: null,
+      scheduledBy: null,
+      scheduledAt: null,
+      isScheduled: false,
+      updatedAt: Timestamp.fromDate(new Date()),
+    });
+  } catch (error) {
+    console.error('Error unscheduling task:', error);
+    throw error;
+  }
+};
+
+/**
+ * Haal niet-ingeplande taken op voor een gebruiker
+ */
+export const getUnscheduledTasks = async (
+  userUid: string,
+  companyId?: string
+): Promise<BusinessTask[]> => {
+  try {
+    // Haal alle toegewezen taken op en filter client-side op isScheduled
+    const allTasks = await getTasksAssignedToUser(userUid, companyId);
+    return allTasks.filter(
+      task => !task.isScheduled && task.status !== 'completed' && task.status !== 'cancelled'
+    );
+  } catch (error) {
+    console.error('Error getting unscheduled tasks:', error);
+    return [];
+  }
+};
+
+/**
+ * Haal ingeplande taken op voor een weekperiode
+ */
+export const getScheduledTasksForPeriod = async (
+  userUid: string,
+  startDate: Date,
+  endDate: Date,
+  companyId?: string
+): Promise<BusinessTask[]> => {
+  try {
+    const allTasks = await getTasksAssignedToUser(userUid, companyId);
+    return allTasks.filter(task => {
+      if (!task.isScheduled || !task.scheduledDate) return false;
+      const scheduled = new Date(task.scheduledDate);
+      return scheduled >= startDate && scheduled <= endDate;
+    });
+  } catch (error) {
+    console.error('Error getting scheduled tasks for period:', error);
     return [];
   }
 };

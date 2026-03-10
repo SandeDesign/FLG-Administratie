@@ -424,4 +424,72 @@ export class NotificationService {
       },
     });
   }
+
+  static async notifyTaskAssigned(
+    userId: string,
+    taskTitle: string,
+    assignedBy: string,
+    taskId: string
+  ): Promise<void> {
+    await this.createNotification(userId, {
+      userId,
+      type: 'task',
+      category: 'task_assigned',
+      priority: 'medium',
+      title: 'Nieuwe taak toegewezen',
+      message: `Je hebt een nieuwe taak ontvangen: "${taskTitle}". Plan deze in via je agenda.`,
+      actionUrl: '/employee-dashboard/agenda',
+      actionLabel: 'Naar agenda',
+      channels: ['in_app'],
+      metadata: {
+        entityId: taskId,
+        entityType: 'task',
+      },
+    });
+  }
+
+  static async notifyTaskScheduleReminder(
+    userId: string,
+    unscheduledCount: number,
+    reminderLevel: 'light' | 'strong'
+  ): Promise<void> {
+    const isStrong = reminderLevel === 'strong';
+    await this.createNotification(userId, {
+      userId,
+      type: 'task',
+      category: 'task_schedule_reminder',
+      priority: isStrong ? 'high' : 'medium',
+      title: isStrong ? 'Morgen is de deadline!' : 'Taken inplannen',
+      message: isStrong
+        ? `Plan je ${unscheduledCount} openstaande ${unscheduledCount === 1 ? 'taak' : 'taken'} in voor morgen (vrijdag) 19:00.`
+        : `Je hebt ${unscheduledCount} ${unscheduledCount === 1 ? 'taak' : 'taken'} die nog ingepland ${unscheduledCount === 1 ? 'moet' : 'moeten'} worden deze week.`,
+      actionUrl: '/employee-dashboard/agenda',
+      actionLabel: 'Naar agenda',
+      channels: ['in_app'],
+      metadata: {
+        unscheduledCount,
+        reminderLevel,
+      },
+    });
+  }
+
+  static async notifyTaskScheduleOverdue(
+    userId: string,
+    unscheduledCount: number
+  ): Promise<void> {
+    await this.createNotification(userId, {
+      userId,
+      type: 'task',
+      category: 'task_schedule_overdue',
+      priority: 'urgent',
+      title: 'Deadline verstreken!',
+      message: `${unscheduledCount} ${unscheduledCount === 1 ? 'taak is' : 'taken zijn'} niet ingepland voor de vrijdag 19:00 deadline. Neem contact op met je leidinggevende.`,
+      actionUrl: '/employee-dashboard/agenda',
+      actionLabel: 'Naar agenda',
+      channels: ['in_app'],
+      metadata: {
+        unscheduledCount,
+      },
+    });
+  }
 }

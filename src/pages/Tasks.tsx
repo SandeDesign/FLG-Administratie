@@ -1,41 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Clock,
   Plus,
   Pencil,
   Trash2,
   Filter,
   Calendar,
-  User,
-  Building2,
   ListChecks,
-  Tag,
   Repeat,
   ChevronDown,
   ChevronRight,
-  Briefcase,
-  FileText,
-  DollarSign,
   Users,
-  Folder,
-  MoreHorizontal,
   Circle,
-  AlertCircle,
-  PlayCircle,
   CheckCircle2,
-  XCircle,
+  CalendarCheck,
+  CalendarX,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem } from '../types';
 import {
-  getTasks,
   getAllCompanyTasks,
   getCompanyUsers,
   createTask,
   updateTask,
   deleteTask,
-  getOverdueTasks,
 } from '../services/firebase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -45,56 +33,7 @@ import { useToast } from '../hooks/useToast';
 import Modal from '../components/ui/Modal';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import { isInQuarter } from '../utils/dateFilters';
-
-// Category configuratie
-const CATEGORY_CONFIG: Record<TaskCategory, {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  color: string;
-}> = {
-  operational: { icon: Briefcase, label: 'Operationeel', color: 'bg-blue-100 text-blue-700' },
-  compliance: { icon: FileText, label: 'Compliance', color: 'bg-purple-100 text-purple-700' },
-  financial: { icon: DollarSign, label: 'Financieel', color: 'bg-emerald-100 text-emerald-700' },
-  hr: { icon: Users, label: 'HR', color: 'bg-indigo-100 text-indigo-700' },
-  sales: { icon: Briefcase, label: 'Verkoop', color: 'bg-pink-100 text-pink-700' },
-  contracts: { icon: FileText, label: 'Contracten', color: 'bg-orange-100 text-orange-700' },
-  administration: { icon: Folder, label: 'Administratie', color: 'bg-teal-100 text-teal-700' },
-  other: { icon: MoreHorizontal, label: 'Overig', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' },
-};
-
-// Priority configuratie
-const PRIORITY_CONFIG: Record<TaskPriority, {
-  label: string;
-  color: string;
-  icon: React.ComponentType<{ className?: string }>;
-}> = {
-  low: { label: 'Laag', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300', icon: Circle },
-  medium: { label: 'Normaal', color: 'bg-blue-100 text-blue-700', icon: Circle },
-  high: { label: 'Hoog', color: 'bg-orange-100 text-orange-700', icon: AlertCircle },
-  urgent: { label: 'Urgent', color: 'bg-red-100 text-red-700', icon: AlertCircle },
-};
-
-// Status configuratie
-const STATUS_CONFIG: Record<TaskStatus, {
-  label: string;
-  color: string;
-  icon: React.ComponentType<{ className?: string }>;
-}> = {
-  pending: { label: 'Te doen', color: 'bg-yellow-100 text-yellow-700', icon: Circle },
-  in_progress: { label: 'Bezig', color: 'bg-blue-100 text-blue-700', icon: PlayCircle },
-  completed: { label: 'Voltooid', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-  overdue: { label: 'Te laat', color: 'bg-red-100 text-red-700', icon: AlertCircle },
-  cancelled: { label: 'Geannuleerd', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300', icon: XCircle },
-};
-
-// Frequency labels
-const FREQUENCY_LABELS: Record<TaskFrequency, string> = {
-  daily: 'Dagelijks',
-  weekly: 'Wekelijks',
-  monthly: 'Maandelijks',
-  quarterly: 'Kwartaal',
-  yearly: 'Jaarlijks',
-};
+import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG, FREQUENCY_LABELS, FREQUENCY_CONFIG } from '../utils/taskConfig';
 
 const Tasks: React.FC = () => {
   const { user } = useAuth();
@@ -115,6 +54,7 @@ const Tasks: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<TaskCategory | 'all'>('all');
   const [filterPriority, setFilterPriority] = useState<TaskPriority | 'all'>('all');
   const [filterAssignment, setFilterAssignment] = useState<'all' | 'assigned_to_me' | 'created_by_me'>('all');
+  const [filterScheduled, setFilterScheduled] = useState<'all' | 'scheduled' | 'unscheduled'>('all');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -306,6 +246,10 @@ const Tasks: React.FC = () => {
       if (task.userId !== user.uid && task.createdBy !== user.uid) return false;
     }
 
+    // Filter op inplanstatus
+    if (filterScheduled === 'scheduled' && !task.isScheduled) return false;
+    if (filterScheduled === 'unscheduled' && task.isScheduled) return false;
+
     return true;
   });
 
@@ -460,7 +404,7 @@ const Tasks: React.FC = () => {
       {/* Collapsible Filters */}
       {showFilters && (
         <Card>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Status
@@ -529,6 +473,21 @@ const Tasks: React.FC = () => {
                 <option value="created_by_me">Door mij aangemaakt</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Inplanning
+              </label>
+              <select
+                value={filterScheduled}
+                onChange={(e) => setFilterScheduled(e.target.value as 'all' | 'scheduled' | 'unscheduled')}
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+              >
+                <option value="all">Alle</option>
+                <option value="scheduled">Ingepland</option>
+                <option value="unscheduled">Niet ingepland</option>
+              </select>
+            </div>
           </div>
         </Card>
       )}
@@ -584,12 +543,15 @@ const Tasks: React.FC = () => {
                           >
                             {task.title}
                           </h3>
-                          {task.isRecurring && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                              <Repeat className="h-3 w-3" />
-                              {FREQUENCY_LABELS[task.frequency || 'monthly']}
-                            </span>
-                          )}
+                          {task.isRecurring && task.frequency && FREQUENCY_CONFIG[task.frequency] && (() => {
+                            const FreqIcon = FREQUENCY_CONFIG[task.frequency!].icon;
+                            return (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${FREQUENCY_CONFIG[task.frequency!].bgColor}`}>
+                                <FreqIcon className="h-3 w-3" />
+                                {FREQUENCY_CONFIG[task.frequency!].label}
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -625,6 +587,21 @@ const Tasks: React.FC = () => {
                               {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
                               {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
                             </span>
+                          )}
+
+                          {/* Inplanstatus badge */}
+                          {task.assignedTo && task.assignedTo.length > 0 && task.status !== 'completed' && task.status !== 'cancelled' && (
+                            task.isScheduled ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                <CalendarCheck className="h-3 w-3" />
+                                Ingepland
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                <CalendarX className="h-3 w-3" />
+                                Niet ingepland
+                              </span>
+                            )
                           )}
                         </div>
                       </div>
@@ -886,53 +863,62 @@ const Tasks: React.FC = () => {
             </div>
           </div>
 
+          {/* Frequentie sectie - prominent */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.isRecurring}
-                onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
-                className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Terugkerende taak
-              </span>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Frequentie
             </label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: null, label: 'Eenmalig', icon: Calendar },
+                ...Object.entries(FREQUENCY_CONFIG).map(([freq, config]) => ({
+                  value: freq as TaskFrequency,
+                  label: config.label,
+                  icon: config.icon,
+                })),
+              ].map((option) => {
+                const isSelected = option.value === null
+                  ? !formData.isRecurring
+                  : formData.isRecurring && formData.frequency === option.value;
+                const Icon = option.icon;
 
-            {formData.isRecurring && (
-              <div className="mt-4 space-y-4 pl-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Frequentie
-                  </label>
-                  <select
-                    value={formData.frequency}
-                    onChange={(e) => setFormData({ ...formData, frequency: e.target.value as TaskFrequency })}
-                    className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+                return (
+                  <button
+                    key={option.value || 'once'}
+                    type="button"
+                    onClick={() => {
+                      if (option.value === null) {
+                        setFormData({ ...formData, isRecurring: false });
+                      } else {
+                        setFormData({ ...formData, isRecurring: true, frequency: option.value });
+                      }
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                      isSelected
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 ring-1 ring-primary-500'
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
                   >
-                    {Object.entries(FREQUENCY_LABELS).map(([freq, label]) => (
-                      <option key={freq} value={freq}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <Icon className="h-4 w-4" />
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
 
-                {(formData.frequency === 'monthly' || formData.frequency === 'quarterly') && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Dag van de maand (1-31)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="31"
-                      value={formData.recurrenceDay}
-                      onChange={(e) => setFormData({ ...formData, recurrenceDay: parseInt(e.target.value) })}
-                      className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
-                    />
-                  </div>
-                )}
+            {formData.isRecurring && (formData.frequency === 'monthly' || formData.frequency === 'quarterly') && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Dag van de maand (1-31)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={formData.recurrenceDay}
+                  onChange={(e) => setFormData({ ...formData, recurrenceDay: parseInt(e.target.value) })}
+                  className="w-32 rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+                />
               </div>
             )}
           </div>

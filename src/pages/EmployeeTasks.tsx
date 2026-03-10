@@ -10,7 +10,9 @@ import {
   ChevronDown,
   ChevronRight,
   PlayCircle,
+  CalendarDays,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { BusinessTask, TaskCategory, TaskPriority, TaskStatus } from '../types';
@@ -146,17 +148,26 @@ const EmployeeTasks: React.FC = () => {
             {activeCount} openstaand{overdueCount > 0 && `, ${overdueCount} te laat`}
           </p>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            showFilters
-              ? 'bg-primary-100 text-primary-700'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-          }`}
-        >
-          <Filter className="h-4 w-4" />
-          Filters
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/employee-dashboard/agenda"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Agenda
+          </Link>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              showFilters
+                ? 'bg-primary-100 text-primary-700'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+          </button>
+        </div>
       </div>
 
       {/* Status samenvatting */}

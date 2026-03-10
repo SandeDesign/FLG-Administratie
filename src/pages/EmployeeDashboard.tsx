@@ -303,12 +303,20 @@ const EmployeeDashboard: React.FC = () => {
                   </div>
                 );
               })}
-            <Link
-              to="/employee-dashboard/tasks"
-              className="block px-4 py-3 text-center text-sm font-medium text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-b-xl transition-colors"
-            >
-              Bekijk alle taken
-            </Link>
+            <div className="flex divide-x divide-gray-100 dark:divide-gray-700">
+              <Link
+                to="/employee-dashboard/tasks"
+                className="flex-1 block px-4 py-3 text-center text-sm font-medium text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-bl-xl transition-colors"
+              >
+                Bekijk alle taken
+              </Link>
+              <Link
+                to="/employee-dashboard/agenda"
+                className="flex-1 block px-4 py-3 text-center text-sm font-medium text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-br-xl transition-colors"
+              >
+                Naar agenda
+              </Link>
+            </div>
           </div>
         </div>
       )}

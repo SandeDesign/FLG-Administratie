@@ -3,7 +3,7 @@ export interface Notification {
   userId: string;
   employeeId?: string;
 
-  type: 'payroll' | 'tax_return' | 'contract' | 'leave' | 'expense' | 'compliance' | 'system';
+  type: 'payroll' | 'tax_return' | 'contract' | 'leave' | 'expense' | 'compliance' | 'system' | 'task';
 
   category:
     | 'payroll_approval'
@@ -16,7 +16,10 @@ export interface Notification {
     | 'expense_submitted'
     | 'expense_approved'
     | 'compliance_alert'
-    | 'system_update';
+    | 'system_update'
+    | 'task_assigned'
+    | 'task_schedule_reminder'
+    | 'task_schedule_overdue';
 
   priority: 'low' | 'medium' | 'high' | 'urgent';
 
@@ -63,6 +66,7 @@ export interface NotificationPreferences {
     expenseNotifications: boolean;
     complianceAlerts: boolean;
     systemUpdates: boolean;
+    taskNotifications: boolean;
   };
 
   inApp: {

@@ -26,6 +26,7 @@ import {
   ListChecks,
   Mail,
   FileInput,
+  CalendarDays,
 } from 'lucide-react';
 
 export type CompanyType = 'employer' | 'project' | 'holding' | 'shareholder' | 'investor';

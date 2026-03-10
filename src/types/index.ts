@@ -905,6 +905,15 @@ export interface BusinessTask {
   // Checklist items (subtaken)
   checklist?: TaskChecklistItem[];
 
+  // Scheduling door werknemer
+  scheduledDate?: Date;         // Wanneer werknemer de taak heeft ingepland
+  scheduledStartTime?: string;  // "09:00" format
+  scheduledEndTime?: string;    // "10:30" format
+  scheduledBy?: string;         // UID van wie het inplande
+  scheduledAt?: Date;           // Wanneer het ingepland werd
+  isScheduled: boolean;         // Of de taak ingepland is
+  schedulingDeadline?: Date;    // Vrijdag 19:00 van de betreffende week
+
   // Extra informatie
   notes?: string;
   attachments?: string[];  // URLs naar bijlagen
