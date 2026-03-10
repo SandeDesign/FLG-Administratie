@@ -31,7 +31,7 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
 
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<RecoveryFormData>({
     defaultValues: {
-      endDate: new Date().toISOString().split('T'),
+      endDate: new Date().toISOString().split('T')[0],
       workCapacityPercentage: 100,
       status: 'recovered',
     }
@@ -88,7 +88,7 @@ const RecoveryModal: React.FC<RecoveryModalProps> = ({ isOpen, onClose, onSucces
                 Herstelmelding
               </h4>
               <p className="text-sm text-green-700 mt-1">
-                Ziek sinds: {new Date(sickLeave.startDate).toLocaleDateString('nl-NL')}
+                Ziek sinds: {(sickLeave.startDate instanceof Date ? sickLeave.startDate : new Date(sickLeave.startDate)).toLocaleDateString('nl-NL')}
               </p>
             </div>
           </div>

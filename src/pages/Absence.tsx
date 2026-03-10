@@ -134,7 +134,7 @@ const Absence: React.FC = () => {
               <div className="space-y-1 text-sm">
                 <p className="text-gray-600 dark:text-gray-400">
                   <span className="font-medium">Start datum:</span>{' '}
-                  {new Date(activeSickLeave.startDate).toLocaleDateString('nl-NL')}
+                  {(activeSickLeave.startDate instanceof Date ? activeSickLeave.startDate : new Date(activeSickLeave.startDate)).toLocaleDateString('nl-NL')}
                 </p>
                 <p className="text-gray-600 dark:text-gray-400">
                   <span className="font-medium">Arbeidsgeschiktheid:</span>{' '}
@@ -195,24 +195,22 @@ const Absence: React.FC = () => {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {sickLeaveRecords.map((record) => {
-                  const duration = record.endDate
-                    ? Math.floor(
-                        (new Date(record.endDate).getTime() - new Date(record.startDate).getTime()) /
-                          (1000 * 60 * 60 * 24)
-                      )
-                    : Math.floor(
-                        (new Date().getTime() - new Date(record.startDate).getTime()) /
-                          (1000 * 60 * 60 * 24)
-                      );
+                  const startDate = record.startDate instanceof Date ? record.startDate : new Date(record.startDate);
+                  const endDate = record.endDate ? (record.endDate instanceof Date ? record.endDate : new Date(record.endDate)) : null;
+                  const startTime = !isNaN(startDate.getTime()) ? startDate.getTime() : 0;
+                  const endTime = endDate && !isNaN(endDate.getTime()) ? endDate.getTime() : null;
+                  const duration = startTime > 0
+                    ? Math.floor(((endTime || new Date().getTime()) - startTime) / (1000 * 60 * 60 * 24))
+                    : 0;
 
                   return (
                     <tr key={record.id} className="hover:bg-gray-50 dark:bg-gray-900">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {new Date(record.startDate).toLocaleDateString('nl-NL')}
+                        {startTime > 0 ? startDate.toLocaleDateString('nl-NL') : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {record.endDate
-                          ? new Date(record.endDate).toLocaleDateString('nl-NL')
+                        {endDate && endTime
+                          ? endDate.toLocaleDateString('nl-NL')
                           : 'Nog actief'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">

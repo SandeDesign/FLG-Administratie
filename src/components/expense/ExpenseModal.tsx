@@ -37,7 +37,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<ExpenseFormData>({
     defaultValues: {
       type: 'travel',
-      date: new Date().toISOString().split('T'),
+      date: new Date().toISOString().split('T')[0],
     }
   });
 
@@ -150,6 +150,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
                 <p className="text-sm text-primary-700 mt-1">
                   {currentEmployee.contractInfo.position}
                 </p>
+                {currentEmployee.companyId && (
+                  <p className="text-sm text-primary-700 mt-1">
+                    Bedrijf: {companies.find(c => c.id === currentEmployee.companyId)?.name || 'Onbekend'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
