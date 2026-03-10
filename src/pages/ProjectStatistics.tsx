@@ -10,7 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { usePageTitle } from '../contexts/PageTitleContext';
 
 const ProjectStatistics: React.FC = () => {
-  const { selectedCompany, queryUserId, selectedYear } = useApp();
+  const { selectedCompany, queryUserId, selectedYear, employees } = useApp();
   const { user } = useAuth();
   usePageTitle('Projectstatistieken');
   const [loading, setLoading] = useState(true);
@@ -24,6 +24,8 @@ const ProjectStatistics: React.FC = () => {
     productionValue: 0,
   });
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [employeeProduction, setEmployeeProduction] = useState<Array<{ employeeId: string; name: string; totalHours: number; totalWeeks: number; value: number }>>([]);
+  const [weeklyProduction, setWeeklyProduction] = useState<Array<{ week: number; employeeId: string; name: string; hours: number; value: number }>>([]);
 
   useEffect(() => {
     if (!selectedCompany || !queryUserId || selectedCompany.companyType !== 'project') {
@@ -55,10 +57,22 @@ const ProjectStatistics: React.FC = () => {
       let totalHours = 0;
       let totalOvertime = 0;
 
+      // Groepeer productie per medewerker en per week
+      const empMap = new Map<string, { totalHours: number; weeks: Set<number> }>();
+      const weekList: Array<{ week: number; employeeId: string; hours: number }> = [];
+
       productionWeeksSnap.forEach(doc => {
         const data = doc.data();
-        totalHours += data.totalHours || 0;
-        // Note: productionWeeks doesn't track overtime separately yet
+        const hours = data.totalHours || 0;
+        totalHours += hours;
+
+        const empId = data.employeeId || 'onbekend';
+        const existing = empMap.get(empId) || { totalHours: 0, weeks: new Set<number>() };
+        existing.totalHours += hours;
+        existing.weeks.add(data.week);
+        empMap.set(empId, existing);
+
+        weekList.push({ week: data.week, employeeId: empId, hours });
       });
 
       // Outgoing invoices (omzet)
@@ -153,7 +167,28 @@ const ProjectStatistics: React.FC = () => {
         }));
       setMonthlyData(monthlyChartData);
 
-      console.log('✅ Project statistics loaded successfully');
+      // Productie per medewerker
+      const getEmployeeName = (empId: string) => {
+        const emp = employees.find(e => e.id === empId);
+        return emp ? `${emp.personalInfo.firstName} ${emp.personalInfo.lastName}` : empId;
+      };
+
+      const empProduction = Array.from(empMap.entries()).map(([empId, data]) => ({
+        employeeId: empId,
+        name: getEmployeeName(empId),
+        totalHours: data.totalHours,
+        totalWeeks: data.weeks.size,
+        value: data.totalHours * companyHourlyRate,
+      })).sort((a, b) => b.totalHours - a.totalHours);
+      setEmployeeProduction(empProduction);
+
+      // Productie per week per medewerker
+      const weekProd = weekList.map(w => ({
+        ...w,
+        name: getEmployeeName(w.employeeId),
+        value: w.hours * companyHourlyRate,
+      })).sort((a, b) => a.week - b.week || a.name.localeCompare(b.name));
+      setWeeklyProduction(weekProd);
     } catch (error) {
       console.error('❌ Error loading project statistics:', error);
     } finally {
@@ -331,6 +366,80 @@ const ProjectStatistics: React.FC = () => {
           </div>
         </div>
       </Card>
+
+      {/* Productie per Medewerker */}
+      {employeeProduction.length > 0 && (
+        <Card>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Productie per Medewerker</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Medewerker</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Weken</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Uren</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Waarde</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employeeProduction.map((emp) => (
+                  <tr key={emp.employeeId} className="border-b border-gray-100 dark:border-gray-800">
+                    <td className="py-2 px-2 text-gray-900 dark:text-gray-100">{emp.name}</td>
+                    <td className="py-2 px-2 text-right text-gray-600 dark:text-gray-400">{emp.totalWeeks}</td>
+                    <td className="py-2 px-2 text-right font-medium text-gray-900 dark:text-gray-100">{emp.totalHours.toLocaleString('nl-NL', { minimumFractionDigits: 1 })}</td>
+                    <td className="py-2 px-2 text-right font-medium text-green-600">€{emp.value.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-semibold">
+                  <td className="py-2 px-2 text-gray-900 dark:text-gray-100">Totaal</td>
+                  <td className="py-2 px-2 text-right text-gray-600 dark:text-gray-400"></td>
+                  <td className="py-2 px-2 text-right text-gray-900 dark:text-gray-100">{employeeProduction.reduce((s, e) => s + e.totalHours, 0).toLocaleString('nl-NL', { minimumFractionDigits: 1 })}</td>
+                  <td className="py-2 px-2 text-right text-green-600">€{employeeProduction.reduce((s, e) => s + e.value, 0).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Productie per Periode */}
+      {weeklyProduction.length > 0 && (
+        <Card>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Productie per Periode</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Week</th>
+                  <th className="text-left py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Medewerker</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Uren</th>
+                  <th className="text-right py-3 px-2 font-medium text-gray-600 dark:text-gray-400">Waarde</th>
+                </tr>
+              </thead>
+              <tbody>
+                {weeklyProduction.map((row, i) => (
+                  <tr key={`${row.week}-${row.employeeId}-${i}`} className="border-b border-gray-100 dark:border-gray-800">
+                    <td className="py-2 px-2 text-gray-900 dark:text-gray-100">Week {row.week}</td>
+                    <td className="py-2 px-2 text-gray-600 dark:text-gray-400">{row.name}</td>
+                    <td className="py-2 px-2 text-right font-medium text-gray-900 dark:text-gray-100">{row.hours.toLocaleString('nl-NL', { minimumFractionDigits: 1 })}</td>
+                    <td className="py-2 px-2 text-right font-medium text-green-600">€{row.value.toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-semibold">
+                  <td className="py-2 px-2 text-gray-900 dark:text-gray-100">Totaal</td>
+                  <td className="py-2 px-2"></td>
+                  <td className="py-2 px-2 text-right text-gray-900 dark:text-gray-100">{weeklyProduction.reduce((s, r) => s + r.hours, 0).toLocaleString('nl-NL', { minimumFractionDigits: 1 })}</td>
+                  <td className="py-2 px-2 text-right text-green-600">€{weeklyProduction.reduce((s, r) => s + r.value, 0).toLocaleString('nl-NL', { minimumFractionDigits: 2 })}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Geen werknemers notitie */}
       <Card>
