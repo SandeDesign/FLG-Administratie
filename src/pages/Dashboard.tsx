@@ -119,11 +119,11 @@ const Dashboard: React.FC = () => {
         if (date && date.getFullYear() !== selectedYear) return;
 
         outgoingCount++;
-        outgoingTotal += data.amount || data.totalAmount || 0; // amount = excl. BTW
+        outgoingTotal += data.totalAmount || data.amount || 0;
 
         if (date && date >= startOfMonth) {
           outgoingThisMonth++;
-          outgoingTotalThisMonth += data.amount || data.totalAmount || 0;
+          outgoingTotalThisMonth += data.totalAmount || data.amount || 0;
         }
       });
 
@@ -149,11 +149,11 @@ const Dashboard: React.FC = () => {
         if (date && date.getFullYear() !== selectedYear) return;
 
         incomingCount++;
-        incomingTotal += data.amount || data.totalAmount || 0; // amount = excl. BTW
+        incomingTotal += data.totalAmount || data.amount || 0;
 
         if (date && date >= startOfMonth) {
           incomingThisMonth++;
-          incomingTotalThisMonth += data.amount || data.totalAmount || 0;
+          incomingTotalThisMonth += data.totalAmount || data.amount || 0;
         }
       });
 
