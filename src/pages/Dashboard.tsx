@@ -112,17 +112,18 @@ const Dashboard: React.FC = () => {
 
       outgoingSnap.forEach(doc => {
         const data = doc.data();
-        outgoingCount++;
-        outgoingTotal += data.totalAmount || data.amount || 0;
-        
-        // Check if created this month
         const docDate = data.invoiceDate || data.createdAt;
-        if (docDate) {
-          const date = typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate;
-          if (date >= startOfMonth) {
-            outgoingThisMonth++;
-            outgoingTotalThisMonth += data.totalAmount || data.amount || 0;
-          }
+        const date = docDate ? (typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate) : null;
+
+        // Filter op geselecteerd jaar
+        if (date && date.getFullYear() !== selectedYear) return;
+
+        outgoingCount++;
+        outgoingTotal += data.amount || data.totalAmount || 0; // amount = excl. BTW
+
+        if (date && date >= startOfMonth) {
+          outgoingThisMonth++;
+          outgoingTotalThisMonth += data.amount || data.totalAmount || 0;
         }
       });
 
@@ -141,17 +142,18 @@ const Dashboard: React.FC = () => {
 
       incomingSnap.forEach(doc => {
         const data = doc.data();
-        incomingCount++;
-        incomingTotal += data.totalAmount || data.amount || 0;
-
-        // Check if created this month
         const docDate = data.invoiceDate || data.createdAt;
-        if (docDate) {
-          const date = typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate;
-          if (date >= startOfMonth) {
-            incomingThisMonth++;
-            incomingTotalThisMonth += data.totalAmount || data.amount || 0;
-          }
+        const date = docDate ? (typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate) : null;
+
+        // Filter op geselecteerd jaar
+        if (date && date.getFullYear() !== selectedYear) return;
+
+        incomingCount++;
+        incomingTotal += data.amount || data.totalAmount || 0; // amount = excl. BTW
+
+        if (date && date >= startOfMonth) {
+          incomingThisMonth++;
+          incomingTotalThisMonth += data.amount || data.totalAmount || 0;
         }
       });
 
@@ -168,7 +170,7 @@ const Dashboard: React.FC = () => {
     } catch (error) {
       console.error('❌ Error loading invoice stats:', error);
     }
-  }, [user, selectedCompany]);
+  }, [user, selectedCompany, selectedYear]);
 
   // ========== LOAD HOLDING DATA ==========
   const loadHoldingData = useCallback(async () => {
