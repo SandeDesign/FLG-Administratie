@@ -113,6 +113,7 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
         primaryEmployerId: company.primaryEmployerId,
         themeColor: company.themeColor || 'blue',
         logoUrl: company.logoUrl,
+        hourlyRate: company.hourlyRate,
       });
       setLogoPreview(company.logoUrl || null);
     } else {
@@ -204,6 +205,11 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
       // ✅ FIX: Only add primaryEmployerId if it has a value (for project or holding)
       if ((data.companyType === 'project' || data.companyType === 'holding') && data.primaryEmployerId) {
         companyData.primaryEmployerId = data.primaryEmployerId;
+      }
+
+      // Uurtarief voor project bedrijven
+      if (data.companyType === 'project' && data.hourlyRate) {
+        companyData.hourlyRate = Number(data.hourlyRate);
       }
 
       if (company) {
@@ -494,6 +500,22 @@ const CompanyModal: React.FC<CompanyModalProps> = ({ isOpen, onClose, onSuccess,
                 error={errors.pensionContributionPercentage?.message}
               />
             </div>
+          </div>
+        )}
+
+        {/* ✅ Instellingen alleen voor project companies (werkmaatschappijen) */}
+        {companyType === 'project' && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Projectinstellingen</h3>
+            <Input
+              label="Uurtarief excl. BTW (€)"
+              type="number"
+              step="0.01"
+              {...register('hourlyRate', {
+                min: { value: 0, message: 'Uurtarief kan niet negatief zijn' }
+              })}
+              error={errors.hourlyRate?.message}
+            />
           </div>
         )}
 
