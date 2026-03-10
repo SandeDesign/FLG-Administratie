@@ -13,6 +13,11 @@ import {
   Repeat,
   ChevronDown,
   ChevronRight,
+  Briefcase,
+  FileText,
+  DollarSign,
+  Users,
+  Folder,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
