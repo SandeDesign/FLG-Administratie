@@ -47,25 +47,50 @@ const AdminUsers: React.FC = () => {
 
     try {
       setLoading(true);
-      console.log('Loading users from Firebase...');
+      const usersCol = collection(db, 'users');
 
-      const usersCollection = collection(db, 'users');
-      const q = query(usersCollection, where('userId', '==', adminUserId));
-      const usersSnapshot = await getDocs(q);
-      
-      console.log('Found', usersSnapshot.docs.length, 'user records');
-      
-      const usersData: UserRole[] = usersSnapshot.docs.map(doc => {
-        const data = doc.data();
-        console.log('User document:', doc.id, data);
-        
+      // Stap 1: Haal alle employees op van deze admin
+      const employeesQ = query(
+        collection(db, 'employees'),
+        where('userId', '==', adminUserId)
+      );
+      const employeesSnapshot = await getDocs(employeesQ);
+      const employeeIds = employeesSnapshot.docs.map(d => d.id);
+
+      // Query A: users met adminUserId veld (nieuwe accounts)
+      const qByAdmin = query(usersCol, where('adminUserId', '==', adminUserId));
+      const byAdminSnapshot = await getDocs(qByAdmin);
+
+      // Query B: users gekoppeld via employeeId (backward compatible)
+      const usersByEmployee: typeof byAdminSnapshot.docs = [];
+      for (let i = 0; i < employeeIds.length; i += 30) {
+        const batch = employeeIds.slice(i, i + 30);
+        const qByEmp = query(usersCol, where('employeeId', 'in', batch));
+        const snapshot = await getDocs(qByEmp);
+        usersByEmployee.push(...snapshot.docs);
+      }
+
+      // Query C: admin's eigen user record
+      const qSelf = query(usersCol, where('uid', '==', adminUserId));
+      const selfSnapshot = await getDocs(qSelf);
+
+      // Dedupliceer op document ID
+      const allDocs = new Map<string, typeof byAdminSnapshot.docs[0]>();
+      [...byAdminSnapshot.docs, ...usersByEmployee, ...selfSnapshot.docs]
+        .forEach(d => allDocs.set(d.id, d));
+
+      const usersData: UserRole[] = Array.from(allDocs.values()).map(userDoc => {
+        const data = userDoc.data();
+        const name = data.displayName
+          || (data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : '');
+
         return {
-          id: doc.id,
+          id: userDoc.id,
           uid: data.uid || '',
           role: data.role || 'employee',
           employeeId: data.employeeId,
           email: data.email || '',
-          displayName: data.displayName || '',
+          displayName: name,
           isActive: data.isActive !== false,
           lastLoginAt: data.lastLoginAt?.toDate(),
           createdAt: data.createdAt?.toDate(),
@@ -73,7 +98,6 @@ const AdminUsers: React.FC = () => {
         };
       });
 
-      console.log('Processed users:', usersData);
       setUsers(usersData);
     } catch (error) {
       console.error('Error loading users:', error);
