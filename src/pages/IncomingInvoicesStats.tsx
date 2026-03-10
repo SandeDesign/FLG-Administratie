@@ -25,6 +25,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import { isInQuarter } from '../utils/dateFilters';
 import ActionMenu from '../components/ui/ActionMenu';
 import {
   incomingInvoiceService,
@@ -38,7 +39,7 @@ import { supplierService } from '../services/supplierService';
 
 const IncomingInvoicesStats: React.FC = () => {
   const { user, adminUserId, userRole } = useAuth();
-  const { selectedCompany } = useApp();
+  const { selectedCompany, selectedYear, selectedQuarter } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('Inkoopbonnen');
 
@@ -87,8 +88,14 @@ const IncomingInvoicesStats: React.FC = () => {
     loadInvoices();
   }, [loadInvoices]);
 
+  // Period-filtered invoices
+  const periodInvoices = invoices.filter(inv => {
+    const invDate = inv.invoiceDate instanceof Date ? inv.invoiceDate : new Date(inv.invoiceDate);
+    return isInQuarter(invDate, selectedYear, selectedQuarter);
+  });
+
   // Filter and Sort
-  const filteredInvoices = invoices
+  const filteredInvoices = periodInvoices
     .filter(invoice => {
       const matchesSearch =
         invoice.supplierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -111,16 +118,16 @@ const IncomingInvoicesStats: React.FC = () => {
       }
     });
 
-  // Statistics
+  // Statistics (based on period-filtered data)
   const statistics = {
-    total: invoices.reduce((sum, inv) => sum + inv.totalAmount, 0),
-    pending: invoices.filter(inv => inv.status === 'pending').reduce((sum, inv) => sum + inv.totalAmount, 0),
-    approved: invoices.filter(inv => inv.status === 'approved').reduce((sum, inv) => sum + inv.totalAmount, 0),
-    paid: invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.totalAmount, 0),
-    count: invoices.length,
-    pendingCount: invoices.filter(inv => inv.status === 'pending').length,
-    approvedCount: invoices.filter(inv => inv.status === 'approved').length,
-    paidCount: invoices.filter(inv => inv.status === 'paid').length,
+    total: periodInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0),
+    pending: periodInvoices.filter(inv => inv.status === 'pending').reduce((sum, inv) => sum + inv.totalAmount, 0),
+    approved: periodInvoices.filter(inv => inv.status === 'approved').reduce((sum, inv) => sum + inv.totalAmount, 0),
+    paid: periodInvoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.totalAmount, 0),
+    count: periodInvoices.length,
+    pendingCount: periodInvoices.filter(inv => inv.status === 'pending').length,
+    approvedCount: periodInvoices.filter(inv => inv.status === 'approved').length,
+    paidCount: periodInvoices.filter(inv => inv.status === 'paid').length,
   };
 
   // Status Badge

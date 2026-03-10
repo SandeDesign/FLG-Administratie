@@ -28,6 +28,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [favoritePages, setFavoritePages] = useState<string[]>([]);
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
+  const [periodSelectorOpen, setPeriodSelectorOpen] = useState(false);
 
   const canSelectCompany = userRole === 'admin' && companies && companies.length > 1;
 
@@ -160,6 +161,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                   onClick={() => {
                     setSelectedCompany(company);
                     setCompanyDropdownOpen(false);
+                    onClose();
                   }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-left transition-all duration-200 ${
                     selectedCompany?.id === company.id
@@ -204,38 +206,52 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
           </div>
         )}
 
-        {/* Period Selector */}
-        <div className="border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800 px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
+        {/* Period Selector (collapsible) */}
+        <div className="border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+          <button
+            onClick={() => setPeriodSelectorOpen(!periodSelectorOpen)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
             <div className="flex items-center space-x-2">
               <Calendar className="h-4 w-4 text-primary-600 dark:text-primary-400" />
               <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Periode</span>
             </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setSelectedYear(selectedYear - 1)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 min-w-[3rem] text-center">{selectedYear}</span>
-              <button onClick={() => setSelectedYear(selectedYear + 1)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
-                <ChevronRight className="h-4 w-4" />
-              </button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                {selectedYear} · {selectedQuarter ? `Q${selectedQuarter}` : 'Heel jaar'}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${periodSelectorOpen ? 'rotate-180' : ''}`} />
             </div>
-          </div>
-          <div className="grid grid-cols-5 gap-1 bg-gray-100 dark:bg-gray-900 rounded-lg p-1">
-            {([null, 1, 2, 3, 4] as (number | null)[]).map((q) => (
-              <button
-                key={q ?? 'all'}
-                onClick={() => setSelectedQuarter(q)}
-                className={`px-2 py-2 text-xs font-medium rounded-md transition-all duration-150 ${
-                  selectedQuarter === q
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-              >
-                {getQuarterLabel(q)}
-              </button>
-            ))}
-          </div>
+          </button>
+
+          {periodSelectorOpen && (
+            <div className="px-4 pb-3 space-y-2">
+              <div className="flex items-center justify-center gap-1">
+                <button onClick={() => { setSelectedYear(selectedYear - 1); onClose(); }} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 min-w-[3rem] text-center">{selectedYear}</span>
+                <button onClick={() => { setSelectedYear(selectedYear + 1); onClose(); }} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-5 gap-1 bg-gray-100 dark:bg-gray-900 rounded-lg p-1">
+                {([null, 1, 2, 3, 4] as (number | null)[]).map((q) => (
+                  <button
+                    key={q ?? 'all'}
+                    onClick={() => { setSelectedQuarter(q); onClose(); }}
+                    className={`px-2 py-2 text-xs font-medium rounded-md transition-all duration-150 ${
+                      selectedQuarter === q
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {getQuarterLabel(q)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modern Navigation */}
