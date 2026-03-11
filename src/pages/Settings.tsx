@@ -32,7 +32,7 @@ import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
 import { usePageTitle } from '../contexts/PageTitleContext';
-import { ALL_NAVIGATION_ITEMS, NavigationItem } from '../utils/menuConfig';
+import { getFilteredNavigation, CompanyType } from '../utils/menuConfig';
 import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibilitySettings';
 import { BottomNavSettings } from '../components/settings/BottomNavSettings';
 import { outgoingInvoiceService } from '../services/outgoingInvoiceService';
@@ -1076,25 +1076,8 @@ const Settings: React.FC = () => {
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
-                  {selectedCompany && ALL_NAVIGATION_ITEMS
-                    .filter(item => {
-                      // Basis filter: alleen admin items, geen dashboard
-                      if (!item.roles.includes('admin') || item.name === 'Dashboard') {
-                        return false;
-                      }
-
-                      // Voor projectbedrijven: alleen project items
-                      if (selectedCompany.companyType === 'project') {
-                        // Project items zijn toegestaan
-                        if (item.companyTypes.includes('project')) {
-                          return true;
-                        }
-                        return false;
-                      }
-
-                      // Voor werkgever-bedrijven: ALLES is beschikbaar (ook project items!)
-                      return true;
-                    })
+                  {selectedCompany && getFilteredNavigation('admin', selectedCompany.companyType as CompanyType)
+                    .filter(item => item.id !== 'dashboard')
                     .map((item) => {
                       const Icon = item.icon;
                       const isFavorite = favoritePages.includes(item.href);
@@ -1111,9 +1094,6 @@ const Settings: React.FC = () => {
                             <p className={`text-sm font-medium ${ isFavorite ? 'text-amber-900' : 'text-gray-900 dark:text-gray-100' }`}>
                               {item.name}
                             </p>
-                            {item.section && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400">{item.section}</p>
-                            )}
                           </div>
                           {isFavorite && (
                             <Star className="h-4 w-4 text-amber-500 fill-amber-500" />

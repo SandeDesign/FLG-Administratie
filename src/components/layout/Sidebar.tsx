@@ -1,110 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  Clock,
-  CalendarCheck,
-  Stethoscope,
-  FileText,
-  Download,
-  Settings,
   LogOut,
-  Shield,
   ChevronRight,
   ChevronLeft,
-  PieChart,
-  Wallet,
-  Handshake,
-  FileOutput,
-  FileInput,
-  FolderOpen,
-  Factory,
-  BarChart2,
-  User,
-  ClipboardList,
-  Receipt,
-  CreditCard,
   Star,
-  TrendingUp,
-  ListChecks,
-  Mail,
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserSettings } from '../../services/firebase';
-
-export interface NavigationItem {
-  name: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  roles: string[];
-  companyTypes?: ('employer' | 'project' | 'holding' | 'shareholder' | 'investor')[];
-  badge?: string;
-  color?: string;
-}
-
-// Menu per rol en bedrijfstype - CLEANER ICONS
-export const navigation: NavigationItem[] = [
-  // DASHBOARD - Iedereen
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-
-  // ADMIN - EMPLOYER (HR Beheer) - NIET voor holding
-  { name: 'Werknemers', href: '/employees', icon: Users, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Loonverwerking', href: '/payroll-processing', icon: CreditCard, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { name: 'Verlof Beheren', href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['admin'], companyTypes: ['employer'] },
-  { name: 'Verzuim Beheren', href: '/admin/absence-management', icon: Stethoscope, roles: ['admin'], companyTypes: ['employer'] },
-
-  // FINANCIEEL - Voor alle types (employer, project, holding)
-  { name: 'Klanten & Leveranciers', href: '/invoice-relations', icon: Handshake, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Verkoop', href: '/outgoing-invoices', icon: FileOutput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Inkoop', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Inkomende Post', href: '/incoming-post', icon: Mail, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Bankafschrift Import', href: '/bank-statement-import', icon: FileInput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
-
-  // PROJECT COMPANY
-  { name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin', 'manager'], companyTypes: ['project'] },
-  { name: 'Project Overzicht', href: '/project-statistics', icon: BarChart2, roles: ['admin'], companyTypes: ['project'] },
-
-  // STATISTIEKEN - Voor alle rollen en bedrijfstypes
-  { name: 'Werkgever Stats', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { name: 'Project Stats', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'] },
-  { name: 'Holding Stats', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding', 'shareholder'] },
-
-  // SYSTEEM (Admin - Employer, Holding, Shareholder)
-  { name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
-  { name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
-
-  // MANAGER - Specifiek (alleen employer)
-  { name: 'Mijn Team', href: '/employees', icon: Users, roles: ['manager'], companyTypes: ['employer'] },
-  { name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['manager'], companyTypes: ['employer'] },
-  { name: 'Verlof Goedkeuren', href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['manager'], companyTypes: ['employer'] },
-
-  // EMPLOYEE - Mijn zaken (employer + project voor uren)
-  { name: 'Mijn Uren', href: '/timesheets', icon: Clock, roles: ['employee', 'manager'], companyTypes: ['employer', 'project'] },
-  { name: 'Mijn Verlof', href: '/leave', icon: CalendarCheck, roles: ['employee'], companyTypes: ['employer'] },
-  { name: 'Mijn Declaraties', href: '/expenses', icon: Receipt, roles: ['employee'], companyTypes: ['employer'] },
-  { name: 'Mijn Loonstroken', href: '/payslips', icon: CreditCard, roles: ['employee'], companyTypes: ['employer'] },
-
-  // INSTELLINGEN - Iedereen
-  { name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-];
-
-interface Section {
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  items: NavigationItem[];
-  defaultOpen?: boolean;
-  color: string;
-}
+import {
+  getFilteredNavigation,
+  getNavigationSections,
+  getItemDisplayName,
+  NavigationItem,
+  CompanyType,
+} from '../../utils/menuConfig';
 
 // Navigation Item - Cleaner Design
-const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean }> = ({ item, collapsed }) => (
+const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean; userRole: string | null }> = ({ item, collapsed, userRole }) => (
   <NavLink
     to={item.href}
     className={({ isActive }) =>
@@ -114,14 +28,14 @@ const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean }> = ({ item,
           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
       } ${collapsed ? 'justify-center' : ''}`
     }
-    title={collapsed ? item.name : undefined}
+    title={collapsed ? getItemDisplayName(item, userRole) : undefined}
   >
     {({ isActive }) => (
       <>
         <item.icon className={`h-5 w-5 flex-shrink-0 ${ isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:hover:text-gray-400 dark:group-hover:text-gray-300' } ${collapsed ? '' : 'mr-3'}`} />
         {!collapsed && (
           <>
-            <span className="truncate">{item.name}</span>
+            <span className="truncate">{getItemDisplayName(item, userRole)}</span>
             {item.badge && (
               <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
                 {item.badge}
@@ -197,19 +111,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
       if (user && userRole === 'admin' && selectedCompany?.id) {
         try {
           const settings = await getUserSettings(user.uid);
-          console.log('Loaded all favorites from settings:', settings?.favoritePages);
-
-          // Haal favorieten op voor het geselecteerde bedrijf
           if (settings?.favoritePages && settings.favoritePages[selectedCompany.id]) {
-            const companyFavorites = settings.favoritePages[selectedCompany.id];
-            console.log(`Favorites for company ${selectedCompany.name}:`, companyFavorites);
-            setFavoritePages(companyFavorites);
+            setFavoritePages(settings.favoritePages[selectedCompany.id]);
           } else {
-            console.log(`No favorites found for company ${selectedCompany.name}`);
             setFavoritePages([]);
           }
-        } catch (error) {
-          console.error('Error loading favorites:', error);
+        } catch {
           setFavoritePages([]);
         }
       } else {
@@ -236,81 +143,19 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
   };
 
   // Filter navigation by role AND company type
-  const companyType = selectedCompany?.companyType as 'employer' | 'project' | 'holding' | undefined;
-  const filteredNavigation = navigation.filter(item => {
-    const roleMatches = userRole && item.roles.includes(userRole);
-    const companyTypeMatches = !companyType || !item.companyTypes || item.companyTypes.includes(companyType);
-    return roleMatches && companyTypeMatches;
-  });
+  const companyType = selectedCompany?.companyType as CompanyType | undefined;
+  const filteredNavigation = getFilteredNavigation(userRole, companyType);
 
   // Dashboard item (no section)
-  const dashboardItem = filteredNavigation.find(i => i.name === 'Dashboard');
+  const dashboardItem = filteredNavigation.find(i => i.id === 'dashboard');
 
   // Favorite items (only for admin)
   const favoriteItems = userRole === 'admin' && favoritePages.length > 0
-    ? filteredNavigation.filter(i => favoritePages.includes(i.href) && i.name !== 'Dashboard')
+    ? filteredNavigation.filter(i => favoritePages.includes(i.href) && i.id !== 'dashboard')
     : [];
 
-  // Sections with distinct colors
-  const sections: Section[] = [
-    {
-      title: 'Statistieken',
-      icon: TrendingUp,
-      color: 'bg-indigo-500',
-      defaultOpen: companyType === 'holding' || companyType === 'project',
-      items: filteredNavigation.filter(i =>
-        i.name.includes('Stats') || i.name === 'Project Overzicht'
-      )
-    },
-    {
-      title: 'HR',
-      icon: Users,
-      color: 'bg-blue-500',
-      defaultOpen: false,
-      items: filteredNavigation.filter(i =>
-        ['Werknemers', 'Uren Goedkeuren', 'Loonverwerking', 'Verlof Beheren', 'Verzuim Beheren', 'Mijn Team'].includes(i.name)
-      )
-    },
-    {
-      title: 'Financieel',
-      icon: Wallet,
-      color: 'bg-emerald-500',
-      defaultOpen: false,
-      items: filteredNavigation.filter(i =>
-        ['Klanten & Leveranciers', 'Begroting', 'Verkoop', 'Inkoop', 'Inkomende Post', 'Bankafschrift Import', 'Declaraties'].includes(i.name)
-      )
-    },
-    {
-      title: 'Project',
-      icon: Factory,
-      color: 'bg-orange-500',
-      defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Productie', 'Project Overzicht'].includes(i.name))
-    },
-    {
-      title: 'Data',
-      icon: Download,
-      color: 'bg-purple-500',
-      defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Uren Export', 'Loonstroken', 'Drive'].includes(i.name))
-    },
-    {
-      title: 'Mijn Zaken',
-      icon: User,
-      color: 'bg-cyan-500',
-      defaultOpen: false,
-      items: filteredNavigation.filter(i =>
-        ['Mijn Uren', 'Mijn Verlof', 'Mijn Declaraties', 'Mijn Loonstroken', 'Verlof Goedkeuren'].includes(i.name)
-      )
-    },
-    {
-      title: 'Systeem',
-      icon: Settings,
-      color: 'bg-gray-500',
-      defaultOpen: false,
-      items: filteredNavigation.filter(i => ['Taken', 'Bedrijven', 'Audit Log', 'Instellingen'].includes(i.name))
-    },
-  ].filter(section => section.items.length > 0);
+  // Sections from menuConfig
+  const sections = getNavigationSections(userRole, companyType);
 
   return (
     <div className={`hidden lg:flex lg:flex-col lg:bg-white dark:bg-gray-800 lg:border-r lg:border-gray-200 dark:border-gray-700 transition-all duration-200 ${ collapsed ? 'lg:w-16' : 'lg:w-64' }`}>
@@ -354,7 +199,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
         {/* Dashboard - Solo */}
         {dashboardItem && (
           <div className="pb-3 mb-2 border-b border-gray-100">
-            <NavItem item={dashboardItem} collapsed={collapsed} />
+            <NavItem item={dashboardItem} collapsed={collapsed} userRole={userRole} />
           </div>
         )}
 
@@ -372,7 +217,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
             {(collapsed || expandedSections.includes('Favorieten')) && (
               <div className={`space-y-0.5 ${collapsed ? '' : 'ml-2 pl-3 border-l border-gray-100 dark:border-gray-700 mt-1'}`}>
                 {favoriteItems.map((item) => (
-                  <NavItem key={item.name} item={item} collapsed={collapsed} />
+                  <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} />
                 ))}
               </div>
             )}
@@ -382,8 +227,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
         {/* Manager: Flat list without collapsible sections */}
         {userRole === 'manager' ? (
           <div className="space-y-0.5">
-            {filteredNavigation.filter(i => i.name !== 'Dashboard').map((item) => (
-              <NavItem key={item.name} item={item} collapsed={collapsed} />
+            {filteredNavigation.filter(i => i.id !== 'dashboard').map((item) => (
+              <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} />
             ))}
           </div>
         ) : (
@@ -403,7 +248,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
                 {(collapsed || expandedSections.includes(section.title)) && (
                   <div className={`space-y-0.5 ${collapsed ? '' : 'ml-2 pl-3 border-l border-gray-100 dark:border-gray-700'}`}>
                     {section.items.map((item) => (
-                      <NavItem key={item.name} item={item} collapsed={collapsed} />
+                      <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} />
                     ))}
                   </div>
                 )}

@@ -7,6 +7,7 @@ import { BottomNavItem } from '../../types';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import { useToast } from '../../hooks/useToast';
+import { getBottomNavDefaults, CompanyType } from '../../utils/menuConfig';
 import {
   Clock,
   Users,
@@ -25,7 +26,7 @@ import {
   PieChart,
 } from 'lucide-react';
 
-// Beschikbare iconen voor bottom nav
+// Beschikbare iconen voor bottom nav picker
 const AVAILABLE_ICONS = [
   { name: 'Clock', icon: Clock, label: 'Uren', gradient: 'from-blue-500 to-blue-600' },
   { name: 'Users', icon: Users, label: 'Team', gradient: 'from-purple-500 to-purple-600' },
@@ -40,49 +41,6 @@ const AVAILABLE_ICONS = [
   { name: 'Settings', icon: Settings, label: 'Profiel', gradient: 'from-gray-500 to-gray-600' },
 ];
 
-// Default bottom nav items per rol/bedrijfstype
-const getDefaultItems = (userRole: string, companyType: string): Omit<BottomNavItem, 'href'>[] => {
-  if (companyType === 'holding') {
-    return [
-      { icon: 'TrendingUp', label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
-      { icon: 'Send', label: 'Verkoop', gradient: 'from-primary-500 to-primary-600' },
-      { icon: 'Wallet', label: 'Begroting', gradient: 'from-primary-600 to-primary-700' },
-    ];
-  }
-
-  if (companyType === 'project') {
-    return [
-      { icon: 'TrendingUp', label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
-      { icon: 'Cpu', label: 'Productie', gradient: 'from-primary-500 to-primary-600' },
-      { icon: 'Send', label: 'Facturen', gradient: 'from-primary-600 to-primary-700' },
-    ];
-  }
-
-  // Employer company
-  if (userRole === 'admin') {
-    return [
-      { icon: 'Send', label: 'Verkoop', gradient: 'from-primary-600 to-primary-700' },
-      { icon: 'CheckCircle2', label: 'Uren', gradient: 'from-primary-500 to-primary-600' },
-      { icon: 'Upload', label: 'Inkoop', gradient: 'from-primary-600 to-primary-700' },
-    ];
-  }
-
-  if (userRole === 'manager') {
-    return [
-      { icon: 'TrendingUp', label: 'Stats', gradient: 'from-primary-600 to-primary-700' },
-      { icon: 'Users', label: 'Team', gradient: 'from-primary-500 to-primary-600' },
-      { icon: 'CheckCircle2', label: 'Beheren', gradient: 'from-primary-600 to-primary-700' },
-    ];
-  }
-
-  // Employee
-  return [
-    { icon: 'Clock', label: 'Uren', gradient: 'from-primary-600 to-primary-700' },
-    { icon: 'CheckCircle2', label: 'Loonstrook', gradient: 'from-primary-500 to-primary-600' },
-    { icon: 'Settings', label: 'Profiel', gradient: 'from-primary-600 to-primary-700' },
-  ];
-};
-
 export const BottomNavSettings: React.FC = () => {
   const { user, userRole } = useAuth();
   const { selectedCompany } = useApp();
@@ -91,6 +49,8 @@ export const BottomNavSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedIcons, setSelectedIcons] = useState<string[]>([]);
+
+  const companyType = selectedCompany?.companyType as CompanyType | undefined;
 
   useEffect(() => {
     if (user && selectedCompany) {
@@ -113,14 +73,10 @@ export const BottomNavSettings: React.FC = () => {
         if (companyBottomNav && companyBottomNav.length === 3) {
           setSelectedIcons(companyBottomNav.map((item: BottomNavItem) => item.icon));
         } else {
-          // Gebruik defaults
-          const defaults = getDefaultItems(userRole || 'employee', selectedCompany.companyType);
-          setSelectedIcons(defaults.map(d => d.icon));
+          loadDefaults();
         }
       } else {
-        // Gebruik defaults
-        const defaults = getDefaultItems(userRole || 'employee', selectedCompany.companyType);
-        setSelectedIcons(defaults.map(d => d.icon));
+        loadDefaults();
       }
     } catch (err) {
       console.error('Error loading bottom nav settings:', err);
@@ -128,6 +84,11 @@ export const BottomNavSettings: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadDefaults = () => {
+    const defaults = getBottomNavDefaults(userRole, companyType);
+    setSelectedIcons(defaults.map(d => d.icon));
   };
 
   const handleIconSelect = (iconName: string, index: number) => {
@@ -151,7 +112,7 @@ export const BottomNavSettings: React.FC = () => {
         const iconConfig = AVAILABLE_ICONS.find(i => i.name === iconName);
         if (!iconConfig) throw new Error(`Icon ${iconName} not found`);
 
-        // Bepaal href op basis van icon naam (dit kan aangepast worden)
+        // Bepaal href op basis van icon naam
         let href = '/';
         if (iconName === 'Clock') href = '/timesheets';
         else if (iconName === 'Users') href = '/employees';
@@ -202,8 +163,7 @@ export const BottomNavSettings: React.FC = () => {
   };
 
   const handleReset = () => {
-    const defaults = getDefaultItems(userRole || 'employee', selectedCompany!.companyType);
-    setSelectedIcons(defaults.map(d => d.icon));
+    loadDefaults();
   };
 
   if (!selectedCompany) return null;
