@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
-import { getFilteredNavigation, getNavigationSections, CompanyType } from '../../utils/menuConfig';
+import { getFilteredNavigation, getNavigationSections, getItemDisplayName, CompanyType } from '../../utils/menuConfig';
 import { getUserSettings } from '../../services/firebase';
 import { getQuarterLabel } from '../../utils/dateFilters';
 
@@ -39,13 +39,11 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
         try {
           const settings = await getUserSettings(user.uid);
           if (settings?.favoritePages && settings.favoritePages[selectedCompany.id]) {
-            const companyFavorites = settings.favoritePages[selectedCompany.id];
-            setFavoritePages(companyFavorites);
+            setFavoritePages(settings.favoritePages[selectedCompany.id]);
           } else {
             setFavoritePages([]);
           }
-        } catch (error) {
-          console.error('Error loading favorites:', error);
+        } catch {
           setFavoritePages([]);
         }
       } else {
@@ -70,11 +68,11 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
   const filteredNavigation = getFilteredNavigation(userRole, companyType);
 
   // Dashboard item (standalone)
-  const dashboardItem = filteredNavigation.find(i => i.name === 'Dashboard');
+  const dashboardItem = filteredNavigation.find(i => i.id === 'dashboard');
 
   // Favorite items (only for admin)
   const favoriteItems = userRole === 'admin' && favoritePages.length > 0
-    ? filteredNavigation.filter(i => favoritePages.includes(i.href) && i.name !== 'Dashboard')
+    ? filteredNavigation.filter(i => favoritePages.includes(i.href) && i.id !== 'dashboard')
     : [];
 
   // Get sections from menuConfig
@@ -308,7 +306,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                     const ItemIcon = item.icon;
                     return (
                       <NavLink
-                        key={item.name}
+                        key={item.id}
                         to={item.href}
                         onClick={onClose}
                         className={({ isActive }) =>
@@ -324,7 +322,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                             <div className={`p-2 rounded-lg transition-all duration-200 ${ isActive ? 'bg-amber-100 dark:bg-amber-900/50' : 'bg-white dark:bg-gray-700/70' }`}>
                               <ItemIcon className={`h-4 w-4 ${ isActive ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400' }`} />
                             </div>
-                            <span className="flex-1">{item.name}</span>
+                            <span className="flex-1">{getItemDisplayName(item, userRole)}</span>
                           </>
                         )}
                       </NavLink>
@@ -360,7 +358,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                       const ItemIcon = item.icon;
                       return (
                         <NavLink
-                          key={item.name}
+                          key={item.id}
                           to={item.href}
                           onClick={onClose}
                           className={({ isActive }) =>
@@ -376,7 +374,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                               <div className={`p-2 rounded-lg transition-all duration-200 ${ isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600' }`}>
                                 <ItemIcon className={`h-4 w-4 ${ isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400' }`} />
                               </div>
-                              <span className="flex-1">{item.name}</span>
+                              <span className="flex-1">{getItemDisplayName(item, userRole)}</span>
                               {isActive && (
                                 <div className="w-2 h-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"></div>
                               )}
