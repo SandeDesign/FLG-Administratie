@@ -22,6 +22,7 @@ import {
   Home,
   MoreVertical,
   ListTodo,
+  PieChart,
 } from 'lucide-react';
 
 // Beschikbare iconen voor bottom nav
@@ -29,7 +30,8 @@ const AVAILABLE_ICONS = [
   { name: 'Clock', icon: Clock, label: 'Uren', gradient: 'from-blue-500 to-blue-600' },
   { name: 'Users', icon: Users, label: 'Team', gradient: 'from-purple-500 to-purple-600' },
   { name: 'Send', icon: Send, label: 'Verkoop', gradient: 'from-green-500 to-green-600' },
-  { name: 'Upload', icon: Upload, label: 'Inkoop', gradient: 'from-orange-500 to-orange-600' },
+  { name: 'Upload', icon: Upload, label: 'Inkoop Upload', gradient: 'from-orange-500 to-orange-600' },
+  { name: 'PieChart', icon: PieChart, label: 'Inkoop', gradient: 'from-orange-500 to-orange-600' },
   { name: 'CheckCircle2', icon: CheckCircle2, label: 'Goedkeuren', gradient: 'from-emerald-500 to-emerald-600' },
   { name: 'TrendingUp', icon: TrendingUp, label: 'Stats', gradient: 'from-indigo-500 to-indigo-600' },
   { name: 'Wallet', icon: Wallet, label: 'Begroting', gradient: 'from-pink-500 to-pink-600' },
@@ -159,6 +161,7 @@ export const BottomNavSettings: React.FC = () => {
         else if (iconName === 'TrendingUp') href = `/statistics/${selectedCompany.companyType}`;
         else if (iconName === 'Wallet') href = '/budgeting';
         else if (iconName === 'Cpu') href = '/project-production';
+        else if (iconName === 'PieChart') href = '/incoming-invoices-stats';
         else if (iconName === 'ListTodo') href = '/tasks';
         else if (iconName === 'Settings') href = '/settings';
 
@@ -278,7 +281,7 @@ export const BottomNavSettings: React.FC = () => {
                           onClick={() => handleIconSelect(iconConfig.name, index)}
                           className={`p-3 rounded-lg border-2 transition-all ${ isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800' }`}
                         >
-                          <div className={`w-full aspect-square rounded-lg bg-gradient-to-br ${iconConfig.gradient} flex items-center justify-center text-white mb-2`}>
+                          <div className={`w-12 h-12 mx-auto rounded-xl bg-gradient-to-br ${iconConfig.gradient} flex items-center justify-center text-white mb-2`}>
                             <Icon size={20} />
                           </div>
                           <p className="text-xs text-center font-medium text-gray-700 dark:text-gray-300">
