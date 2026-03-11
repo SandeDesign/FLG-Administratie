@@ -63,8 +63,6 @@ import IncomingInvoicesStats from './pages/IncomingInvoicesStats';
 import Budgeting from './pages/Budgeting';
 import TimesheetExport from './pages/TimesheetExport';
 import Tasks from './pages/Tasks';
-import EmployeeTasks from './pages/EmployeeTasks';
-import EmployeeAgenda from './pages/EmployeeAgenda';
 // ✅ BANK STATEMENT IMPORT - NIEUW!
 import BankStatementImport from './pages/BankStatementImport';
 import { AppProvider } from './contexts/AppContext';
@@ -227,8 +225,6 @@ function App() {
                             <Route path="absence" element={<Absence />} />
                             <Route path="expenses" element={<Expenses />} />
                             <Route path="timesheets" element={<Timesheets />} />
-                            <Route path="tasks" element={<EmployeeTasks />} />
-                            <Route path="agenda" element={<EmployeeAgenda />} />
                             <Route path="payslips" element={<Payslips />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
