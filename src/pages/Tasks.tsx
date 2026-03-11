@@ -9,18 +9,14 @@ import {
   Repeat,
   ChevronDown,
   ChevronRight,
-  Users,
   Circle,
   CheckCircle2,
-  CalendarCheck,
-  CalendarX,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem } from '../types';
 import {
   getAllCompanyTasks,
-  getCompanyUsers,
   createTask,
   updateTask,
   deleteTask,
@@ -46,14 +42,12 @@ const Tasks: React.FC = () => {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState<BusinessTask | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
-  const [companyUsers, setCompanyUsers] = useState<Array<{ uid: string; email: string; displayName?: string }>>([]);
 
   // Filters
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<TaskCategory | 'all'>('all');
   const [filterPriority, setFilterPriority] = useState<TaskPriority | 'all'>('all');
-  const [filterAssignment, setFilterAssignment] = useState<'all' | 'assigned_to_me' | 'created_by_me'>('all');
   const [filterScheduled, setFilterScheduled] = useState<'all' | 'scheduled' | 'unscheduled'>('all');
 
   // Form state
@@ -66,7 +60,6 @@ const Tasks: React.FC = () => {
     isRecurring: false,
     frequency: 'monthly' as TaskFrequency,
     recurrenceDay: 1,
-    assignedTo: [] as string[],
     checklist: [] as TaskChecklistItem[],
   });
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -74,20 +67,8 @@ const Tasks: React.FC = () => {
   useEffect(() => {
     if (user && selectedCompany) {
       loadTasks();
-      loadCompanyUsers();
     }
   }, [user, selectedCompany]);
-
-  const loadCompanyUsers = async () => {
-    if (!selectedCompany) return;
-
-    try {
-      const users = await getCompanyUsers(selectedCompany.id);
-      setCompanyUsers(users);
-    } catch (err) {
-      console.error('Error loading company users:', err);
-    }
-  };
 
   const loadTasks = async () => {
     if (!user || !selectedCompany) return;
@@ -203,7 +184,6 @@ const Tasks: React.FC = () => {
       isRecurring: task.isRecurring,
       frequency: task.frequency || 'monthly',
       recurrenceDay: task.recurrenceDay || 1,
-      assignedTo: task.assignedTo || [],
       checklist: task.checklist || [],
     });
     setShowTaskModal(true);
@@ -219,7 +199,6 @@ const Tasks: React.FC = () => {
       isRecurring: false,
       frequency: 'monthly',
       recurrenceDay: 1,
-      assignedTo: [],
       checklist: [],
     });
     setNewSubtaskTitle('');
@@ -237,14 +216,6 @@ const Tasks: React.FC = () => {
     if (filterStatus !== 'all' && task.status !== filterStatus) return false;
     if (filterCategory !== 'all' && task.category !== filterCategory) return false;
     if (filterPriority !== 'all' && task.priority !== filterPriority) return false;
-
-    // Filter op toewijzing
-    if (filterAssignment === 'assigned_to_me' && user) {
-      if (!task.assignedTo || !task.assignedTo.includes(user.uid)) return false;
-    }
-    if (filterAssignment === 'created_by_me' && user) {
-      if (task.userId !== user.uid && task.createdBy !== user.uid) return false;
-    }
 
     // Filter op inplanstatus
     if (filterScheduled === 'scheduled' && !task.isScheduled) return false;
@@ -347,17 +318,6 @@ const Tasks: React.FC = () => {
     });
   };
 
-  // Get assigned user names for display
-  const getAssignedUserNames = (assignedTo?: string[]): string[] => {
-    if (!assignedTo || assignedTo.length === 0) return [];
-    return assignedTo
-      .map(uid => {
-        const user = companyUsers.find(u => u.uid === uid);
-        return user ? (user.displayName || user.email.split('@')[0]) : null;
-      })
-      .filter(name => name !== null) as string[];
-  };
-
   const isOverdue = (task: BusinessTask) => {
     if (task.status === 'completed' || task.status === 'cancelled') return false;
     return new Date(task.dueDate) < new Date();
@@ -404,7 +364,7 @@ const Tasks: React.FC = () => {
       {/* Collapsible Filters */}
       {showFilters && (
         <Card>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Status
@@ -456,21 +416,6 @@ const Tasks: React.FC = () => {
                     {config.label}
                   </option>
                 ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Toewijzing
-              </label>
-              <select
-                value={filterAssignment}
-                onChange={(e) => setFilterAssignment(e.target.value as 'all' | 'assigned_to_me' | 'created_by_me')}
-                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
-              >
-                <option value="all">Alle taken</option>
-                <option value="assigned_to_me">Toegewezen aan mij</option>
-                <option value="created_by_me">Door mij aangemaakt</option>
               </select>
             </div>
 
@@ -581,28 +526,6 @@ const Tasks: React.FC = () => {
                             </span>
                           )}
 
-                          {task.assignedTo && task.assignedTo.length > 0 && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-cyan-100 text-cyan-700">
-                              <Users className="h-3 w-3" />
-                              {getAssignedUserNames(task.assignedTo).slice(0, 2).join(', ')}
-                              {task.assignedTo.length > 2 && ` +${task.assignedTo.length - 2}`}
-                            </span>
-                          )}
-
-                          {/* Inplanstatus badge */}
-                          {task.assignedTo && task.assignedTo.length > 0 && task.status !== 'completed' && task.status !== 'cancelled' && (
-                            task.isScheduled ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                                <CalendarCheck className="h-3 w-3" />
-                                Ingepland
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                                <CalendarX className="h-3 w-3" />
-                                Niet ingepland
-                              </span>
-                            )
-                          )}
                         </div>
                       </div>
                     </div>
@@ -713,45 +636,6 @@ const Tasks: React.FC = () => {
               className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               placeholder="Optionele beschrijving..."
             />
-          </div>
-
-          {/* Toewijzen aan gebruikers */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Toewijzen aan
-            </label>
-            <div className="max-h-40 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-3 space-y-2">
-              {companyUsers.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">Geen gebruikers beschikbaar</p>
-              ) : (
-                companyUsers.map((companyUser) => (
-                  <label key={companyUser.uid} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={formData.assignedTo.includes(companyUser.uid)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData({ ...formData, assignedTo: [...formData.assignedTo, companyUser.uid] });
-                        } else {
-                          setFormData({ ...formData, assignedTo: formData.assignedTo.filter(uid => uid !== companyUser.uid) });
-                        }
-                      }}
-                      className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
-                    />
-                    <div className="flex-1">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {companyUser.displayName || companyUser.email}
-                      </span>
-                      {companyUser.displayName && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                          ({companyUser.email})
-                        </span>
-                      )}
-                    </div>
-                  </label>
-                ))
-              )}
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

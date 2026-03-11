@@ -13,17 +13,12 @@ import {
   Target,
   Award,
   Briefcase,
-  ListChecks,
-  AlertCircle,
-  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { getEmployeeById, getTasksAssignedToUser } from '../services/firebase';
+import { getEmployeeById } from '../services/firebase';
 import { getWeeklyTimesheets, getWeekNumber } from '../services/timesheetService';
-import { BusinessTask } from '../types';
-import { PRIORITY_CONFIG } from '../utils/taskConfig';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
 
@@ -34,7 +29,6 @@ const EmployeeDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [timesheets, setTimesheets] = useState<any[]>([]);
-  const [assignedTasks, setAssignedTasks] = useState<BusinessTask[]>([]);
   const [currentYear] = useState(new Date().getFullYear());
   const [currentWeek] = useState(getWeekNumber(new Date()));
 
@@ -62,11 +56,6 @@ const EmployeeDashboard: React.FC = () => {
 
         setTimesheets(allTimesheets);
 
-        // Taken ophalen
-        if (user) {
-          const tasks = await getTasksAssignedToUser(user.uid, selectedCompany?.id);
-          setAssignedTasks(tasks);
-        }
       } catch (error) {
         console.error('Error loading employee data:', error);
       } finally {
@@ -169,15 +158,6 @@ const EmployeeDashboard: React.FC = () => {
       iconBg: 'bg-amber-100',
       iconColor: 'text-amber-600'
     },
-    {
-      title: 'Taken',
-      subtitle: `${assignedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length} openstaand`,
-      icon: ListChecks,
-      href: '/employee-dashboard/tasks',
-      bgGradient: 'from-indigo-500 to-indigo-600',
-      iconBg: 'bg-indigo-100',
-      iconColor: 'text-indigo-600'
-    }
   ];
 
   if (loading) {
@@ -263,63 +243,6 @@ const EmployeeDashboard: React.FC = () => {
           })}
         </div>
       </div>
-
-      {/* Taken Widget */}
-      {assignedTasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled').length > 0 && (
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-            <ListChecks className="h-6 w-6 text-indigo-600" />
-            Mijn Taken
-          </h2>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-            {assignedTasks
-              .filter(t => t.status !== 'completed' && t.status !== 'cancelled')
-              .slice(0, 5)
-              .map(task => {
-                const priorityConfig = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG['medium'];
-                const isTaskOverdue = task.status !== 'completed' && task.status !== 'cancelled' && new Date(task.dueDate) < new Date();
-                return (
-                  <div key={task.id} className="px-4 py-3 flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${priorityConfig.color}`}>
-                          {priorityConfig.label}
-                        </span>
-                        <span className={`inline-flex items-center gap-1 text-xs ${isTaskOverdue ? 'text-red-600 font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>
-                          {isTaskOverdue && <AlertCircle className="h-3 w-3" />}
-                          {new Date(task.dueDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
-                        </span>
-                        {task.checklist && task.checklist.length > 0 && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {task.checklist.filter(s => s.completed).length}/{task.checklist.length} subtaken
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <Link to="/employee-dashboard/tasks" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                      <ChevronRight className="h-5 w-5" />
-                    </Link>
-                  </div>
-                );
-              })}
-            <div className="flex divide-x divide-gray-100 dark:divide-gray-700">
-              <Link
-                to="/employee-dashboard/tasks"
-                className="flex-1 block px-4 py-3 text-center text-sm font-medium text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-bl-xl transition-colors"
-              >
-                Bekijk alle taken
-              </Link>
-              <Link
-                to="/employee-dashboard/agenda"
-                className="flex-1 block px-4 py-3 text-center text-sm font-medium text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-br-xl transition-colors"
-              >
-                Naar agenda
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Charts Section */}
       {hoursChartData.length > 0 && (
