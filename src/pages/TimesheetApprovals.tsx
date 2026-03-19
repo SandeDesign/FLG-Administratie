@@ -570,8 +570,15 @@ export default function TimesheetApprovals() {
                                             {(entry as any).workActivities && (entry as any).workActivities.length > 0 && (
                                               <div className="space-y-1 mt-1.5 pl-3 border-l-2 border-gray-300 dark:border-gray-600">
                                                 {(entry as any).workActivities.map((activity: any, actIdx: number) => (
-                                                  <div key={actIdx} className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                                                    <span className="truncate mr-2">{activity.description}</span>
+                                                  <div key={actIdx} className="flex justify-between items-start text-xs text-gray-600 dark:text-gray-400">
+                                                    <span className="flex items-center gap-1 flex-wrap mr-2">
+                                                      {activity.internalProjectName && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium">
+                                                          {activity.internalProjectName}
+                                                        </span>
+                                                      )}
+                                                      <span className="truncate">{activity.description}</span>
+                                                    </span>
                                                     <span className="font-semibold flex-shrink-0">{activity.hours}u</span>
                                                   </div>
                                                 ))}

@@ -1,5 +1,15 @@
 export type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'processed';
 
+export interface WorkActivity {
+  hours: number;
+  description: string;
+  clientId?: string;
+  projectCode?: string;
+  isITKnechtImport?: boolean;
+  internalProjectId?: string;
+  internalProjectName?: string;
+}
+
 export interface TimesheetEntry {
   id?: string;
   userId: string;
@@ -16,6 +26,7 @@ export interface TimesheetEntry {
   projectId?: string;
   costCenter?: string;
   notes?: string;
+  workActivities?: WorkActivity[];
   createdAt: Date;
   updatedAt: Date;
 }
