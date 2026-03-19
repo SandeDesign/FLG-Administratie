@@ -8,6 +8,7 @@ export interface WorkActivity {
   isITKnechtImport?: boolean;
   internalProjectId?: string;
   internalProjectName?: string;
+  taskId?: string;
 }
 
 export interface TimesheetEntry {
