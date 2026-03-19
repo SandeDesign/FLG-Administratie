@@ -65,6 +65,7 @@ import TimesheetExport from './pages/TimesheetExport';
 import Tasks from './pages/Tasks';
 // ✅ BANK STATEMENT IMPORT - NIEUW!
 import BankStatementImport from './pages/BankStatementImport';
+import InternalProjects from './pages/InternalProjects';
 import { AppProvider } from './contexts/AppContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { PageTitleProvider } from './contexts/PageTitleContext';
@@ -128,6 +129,7 @@ function App() {
                           {/* ✅ TIJD & UREN */}
                           <Route path="timesheets" element={<Timesheets />} />
                           <Route path="timesheet-approvals" element={<TimesheetApprovals />} />
+                          <Route path="internal-projects" element={<InternalProjects />} />
                           <Route path="admin-expenses" element={<AdminExpenses />} />
                           
                           {/* ✅ VERLOF & VERZUIM */}

@@ -38,6 +38,7 @@ import {
   Package,
   ListTodo,
   MoreVertical,
+  FolderKanban,
 } from 'lucide-react';
 
 export type CompanyType = 'employer' | 'project' | 'holding' | 'shareholder' | 'investor';
@@ -68,6 +69,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // HR / PERSONEEL (employer)
   { id: 'employees', name: 'Werknemers', nameByRole: { manager: 'Mijn Team' }, href: '/employees', icon: Users, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { id: 'timesheet-approvals', name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['admin', 'manager'], companyTypes: ['employer'] },
+  { id: 'internal-projects', name: 'Interne Projecten', href: '/internal-projects', icon: FolderKanban, roles: ['admin', 'co-admin'], companyTypes: ['employer'] },
   { id: 'payroll-processing', name: 'Loonverwerking', href: '/payroll-processing', icon: CreditCard, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { id: 'leave-approvals', name: 'Verlof Beheren', nameByRole: { manager: 'Verlof Goedkeuren' }, href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['admin', 'manager'], companyTypes: ['employer'] },
   { id: 'absence-management', name: 'Verzuim Beheren', href: '/admin/absence-management', icon: Stethoscope, roles: ['admin', 'manager'], companyTypes: ['employer'] },
@@ -121,7 +123,7 @@ export interface Section {
 // Items per sectie (via id)
 const SECTION_ITEMS: Record<string, string[]> = {
   Statistieken: ['statistics-employer', 'statistics-project', 'statistics-holding'],
-  HR: ['employees', 'timesheet-approvals', 'payroll-processing', 'leave-approvals', 'absence-management'],
+  HR: ['employees', 'timesheet-approvals', 'internal-projects', 'payroll-processing', 'leave-approvals', 'absence-management'],
   Financieel: ['invoice-relations', 'budgeting', 'admin-expenses', 'outgoing-invoices', 'incoming-invoices', 'incoming-invoices-stats', 'incoming-post', 'bank-statement-import'],
   Project: ['project-production', 'project-statistics', 'project-team'],
   'Mijn Zaken': ['timesheets', 'leave', 'absence', 'expenses-employee', 'payslips'],

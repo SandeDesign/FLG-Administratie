@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Save, Send, Download, ChevronLeft, ChevronRight, User, Palmtree, HeartPulse } from 'lucide-react';
+import { Calendar, Clock, Save, Send, Download, ChevronLeft, ChevronRight, User, Palmtree, HeartPulse, FolderKanban } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { WeeklyTimesheet, TimesheetEntry } from '../types/timesheet';
+import { WeeklyTimesheet, TimesheetEntry, WorkActivity } from '../types/timesheet';
 import { LeaveRequest, SickLeave } from '../types';
+import { InternalProject } from '../types/internalProject';
+import { getInternalProjects } from '../services/internalProjectService';
+import { getProjectColorMeta } from './InternalProjects';
 import {
   getWeeklyTimesheets,
   createWeeklyTimesheet,
@@ -42,6 +45,8 @@ export default function Timesheets() {
   // Verlof & Ziekte state
   const [weekLeaveRequests, setWeekLeaveRequests] = useState<LeaveRequest[]>([]);
   const [weekSickLeaves, setWeekSickLeaves] = useState<SickLeave[]>([]);
+  // Interne projecten
+  const [internalProjects, setInternalProjects] = useState<InternalProject[]>([]);
 
   const loadData = useCallback(async () => {
     if (!user || !queryUserId || !selectedCompany) {
@@ -108,6 +113,10 @@ export default function Timesheets() {
         return sickStart <= weekEnd && sickEnd >= weekStart;
       });
       setWeekSickLeaves(weekSick);
+
+      // Interne projecten laden
+      const projects = await getInternalProjects(queryUserId, selectedCompany.id);
+      setInternalProjects(projects);
 
       if (sheets.length > 0) {
         setCurrentTimesheet(sheets[0]);
@@ -353,7 +362,7 @@ export default function Timesheets() {
     });
   };
 
-  const updateWorkActivity = (entryIndex: number, activityIndex: number, field: string, value: any) => {
+  const updateWorkActivity = (entryIndex: number, activityIndex: number, field: keyof WorkActivity, value: WorkActivity[keyof WorkActivity]) => {
     if (!currentTimesheet) return;
 
     const updatedEntries = [...currentTimesheet.entries];
@@ -394,6 +403,21 @@ export default function Timesheets() {
       totalTravelKilometers: totalTravelKilometers,
       updatedAt: new Date()
     });
+  };
+
+  const selectProjectForActivity = (entryIndex: number, activityIndex: number, projectId: string) => {
+    if (!currentTimesheet) return;
+    const project = internalProjects.find(p => p.id === projectId);
+    const updatedEntries = [...currentTimesheet.entries];
+    const activities = [...(updatedEntries[entryIndex].workActivities || [])];
+    activities[activityIndex] = {
+      ...activities[activityIndex],
+      internalProjectId: project?.id || '',
+      internalProjectName: project?.name || '',
+      description: activities[activityIndex].description || project?.name || '',
+    };
+    updatedEntries[entryIndex] = { ...updatedEntries[entryIndex], workActivities: activities, updatedAt: new Date() };
+    setCurrentTimesheet({ ...currentTimesheet, entries: updatedEntries, updatedAt: new Date() });
   };
 
   const removeWorkActivity = (entryIndex: number, activityIndex: number) => {
@@ -1046,37 +1070,67 @@ export default function Timesheets() {
                       )}
                     </div>
 
-                    {(entry.workActivities || []).map((activity, actIdx) => (
-                      <div key={actIdx} className={`p-2 rounded flex gap-2 items-center ${activity.isITKnechtImport ? 'bg-primary-100' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="24"
-                          step="0.5"
-                          value={activity.hours}
-                          onChange={(e) => updateWorkActivity(index, actIdx, 'hours', parseFloat(e.target.value) || 0)}
-                          disabled={isReadOnly || activity.isITKnechtImport}
-                          className="w-16 text-center text-xs py-1"
-                          placeholder="0u"
-                        />
-                        <Input
-                          type="text"
-                          value={activity.description}
-                          onChange={(e) => updateWorkActivity(index, actIdx, 'description', e.target.value)}
-                          disabled={isReadOnly || activity.isITKnechtImport}
-                          placeholder="Beschrijving..."
-                          className="flex-1 text-xs py-1"
-                        />
-                        {!isReadOnly && !activity.isITKnechtImport && (
-                          <button
-                            onClick={() => removeWorkActivity(index, actIdx)}
-                            className="text-red-600 hover:text-red-800 font-bold text-lg"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                    {(entry.workActivities || []).map((activity, actIdx) => {
+                      const colorMeta = getProjectColorMeta(
+                        internalProjects.find(p => p.id === activity.internalProjectId)?.color
+                      );
+                      return (
+                        <div key={actIdx} className={`p-2 rounded space-y-1.5 ${activity.isITKnechtImport ? 'bg-primary-100 dark:bg-primary-900/20' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                          {/* Project selector — alleen voor handmatige entries */}
+                          {!activity.isITKnechtImport && !isReadOnly && internalProjects.length > 0 && (
+                            <div className="flex items-center gap-2">
+                              <FolderKanban className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                              <select
+                                value={activity.internalProjectId || ''}
+                                onChange={e => selectProjectForActivity(index, actIdx, e.target.value)}
+                                className="flex-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-1 px-1.5"
+                              >
+                                <option value="">— Kies project (optioneel) —</option>
+                                {internalProjects.map(p => (
+                                  <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                          {/* Project badge in readonly modus */}
+                          {activity.internalProjectName && (isReadOnly || activity.isITKnechtImport) && (
+                            <div className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${colorMeta.bg} ${colorMeta.text}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${colorMeta.dot}`} />
+                              {activity.internalProjectName}
+                            </div>
+                          )}
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="24"
+                              step="0.5"
+                              value={activity.hours}
+                              onChange={(e) => updateWorkActivity(index, actIdx, 'hours', parseFloat(e.target.value) || 0)}
+                              disabled={isReadOnly || activity.isITKnechtImport}
+                              className="w-16 text-center text-xs py-1"
+                              placeholder="0u"
+                            />
+                            <Input
+                              type="text"
+                              value={activity.description}
+                              onChange={(e) => updateWorkActivity(index, actIdx, 'description', e.target.value)}
+                              disabled={isReadOnly || activity.isITKnechtImport}
+                              placeholder="Beschrijving..."
+                              className="flex-1 text-xs py-1"
+                            />
+                            {!isReadOnly && !activity.isITKnechtImport && (
+                              <button
+                                onClick={() => removeWorkActivity(index, actIdx)}
+                                className="text-red-600 hover:text-red-800 font-bold text-lg"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </Card>
               )}
