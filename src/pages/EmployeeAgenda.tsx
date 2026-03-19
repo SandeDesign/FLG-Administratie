@@ -23,6 +23,7 @@ import {
   scheduleTask,
   unscheduleTask,
   updateTask,
+  generateRecurringTasks,
 } from '../services/firebase';
 import {
   isMicrosoftConnected,
@@ -65,6 +66,10 @@ const EmployeeAgenda: React.FC = () => {
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [schedulingReminder, setSchedulingReminder] = useState<{ level: string; count: number } | null>(null);
+  const [schedulingTask, setSchedulingTask] = useState<BusinessTask | null>(null);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleStartTime, setScheduleStartTime] = useState('09:00');
+  const [scheduleEndTime, setScheduleEndTime] = useState('10:00');
 
   const unscheduledTasks = allTasks.filter(
     t => !t.isScheduled && t.status !== 'completed' && t.status !== 'cancelled'
@@ -105,13 +110,18 @@ const EmployeeAgenda: React.FC = () => {
   }, [user, selectedCompany]);
 
   const loadTasks = async () => {
-    if (!user || !selectedCompany) {
+    if (!user || !selectedCompany || !adminUserId) {
       console.warn('[Agenda] Kan taken niet laden:', { user: !!user, selectedCompany: selectedCompany?.id });
       return;
     }
     try {
       setLoading(true);
-      console.log('[Agenda] Laden taken voor:', { uid: user.uid, companyId: selectedCompany.id });
+
+      // Genereer nieuwe instanties voor herhalende taken
+      const generated = await generateRecurringTasks(adminUserId);
+      if (generated > 0) {
+        success(`${generated} nieuwe herhalende taak${generated === 1 ? '' : 'en'} aangemaakt`);
+      }
 
       // Haal taken op die aan deze medewerker zijn toegewezen
       const assignedTasks = await getTasksAssignedToUser(currentEmployeeId || user.uid, selectedCompany.id);
@@ -376,8 +386,32 @@ const EmployeeAgenda: React.FC = () => {
   };
 
   const handleSidebarTaskClick = (task: BusinessTask) => {
-    // Op mobile: sluit sidebar en laat de kalender zien
     setShowMobileSidebar(false);
+    const today = new Date().toISOString().split('T')[0];
+    const endHour = task.estimatedHours
+      ? Math.floor(9 + task.estimatedHours)
+      : 10;
+    const endMinute = task.estimatedHours
+      ? Math.round((task.estimatedHours % 1) * 60)
+      : 0;
+    setScheduleDate(today);
+    setScheduleStartTime('09:00');
+    setScheduleEndTime(`${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`);
+    setSchedulingTask(task);
+  };
+
+  const handleScheduleSubmit = async () => {
+    if (!schedulingTask || !user || !scheduleDate) return;
+    try {
+      const dateObj = new Date(`${scheduleDate}T${scheduleStartTime}:00`);
+      await scheduleTask(schedulingTask.id!, user.uid, dateObj, scheduleStartTime, scheduleEndTime);
+      setSchedulingTask(null);
+      success('Taak ingepland');
+      loadTasks();
+    } catch (err) {
+      console.error('Error scheduling task:', err);
+      error('Fout bij inplannen van taak');
+    }
   };
 
   if (loading) {
@@ -581,6 +615,74 @@ const EmployeeAgenda: React.FC = () => {
               onTaskClick={handleSidebarTaskClick}
               fridayDeadline={fridayDeadline}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Click-to-schedule modal */}
+      {schedulingTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setSchedulingTask(null)}>
+          <div
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{schedulingTask.title}</h3>
+              {schedulingTask.internalProjectName && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 mt-1">
+                  {schedulingTask.internalProjectName}
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Datum</label>
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Begintijd</label>
+                  <input
+                    type="time"
+                    value={scheduleStartTime}
+                    onChange={(e) => setScheduleStartTime(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Eindtijd</label>
+                  <input
+                    type="time"
+                    value={scheduleEndTime}
+                    onChange={(e) => setScheduleEndTime(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setSchedulingTask(null)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={handleScheduleSubmit}
+                disabled={!scheduleDate}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              >
+                Inplannen
+              </button>
+            </div>
           </div>
         </div>
       )}
