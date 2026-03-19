@@ -98,6 +98,18 @@ const Tasks: React.FC = () => {
         // Admin, co-admins en managers — geen duplicaten met medewerkers
         const nonEmpUsers = await getAdminNonEmployeeUsers(adminUserId, empDocIds);
 
+        // Admin zichzelf: gebruik auth context voor naam (altijd accuraat, ook zonder Firestore naam)
+        const adminName = user.displayName || user.email || 'Admin';
+        const existingIds = new Set([...empPeople.map(p => p.id), ...nonEmpUsers.map(u => u.uid)]);
+        if (!existingIds.has(user.uid)) {
+          nonEmpUsers.push({ uid: user.uid, name: adminName });
+        } else {
+          const idx = nonEmpUsers.findIndex(u => u.uid === user.uid);
+          if (idx !== -1 && !nonEmpUsers[idx].name) {
+            nonEmpUsers[idx] = { uid: user.uid, name: adminName };
+          }
+        }
+
         setAllPeople([...empPeople, ...nonEmpUsers]);
       };
       loadPeople().catch(() => {});

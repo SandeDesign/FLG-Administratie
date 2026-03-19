@@ -1814,10 +1814,13 @@ export const getAdminNonEmployeeUsers = async (
       const lastName = data.lastName as string | undefined;
       if (firstName && lastName) return `${firstName} ${lastName}`;
       if (firstName) return firstName;
-      return (data.displayName as string) || (data.email as string) || 'Gebruiker';
+      const displayName = data.displayName as string | undefined;
+      if (displayName) return displayName;
+      const email = data.email as string | undefined;
+      return email ? email.split('@')[0] : '';
     };
 
-    // Co-admins en managers onder deze admin
+    // Co-admins en managers onder deze admin (via adminUserId veld op users doc)
     const subSnap = await getDocs(query(usersCol, where('adminUserId', '==', adminUserId)));
     subSnap.docs.forEach(d => {
       const data = d.data() as Record<string, unknown>;
@@ -1825,7 +1828,7 @@ export const getAdminNonEmployeeUsers = async (
       results.set(d.id, { uid: d.id, name: resolveName(data) });
     });
 
-    // Admin zichzelf
+    // Admin zichzelf (via uid veld op users doc)
     const selfSnap = await getDocs(query(usersCol, where('uid', '==', adminUserId)));
     selfSnap.docs.forEach(d => {
       const data = d.data() as Record<string, unknown>;
@@ -1834,6 +1837,26 @@ export const getAdminNonEmployeeUsers = async (
         results.set(d.id, { uid: d.id, name: resolveName(data) });
       }
     });
+
+    // Backward compat: co-admins aangemaakt via primaryAdminUserId in userSettings collectie
+    const settingsSnap = await getDocs(
+      query(collection(db, 'userSettings'), where('primaryAdminUserId', '==', adminUserId))
+    );
+    const coAdminUids: string[] = [];
+    settingsSnap.docs.forEach(d => {
+      const userId = d.data().userId as string | undefined;
+      if (userId && !results.has(userId)) coAdminUids.push(userId);
+    });
+    for (const uid of coAdminUids) {
+      const userSnap = await getDocs(query(usersCol, where('uid', '==', uid)));
+      userSnap.docs.forEach(d => {
+        const data = d.data() as Record<string, unknown>;
+        if (data.employeeId && empIdsSet.has(data.employeeId as string)) return;
+        if (!results.has(d.id)) {
+          results.set(d.id, { uid: d.id, name: resolveName(data) });
+        }
+      });
+    }
 
     return Array.from(results.values());
   } catch {
