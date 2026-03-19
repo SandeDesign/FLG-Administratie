@@ -879,6 +879,8 @@ export interface BusinessTask {
   // Toewijzing
   assignedTo?: string[];  // Employee IDs (Firestore) van toegewezen medewerkers
   estimatedHours?: number;  // Verwachte duur in uren (bepaald door admin)
+  internalProjectId?: string;
+  internalProjectName?: string;
   createdBy: string;  // User ID van maker
 
   // Datums

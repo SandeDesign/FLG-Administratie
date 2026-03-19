@@ -42,6 +42,11 @@ const TaskScheduleSidebar: React.FC<TaskScheduleSidebarProps> = ({ tasks, onTask
         <GripVertical className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0 opacity-50 group-hover:opacity-100" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
+          {task.internalProjectName && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 mt-0.5">
+              {task.internalProjectName}
+            </span>
+          )}
           <div className="flex items-center gap-1 mt-0.5 flex-wrap">
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${priorityConfig.color}`}>
               {priorityConfig.label}

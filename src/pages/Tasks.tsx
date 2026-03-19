@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem, Employee } from '../types';
+import { InternalProject } from '../types/internalProject';
 import {
   getAllCompanyTasks,
   createTask,
@@ -24,6 +25,8 @@ import {
   deleteTask,
   getEmployees,
 } from '../services/firebase';
+import { getInternalProjects } from '../services/internalProjectService';
+import { getProjectColorMeta } from './InternalProjects';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -44,6 +47,7 @@ const Tasks: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [companyEmployees, setCompanyEmployees] = useState<Employee[]>([]);
+  const [internalProjects, setInternalProjects] = useState<InternalProject[]>([]);
   const [editingTask, setEditingTask] = useState<BusinessTask | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
@@ -67,6 +71,7 @@ const Tasks: React.FC = () => {
     checklist: [] as TaskChecklistItem[],
     assignedTo: [] as string[],
     estimatedHours: '' as string,
+    internalProjectId: '' as string,
   });
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
@@ -74,6 +79,7 @@ const Tasks: React.FC = () => {
     if (user && selectedCompany) {
       loadTasks();
       getEmployees(user.uid, selectedCompany.id).then(setCompanyEmployees).catch(() => {});
+      getInternalProjects(user.uid, selectedCompany.id).then(setInternalProjects).catch(() => {});
     }
   }, [user, selectedCompany]);
 
@@ -120,6 +126,8 @@ const Tasks: React.FC = () => {
         progress,
         assignedTo: formData.assignedTo,
         estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours) : undefined,
+        internalProjectId: formData.internalProjectId || undefined,
+        internalProjectName: internalProjects.find(p => p.id === formData.internalProjectId)?.name || undefined,
       });
 
       success('Taak aangemaakt');
@@ -144,6 +152,8 @@ const Tasks: React.FC = () => {
         progress,
         assignedTo: formData.assignedTo,
         estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours) : undefined,
+        internalProjectId: formData.internalProjectId || undefined,
+        internalProjectName: internalProjects.find(p => p.id === formData.internalProjectId)?.name || undefined,
       });
 
       success('Taak bijgewerkt');
@@ -198,6 +208,7 @@ const Tasks: React.FC = () => {
       checklist: task.checklist || [],
       assignedTo: task.assignedTo || [],
       estimatedHours: task.estimatedHours !== undefined ? String(task.estimatedHours) : '',
+      internalProjectId: task.internalProjectId || '',
     });
     setShowTaskModal(true);
   };
@@ -215,6 +226,7 @@ const Tasks: React.FC = () => {
       checklist: [],
       assignedTo: [],
       estimatedHours: '',
+      internalProjectId: '',
     });
     setNewSubtaskTitle('');
     setEditingTask(null);
@@ -749,6 +761,42 @@ const Tasks: React.FC = () => {
                     className="w-32 rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hoelang de medewerker er mee bezig mag zijn</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Intern project koppeling */}
+          {internalProjects.length > 0 && (
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Intern project (optioneel)
+              </label>
+              <select
+                value={formData.internalProjectId}
+                onChange={e => setFormData({ ...formData, internalProjectId: e.target.value })}
+                className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+              >
+                <option value="">— Geen project —</option>
+                {internalProjects.map(p => {
+                  const cm = getProjectColorMeta(p.color);
+                  return (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  );
+                })}
+              </select>
+              {formData.internalProjectId && (
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  {(() => {
+                    const proj = internalProjects.find(p => p.id === formData.internalProjectId);
+                    const cm = getProjectColorMeta(proj?.color);
+                    return (
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cm.bg} ${cm.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${cm.dot}`} />
+                        {proj?.name}
+                      </span>
+                    );
+                  })()}
                 </div>
               )}
             </div>
