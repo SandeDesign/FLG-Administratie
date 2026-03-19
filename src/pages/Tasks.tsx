@@ -13,6 +13,11 @@ import {
   CheckCircle2,
   Users,
   Clock,
+  List,
+  CheckCircle,
+  CalendarClock,
+  AlertCircle,
+  MinusCircle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -50,6 +55,7 @@ const Tasks: React.FC = () => {
   const [internalProjects, setInternalProjects] = useState<InternalProject[]>([]);
   const [editingTask, setEditingTask] = useState<BusinessTask | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'byEmployee'>('byEmployee');
 
   // Filters
   const [showFilters, setShowFilters] = useState(false);
@@ -368,7 +374,32 @@ const Tasks: React.FC = () => {
             {selectedCompany?.name} - {tasks.length} taken
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* View toggle */}
+          <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+            <button
+              onClick={() => setViewMode('byEmployee')}
+              className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1.5 ${
+                viewMode === 'byEmployee'
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Per medewerker
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1.5 border-l border-gray-300 dark:border-gray-600 ${
+                viewMode === 'list'
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              <List className="h-4 w-4" />
+              Lijst
+            </button>
+          </div>
           <Button
             onClick={() => setShowFilters(!showFilters)}
             variant="secondary"
@@ -464,8 +495,109 @@ const Tasks: React.FC = () => {
         </Card>
       )}
 
+      {/* Per-medewerker overzicht */}
+      {viewMode === 'byEmployee' && (
+        <div className="space-y-4">
+          {companyEmployees.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="Geen medewerkers gevonden"
+              description="Voeg medewerkers toe om taken toe te wijzen"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {companyEmployees.map(emp => {
+                const empName = [emp.personalInfo?.firstName, emp.personalInfo?.lastName].filter(Boolean).join(' ') || emp.id;
+                const empTasks = tasks.filter(t => t.assignedTo?.includes(emp.id!));
+                const completed = empTasks.filter(t => t.status === 'completed');
+                const scheduled = empTasks.filter(t => t.isScheduled && t.status !== 'completed' && t.status !== 'cancelled');
+                const unscheduled = empTasks.filter(t => !t.isScheduled && t.status !== 'completed' && t.status !== 'cancelled' && t.status !== 'overdue');
+                const overdue = empTasks.filter(t => t.status === 'overdue' || (!t.isScheduled && t.status !== 'completed' && t.status !== 'cancelled' && new Date(t.dueDate) < new Date()));
+
+                const statGroups = [
+                  { label: 'Voltooid', count: completed.length, tasks: completed, icon: CheckCircle, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800' },
+                  { label: 'Ingepland', count: scheduled.length, tasks: scheduled, icon: CalendarClock, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800' },
+                  { label: 'Niet ingepland', count: unscheduled.length, tasks: unscheduled, icon: MinusCircle, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800' },
+                  { label: 'Te laat', count: overdue.length, tasks: overdue, icon: AlertCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800' },
+                ];
+
+                return (
+                  <Card key={emp.id} className="!p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-xs font-semibold text-primary-700 dark:text-primary-300">
+                          {empName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{empName}</span>
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{empTasks.length} taken</span>
+                    </div>
+
+                    {empTasks.length === 0 ? (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-3">Geen taken toegewezen</p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {statGroups.map(group => {
+                          const Icon = group.icon;
+                          return (
+                            <div key={group.label} className={`rounded-lg border p-2.5 ${group.bg} ${group.border}`}>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <Icon className={`h-3.5 w-3.5 ${group.color}`} />
+                                <span className={`text-xs font-semibold ${group.color}`}>{group.label}</span>
+                                <span className={`ml-auto text-sm font-bold ${group.color}`}>{group.count}</span>
+                              </div>
+                              {group.tasks.length > 0 && (
+                                <ul className="space-y-0.5">
+                                  {group.tasks.slice(0, 3).map(t => (
+                                    <li key={t.id} className="text-[10px] text-gray-600 dark:text-gray-400 truncate leading-tight">
+                                      • {t.title}
+                                    </li>
+                                  ))}
+                                  {group.tasks.length > 3 && (
+                                    <li className="text-[10px] text-gray-400 dark:text-gray-500">+{group.tasks.length - 3} meer</li>
+                                  )}
+                                </ul>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Niet-toegewezen taken */}
+          {(() => {
+            const unassigned = tasks.filter(t => !t.assignedTo || t.assignedTo.length === 0);
+            if (unassigned.length === 0) return null;
+            return (
+              <div className="mt-2">
+                <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-1.5">
+                  <Users className="h-4 w-4" />
+                  Niet toegewezen ({unassigned.length})
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {unassigned.map(t => (
+                    <div key={t.id} className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+                      <Circle className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                      <span className="truncate">{t.title}</span>
+                      <button onClick={() => openEditModal(t)} className="ml-auto p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded flex-shrink-0">
+                        <Pencil className="h-3 w-3 text-gray-400" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Tasks List */}
-      {filteredTasks.length === 0 ? (
+      {viewMode === 'list' && (filteredTasks.length === 0 ? (
         <EmptyState
           icon={ListChecks}
           title="Geen taken gevonden"
@@ -625,7 +757,7 @@ const Tasks: React.FC = () => {
             );
           })}
         </div>
-      )}
+      ))}
 
       {/* Task Modal */}
       <Modal
