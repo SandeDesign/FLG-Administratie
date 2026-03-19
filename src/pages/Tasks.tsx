@@ -110,7 +110,9 @@ const Tasks: React.FC = () => {
           }
         }
 
-        setAllPeople([...empPeople, ...nonEmpUsers]);
+        // Normaliseer naar { id, name } zodat person.id altijd bestaat (key prop + task matching)
+        const nonEmpPeople = nonEmpUsers.map(u => ({ id: u.uid, name: u.name }));
+        setAllPeople([...empPeople, ...nonEmpPeople]);
       };
       loadPeople().catch(() => {});
       getInternalProjects(user.uid, selectedCompany.id).then(setInternalProjects).catch(() => {});
