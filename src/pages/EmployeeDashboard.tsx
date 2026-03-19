@@ -20,7 +20,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { getEmployeeById } from '../services/firebase';
+import { getEmployeeById, getLeaveRequests } from '../services/firebase';
 import { getWeeklyTimesheets, getWeekNumber } from '../services/timesheetService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
@@ -32,6 +32,7 @@ const EmployeeDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [timesheets, setTimesheets] = useState<any[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [currentYear] = useState(new Date().getFullYear());
   const [currentWeek] = useState(getWeekNumber(new Date()));
 
@@ -59,6 +60,9 @@ const EmployeeDashboard: React.FC = () => {
 
         setTimesheets(allTimesheets);
 
+        const leaves = await getLeaveRequests(adminUserId, currentEmployeeId);
+        setLeaveRequests(leaves);
+
       } catch (error) {
         console.error('Error loading employee data:', error);
       } finally {
@@ -85,6 +89,12 @@ const EmployeeDashboard: React.FC = () => {
   };
 
   const stats = calculateStats();
+
+  const isRecentDate = (date: unknown, days = 14): boolean => {
+    if (!date) return false;
+    const d = (date as any)?.toDate ? (date as any).toDate() : new Date(date as string);
+    return (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24) <= days;
+  };
 
   // Chart data from real timesheets
   const hoursChartData = timesheets
@@ -253,6 +263,96 @@ const EmployeeDashboard: React.FC = () => {
               className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors"
             >
               Bekijk en herstel
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Goedgekeurde uren melding */}
+      {timesheets.filter(ts => ts.status === 'approved' && isRecentDate(ts.approvedAt)).length > 0 && (
+        <div className="rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-green-800 dark:text-green-300 text-sm mb-2">
+                {timesheets.filter(ts => ts.status === 'approved' && isRecentDate(ts.approvedAt)).length === 1
+                  ? '1 week goedgekeurd'
+                  : `${timesheets.filter(ts => ts.status === 'approved' && isRecentDate(ts.approvedAt)).length} weken goedgekeurd`}
+              </h3>
+              <div className="space-y-1.5">
+                {timesheets.filter(ts => ts.status === 'approved' && isRecentDate(ts.approvedAt)).map(ts => (
+                  <div key={ts.id} className="text-xs text-green-700 dark:text-green-400">
+                    <span className="font-semibold">Week {ts.weekNumber} ({ts.year})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Link
+              to="/employee-dashboard/timesheets"
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-semibold transition-colors"
+            >
+              Bekijk
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Afgekeurde verlof aanvragen */}
+      {leaveRequests.filter(lr => lr.status === 'rejected').length > 0 && (
+        <div className="rounded-xl border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-red-800 dark:text-red-300 text-sm mb-2">
+                {leaveRequests.filter(lr => lr.status === 'rejected').length === 1
+                  ? '1 verlofaanvraag afgekeurd'
+                  : `${leaveRequests.filter(lr => lr.status === 'rejected').length} verlofaanvragen afgekeurd`}
+              </h3>
+              <div className="space-y-1.5">
+                {leaveRequests.filter(lr => lr.status === 'rejected').map(lr => (
+                  <div key={lr.id} className="text-xs text-red-700 dark:text-red-400">
+                    <span className="font-semibold">{lr.leaveType || 'Verlof'}</span>
+                    {lr.startDate && <span className="ml-1.5">— {new Date(lr.startDate?.toDate ? lr.startDate.toDate() : lr.startDate).toLocaleDateString('nl-NL')}</span>}
+                    {lr.rejectedReason && <span className="ml-1.5 text-red-600 dark:text-red-500">— {lr.rejectedReason}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Link
+              to="/employee-dashboard/leave"
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors"
+            >
+              Bekijk
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Goedgekeurde verlof aanvragen */}
+      {leaveRequests.filter(lr => lr.status === 'approved' && isRecentDate(lr.approvedAt)).length > 0 && (
+        <div className="rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-green-800 dark:text-green-300 text-sm mb-2">
+                {leaveRequests.filter(lr => lr.status === 'approved' && isRecentDate(lr.approvedAt)).length === 1
+                  ? '1 verlofaanvraag goedgekeurd'
+                  : `${leaveRequests.filter(lr => lr.status === 'approved' && isRecentDate(lr.approvedAt)).length} verlofaanvragen goedgekeurd`}
+              </h3>
+              <div className="space-y-1.5">
+                {leaveRequests.filter(lr => lr.status === 'approved' && isRecentDate(lr.approvedAt)).map(lr => (
+                  <div key={lr.id} className="text-xs text-green-700 dark:text-green-400">
+                    <span className="font-semibold">{lr.leaveType || 'Verlof'}</span>
+                    {lr.startDate && <span className="ml-1.5">— {new Date(lr.startDate?.toDate ? lr.startDate.toDate() : lr.startDate).toLocaleDateString('nl-NL')}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Link
+              to="/employee-dashboard/leave"
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-semibold transition-colors"
+            >
+              Bekijk
             </Link>
           </div>
         </div>
