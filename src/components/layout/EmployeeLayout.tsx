@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, LogOut, Calendar, HeartPulse, Receipt, Clock, Menu, X, Home, Settings } from 'lucide-react';
+import { User, LogOut, Calendar, HeartPulse, Receipt, Clock, Menu, X, Home, Settings, CalendarDays, ListChecks } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -12,17 +12,20 @@ interface EmployeeLayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/employee-dashboard', icon: Home },
+  { name: 'Uren', href: '/employee-dashboard/timesheets', icon: Clock },
+  { name: 'Agenda', href: '/employee-dashboard/agenda', icon: CalendarDays },
+  { name: 'Mijn Taken', href: '/employee-dashboard/tasks', icon: ListChecks },
+  { name: 'Declaraties', href: '/employee-dashboard/expenses', icon: Receipt },
   { name: 'Verlof', href: '/employee-dashboard/leave', icon: Calendar },
   { name: 'Verzuim', href: '/employee-dashboard/absence', icon: HeartPulse },
-  { name: 'Declaraties', href: '/employee-dashboard/expenses', icon: Receipt },
-  { name: 'Uren', href: '/employee-dashboard/timesheets', icon: Clock },
 ];
 
-// Mobile bottom nav - 4 main items
+// Mobile bottom nav - 4 main items (uren, agenda, declaraties, profiel)
 const bottomNavItems = [
   { name: 'Home', href: '/employee-dashboard', icon: Home },
   { name: 'Uren', href: '/employee-dashboard/timesheets', icon: Clock },
-  { name: 'Verlof', href: '/employee-dashboard/leave', icon: Calendar },
+  { name: 'Agenda', href: '/employee-dashboard/agenda', icon: CalendarDays },
+  { name: 'Taken', href: '/employee-dashboard/tasks', icon: ListChecks },
   { name: 'Profiel', href: '/settings', icon: Settings },
 ];
 

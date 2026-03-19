@@ -13,6 +13,9 @@ import {
   Target,
   Award,
   Briefcase,
+  AlertCircle,
+  CalendarDays,
+  ListChecks,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -123,6 +126,33 @@ const EmployeeDashboard: React.FC = () => {
 
   const quickActions = [
     {
+      title: 'Uren',
+      subtitle: 'Gewerkte uren',
+      icon: Clock,
+      href: '/employee-dashboard/timesheets',
+      bgGradient: 'from-amber-500 to-amber-600',
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600'
+    },
+    {
+      title: 'Agenda',
+      subtitle: 'Taken inplannen',
+      icon: CalendarDays,
+      href: '/employee-dashboard/agenda',
+      bgGradient: 'from-blue-500 to-blue-600',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600'
+    },
+    {
+      title: 'Declaraties',
+      subtitle: 'Onkosten indienen',
+      icon: Receipt,
+      href: '/employee-dashboard/expenses',
+      bgGradient: 'from-emerald-500 to-emerald-600',
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-600'
+    },
+    {
       title: 'Verlof',
       subtitle: 'Aanvragen en saldo',
       icon: Calendar,
@@ -139,24 +169,6 @@ const EmployeeDashboard: React.FC = () => {
       bgGradient: 'from-red-500 to-red-600',
       iconBg: 'bg-red-100',
       iconColor: 'text-red-600'
-    },
-    {
-      title: 'Declaraties',
-      subtitle: 'Onkosten indienen',
-      icon: Receipt,
-      href: '/employee-dashboard/expenses',
-      bgGradient: 'from-emerald-500 to-emerald-600',
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-600'
-    },
-    {
-      title: 'Uren',
-      subtitle: 'Gewerkte uren',
-      icon: Clock,
-      href: '/employee-dashboard/timesheets',
-      bgGradient: 'from-amber-500 to-amber-600',
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-600'
     },
   ];
 
@@ -214,13 +226,45 @@ const EmployeeDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Afgekeurde weken waarschuwing */}
+      {timesheets.filter(ts => ts.status === 'rejected').length > 0 && (
+        <div className="rounded-xl border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-red-800 dark:text-red-300 text-sm mb-2">
+                {timesheets.filter(ts => ts.status === 'rejected').length === 1
+                  ? '1 week afgekeurd — actie vereist'
+                  : `${timesheets.filter(ts => ts.status === 'rejected').length} weken afgekeurd — actie vereist`}
+              </h3>
+              <div className="space-y-1.5">
+                {timesheets.filter(ts => ts.status === 'rejected').map(ts => (
+                  <div key={ts.id} className="text-xs text-red-700 dark:text-red-400">
+                    <span className="font-semibold">Week {ts.weekNumber} ({ts.year})</span>
+                    {ts.rejectionReason && (
+                      <span className="ml-1.5 text-red-600 dark:text-red-500">— {ts.rejectionReason}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Link
+              to="/employee-dashboard/timesheets"
+              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition-colors"
+            >
+              Bekijk en herstel
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
           <Zap className="h-6 w-6 text-amber-500" />
           Snelle Acties
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
           {quickActions.map((action, index) => {
             const Icon = action.icon;
             return (

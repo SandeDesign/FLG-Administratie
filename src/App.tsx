@@ -66,6 +66,8 @@ import Tasks from './pages/Tasks';
 // ✅ BANK STATEMENT IMPORT - NIEUW!
 import BankStatementImport from './pages/BankStatementImport';
 import InternalProjects from './pages/InternalProjects';
+import EmployeeAgenda from './pages/EmployeeAgenda';
+import EmployeeTasks from './pages/EmployeeTasks';
 import { AppProvider } from './contexts/AppContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
 import { PageTitleProvider } from './contexts/PageTitleContext';
@@ -227,6 +229,8 @@ function App() {
                             <Route path="absence" element={<Absence />} />
                             <Route path="expenses" element={<Expenses />} />
                             <Route path="timesheets" element={<Timesheets />} />
+                            <Route path="agenda" element={<EmployeeAgenda />} />
+                            <Route path="tasks" element={<EmployeeTasks />} />
                             <Route path="payslips" element={<Payslips />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>

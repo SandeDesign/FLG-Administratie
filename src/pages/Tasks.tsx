@@ -11,15 +11,18 @@ import {
   ChevronRight,
   Circle,
   CheckCircle2,
+  Users,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem } from '../types';
+import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem, Employee } from '../types';
 import {
   getAllCompanyTasks,
   createTask,
   updateTask,
   deleteTask,
+  getEmployees,
 } from '../services/firebase';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -40,6 +43,7 @@ const Tasks: React.FC = () => {
   const [tasks, setTasks] = useState<BusinessTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [companyEmployees, setCompanyEmployees] = useState<Employee[]>([]);
   const [editingTask, setEditingTask] = useState<BusinessTask | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
@@ -61,12 +65,15 @@ const Tasks: React.FC = () => {
     frequency: 'monthly' as TaskFrequency,
     recurrenceDay: 1,
     checklist: [] as TaskChecklistItem[],
+    assignedTo: [] as string[],
+    estimatedHours: '' as string,
   });
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
   useEffect(() => {
     if (user && selectedCompany) {
       loadTasks();
+      getEmployees(user.uid, selectedCompany.id).then(setCompanyEmployees).catch(() => {});
     }
   }, [user, selectedCompany]);
 
@@ -111,6 +118,8 @@ const Tasks: React.FC = () => {
         companyId: selectedCompany.id,
         dueDate: new Date(formData.dueDate),
         progress,
+        assignedTo: formData.assignedTo,
+        estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours) : undefined,
       });
 
       success('Taak aangemaakt');
@@ -133,6 +142,8 @@ const Tasks: React.FC = () => {
         ...formData,
         dueDate: new Date(formData.dueDate),
         progress,
+        assignedTo: formData.assignedTo,
+        estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours) : undefined,
       });
 
       success('Taak bijgewerkt');
@@ -185,6 +196,8 @@ const Tasks: React.FC = () => {
       frequency: task.frequency || 'monthly',
       recurrenceDay: task.recurrenceDay || 1,
       checklist: task.checklist || [],
+      assignedTo: task.assignedTo || [],
+      estimatedHours: task.estimatedHours !== undefined ? String(task.estimatedHours) : '',
     });
     setShowTaskModal(true);
   };
@@ -200,6 +213,8 @@ const Tasks: React.FC = () => {
       frequency: 'monthly',
       recurrenceDay: 1,
       checklist: [],
+      assignedTo: [],
+      estimatedHours: '',
     });
     setNewSubtaskTitle('');
     setEditingTask(null);
@@ -688,6 +703,56 @@ const Tasks: React.FC = () => {
               className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
+
+          {/* Toewijzen aan medewerkers */}
+          {companyEmployees.length > 0 && (
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
+                <Users className="h-4 w-4" />
+                Toewijzen aan medewerkers
+              </label>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-600 p-2">
+                {companyEmployees.map(emp => {
+                  const name = [emp.personalInfo?.firstName, emp.personalInfo?.lastName].filter(Boolean).join(' ') || emp.id;
+                  const checked = formData.assignedTo.includes(emp.id!);
+                  return (
+                    <label key={emp.id} className="flex items-center gap-2 cursor-pointer py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          const next = checked
+                            ? formData.assignedTo.filter(id => id !== emp.id)
+                            : [...formData.assignedTo, emp.id!];
+                          setFormData({ ...formData, assignedTo: next });
+                        }}
+                        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {formData.assignedTo.length > 0 && (
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" />
+                    Verwachte duur (uren)
+                  </label>
+                  <input
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    value={formData.estimatedHours}
+                    onChange={(e) => setFormData({ ...formData, estimatedHours: e.target.value })}
+                    placeholder="bijv. 2.5"
+                    className="w-32 rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Hoelang de medewerker er mee bezig mag zijn</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Subtaken sectie */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">

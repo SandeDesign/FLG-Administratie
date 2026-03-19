@@ -877,7 +877,8 @@ export interface BusinessTask {
   priority: TaskPriority;
 
   // Toewijzing
-  assignedTo?: string[];  // User IDs van toegewezen personen
+  assignedTo?: string[];  // Employee IDs (Firestore) van toegewezen medewerkers
+  estimatedHours?: number;  // Verwachte duur in uren (bepaald door admin)
   createdBy: string;  // User ID van maker
 
   // Datums
