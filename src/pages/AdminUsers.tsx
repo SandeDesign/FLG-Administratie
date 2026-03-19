@@ -19,6 +19,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { repairAdminUsers } from '../services/firebase';
 
 interface UserRole {
   id: string;
@@ -39,6 +40,7 @@ const AdminUsers: React.FC = () => {
   const { success, error: showError } = useToast();
   const [users, setUsers] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [repairing, setRepairing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
 
@@ -115,8 +117,10 @@ const AdminUsers: React.FC = () => {
   }, [user, adminUserId, showError]);
 
   useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+    if (adminUserId) {
+      repairAdminUsers(adminUserId).then(() => loadUsers());
+    }
+  }, [loadUsers, adminUserId]);
 
   const filteredUsers = users.filter(userRole => {
     const email = userRole.email || '';
@@ -180,6 +184,20 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const handleRepairUsers = async () => {
+    if (!adminUserId) return;
+    setRepairing(true);
+    try {
+      await repairAdminUsers(adminUserId);
+      await loadUsers();
+      success('Gesynchroniseerd', 'Gebruikersboom is bijgewerkt');
+    } catch {
+      showError('Fout', 'Synchronisatie mislukt');
+    } finally {
+      setRepairing(false);
+    }
+  };
+
   const getRoleColor = (role: UserRole['role']) => {
     switch (role) {
       case 'admin': return 'text-red-600 bg-red-100';
@@ -224,9 +242,18 @@ const AdminUsers: React.FC = () => {
             Beheer gebruikersrollen en toegang ({users.length} gebruikers gevonden)
           </p>
         </div>
-        <Button icon={Plus}>
-          Nieuwe Gebruiker
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={handleRepairUsers}
+            disabled={repairing}
+          >
+            {repairing ? 'Synchroniseren...' : 'Gebruikers synchroniseren'}
+          </Button>
+          <Button icon={Plus}>
+            Nieuwe Gebruiker
+          </Button>
+        </div>
       </div>
 
       {/* Debug Info */}
