@@ -13,7 +13,11 @@ export interface WeeklyTasksReminderRef {
   openManually: () => void;
 }
 
-const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
+interface WeeklyTasksReminderProps {
+  employeeId?: string;
+}
+
+const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef, WeeklyTasksReminderProps>(({ employeeId }, ref) => {
   const { user, userRole } = useAuth();
   const { selectedCompany } = useApp();
   const navigate = useNavigate();
@@ -42,6 +46,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
 
         const tasksThisWeek = allTasks.filter(task => {
           if (task.status === 'completed' || task.status === 'cancelled') return false;
+          if (employeeId && !task.assignedTo?.includes(employeeId)) return false;
           const dueDate = new Date(task.dueDate);
           return dueDate < today || (dueDate >= weekStart && dueDate < weekEnd);
         });
@@ -107,6 +112,7 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef>((props, ref) => {
 
       const tasksThisWeek = allTasks.filter(task => {
         if (task.status === 'completed' || task.status === 'cancelled') return false;
+        if (employeeId && !task.assignedTo?.includes(employeeId)) return false;
 
         const dueDate = new Date(task.dueDate);
 

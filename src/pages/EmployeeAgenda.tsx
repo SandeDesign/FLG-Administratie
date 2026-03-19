@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import { EventInput, EventClickArg, DateSelectArg } from '@fullcalendar/core';
 import {
-  Link2,
-  Link2Off,
   CalendarDays,
-  LayoutGrid,
+  Calendar,
   AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,23 +13,13 @@ import { useApp } from '../contexts/AppContext';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import { useToast } from '../hooks/useToast';
 import { BusinessTask } from '../types';
-import { MicrosoftCalendarEvent } from '../types/microsoft';
 import {
   getTasksAssignedToUser,
-  getAllCompanyTasks,
   scheduleTask,
   unscheduleTask,
   updateTask,
   generateRecurringTasks,
 } from '../services/firebase';
-import {
-  isMicrosoftConnected,
-  getMicrosoftCalendarEvents,
-  getMicrosoftAccount,
-  loginMicrosoft,
-  disconnectMicrosoft,
-  saveMicrosoftConnection,
-} from '../services/microsoftService';
 import {
   checkAndShowSchedulingReminders,
   getNextFridayDeadline,
@@ -41,7 +28,6 @@ import { PRIORITY_CONFIG } from '../utils/taskConfig';
 import TaskScheduleSidebar from '../components/tasks/TaskScheduleSidebar';
 import ScheduledTaskPopover from '../components/tasks/ScheduledTaskPopover';
 import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 const EmployeeAgenda: React.FC = () => {
@@ -56,13 +42,8 @@ const EmployeeAgenda: React.FC = () => {
   // State
   const [loading, setLoading] = useState(false);
   const [allTasks, setAllTasks] = useState<BusinessTask[]>([]);
-  const [microsoftEvents, setMicrosoftEvents] = useState<MicrosoftCalendarEvent[]>([]);
-  const [msConnected, setMsConnected] = useState(false);
-  const [msAccount, setMsAccount] = useState<string>('');
-  const [msLoading, setMsLoading] = useState(false);
-  const [currentView, setCurrentView] = useState<'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
+  const [currentView, setCurrentView] = useState<'timeGridDay' | 'timeGridWeek'>('timeGridWeek');
   const [selectedTask, setSelectedTask] = useState<BusinessTask | null>(null);
-  const [selectedMsEvent, setSelectedMsEvent] = useState<MicrosoftCalendarEvent | null>(null);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [schedulingReminder, setSchedulingReminder] = useState<{ level: string; count: number } | null>(null);
@@ -70,6 +51,9 @@ const EmployeeAgenda: React.FC = () => {
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleStartTime, setScheduleStartTime] = useState('09:00');
   const [scheduleEndTime, setScheduleEndTime] = useState('10:00');
+
+  // The userId to use for task access checks (Firestore employee doc ID, not Auth UID)
+  const taskUserId = currentEmployeeId || user?.uid || '';
 
   const unscheduledTasks = allTasks.filter(
     t => !t.isScheduled && t.status !== 'completed' && t.status !== 'cancelled'
@@ -104,14 +88,12 @@ const EmployeeAgenda: React.FC = () => {
   useEffect(() => {
     if (user && selectedCompany) {
       loadTasks();
-      checkMicrosoftConnection();
       checkReminders();
     }
   }, [user, selectedCompany]);
 
   const loadTasks = async () => {
     if (!user || !selectedCompany || !adminUserId) {
-      console.warn('[Agenda] Kan taken niet laden:', { user: !!user, selectedCompany: selectedCompany?.id });
       return;
     }
     try {
@@ -124,41 +106,13 @@ const EmployeeAgenda: React.FC = () => {
       }
 
       // Haal taken op die aan deze medewerker zijn toegewezen
-      const assignedTasks = await getTasksAssignedToUser(currentEmployeeId || user.uid, selectedCompany.id);
+      const assignedTasks = await getTasksAssignedToUser(taskUserId, selectedCompany.id);
       setAllTasks(assignedTasks as BusinessTask[]);
     } catch (err) {
       console.error('[Agenda] Error laden taken:', err);
       error('Fout bij laden van taken');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const checkMicrosoftConnection = async () => {
-    try {
-      const connected = await isMicrosoftConnected();
-      setMsConnected(connected);
-      if (connected) {
-        const account = await getMicrosoftAccount();
-        setMsAccount(account?.username || '');
-        loadMicrosoftEvents();
-      }
-    } catch {
-      // Microsoft niet beschikbaar
-    }
-  };
-
-  const loadMicrosoftEvents = async () => {
-    try {
-      const calApi = calendarRef.current?.getApi();
-      if (!calApi) return;
-
-      const start = calApi.view.activeStart;
-      const end = calApi.view.activeEnd;
-      const events = await getMicrosoftCalendarEvents(start, end);
-      setMicrosoftEvents(events);
-    } catch (err) {
-      console.error('Error loading Microsoft events:', err);
     }
   };
 
@@ -174,42 +128,9 @@ const EmployeeAgenda: React.FC = () => {
     }
   };
 
-  const handleMicrosoftConnect = async () => {
-    if (!user) return;
-    setMsLoading(true);
-    try {
-      const account = await loginMicrosoft();
-      if (account) {
-        await saveMicrosoftConnection(user.uid, account);
-        setMsConnected(true);
-        setMsAccount(account.username || '');
-        success('Microsoft account gekoppeld');
-        loadMicrosoftEvents();
-      }
-    } catch (err) {
-      console.error('Error connecting Microsoft:', err);
-      error('Fout bij koppelen van Microsoft account');
-    } finally {
-      setMsLoading(false);
-    }
-  };
-
-  const handleMicrosoftDisconnect = async () => {
-    if (!user) return;
-    try {
-      await disconnectMicrosoft(user.uid);
-      setMsConnected(false);
-      setMsAccount('');
-      setMicrosoftEvents([]);
-      success('Microsoft account ontkoppeld');
-    } catch (err) {
-      error('Fout bij ontkoppelen');
-    }
-  };
-
   // Convert tasks to FullCalendar events
   const getCalendarEvents = useCallback((): EventInput[] => {
-    const taskEvents: EventInput[] = scheduledTasks.map(task => {
+    return scheduledTasks.map(task => {
       const priorityColor = task.priority === 'urgent' ? '#ef4444'
         : task.priority === 'high' ? '#f97316'
         : task.priority === 'medium' ? '#3b82f6'
@@ -233,40 +154,17 @@ const EmployeeAgenda: React.FC = () => {
         },
       };
     });
-
-    const msEvents: EventInput[] = microsoftEvents.map(event => ({
-      id: `ms-${event.id}`,
-      title: event.subject,
-      start: event.start.dateTime,
-      end: event.end.dateTime,
-      backgroundColor: '#8b5cf6',
-      borderColor: '#7c3aed',
-      textColor: '#ffffff',
-      editable: false,
-      extendedProps: {
-        type: 'microsoft',
-        msEvent: event,
-      },
-    }));
-
-    return [...taskEvents, ...msEvents];
-  }, [scheduledTasks, microsoftEvents]);
+  }, [scheduledTasks]);
 
   // Handle event click (show popover)
   const handleEventClick = (info: EventClickArg) => {
+    if (info.event.extendedProps.type !== 'task') return;
     const rect = info.el.getBoundingClientRect();
     setPopoverPosition({
       top: rect.top + window.scrollY,
       left: Math.min(rect.right + 8, window.innerWidth - 340),
     });
-
-    if (info.event.extendedProps.type === 'microsoft') {
-      setSelectedMsEvent(info.event.extendedProps.msEvent);
-      setSelectedTask(null);
-    } else {
-      setSelectedTask(info.event.extendedProps.task);
-      setSelectedMsEvent(null);
-    }
+    setSelectedTask(info.event.extendedProps.task);
   };
 
   // Handle drop from external sidebar — remove element to prevent duplicates
@@ -282,13 +180,12 @@ const EmployeeAgenda: React.FC = () => {
     const start = info.event.start;
     if (!start) return;
 
-    const dateStr = start.toISOString().split('T')[0];
     const startTime = start.toTimeString().substring(0, 5);
     const endDate = info.event.end || new Date(start.getTime() + 60 * 60 * 1000);
     const endTime = endDate.toTimeString().substring(0, 5);
 
     try {
-      await scheduleTask(taskId, user.uid, start, startTime, endTime);
+      await scheduleTask(taskId, taskUserId, start, startTime, endTime);
       success('Taak ingepland');
       loadTasks();
     } catch (err) {
@@ -301,7 +198,7 @@ const EmployeeAgenda: React.FC = () => {
   // Handle event drop (drag within calendar to reschedule)
   const handleEventDrop = async (info: any) => {
     const taskId = info.event.extendedProps?.task?.id;
-    if (!taskId || !user || info.event.extendedProps?.type === 'microsoft') {
+    if (!taskId || !user) {
       info.revert();
       return;
     }
@@ -314,7 +211,7 @@ const EmployeeAgenda: React.FC = () => {
     const endTime = endDate.toTimeString().substring(0, 5);
 
     try {
-      await scheduleTask(taskId, user.uid, start, startTime, endTime);
+      await scheduleTask(taskId, taskUserId, start, startTime, endTime);
       success('Taak verplaatst');
       loadTasks();
     } catch (err) {
@@ -339,23 +236,15 @@ const EmployeeAgenda: React.FC = () => {
     const endTime = end.toTimeString().substring(0, 5);
 
     try {
-      await scheduleTask(taskId, user.uid, start, startTime, endTime);
+      await scheduleTask(taskId, taskUserId, start, startTime, endTime);
       loadTasks();
     } catch (err) {
       info.revert();
     }
   };
 
-  // Handle date range change (load Microsoft events for new range)
-  const handleDatesSet = () => {
-    if (msConnected) {
-      loadMicrosoftEvents();
-    }
-  };
-
-  // Handle select (click on empty slot to schedule)
-  const handleDateSelect = (selectInfo: DateSelectArg) => {
-    // Als er niet-ingeplande taken zijn, toon de sidebar op mobile
+  // Handle select (click on empty slot — open mobile sidebar)
+  const handleDateSelect = (_selectInfo: DateSelectArg) => {
     if (unscheduledTasks.length > 0) {
       setShowMobileSidebar(true);
     }
@@ -364,7 +253,7 @@ const EmployeeAgenda: React.FC = () => {
   const handleUnschedule = async (taskId: string) => {
     if (!user) return;
     try {
-      await unscheduleTask(taskId, user.uid);
+      await unscheduleTask(taskId, taskUserId);
       setSelectedTask(null);
       success('Inplanning verwijderd');
       loadTasks();
@@ -376,7 +265,7 @@ const EmployeeAgenda: React.FC = () => {
   const handleStatusChange = async (taskId: string, status: 'in_progress' | 'completed') => {
     if (!user || !adminUserId) return;
     try {
-      await updateTask(taskId, user.uid, { status });
+      await updateTask(taskId, adminUserId, { status });
       setSelectedTask(null);
       success('Status bijgewerkt');
       loadTasks();
@@ -388,12 +277,8 @@ const EmployeeAgenda: React.FC = () => {
   const handleSidebarTaskClick = (task: BusinessTask) => {
     setShowMobileSidebar(false);
     const today = new Date().toISOString().split('T')[0];
-    const endHour = task.estimatedHours
-      ? Math.floor(9 + task.estimatedHours)
-      : 10;
-    const endMinute = task.estimatedHours
-      ? Math.round((task.estimatedHours % 1) * 60)
-      : 0;
+    const endHour = task.estimatedHours ? Math.floor(9 + task.estimatedHours) : 10;
+    const endMinute = task.estimatedHours ? Math.round((task.estimatedHours % 1) * 60) : 0;
     setScheduleDate(today);
     setScheduleStartTime('09:00');
     setScheduleEndTime(`${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`);
@@ -404,7 +289,7 @@ const EmployeeAgenda: React.FC = () => {
     if (!schedulingTask || !user || !scheduleDate) return;
     try {
       const dateObj = new Date(`${scheduleDate}T${scheduleStartTime}:00`);
-      await scheduleTask(schedulingTask.id!, user.uid, dateObj, scheduleStartTime, scheduleEndTime);
+      await scheduleTask(schedulingTask.id!, taskUserId, dateObj, scheduleStartTime, scheduleEndTime);
       setSchedulingTask(null);
       success('Taak ingepland');
       loadTasks();
@@ -435,61 +320,38 @@ const EmployeeAgenda: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* View toggle */}
+        <div className="flex items-center gap-2">
+          {/* View toggle — icons only */}
           <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
             <button
               onClick={() => {
                 setCurrentView('timeGridWeek');
                 calendarRef.current?.getApi().changeView('timeGridWeek');
               }}
-              className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1.5 ${
+              title="Weekweergave"
+              className={`px-2 py-1.5 flex items-center justify-center ${
                 currentView === 'timeGridWeek'
                   ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
               <CalendarDays className="h-4 w-4" />
-              Week
             </button>
             <button
               onClick={() => {
-                setCurrentView('dayGridMonth');
-                calendarRef.current?.getApi().changeView('dayGridMonth');
+                setCurrentView('timeGridDay');
+                calendarRef.current?.getApi().changeView('timeGridDay');
               }}
-              className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1.5 border-l border-gray-300 dark:border-gray-600 ${
-                currentView === 'dayGridMonth'
+              title="Dagweergave"
+              className={`px-2 py-1.5 flex items-center justify-center border-l border-gray-300 dark:border-gray-600 ${
+                currentView === 'timeGridDay'
                   ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
-              <LayoutGrid className="h-4 w-4" />
-              Maand
+              <Calendar className="h-4 w-4" />
             </button>
           </div>
-
-          {/* Microsoft connect */}
-          {msConnected ? (
-            <Button
-              variant="secondary"
-              onClick={handleMicrosoftDisconnect}
-              icon={Link2Off}
-              className="text-xs"
-            >
-              <span className="hidden sm:inline">{msAccount || 'Microsoft'}</span>
-              <span className="sm:hidden">MS</span>
-            </Button>
-          ) : (
-            <Button
-              onClick={handleMicrosoftConnect}
-              variant="secondary"
-              icon={Link2}
-              disabled={msLoading}
-              className="text-xs"
-            >
-              {msLoading ? 'Verbinden...' : 'Microsoft koppelen'}
-            </Button>
-          )}
 
           {/* Mobile sidebar toggle */}
           {unscheduledTasks.length > 0 && (
@@ -498,7 +360,7 @@ const EmployeeAgenda: React.FC = () => {
               className="lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-sm font-medium"
             >
               <AlertTriangle className="h-4 w-4" />
-              {unscheduledTasks.length} open
+              {unscheduledTasks.length}
             </button>
           )}
         </div>
@@ -546,7 +408,7 @@ const EmployeeAgenda: React.FC = () => {
           <Card className="employee-agenda-calendar">
             <FullCalendar
               ref={calendarRef}
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              plugins={[timeGridPlugin, interactionPlugin]}
               initialView="timeGridWeek"
               locale="nl"
               headerToolbar={{
@@ -554,26 +416,18 @@ const EmployeeAgenda: React.FC = () => {
                 center: 'title',
                 right: '',
               }}
-              buttonText={{
-                today: 'Vandaag',
-                month: 'Maand',
-                week: 'Week',
-                day: 'Dag',
-              }}
+              buttonText={{ today: 'Vandaag' }}
               slotMinTime="06:00:00"
               slotMaxTime="22:00:00"
               slotDuration="00:30:00"
               slotLabelInterval="01:00:00"
-              slotLabelFormat={{
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              }}
+              slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
               allDaySlot={true}
               allDayText="Hele dag"
               weekNumbers={true}
               weekNumberFormat={{ week: 'numeric' }}
               firstDay={1}
+              weekends={false}
               nowIndicator={true}
               editable={true}
               droppable={true}
@@ -587,15 +441,10 @@ const EmployeeAgenda: React.FC = () => {
               eventReceive={handleEventReceive}
               drop={handleDrop}
               select={handleDateSelect}
-              datesSet={handleDatesSet}
               height="auto"
               expandRows={true}
               dayMaxEvents={3}
-              eventTimeFormat={{
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              }}
+              eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
             />
           </Card>
         </div>
@@ -688,19 +537,18 @@ const EmployeeAgenda: React.FC = () => {
       )}
 
       {/* Task Popover */}
-      {(selectedTask || selectedMsEvent) && (
-        <div className="fixed inset-0 z-40" onClick={() => { setSelectedTask(null); setSelectedMsEvent(null); }}>
+      {selectedTask && (
+        <div className="fixed inset-0 z-40" onClick={() => setSelectedTask(null)}>
           <div
             className="absolute"
             style={{ top: popoverPosition.top, left: popoverPosition.left }}
             onClick={(e) => e.stopPropagation()}
           >
             <ScheduledTaskPopover
-              task={selectedTask || undefined}
-              microsoftEvent={selectedMsEvent || undefined}
-              onClose={() => { setSelectedTask(null); setSelectedMsEvent(null); }}
-              onUnschedule={selectedTask ? handleUnschedule : undefined}
-              onStatusChange={selectedTask ? handleStatusChange : undefined}
+              task={selectedTask}
+              onClose={() => setSelectedTask(null)}
+              onUnschedule={handleUnschedule}
+              onStatusChange={handleStatusChange}
             />
           </div>
         </div>

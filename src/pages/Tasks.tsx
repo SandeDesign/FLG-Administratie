@@ -18,6 +18,7 @@ import {
   CalendarClock,
   AlertCircle,
   MinusCircle,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -43,8 +44,8 @@ import { isInQuarter } from '../utils/dateFilters';
 import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG, FREQUENCY_LABELS, FREQUENCY_CONFIG } from '../utils/taskConfig';
 
 const Tasks: React.FC = () => {
-  const { user } = useAuth();
-  const { selectedCompany, selectedYear, selectedQuarter } = useApp();
+  const { user, userRole, adminUserId } = useAuth();
+  const { selectedCompany, selectedYear, selectedQuarter, companies } = useApp();
   const { success, error } = useToast();
   usePageTitle('Taken');
 
@@ -677,6 +678,18 @@ const Tasks: React.FC = () => {
                             <Calendar className="h-3 w-3" />
                             {formatDate(task.dueDate)}
                           </span>
+
+                          {/* Bedrijfsnaam badge voor admin/co-admin */}
+                          {(userRole === 'admin' || (adminUserId && adminUserId !== user?.uid)) && (() => {
+                            const company = companies.find(c => c.id === task.companyId);
+                            if (!company || company.id === selectedCompany?.id) return null;
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+                                <Building2 className="h-3 w-3" />
+                                {company.name}
+                              </span>
+                            );
+                          })()}
 
                           {task.checklist && task.checklist.length > 0 && (
                             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-700">

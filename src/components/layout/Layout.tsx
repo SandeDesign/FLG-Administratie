@@ -26,7 +26,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const [periodDropdownOpen, setPeriodDropdownOpen] = useState(false);
   const { userRole } = useAuth();
-  const { companies, selectedCompany, setSelectedCompany, selectedYear, setSelectedYear, selectedQuarter, setSelectedQuarter } = useApp();
+  const { companies, selectedCompany, setSelectedCompany, selectedYear, setSelectedYear, selectedQuarter, setSelectedQuarter, currentEmployeeId } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const tasksReminderRef = useRef<WeeklyTasksReminderRef>(null);
@@ -60,7 +60,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       />
 
       {/* Weekly Tasks Reminder */}
-      <WeeklyTasksReminder ref={tasksReminderRef} />
+      <WeeklyTasksReminder ref={tasksReminderRef} employeeId={currentEmployeeId || undefined} />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
