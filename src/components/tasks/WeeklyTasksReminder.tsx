@@ -15,9 +15,10 @@ export interface WeeklyTasksReminderRef {
 
 interface WeeklyTasksReminderProps {
   employeeId?: string;
+  userId?: string;
 }
 
-const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef, WeeklyTasksReminderProps>(({ employeeId }, ref) => {
+const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef, WeeklyTasksReminderProps>(({ employeeId, userId }, ref) => {
   const { user, userRole } = useAuth();
   const { selectedCompany } = useApp();
   const navigate = useNavigate();
@@ -46,7 +47,8 @@ const WeeklyTasksReminder = forwardRef<WeeklyTasksReminderRef, WeeklyTasksRemind
 
         const tasksThisWeek = allTasks.filter(task => {
           if (task.status === 'completed' || task.status === 'cancelled') return false;
-          if (employeeId && !task.assignedTo?.includes(employeeId)) return false;
+          const filterId = employeeId || userId;
+          if (filterId && !task.assignedTo?.includes(filterId)) return false;
           const dueDate = new Date(task.dueDate);
           return dueDate < today || (dueDate >= weekStart && dueDate < weekEnd);
         });
