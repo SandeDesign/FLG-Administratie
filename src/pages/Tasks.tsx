@@ -22,14 +22,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem, Employee } from '../types';
+import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem } from '../types';
 import { InternalProject } from '../types/internalProject';
 import {
   getAllCompanyTasks,
   createTask,
   updateTask,
   deleteTask,
-  getEmployees,
+  getCompanyUsers,
 } from '../services/firebase';
 import { getInternalProjects } from '../services/internalProjectService';
 import { getProjectColorMeta } from './InternalProjects';
@@ -52,7 +52,7 @@ const Tasks: React.FC = () => {
   const [tasks, setTasks] = useState<BusinessTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [companyEmployees, setCompanyEmployees] = useState<Employee[]>([]);
+  const [allPeople, setAllPeople] = useState<Array<{ id: string; name: string }>>([]);
   const [internalProjects, setInternalProjects] = useState<InternalProject[]>([]);
   const [editingTask, setEditingTask] = useState<BusinessTask | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
@@ -85,7 +85,9 @@ const Tasks: React.FC = () => {
   useEffect(() => {
     if (user && selectedCompany) {
       loadTasks();
-      getEmployees(user.uid, selectedCompany.id).then(setCompanyEmployees).catch(() => {});
+      getCompanyUsers(selectedCompany.id)
+        .then(users => setAllPeople(users.map(u => ({ id: u.uid, name: u.displayName || u.email }))))
+        .catch(() => {});
       getInternalProjects(user.uid, selectedCompany.id).then(setInternalProjects).catch(() => {});
     }
   }, [user, selectedCompany]);
@@ -499,17 +501,17 @@ const Tasks: React.FC = () => {
       {/* Per-medewerker overzicht */}
       {viewMode === 'byEmployee' && (
         <div className="space-y-4">
-          {companyEmployees.length === 0 ? (
+          {allPeople.length === 0 ? (
             <EmptyState
               icon={Users}
-              title="Geen medewerkers gevonden"
-              description="Voeg medewerkers toe om taken toe te wijzen"
+              title="Geen gebruikers gevonden"
+              description="Voeg gebruikers toe om taken toe te wijzen"
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {companyEmployees.map(emp => {
-                const empName = [emp.personalInfo?.firstName, emp.personalInfo?.lastName].filter(Boolean).join(' ') || emp.id;
-                const empTasks = tasks.filter(t => t.assignedTo?.includes(emp.id!));
+              {allPeople.map(person => {
+                const empName = person.name;
+                const empTasks = tasks.filter(t => t.assignedTo?.includes(person.id));
                 const completed = empTasks.filter(t => t.status === 'completed');
                 const scheduled = empTasks.filter(t => t.isScheduled && t.status !== 'completed' && t.status !== 'cancelled');
                 const unscheduled = empTasks.filter(t => !t.isScheduled && t.status !== 'completed' && t.status !== 'cancelled' && t.status !== 'overdue');
@@ -523,7 +525,7 @@ const Tasks: React.FC = () => {
                 ];
 
                 return (
-                  <Card key={emp.id} className="!p-4">
+                  <Card key={person.id} className="!p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div className="h-7 w-7 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-xs font-semibold text-primary-700 dark:text-primary-300">
@@ -861,31 +863,30 @@ const Tasks: React.FC = () => {
             />
           </div>
 
-          {/* Toewijzen aan medewerkers */}
-          {companyEmployees.length > 0 && (
+          {/* Toewijzen aan */}
+          {allPeople.length > 0 && (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
                 <Users className="h-4 w-4" />
-                Toewijzen aan medewerkers
+                Toewijzen aan
               </label>
               <div className="space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-600 p-2">
-                {companyEmployees.map(emp => {
-                  const name = [emp.personalInfo?.firstName, emp.personalInfo?.lastName].filter(Boolean).join(' ') || emp.id;
-                  const checked = formData.assignedTo.includes(emp.id!);
+                {allPeople.map(person => {
+                  const checked = formData.assignedTo.includes(person.id);
                   return (
-                    <label key={emp.id} className="flex items-center gap-2 cursor-pointer py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <label key={person.id} className="flex items-center gap-2 cursor-pointer py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => {
                           const next = checked
-                            ? formData.assignedTo.filter(id => id !== emp.id)
-                            : [...formData.assignedTo, emp.id!];
+                            ? formData.assignedTo.filter(id => id !== person.id)
+                            : [...formData.assignedTo, person.id];
                           setFormData({ ...formData, assignedTo: next });
                         }}
                         className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500"
                       />
-                      <span className="text-sm text-gray-900 dark:text-gray-100">{name}</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{person.name}</span>
                     </label>
                   );
                 })}
