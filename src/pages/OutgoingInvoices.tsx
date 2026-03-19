@@ -8,7 +8,7 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import Card from '../components/ui/Card';
 import { outgoingInvoiceService, OutgoingInvoice, CompanyInfo } from '../services/outgoingInvoiceService';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import { isInQuarter } from '../utils/dateFilters';
@@ -259,6 +259,21 @@ const OutgoingInvoices: React.FC = () => {
   const clearWeekSelection = () => {
     setSelectedProductionWeekIds([]);
     setSelectedProductionWeeks([]);
+  };
+
+  const handleDeleteProductionWeek = async (weekId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm('Weet je zeker dat je deze week wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
+    try {
+      await deleteDoc(doc(db, 'productionWeeks', weekId));
+      setProductionWeeks(prev => prev.filter(w => w.id !== weekId));
+      setSelectedProductionWeekIds(prev => prev.filter(id => id !== weekId));
+      setSelectedProductionWeeks(prev => prev.filter(w => w.id !== weekId));
+      success('Verwijderd', 'Week verwijderd uit de lijst');
+    } catch (error) {
+      showError('Fout', 'Kon week niet verwijderen');
+    }
   };
 
   const addAllProductionItems = () => {
@@ -967,32 +982,43 @@ const OutgoingInvoices: React.FC = () => {
                           const invoiced = isWeekInvoiced(week);
                           const isSelected = selectedProductionWeekIds.includes(week.id);
                           return (
-                            <label
+                            <div
                               key={week.id}
-                              className={`flex items-center gap-3 px-3 py-2 cursor-pointer border-b border-amber-100 last:border-0 transition-colors ${ isSelected ? 'bg-amber-100' : invoiced ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-amber-50' }`}
+                              className={`group flex items-center gap-3 px-3 py-2 border-b border-amber-100 last:border-0 transition-colors ${ isSelected ? 'bg-amber-100' : invoiced ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-amber-50' }`}
                             >
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={() => handleWeekToggle(week.id)}
-                                className="h-4 w-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-xs font-medium ${invoiced ? 'text-gray-500 dark:text-gray-400 dark:text-gray-500' : 'text-amber-900'}`}>
-                                    Week {week.week} ({week.year})
-                                  </span>
-                                  {invoiced && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-700">
-                                      ✓ Gefactureerd
+                              <label className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleWeekToggle(week.id)}
+                                  disabled={invoiced}
+                                  className="h-4 w-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500 disabled:opacity-50"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs font-medium ${invoiced ? 'text-gray-500 dark:text-gray-400' : 'text-amber-900'}`}>
+                                      Week {week.week} ({week.year})
                                     </span>
-                                  )}
+                                    {invoiced && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-700">
+                                        ✓ Gefactureerd
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className={`text-xs ${invoiced ? 'text-gray-400 dark:text-gray-500' : 'text-amber-600'}`}>
+                                    {week.entries.length} entries - {week.totalHours}u
+                                  </span>
                                 </div>
-                                <span className={`text-xs ${invoiced ? 'text-gray-400 dark:text-gray-500' : 'text-amber-600'}`}>
-                                  {week.entries.length} entries - {week.totalHours}u
-                                </span>
-                              </div>
-                            </label>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteProductionWeek(week.id, e)}
+                                title="Week verwijderen"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           );
                         })}
                       </div>
