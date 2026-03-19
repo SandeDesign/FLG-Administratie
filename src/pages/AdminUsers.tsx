@@ -19,7 +19,9 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { repairAdminUsers } from '../services/firebase';
+import Modal from '../components/ui/Modal';
+import Input from '../components/ui/Input';
+import { repairAdminUsers, updateUserProfile } from '../services/firebase';
 
 interface UserRole {
   id: string;
@@ -43,6 +45,11 @@ const AdminUsers: React.FC = () => {
   const [repairing, setRepairing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [editingUser, setEditingUser] = useState<UserRole | null>(null);
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const loadUsers = useCallback(async () => {
     if (!user || !adminUserId) return;
@@ -195,6 +202,33 @@ const AdminUsers: React.FC = () => {
       showError('Fout', 'Synchronisatie mislukt');
     } finally {
       setRepairing(false);
+    }
+  };
+
+  const handleEditUser = (userRole: UserRole) => {
+    const nameParts = (userRole.displayName || '').split(' ');
+    setEditFirstName(nameParts[0] || '');
+    setEditLastName(nameParts.slice(1).join(' ') || '');
+    setEditEmail(userRole.email || '');
+    setEditingUser(userRole);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    setSaving(true);
+    try {
+      await updateUserProfile(editingUser.id, {
+        firstName: editFirstName.trim(),
+        lastName: editLastName.trim(),
+        email: editEmail.trim(),
+      });
+      success('Opgeslagen', 'Gebruikersprofiel is bijgewerkt');
+      setEditingUser(null);
+      loadUsers();
+    } catch {
+      showError('Fout', 'Kon profiel niet opslaan');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -450,6 +484,7 @@ const AdminUsers: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           icon={Edit}
+                          onClick={() => handleEditUser(systemUser)}
                         >
                           Bewerken
                         </Button>
@@ -491,7 +526,7 @@ const AdminUsers: React.FC = () => {
                 </div>
                 <ActionMenu
                   actions={[
-                    { label: 'Bewerken', icon: Edit, onClick: () => {} },
+                    { label: 'Bewerken', icon: Edit, onClick: () => handleEditUser(systemUser) },
                     {
                       label: systemUser.isActive !== false ? 'Deactiveren' : 'Activeren',
                       icon: systemUser.isActive !== false ? Ban : UserCheck,
@@ -525,6 +560,44 @@ const AdminUsers: React.FC = () => {
         </div>
         </>
       )}
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        title="Gebruiker bewerken"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Voornaam"
+            value={editFirstName}
+            onChange={e => setEditFirstName(e.target.value)}
+            placeholder="Voornaam"
+          />
+          <Input
+            label="Achternaam"
+            value={editLastName}
+            onChange={e => setEditLastName(e.target.value)}
+            placeholder="Achternaam"
+          />
+          <Input
+            label="E-mailadres"
+            type="email"
+            value={editEmail}
+            onChange={e => setEditEmail(e.target.value)}
+            placeholder="email@voorbeeld.nl"
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setEditingUser(null)}>
+              Annuleren
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? 'Opslaan...' : 'Opslaan'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

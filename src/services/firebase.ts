@@ -1822,15 +1822,34 @@ export const getAdminNonEmployeeUsers = async (
     const empIdsSet = new Set(employeeDocIds);
     const results = new Map<string, { uid: string; name: string }>();
 
-    const snap = await getDocs(query(usersCol, where('adminUserId', '==', adminUserId)));
-    snap.docs.forEach(d => {
+    const addUserDoc = (d: { id: string; data: () => Record<string, unknown> }) => {
       const data = d.data() as Record<string, unknown>;
       if (data.employeeId && empIdsSet.has(data.employeeId as string)) return;
-      const uid = (data.uid as string) || d.id;
+      const uid = (data.uid as string) || '';
+      if (!uid) return;
+      if (results.has(uid)) return;
       const name = resolveUserName(data);
-      if (!uid || !name) return;
+      if (!name) return;
       results.set(uid, { uid, name });
+    };
+
+    // Primaire query: alle users met adminUserId (na repairAdminUsers vindt dit iedereen)
+    const snap = await getDocs(query(usersCol, where('adminUserId', '==', adminUserId)));
+    snap.docs.forEach(addUserDoc);
+
+    // Backward compat: co-admins via userSettings (vóór normalisatie nog niet in bovenstaande query)
+    const settingsSnap = await getDocs(
+      query(collection(db, 'userSettings'), where('primaryAdminUserId', '==', adminUserId))
+    );
+    const coAdminUids: string[] = [];
+    settingsSnap.docs.forEach(d => {
+      const userId = d.data().userId as string | undefined;
+      if (userId && !results.has(userId)) coAdminUids.push(userId);
     });
+    for (const uid of coAdminUids) {
+      const coSnap = await getDocs(query(usersCol, where('uid', '==', uid)));
+      coSnap.docs.forEach(addUserDoc);
+    }
 
     return Array.from(results.values());
   } catch {
@@ -1878,6 +1897,17 @@ export const repairAdminUsers = async (adminUserId: string): Promise<void> => {
   }
 
   if (hasChanges) await batch.commit();
+};
+
+/**
+ * Update naam en/of email van een user doc in de users collectie.
+ */
+export const updateUserProfile = async (
+  docId: string,
+  updates: { firstName?: string; lastName?: string; email?: string }
+): Promise<void> => {
+  const docRef = doc(db, 'users', docId);
+  await updateDoc(docRef, { ...updates, updatedAt: Timestamp.now() });
 };
 
 /**
