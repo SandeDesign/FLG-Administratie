@@ -12,6 +12,7 @@ import {
   FileText,
   Package,
   ListTodo,
+  AlertCircle,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -19,6 +20,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { getPendingLeaveApprovals, getAllCompanyTasks } from '../services/firebase';
+import { getPendingTimesheets } from '../services/timesheetService';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import { isWeekInQuarter, isInQuarter } from '../utils/dateFilters';
 
@@ -42,13 +45,22 @@ interface IncomingInvoice {
 }
 
 const ManagerDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, adminUserId } = useAuth();
   const { selectedCompany, queryUserId, employees, selectedYear, selectedQuarter } = useApp();
   const navigate = useNavigate();
   usePageTitle('Manager Dashboard');
 
   const [loading, setLoading] = useState(false);
+  const [pendingTimesheets, setPendingTimesheets] = useState<any[]>([]);
+  const [pendingLeave, setPendingLeave] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
+
+  const isRecentDate = (date: unknown, days = 7): boolean => {
+    if (!date) return false;
+    const d = (date as any)?.toDate ? (date as any).toDate() : new Date(date as string);
+    return (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24) <= days;
+  };
   const [productionWeeks, setProductionWeeks] = useState<ProductionWeek[]>([]);
   const [incomingInvoices, setIncomingInvoices] = useState<IncomingInvoice[]>([]);
   const [stats, setStats] = useState({
@@ -128,6 +140,15 @@ const ManagerDashboard: React.FC = () => {
       } catch (e) {
         console.log('Could not load invoice data:', e);
       }
+
+      const [tsData, leaveData, tasksData] = await Promise.all([
+        getPendingTimesheets(adminUserId, selectedCompany.id).catch(() => []),
+        getPendingLeaveApprovals(selectedCompany.id, adminUserId).catch(() => []),
+        getAllCompanyTasks(selectedCompany.id, adminUserId).catch(() => []),
+      ]);
+      setPendingTimesheets(tsData);
+      setPendingLeave(leaveData);
+      setTasks(tasksData);
 
       setProductionWeeks(productionData);
       setIncomingInvoices(invoiceData);
@@ -209,6 +230,60 @@ const ManagerDashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Openstaande items */}
+      {pendingTimesheets.length + pendingLeave.length > 0 && (
+        <div className="bg-red-50 dark:bg-gray-800 border-l-4 border-red-500 dark:border-red-500 p-4 rounded-lg flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-red-900 dark:text-gray-100">
+              {pendingTimesheets.length + pendingLeave.length} items wachten op actie
+            </h3>
+            <p className="text-xs text-red-700 dark:text-gray-400 mt-1">
+              {pendingTimesheets.length} uren • {pendingLeave.length} verlof
+            </p>
+          </div>
+          <button
+            onClick={() => pendingTimesheets.length > 0 ? navigate('/timesheet-approvals') : navigate('/admin/leave-approvals')}
+            className="text-red-600 dark:text-red-400 hover:text-red-700 font-semibold text-sm whitespace-nowrap"
+          >
+            Bekijk →
+          </button>
+        </div>
+      )}
+
+      {/* Verlopen taken */}
+      {tasks.filter(t => t.status === 'overdue').length > 0 && (
+        <div className="bg-orange-50 dark:bg-gray-800 border-l-4 border-orange-500 dark:border-orange-500 p-4 rounded-lg flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-orange-900 dark:text-gray-100">
+              {tasks.filter(t => t.status === 'overdue').length === 1 ? '1 taak verlopen' : `${tasks.filter(t => t.status === 'overdue').length} taken verlopen`}
+            </h3>
+            <p className="text-xs text-orange-700 dark:text-gray-400 mt-1">
+              {tasks.filter(t => t.status === 'overdue').slice(0, 3).map(t => t.title).join(' • ')}
+              {tasks.filter(t => t.status === 'overdue').length > 3 && ` • +${tasks.filter(t => t.status === 'overdue').length - 3} meer`}
+            </p>
+          </div>
+          <button onClick={() => navigate('/tasks')} className="text-orange-600 dark:text-orange-400 hover:text-orange-700 font-semibold text-sm whitespace-nowrap">Bekijk →</button>
+        </div>
+      )}
+
+      {/* Recent afgeronde taken */}
+      {tasks.filter(t => t.status === 'completed' && isRecentDate(t.completedDate)).length > 0 && (
+        <div className="bg-green-50 dark:bg-gray-800 border-l-4 border-green-500 dark:border-green-500 p-4 rounded-lg flex items-start gap-3">
+          <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-green-900 dark:text-gray-100">
+              {tasks.filter(t => t.status === 'completed' && isRecentDate(t.completedDate)).length === 1 ? '1 taak afgerond deze week' : `${tasks.filter(t => t.status === 'completed' && isRecentDate(t.completedDate)).length} taken afgerond deze week`}
+            </h3>
+            <p className="text-xs text-green-700 dark:text-gray-400 mt-1">
+              {tasks.filter(t => t.status === 'completed' && isRecentDate(t.completedDate)).slice(0, 3).map(t => t.title).join(' • ')}
+            </p>
+          </div>
+          <button onClick={() => navigate('/tasks')} className="text-green-600 dark:text-green-400 hover:text-green-700 font-semibold text-sm whitespace-nowrap">Bekijk →</button>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div>
