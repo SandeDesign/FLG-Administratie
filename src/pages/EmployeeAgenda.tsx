@@ -45,7 +45,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 const EmployeeAgenda: React.FC = () => {
   const { user, adminUserId } = useAuth();
-  const { selectedCompany } = useApp();
+  const { selectedCompany, currentEmployeeId } = useApp();
   const { success, error } = useToast();
   usePageTitle('Mijn Agenda');
 
@@ -113,19 +113,9 @@ const EmployeeAgenda: React.FC = () => {
       setLoading(true);
       console.log('[Agenda] Laden taken voor:', { uid: user.uid, companyId: selectedCompany.id });
 
-      // Haal alle bedrijfstaken op
-      const allCompanyTasks = await getAllCompanyTasks(selectedCompany.id, user.uid);
-      console.log('[Agenda] getAllCompanyTasks resultaat:', allCompanyTasks.length);
-
-      if (allCompanyTasks.length > 0) {
-        setAllTasks(allCompanyTasks as BusinessTask[]);
-      } else {
-        // Fallback: als bedrijfs-query leeg is (mogelijk Firestore rules), probeer via assignedTo
-        console.warn('[Agenda] Geen taken via bedrijfs-query, probeer assignedTo fallback');
-        const assignedTasks = await getTasksAssignedToUser(user.uid, selectedCompany.id);
-        console.log('[Agenda] getTasksAssignedToUser resultaat:', assignedTasks.length);
-        setAllTasks(assignedTasks as BusinessTask[]);
-      }
+      // Haal taken op die aan deze medewerker zijn toegewezen
+      const assignedTasks = await getTasksAssignedToUser(currentEmployeeId || user.uid, selectedCompany.id);
+      setAllTasks(assignedTasks as BusinessTask[]);
     } catch (err) {
       console.error('[Agenda] Error laden taken:', err);
       error('Fout bij laden van taken');

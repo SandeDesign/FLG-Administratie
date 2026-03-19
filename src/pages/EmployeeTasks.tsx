@@ -26,7 +26,7 @@ import { CATEGORY_CONFIG, PRIORITY_CONFIG, STATUS_CONFIG, FREQUENCY_LABELS } fro
 
 const EmployeeTasks: React.FC = () => {
   const { user, adminUserId } = useAuth();
-  const { selectedCompany } = useApp();
+  const { selectedCompany, currentEmployeeId } = useApp();
   const { success, error } = useToast();
   usePageTitle('Mijn Taken');
 
@@ -43,7 +43,7 @@ const EmployeeTasks: React.FC = () => {
 
     try {
       setLoading(true);
-      const assignedTasks = await getTasksAssignedToUser(user.uid, selectedCompany?.id);
+      const assignedTasks = await getTasksAssignedToUser(currentEmployeeId || user.uid, selectedCompany?.id);
       setTasks(assignedTasks);
     } catch (err) {
       console.error('Error loading tasks:', err);
@@ -312,6 +312,13 @@ const EmployeeTasks: React.FC = () => {
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${priorityConfig.color}`}>
                             {priorityConfig.label}
                           </span>
+
+                          {task.estimatedHours && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                              <CalendarDays className="h-3 w-3" />
+                              ~{task.estimatedHours}u
+                            </span>
+                          )}
 
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${statusConfig.color}`}>
                             <StatusIcon className="h-3 w-3" />

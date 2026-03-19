@@ -42,13 +42,19 @@ const TaskScheduleSidebar: React.FC<TaskScheduleSidebarProps> = ({ tasks, onTask
         <GripVertical className="h-4 w-4 text-gray-400 dark:text-gray-500 flex-shrink-0 opacity-50 group-hover:opacity-100" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
-          <div className="flex items-center gap-1 mt-0.5">
+          <div className="flex items-center gap-1 mt-0.5 flex-wrap">
             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${priorityConfig.color}`}>
               {priorityConfig.label}
             </span>
             {task.dueDate && (
               <span className="text-[10px] text-gray-500 dark:text-gray-400">
                 {new Date(task.dueDate).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+              </span>
+            )}
+            {task.estimatedHours && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                <Clock className="h-2.5 w-2.5" />
+                ~{task.estimatedHours}u
               </span>
             )}
           </div>
