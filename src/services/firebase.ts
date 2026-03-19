@@ -11,6 +11,7 @@ import {
   orderBy,
   Timestamp,
   arrayUnion,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -1796,8 +1797,20 @@ export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: s
   }
 };
 
+const resolveUserName = (data: Record<string, unknown>): string => {
+  const firstName = data.firstName as string | undefined;
+  const lastName = data.lastName as string | undefined;
+  if (firstName && lastName) return `${firstName} ${lastName}`;
+  if (firstName) return firstName;
+  const displayName = data.displayName as string | undefined;
+  if (displayName) return displayName;
+  const email = data.email as string | undefined;
+  return email ? email.split('@')[0] : '';
+};
+
 /**
  * Haalt niet-medewerker gebruikers op voor een admin (admin zelf + co-admins + managers).
+ * Vereist dat repairAdminUsers() eerder is aangeroepen zodat adminUserId correct staat.
  * Sluit gebruikers uit die al als medewerker in employeeDocIds staan (voorkomt duplicaten).
  */
 export const getAdminNonEmployeeUsers = async (
@@ -1809,59 +1822,62 @@ export const getAdminNonEmployeeUsers = async (
     const empIdsSet = new Set(employeeDocIds);
     const results = new Map<string, { uid: string; name: string }>();
 
-    const resolveName = (data: Record<string, unknown>): string => {
-      const firstName = data.firstName as string | undefined;
-      const lastName = data.lastName as string | undefined;
-      if (firstName && lastName) return `${firstName} ${lastName}`;
-      if (firstName) return firstName;
-      const displayName = data.displayName as string | undefined;
-      if (displayName) return displayName;
-      const email = data.email as string | undefined;
-      return email ? email.split('@')[0] : '';
-    };
-
-    // Co-admins en managers onder deze admin (via adminUserId veld op users doc)
-    const subSnap = await getDocs(query(usersCol, where('adminUserId', '==', adminUserId)));
-    subSnap.docs.forEach(d => {
+    const snap = await getDocs(query(usersCol, where('adminUserId', '==', adminUserId)));
+    snap.docs.forEach(d => {
       const data = d.data() as Record<string, unknown>;
       if (data.employeeId && empIdsSet.has(data.employeeId as string)) return;
-      results.set(d.id, { uid: d.id, name: resolveName(data) });
+      const uid = (data.uid as string) || d.id;
+      const name = resolveUserName(data);
+      if (!uid || !name) return;
+      results.set(uid, { uid, name });
     });
-
-    // Admin zichzelf (via uid veld op users doc)
-    const selfSnap = await getDocs(query(usersCol, where('uid', '==', adminUserId)));
-    selfSnap.docs.forEach(d => {
-      const data = d.data() as Record<string, unknown>;
-      if (data.employeeId && empIdsSet.has(data.employeeId as string)) return;
-      if (!results.has(d.id)) {
-        results.set(d.id, { uid: d.id, name: resolveName(data) });
-      }
-    });
-
-    // Backward compat: co-admins aangemaakt via primaryAdminUserId in userSettings collectie
-    const settingsSnap = await getDocs(
-      query(collection(db, 'userSettings'), where('primaryAdminUserId', '==', adminUserId))
-    );
-    const coAdminUids: string[] = [];
-    settingsSnap.docs.forEach(d => {
-      const userId = d.data().userId as string | undefined;
-      if (userId && !results.has(userId)) coAdminUids.push(userId);
-    });
-    for (const uid of coAdminUids) {
-      const userSnap = await getDocs(query(usersCol, where('uid', '==', uid)));
-      userSnap.docs.forEach(d => {
-        const data = d.data() as Record<string, unknown>;
-        if (data.employeeId && empIdsSet.has(data.employeeId as string)) return;
-        if (!results.has(d.id)) {
-          results.set(d.id, { uid: d.id, name: resolveName(data) });
-        }
-      });
-    }
 
     return Array.from(results.values());
   } catch {
     return [];
   }
+};
+
+/**
+ * Normaliseert de users-collectie zodat elke user doc een correct adminUserId veld heeft.
+ * - Admin eigen doc: adminUserId = adminUserId (was null)
+ * - Co-admin docs: adminUserId = adminUserId (ontbrak, alleen in userSettings)
+ * Na aanroep werkt where('adminUserId', '==', adminUserId) voor alle user types.
+ */
+export const repairAdminUsers = async (adminUserId: string): Promise<void> => {
+  const usersCol = collection(db, 'users');
+  const batch = writeBatch(db);
+  let hasChanges = false;
+
+  // Fix admin eigen doc
+  const selfSnap = await getDocs(query(usersCol, where('uid', '==', adminUserId)));
+  selfSnap.docs.forEach(d => {
+    if (d.data().adminUserId !== adminUserId) {
+      batch.update(d.ref, { adminUserId });
+      hasChanges = true;
+    }
+  });
+
+  // Fix co-admin docs via userSettings
+  const settingsSnap = await getDocs(
+    query(collection(db, 'userSettings'), where('primaryAdminUserId', '==', adminUserId))
+  );
+  const coAdminUids: string[] = [];
+  settingsSnap.docs.forEach(d => {
+    const userId = d.data().userId as string | undefined;
+    if (userId) coAdminUids.push(userId);
+  });
+  for (const uid of coAdminUids) {
+    const coSnap = await getDocs(query(usersCol, where('uid', '==', uid)));
+    coSnap.docs.forEach(d => {
+      if (d.data().adminUserId !== adminUserId) {
+        batch.update(d.ref, { adminUserId });
+        hasChanges = true;
+      }
+    });
+  }
+
+  if (hasChanges) await batch.commit();
 };
 
 /**
