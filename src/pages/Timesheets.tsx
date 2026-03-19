@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Save, Send, Download, ChevronLeft, ChevronRight, User, Palmtree, HeartPulse, FolderKanban } from 'lucide-react';
+import { Calendar, Clock, Save, Send, Download, ChevronLeft, ChevronRight, User, Palmtree, HeartPulse, FolderKanban, ListChecks } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -7,7 +7,7 @@ import Card from '../components/ui/Card';
 import Input from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { WeeklyTimesheet, TimesheetEntry, WorkActivity } from '../types/timesheet';
-import { LeaveRequest, SickLeave } from '../types';
+import { LeaveRequest, SickLeave, BusinessTask } from '../types';
 import { InternalProject } from '../types/internalProject';
 import { getInternalProjects } from '../services/internalProjectService';
 import { getProjectColorMeta } from './InternalProjects';
@@ -21,7 +21,7 @@ import {
   getWeekDates,
   calculateWeekTotals
 } from '../services/timesheetService';
-import { getEmployeeById, getLeaveRequests, getSickLeaveRecords } from '../services/firebase';
+import { getEmployeeById, getLeaveRequests, getSickLeaveRecords, getTasksAssignedToUser } from '../services/firebase';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { usePageTitle } from '../contexts/PageTitleContext';
@@ -47,6 +47,7 @@ export default function Timesheets() {
   const [weekSickLeaves, setWeekSickLeaves] = useState<SickLeave[]>([]);
   // Interne projecten
   const [internalProjects, setInternalProjects] = useState<InternalProject[]>([]);
+  const [assignedTasks, setAssignedTasks] = useState<BusinessTask[]>([]);
 
   const loadData = useCallback(async () => {
     if (!user || !queryUserId || !selectedCompany) {
@@ -117,6 +118,10 @@ export default function Timesheets() {
       // Interne projecten laden
       const projects = await getInternalProjects(queryUserId, selectedCompany.id);
       setInternalProjects(projects);
+
+      // Taken laden voor de huidige medewerker (voor taakselectie bij werkactiviteiten)
+      const tasks = await getTasksAssignedToUser(currentEmployeeId || user.uid, selectedCompany.id);
+      setAssignedTasks(tasks as BusinessTask[]);
 
       if (sheets.length > 0) {
         setCurrentTimesheet(sheets[0]);
@@ -415,6 +420,22 @@ export default function Timesheets() {
       internalProjectId: project?.id || '',
       internalProjectName: project?.name || '',
       description: activities[activityIndex].description || project?.name || '',
+      taskId: '',
+    };
+    updatedEntries[entryIndex] = { ...updatedEntries[entryIndex], workActivities: activities, updatedAt: new Date() };
+    setCurrentTimesheet({ ...currentTimesheet, entries: updatedEntries, updatedAt: new Date() });
+  };
+
+  const selectTaskForActivity = (entryIndex: number, activityIndex: number, taskId: string) => {
+    if (!currentTimesheet) return;
+    const task = assignedTasks.find(t => t.id === taskId);
+    const updatedEntries = [...currentTimesheet.entries];
+    const activities = [...(updatedEntries[entryIndex].workActivities || [])];
+    activities[activityIndex] = {
+      ...activities[activityIndex],
+      taskId: task?.id || '',
+      description: task?.title || activities[activityIndex].description,
+      hours: task?.estimatedHours ?? activities[activityIndex].hours,
     };
     updatedEntries[entryIndex] = { ...updatedEntries[entryIndex], workActivities: activities, updatedAt: new Date() };
     setCurrentTimesheet({ ...currentTimesheet, entries: updatedEntries, updatedAt: new Date() });
@@ -1092,6 +1113,32 @@ export default function Timesheets() {
                               </select>
                             </div>
                           )}
+                          {/* Taak-selector: verschijnt als project gekozen + taken beschikbaar */}
+                          {!activity.isITKnechtImport && !isReadOnly && activity.internalProjectId && (() => {
+                            const projectTasks = assignedTasks.filter(
+                              t => t.internalProjectId === activity.internalProjectId &&
+                                   t.status !== 'completed' && t.status !== 'cancelled'
+                            );
+                            if (projectTasks.length === 0) return null;
+                            return (
+                              <div className="flex items-center gap-2">
+                                <ListChecks className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                                <select
+                                  value={activity.taskId || ''}
+                                  onChange={e => selectTaskForActivity(index, actIdx, e.target.value)}
+                                  className="flex-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-1 px-1.5"
+                                >
+                                  <option value="">— Kies taak (optioneel) —</option>
+                                  {projectTasks.map(t => (
+                                    <option key={t.id} value={t.id}>
+                                      {t.title}{t.estimatedHours ? ` (~${t.estimatedHours}u)` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            );
+                          })()}
+
                           {/* Project badge in readonly modus */}
                           {activity.internalProjectName && (isReadOnly || activity.isITKnechtImport) && (
                             <div className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${colorMeta.bg} ${colorMeta.text}`}>
