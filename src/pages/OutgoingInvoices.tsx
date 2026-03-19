@@ -191,6 +191,7 @@ const OutgoingInvoices: React.FC = () => {
         where('userId', '==', queryUserId),
         where('companyId', '==', selectedCompany.id),
         where('employeeId', '==', selectedProductionEmployeeId),
+        orderBy('year', 'desc'),
         orderBy('week', 'desc')
       );
 
