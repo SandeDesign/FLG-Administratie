@@ -304,6 +304,12 @@ const EmployeeTasks: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          {task.internalProjectName && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+                              {task.internalProjectName}
+                            </span>
+                          )}
+
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${categoryConfig.color}`}>
                             <CategoryIcon className="h-3 w-3" />
                             {categoryConfig.label}
