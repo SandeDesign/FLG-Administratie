@@ -22,13 +22,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem } from '../types';
+import { BusinessTask, TaskCategory, TaskPriority, TaskStatus, TaskFrequency, TaskChecklistItem, Employee } from '../types';
 import { InternalProject } from '../types/internalProject';
 import {
   getAllCompanyTasks,
   createTask,
   updateTask,
   deleteTask,
+  getEmployees,
   getCompanyUsers,
 } from '../services/firebase';
 import { getInternalProjects } from '../services/internalProjectService';
@@ -85,9 +86,30 @@ const Tasks: React.FC = () => {
   useEffect(() => {
     if (user && selectedCompany) {
       loadTasks();
-      getCompanyUsers(selectedCompany.id)
-        .then(users => setAllPeople(users.map(u => ({ id: u.uid, name: u.displayName || u.email }))))
-        .catch(() => {});
+      const loadPeople = async () => {
+        const emps = await getEmployees(user.uid, selectedCompany.id);
+        const empPeople = emps.map(e => ({
+          id: e.id!,
+          name: [e.personalInfo?.firstName, e.personalInfo?.lastName].filter(Boolean).join(' ') || e.id!,
+        }));
+        const empAccountUIDs = new Set(emps.map(e => (e as any).accountUserId).filter(Boolean) as string[]);
+
+        let extraPeople: Array<{ id: string; name: string }> = [];
+        try {
+          const compUsers = await getCompanyUsers(selectedCompany.id);
+          extraPeople = compUsers
+            .filter(u => !empAccountUIDs.has(u.uid))
+            .map(u => ({ id: u.uid, name: u.displayName || u.email }));
+        } catch {}
+
+        const allIds = new Set([...empPeople.map(p => p.id), ...extraPeople.map(p => p.id)]);
+        if (!allIds.has(user.uid) && !empAccountUIDs.has(user.uid)) {
+          extraPeople.push({ id: user.uid, name: user.displayName || user.email || 'Admin' });
+        }
+
+        setAllPeople([...empPeople, ...extraPeople]);
+      };
+      loadPeople().catch(() => {});
       getInternalProjects(user.uid, selectedCompany.id).then(setInternalProjects).catch(() => {});
     }
   }, [user, selectedCompany]);
