@@ -84,6 +84,13 @@ const AdminUsers: React.FC = () => {
         const name = data.displayName
           || (data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : '');
 
+        const toDate = (val: unknown): Date | undefined => {
+          if (!val) return undefined;
+          if (typeof (val as any).toDate === 'function') return (val as any).toDate();
+          const d = new Date(val as any);
+          return isNaN(d.getTime()) ? undefined : d;
+        };
+
         return {
           id: userDoc.id,
           uid: data.uid || '',
@@ -92,9 +99,9 @@ const AdminUsers: React.FC = () => {
           email: data.email || '',
           displayName: name,
           isActive: data.isActive !== false,
-          lastLoginAt: data.lastLoginAt?.toDate(),
-          createdAt: data.createdAt?.toDate(),
-          updatedAt: data.updatedAt?.toDate()
+          lastLoginAt: toDate(data.lastLoginAt),
+          createdAt: toDate(data.createdAt),
+          updatedAt: toDate(data.updatedAt)
         };
       });
 
