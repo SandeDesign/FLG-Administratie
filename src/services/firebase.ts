@@ -1797,6 +1797,51 @@ export const getCompanyUsers = async (companyId: string): Promise<Array<{ uid: s
 };
 
 /**
+ * Haalt niet-medewerker gebruikers op voor een admin (admin zelf + co-admins + managers).
+ * Sluit gebruikers uit die al als medewerker in employeeDocIds staan (voorkomt duplicaten).
+ */
+export const getAdminNonEmployeeUsers = async (
+  adminUserId: string,
+  employeeDocIds: string[]
+): Promise<Array<{ uid: string; name: string }>> => {
+  try {
+    const usersCol = collection(db, 'users');
+    const empIdsSet = new Set(employeeDocIds);
+    const results = new Map<string, { uid: string; name: string }>();
+
+    const resolveName = (data: Record<string, unknown>): string => {
+      const firstName = data.firstName as string | undefined;
+      const lastName = data.lastName as string | undefined;
+      if (firstName && lastName) return `${firstName} ${lastName}`;
+      if (firstName) return firstName;
+      return (data.displayName as string) || (data.email as string) || 'Gebruiker';
+    };
+
+    // Co-admins en managers onder deze admin
+    const subSnap = await getDocs(query(usersCol, where('adminUserId', '==', adminUserId)));
+    subSnap.docs.forEach(d => {
+      const data = d.data() as Record<string, unknown>;
+      if (data.employeeId && empIdsSet.has(data.employeeId as string)) return;
+      results.set(d.id, { uid: d.id, name: resolveName(data) });
+    });
+
+    // Admin zichzelf
+    const selfSnap = await getDocs(query(usersCol, where('uid', '==', adminUserId)));
+    selfSnap.docs.forEach(d => {
+      const data = d.data() as Record<string, unknown>;
+      if (data.employeeId && empIdsSet.has(data.employeeId as string)) return;
+      if (!results.has(d.id)) {
+        results.set(d.id, { uid: d.id, name: resolveName(data) });
+      }
+    });
+
+    return Array.from(results.values());
+  } catch {
+    return [];
+  }
+};
+
+/**
  * Haal een enkele taak op
  */
 export const getTask = async (taskId: string, userId: string): Promise<any | null> => {
