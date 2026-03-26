@@ -24,9 +24,9 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
     const diff = currentPct - prevPct;
 
     if (diff > 0) {
-      return <TrendingUp className="h-4 w-4 text-red-600" />;
+      return <TrendingUp className="h-4 w-4 text-red-600 dark:text-red-400" />;
     } else if (diff < 0) {
-      return <TrendingDown className="h-4 w-4 text-green-600" />;
+      return <TrendingDown className="h-4 w-4 text-green-600 dark:text-green-400" />;
     }
     return null;
   };
@@ -38,16 +38,16 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
     const prevPct = isNaN(previousYearStats.absencePercentage) ? 0 : previousYearStats.absencePercentage;
     const diff = currentPct - prevPct;
 
-    if (diff > 0) return 'text-red-600';
-    if (diff < 0) return 'text-green-600';
+    if (diff > 0) return 'text-red-600 dark:text-red-400';
+    if (diff < 0) return 'text-green-600 dark:text-green-400';
     return 'text-gray-600 dark:text-gray-400';
   };
 
   const getStatusColor = () => {
     const pct = isNaN(stats.absencePercentage) ? 0 : stats.absencePercentage;
-    if (pct < 3) return 'text-green-600';
-    if (pct < 5) return 'text-orange-600';
-    return 'text-red-600';
+    if (pct < 3) return 'text-green-600 dark:text-green-400';
+    if (pct < 5) return 'text-orange-600 dark:text-orange-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const getStatusText = () => {
@@ -61,8 +61,8 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-orange-100 rounded-lg">
-            <Activity className="h-6 w-6 text-orange-600" />
+          <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+            <Activity className="h-6 w-6 text-orange-600 dark:text-orange-400" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -76,13 +76,13 @@ const AbsenceStatsCard: React.FC<AbsenceStatsCardProps> = ({ stats, previousYear
       </div>
 
       {(stats.longTermAbsence || stats.chronicAbsence) && (
-        <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start space-x-2">
-          <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+        <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex items-start space-x-2">
+          <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-orange-800">
+            <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
               Aandachtspunt
             </p>
-            <p className="text-xs text-orange-700 mt-1">
+            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
               {stats.longTermAbsence && 'Lang verzuim geconstateerd. '}
               {stats.chronicAbsence && 'Frequent verzuim geconstateerd.'}
             </p>

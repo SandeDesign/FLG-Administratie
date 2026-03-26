@@ -747,7 +747,7 @@ export default function Timesheets() {
           <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700">
             <button
               onClick={() => changeWeek(-1)}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
               title="Vorige week"
             >
               <ChevronLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -758,7 +758,7 @@ export default function Timesheets() {
             </div>
             <button
               onClick={() => changeWeek(1)}
-              className="p-2 hover:bg-gray-100 rounded transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
               title="Volgende week"
             >
               <ChevronRight className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -808,36 +808,32 @@ export default function Timesheets() {
 
       {/* Status Badge */}
       {currentTimesheet.status !== 'draft' && (
-        <div className="p-3 rounded-lg flex items-center justify-between text-sm"
-             style={{
-               backgroundColor: currentTimesheet.status === 'approved' ? '#f0fdf4' : 
-                              currentTimesheet.status === 'submitted' ? '#eff6ff' :
-                              currentTimesheet.status === 'rejected' ? '#fef2f2' : '#f3f4f6',
-               borderLeft: `4px solid ${
-                 currentTimesheet.status === 'approved' ? '#22c55e' :
-                 currentTimesheet.status === 'submitted' ? '#3b82f6' :
-                 currentTimesheet.status === 'rejected' ? '#ef4444' : '#6b7280'
-               }`
-             }}>
-          <span className="font-medium" style={{
-            color: currentTimesheet.status === 'approved' ? '#15803d' :
-                   currentTimesheet.status === 'submitted' ? '#1e40af' :
-                   currentTimesheet.status === 'rejected' ? '#991b1b' : '#374151'
-          }}>
+        <div className={`p-3 rounded-lg flex items-center justify-between text-sm border-l-4 ${
+          currentTimesheet.status === 'approved' ? 'bg-green-50 dark:bg-green-900/20 border-green-500' :
+          currentTimesheet.status === 'submitted' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500' :
+          currentTimesheet.status === 'rejected' ? 'bg-red-50 dark:bg-red-900/20 border-red-500' :
+          'bg-gray-100 dark:bg-gray-800 border-gray-500'
+        }`}>
+          <span className={`font-medium ${
+            currentTimesheet.status === 'approved' ? 'text-green-700 dark:text-green-300' :
+            currentTimesheet.status === 'submitted' ? 'text-blue-700 dark:text-blue-300' :
+            currentTimesheet.status === 'rejected' ? 'text-red-700 dark:text-red-300' :
+            'text-gray-700 dark:text-gray-300'
+          }`}>
             Status: {currentTimesheet.status === 'approved' ? 'Goedgekeurd' :
                      currentTimesheet.status === 'submitted' ? 'Ingediend' :
                      currentTimesheet.status === 'rejected' ? 'Afgekeurd' :
                      currentTimesheet.status === 'processed' ? 'Verwerkt' : 'Concept'}
           </span>
           {currentTimesheet.rejectionReason && (
-            <span className="text-xs text-red-600">Reden: {currentTimesheet.rejectionReason}</span>
+            <span className="text-xs text-red-600 dark:text-red-400">Reden: {currentTimesheet.rejectionReason}</span>
           )}
         </div>
       )}
 
       {/* Import Status */}
       {importing && (
-        <div className="p-3 sm:p-4 bg-primary-50 border border-primary-200 rounded-lg flex items-center gap-3 text-primary-600 text-sm">
+        <div className="p-3 sm:p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 rounded-lg flex items-center gap-3 text-primary-600 dark:text-primary-400 text-sm">
           <LoadingSpinner className="h-4 w-4 sm:h-5 sm:w-5" />
           <span>Bezig met ophalen van data...</span>
         </div>
@@ -891,10 +887,10 @@ export default function Timesheets() {
                     <div className="flex items-center gap-2 p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-100 dark:border-emerald-800">
                       <Palmtree className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-emerald-700">
+                        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                           {calculateWeekLeaveHours().toFixed(1)}u verlof
                         </p>
-                        <p className="text-xs text-emerald-600 truncate">
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 truncate">
                           {weekLeaveRequests.map(l => getLeaveTypeLabel(l.type)).join(', ')}
                         </p>
                       </div>
@@ -938,14 +934,14 @@ export default function Timesheets() {
                 disabled={isReadOnly && !hasData && !hasLeaveOrSick}
                 className={`w-full p-3 sm:p-4 rounded-lg border-2 transition-all text-left flex items-center justify-between ${
                   isExpanded
-                    ? 'border-primary-300 bg-primary-50'
+                    ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20'
                     : daySick
-                    ? 'border-red-300 bg-red-50 hover:bg-red-100'
+                    ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
                     : dayLeave
-                    ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100'
+                    ? 'border-emerald-300 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
                     : hasData
-                    ? `border-orange-300 bg-orange-50 hover:bg-orange-100`
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-900'
+                    ? 'border-orange-300 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -961,69 +957,69 @@ export default function Timesheets() {
                   {/* Quick Summary */}
                   <div className="flex items-center gap-2 text-xs sm:text-sm font-medium flex-wrap justify-end">
                     {dayLeave && (
-                      <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded flex items-center gap-1">
+                      <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded flex items-center gap-1">
                         <Palmtree className="h-3 w-3" />
                         {getLeaveTypeLabel(dayLeave.type)}
                       </span>
                     )}
                     {daySick && (
-                      <span className="px-2 py-1 bg-red-100 text-red-700 rounded flex items-center gap-1">
+                      <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded flex items-center gap-1">
                         <HeartPulse className="h-3 w-3" />
                         Ziek {daySick.workCapacityPercentage > 0 ? `(${daySick.workCapacityPercentage}%)` : ''}
                       </span>
                     )}
                     {entry.regularHours > 0 && (
-                      <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded">
+                      <span className="px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded">
                         {entry.regularHours}u
                       </span>
                     )}
                     {entry.travelKilometers > 0 && (
-                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded">
+                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded">
                         {entry.travelKilometers}km
                       </span>
                     )}
                     {isImported && (
-                      <Download className="h-4 w-4 text-primary-600" />
+                      <Download className="h-4 w-4 text-primary-600 dark:text-primary-400" />
                     )}
                   </div>
                 </div>
 
-                <ChevronRight className={`h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-90' : ''}`} />
+                <ChevronRight className={`h-5 w-5 text-gray-600 dark:text-gray-400 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-90' : ''}`} />
               </button>
 
               {/* Expanded Day Content */}
               {isExpanded && (
-                <Card className={`mt-1 p-3 sm:p-4 space-y-3 sm:space-y-4 ${isImported ? 'bg-primary-50 border-primary-200' : daySick ? 'bg-red-50 border-red-200' : dayLeave ? 'bg-emerald-50 border-emerald-200' : ''}`}>
+                <Card className={`mt-1 p-3 sm:p-4 space-y-3 sm:space-y-4 ${isImported ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-700' : daySick ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700' : dayLeave ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700' : ''}`}>
                   {/* Verlof/Ziekte Details */}
                   {(dayLeave || daySick) && (
-                    <div className={`p-3 rounded-lg ${daySick ? 'bg-red-100 border border-red-200' : 'bg-emerald-100 border border-emerald-200'}`}>
+                    <div className={`p-3 rounded-lg ${daySick ? 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-700' : 'bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700'}`}>
                       {dayLeave && (
                         <div className="flex items-start gap-2">
-                          <Palmtree className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                          <Palmtree className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                           <div>
-                            <p className="font-medium text-emerald-800">{getLeaveTypeLabel(dayLeave.type)}</p>
-                            <p className="text-sm text-emerald-600">
+                            <p className="font-medium text-emerald-800 dark:text-emerald-200">{getLeaveTypeLabel(dayLeave.type)}</p>
+                            <p className="text-sm text-emerald-600 dark:text-emerald-400">
                               {new Date(dayLeave.startDate).toLocaleDateString('nl-NL')} - {new Date(dayLeave.endDate).toLocaleDateString('nl-NL')}
                             </p>
                             {dayLeave.reason && (
-                              <p className="text-sm text-emerald-700 mt-1">{dayLeave.reason}</p>
+                              <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">{dayLeave.reason}</p>
                             )}
                           </div>
                         </div>
                       )}
                       {daySick && (
                         <div className="flex items-start gap-2">
-                          <HeartPulse className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                          <HeartPulse className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                           <div>
-                            <p className="font-medium text-red-800">
+                            <p className="font-medium text-red-800 dark:text-red-200">
                               Ziekmelding {daySick.workCapacityPercentage > 0 ? `(${daySick.workCapacityPercentage}% werkzaam)` : '(volledig ziek)'}
                             </p>
-                            <p className="text-sm text-red-600">
+                            <p className="text-sm text-red-600 dark:text-red-400">
                               Sinds {new Date(daySick.startDate).toLocaleDateString('nl-NL')}
                               {daySick.endDate && ` - ${new Date(daySick.endDate).toLocaleDateString('nl-NL')}`}
                             </p>
                             {daySick.status === 'long_term' && (
-                              <p className="text-xs text-red-700 mt-1 font-medium">Langdurig verzuim - Poortwachter actief</p>
+                              <p className="text-xs text-red-700 dark:text-red-300 mt-1 font-medium">Langdurig verzuim - Poortwachter actief</p>
                             )}
                           </div>
                         </div>
@@ -1169,7 +1165,7 @@ export default function Timesheets() {
                             {!isReadOnly && !activity.isITKnechtImport && (
                               <button
                                 onClick={() => removeWorkActivity(index, actIdx)}
-                                className="text-red-600 hover:text-red-800 font-bold text-lg"
+                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-bold text-lg"
                               >
                                 ×
                               </button>

@@ -297,8 +297,8 @@ const ManagerDashboard: React.FC = () => {
               <button onClick={() => navigate('/project-production')} className="group">
                 <div className="rounded-xl p-6 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center">
-                    <div className="p-4 bg-emerald-100 rounded-xl mb-3 group-hover:scale-110 transition-transform">
-                      <Factory className="h-6 w-6 text-emerald-600" />
+                    <div className="p-4 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                      <Factory className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <h3 className="font-bold text-sm mb-1">Productie</h3>
                     <p className="text-xs text-white/80">Overzicht</p>
@@ -308,8 +308,8 @@ const ManagerDashboard: React.FC = () => {
               <button onClick={() => navigate('/incoming-invoices')} className="group">
                 <div className="rounded-xl p-6 bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center">
-                    <div className="p-4 bg-primary-100 rounded-xl mb-3 group-hover:scale-110 transition-transform">
-                      <Upload className="h-6 w-6 text-primary-600" />
+                    <div className="p-4 bg-primary-100 dark:bg-primary-900/30 rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                      <Upload className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                     </div>
                     <h3 className="font-bold text-sm mb-1">Inkoop</h3>
                     <p className="text-xs text-white/80">Facturen</p>
@@ -319,8 +319,8 @@ const ManagerDashboard: React.FC = () => {
               <button onClick={() => navigate('/tasks')} className="group">
                 <div className="rounded-xl p-6 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center">
-                    <div className="p-4 bg-amber-100 rounded-xl mb-3 group-hover:scale-110 transition-transform">
-                      <ListTodo className="h-6 w-6 text-amber-600" />
+                    <div className="p-4 bg-amber-100 dark:bg-amber-900/30 rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                      <ListTodo className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                     </div>
                     <h3 className="font-bold text-sm mb-1">Taken</h3>
                     <p className="text-xs text-white/80">Beheren</p>
@@ -333,8 +333,8 @@ const ManagerDashboard: React.FC = () => {
               <button onClick={() => navigate('/timesheet-approvals')} className="group">
                 <div className="rounded-xl p-6 bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center">
-                    <div className="p-4 bg-primary-100 rounded-xl mb-3 group-hover:scale-110 transition-transform">
-                      <Clock className="h-6 w-6 text-primary-600" />
+                    <div className="p-4 bg-primary-100 dark:bg-primary-900/30 rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                      <Clock className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                     </div>
                     <h3 className="font-bold text-sm mb-1">Uren</h3>
                     <p className="text-xs text-white/80">Goedkeuren</p>
@@ -344,8 +344,8 @@ const ManagerDashboard: React.FC = () => {
               <button onClick={() => navigate('/employees')} className="group">
                 <div className="rounded-xl p-6 bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center">
-                    <div className="p-4 bg-green-100 rounded-xl mb-3 group-hover:scale-110 transition-transform">
-                      <Users className="h-6 w-6 text-green-600" />
+                    <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                      <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <h3 className="font-bold text-sm mb-1">Team</h3>
                     <p className="text-xs text-white/80">Beheren</p>
@@ -355,8 +355,8 @@ const ManagerDashboard: React.FC = () => {
               <button onClick={() => navigate('/tasks')} className="group">
                 <div className="rounded-xl p-6 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center">
-                    <div className="p-4 bg-amber-100 rounded-xl mb-3 group-hover:scale-110 transition-transform">
-                      <ListTodo className="h-6 w-6 text-amber-600" />
+                    <div className="p-4 bg-amber-100 dark:bg-amber-900/30 rounded-xl mb-3 group-hover:scale-110 transition-transform">
+                      <ListTodo className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                     </div>
                     <h3 className="font-bold text-sm mb-1">Taken</h3>
                     <p className="text-xs text-white/80">Beheren</p>
@@ -373,10 +373,10 @@ const ManagerDashboard: React.FC = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-emerald-600" />
+              <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               Recente Productie
             </h2>
-            <button onClick={() => navigate('/project-production')} className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+            <button onClick={() => navigate('/project-production')} className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium">
               Alles bekijken →
             </button>
           </div>
@@ -385,8 +385,8 @@ const ManagerDashboard: React.FC = () => {
               <Card key={week.id} className="p-4 hover:shadow-lg transition">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
-                      <Factory className="h-4 w-4 text-emerald-600" />
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                      <Factory className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">Week {week.weekNumber}</span>
                   </div>
@@ -401,7 +401,7 @@ const ManagerDashboard: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Waarde:</span>
-                    <span className="font-medium text-emerald-600">€{(week.totalValue || 0).toLocaleString()}</span>
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">€{(week.totalValue || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </Card>
@@ -415,10 +415,10 @@ const ManagerDashboard: React.FC = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <FileText className="h-6 w-6 text-primary-600" />
+              <FileText className="h-6 w-6 text-primary-600 dark:text-primary-400" />
               Recente Inkoopbonnen
             </h2>
-            <button onClick={() => navigate('/incoming-invoices')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            <button onClick={() => navigate('/incoming-invoices')} className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Alles bekijken →
             </button>
           </div>
@@ -426,8 +426,8 @@ const ManagerDashboard: React.FC = () => {
             {incomingInvoices.map((invoice) => (
               <div key={invoice.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary-100 rounded-lg">
-                    <Upload className="h-4 w-4 text-primary-600" />
+                  <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                    <Upload className="h-4 w-4 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div>
                     <p className="font-medium text-gray-900 dark:text-gray-100">{invoice.supplierName || 'Onbekend'}</p>
@@ -462,7 +462,7 @@ const ManagerDashboard: React.FC = () => {
       {teamMembers.length > 0 && (
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-            <Users className={`h-6 w-6 ${isProjectCompany ? 'text-emerald-600' : 'text-green-600'}`} />
+            <Users className={`h-6 w-6 ${isProjectCompany ? 'text-emerald-600 dark:text-emerald-400' : 'text-green-600 dark:text-green-400'}`} />
             {isProjectCompany ? 'Werknemers' : 'Team'} ({teamMembers.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

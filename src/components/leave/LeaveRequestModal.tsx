@@ -153,14 +153,14 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
     <Modal isOpen={isOpen} onClose={handleClose} title="Verlof Aanvragen" size="md">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {currentEmployee && (
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 rounded-lg p-4">
             <div className="flex items-start">
-              <User className="h-5 w-5 text-primary-600 mt-0.5 mr-3" />
+              <User className="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5 mr-3" />
               <div>
-                <h4 className="text-sm font-medium text-primary-900">
+                <h4 className="text-sm font-medium text-primary-900 dark:text-primary-100">
                   {currentEmployee.personalInfo.firstName} {currentEmployee.personalInfo.lastName}
                 </h4>
-                <p className="text-sm text-primary-700 mt-1">
+                <p className="text-sm text-primary-700 dark:text-primary-300 mt-1">
                   {currentEmployee.contractInfo.position}
                 </p>
               </div>
@@ -169,32 +169,32 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
         )}
 
         {leaveBalance && (
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-            <p className="text-sm font-medium text-primary-900 mb-2">
+          <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 rounded-lg p-4">
+            <p className="text-sm font-medium text-primary-900 dark:text-primary-100 mb-2">
               Beschikbaar Verlofsaldo
             </p>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-primary-700">Wettelijk:</span>
-                <span className="ml-2 font-semibold text-primary-900">
+                <span className="text-primary-700 dark:text-primary-300">Wettelijk:</span>
+                <span className="ml-2 font-semibold text-primary-900 dark:text-primary-100">
                   {leaveBalance.holidayDays.statutory} dagen
                 </span>
               </div>
               <div>
-                <span className="text-primary-700">Bovenwettelijk:</span>
-                <span className="ml-2 font-semibold text-primary-900">
+                <span className="text-primary-700 dark:text-primary-300">Bovenwettelijk:</span>
+                <span className="ml-2 font-semibold text-primary-900 dark:text-primary-100">
                   {leaveBalance.holidayDays.extraStatutory} dagen
                 </span>
               </div>
               <div>
-                <span className="text-primary-700">Opgebouwd:</span>
-                <span className="ml-2 font-semibold text-primary-900">
+                <span className="text-primary-700 dark:text-primary-300">Opgebouwd:</span>
+                <span className="ml-2 font-semibold text-primary-900 dark:text-primary-100">
                   {leaveBalance.holidayDays.accumulated} dagen
                 </span>
               </div>
               <div>
-                <span className="text-primary-700">Opgenomen:</span>
-                <span className="ml-2 font-semibold text-primary-900">
+                <span className="text-primary-700 dark:text-primary-300">Opgenomen:</span>
+                <span className="ml-2 font-semibold text-primary-900 dark:text-primary-100">
                   {leaveBalance.holidayDays.taken} dagen
                 </span>
               </div>
@@ -217,7 +217,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
             <option value="care">Zorgverlof</option>
           </select>
           {errors.type && (
-            <p className="text-sm text-red-600 mt-1">{errors.type.message}</p>
+            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.type.message}</p>
           )}
         </div>
 
@@ -255,7 +255,7 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
             placeholder="Geef een korte toelichting..."
           />
           {errors.reason && (
-            <p className="text-sm text-red-600 mt-1">{errors.reason.message}</p>
+            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errors.reason.message}</p>
           )}
         </div>
 
