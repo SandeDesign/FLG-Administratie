@@ -192,10 +192,9 @@ function App() {
                           <Route path="admin/leave-approvals" element={<AdminLeaveApprovals />} />
                           <Route path="admin/absence-management" element={<AdminAbsenceManagement />} />
 
-                          {/* Manager self-service: eigen verlof, verzuim, declaraties */}
+                          {/* Manager self-service: eigen verlof en verzuim */}
                           <Route path="leave" element={<Leave />} />
                           <Route path="absence" element={<Absence />} />
-                          <Route path="expenses" element={<Expenses />} />
 
                           {/* Manager kan facturatie beheren */}
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
@@ -207,9 +206,8 @@ function App() {
                           {/* Manager kan exporteren */}
                           <Route path="timesheet-export" element={<TimesheetExport />} />
 
-                          {/* Manager eigen loonstroken en instellingen */}
+                          {/* Manager systeem */}
                           <Route path="tasks" element={<Tasks />} />
-                          <Route path="payslips" element={<Payslips />} />
                           <Route path="settings" element={<Settings />} />
 
                           <Route path="*" element={<NotFound />} />
