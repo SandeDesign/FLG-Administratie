@@ -81,7 +81,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'outgoing-invoices', name: 'Verkoop', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'incoming-invoices', name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'incoming-invoices-stats', name: 'Inkoop', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'incoming-post', name: 'Inkomende Post', href: '/incoming-post', icon: Mail, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'incoming-post', name: 'Inkomende Post', href: '/incoming-post', icon: Mail, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'bank-statement-import', name: 'Bankafschrift Import', href: '/bank-statement-import', icon: FileInput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // PROJECT (project bedrijven)
