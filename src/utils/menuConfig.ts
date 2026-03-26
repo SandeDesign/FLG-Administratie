@@ -96,10 +96,10 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
 
   // MIJN ZAKEN (employee/manager self-service)
   { id: 'timesheets', name: 'Urenregistratie', nameByRole: { employee: 'Mijn Uren', manager: 'Mijn Uren' }, href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project'] },
-  { id: 'leave', name: 'Verlof', nameByRole: { employee: 'Mijn Verlof' }, href: '/leave', icon: CalendarCheck, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
-  { id: 'absence', name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
-  { id: 'expenses-employee', name: 'Declaraties Medewerkers', nameByRole: { employee: 'Mijn Declaraties' }, href: '/expenses', icon: Receipt, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
-  { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer'] },
+  { id: 'leave', name: 'Verlof', nameByRole: { employee: 'Mijn Verlof' }, href: '/leave', icon: CalendarCheck, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'absence', name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'expenses-employee', name: 'Declaraties Medewerkers', nameByRole: { employee: 'Mijn Declaraties' }, href: '/expenses', icon: Receipt, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // SYSTEEM
   { id: 'tasks', name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
