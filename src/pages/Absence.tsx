@@ -16,7 +16,8 @@ import { usePageTitle } from '../contexts/PageTitleContext';
 
 const Absence: React.FC = () => {
   const { user, currentEmployeeId, adminUserId } = useAuth();
-  const { selectedCompany } = useApp(); // Get selectedCompany from AppContext
+  const { selectedCompany, queryUserId } = useApp();
+  const effectiveUserId = queryUserId || adminUserId;
   const { error: showError } = useToast();
   usePageTitle('Verzuim');
   const [loading, setLoading] = useState(true);
@@ -26,17 +27,15 @@ const Absence: React.FC = () => {
   const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
 
   const loadAbsenceData = useCallback(async () => {
-    if (!user || !adminUserId || !currentEmployeeId || !selectedCompany) {
+    if (!user || !effectiveUserId || !currentEmployeeId || !selectedCompany) {
       setLoading(false);
       return;
     }
-    
+
     try {
       setLoading(true);
       const currentYear = new Date().getFullYear();
 
-      // Get employee data to find the admin userId (if different from current user.uid)
-      // In this setup, user.uid is the adminUserId for all data.
       const currentEmployee = await firebaseService.getEmployeeById(currentEmployeeId);
       if (!currentEmployee) {
         showError('Fout', 'Werknemergegevens niet gevonden.');
@@ -45,8 +44,8 @@ const Absence: React.FC = () => {
       }
 
       const [records, stats] = await Promise.all([
-        firebaseService.getSickLeaveRecords(adminUserId, currentEmployeeId),
-        firebaseService.getAbsenceStatistics(currentEmployeeId, adminUserId, currentYear),
+        firebaseService.getSickLeaveRecords(effectiveUserId, currentEmployeeId),
+        firebaseService.getAbsenceStatistics(currentEmployeeId, effectiveUserId, currentYear),
       ]);
 
       setSickLeaveRecords(records);
@@ -57,7 +56,7 @@ const Absence: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, adminUserId, currentEmployeeId, selectedCompany, showError]);
+  }, [user, effectiveUserId, currentEmployeeId, selectedCompany, showError]);
 
   useEffect(() => {
     loadAbsenceData();

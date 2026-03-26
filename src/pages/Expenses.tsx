@@ -16,7 +16,8 @@ import { useApp } from '../contexts/AppContext';
 const Expenses: React.FC = () => {
   usePageTitle('Declaraties');
   const { user, currentEmployeeId, adminUserId } = useAuth();
-  const { selectedCompany, companies } = useApp();
+  const { selectedCompany, companies, queryUserId } = useApp();
+  const effectiveUserId = queryUserId || adminUserId;
   const { success, error: showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -30,7 +31,7 @@ const Expenses: React.FC = () => {
     : null;
 
   const loadExpenses = useCallback(async () => {
-    if (!user || !adminUserId || !currentEmployeeId || !selectedCompany) {
+    if (!user || !effectiveUserId || !currentEmployeeId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -46,7 +47,7 @@ const Expenses: React.FC = () => {
       }
       setCurrentEmployee(employee);
 
-      const data = await firebaseService.getExpenses(adminUserId, currentEmployeeId);
+      const data = await firebaseService.getExpenses(effectiveUserId, currentEmployeeId);
       setExpenses(data);
     } catch (err) {
       console.error('Error loading expenses:', err);
@@ -54,7 +55,7 @@ const Expenses: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, adminUserId, currentEmployeeId, selectedCompany, showError]);
+  }, [user, effectiveUserId, currentEmployeeId, selectedCompany, showError]);
 
   useEffect(() => {
     loadExpenses();
@@ -94,7 +95,7 @@ const Expenses: React.FC = () => {
   };
 
   const handleSubmitExpense = async (expense: Expense) => {
-    if (!adminUserId || !user) return;
+    if (!effectiveUserId || !user) return;
 
     if (!expense.id) {
       showError('Fout', 'Declaratie ID ontbreekt');
@@ -106,7 +107,7 @@ const Expenses: React.FC = () => {
       try {
         await firebaseService.submitExpense(
           expense.id,
-          adminUserId,
+          effectiveUserId,
           user.displayName || user.email || 'Werknemer'
         );
         success('Declaratie ingediend', 'Je declaratie is ingediend ter goedkeuring');
