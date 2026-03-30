@@ -31,8 +31,8 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({ balance, onRequestL
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-primary-100 rounded-lg">
-            <Calendar className="h-6 w-6 text-primary-600" />
+          <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+            <Calendar className="h-6 w-6 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -46,7 +46,7 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({ balance, onRequestL
         {onRequestLeave && (
           <button
             onClick={onRequestLeave}
-            className="text-sm font-medium text-primary-600 hover:text-primary-700"
+            className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
           >
             Aanvragen
           </button>
@@ -54,13 +54,13 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({ balance, onRequestL
       </div>
 
       {showExpiryWarning && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
-          <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg flex items-start space-x-2">
+          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-red-800">
+            <p className="text-sm font-medium text-red-800 dark:text-red-200">
               Dagen vervallen binnenkort
             </p>
-            <p className="text-xs text-red-700 mt-1">
+            <p className="text-xs text-red-700 dark:text-red-300 mt-1">
               {holidayDays.carried} dagen vervallen over {daysUntilExpiry} dagen
             </p>
           </div>
@@ -132,7 +132,7 @@ const LeaveBalanceCard: React.FC<LeaveBalanceCardProps> = ({ balance, onRequestL
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Totaal Resterend
             </span>
-            <span className="text-2xl font-bold text-primary-600">
+            <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">
               {totalRemaining}
             </span>
           </div>

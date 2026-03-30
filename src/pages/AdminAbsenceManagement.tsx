@@ -66,11 +66,11 @@ const AdminAbsenceManagement: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
       case 'partially_recovered':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
       case 'long_term':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200';
       default:
         return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200';
     }
@@ -117,7 +117,7 @@ const AdminAbsenceManagement: React.FC = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6 bg-gradient-to-br from-red-50 to-red-100">
+        <Card className="p-6 bg-gradient-to-br from-red-50 dark:from-red-900/20 to-red-100 dark:to-red-900/30">
           <div className="flex items-center">
             <div className="p-3 bg-red-600 rounded-xl mr-4">
               <HeartPulse className="h-6 w-6 text-white" />
@@ -130,7 +130,7 @@ const AdminAbsenceManagement: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-orange-100">
+        <Card className="p-6 bg-gradient-to-br from-orange-50 dark:from-orange-900/20 to-orange-100 dark:to-orange-900/30">
           <div className="flex items-center">
             <div className="p-3 bg-orange-600 rounded-xl mr-4">
               <AlertTriangle className="h-6 w-6 text-white" />
@@ -143,7 +143,7 @@ const AdminAbsenceManagement: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card className="p-6 bg-gradient-to-br from-primary-50 to-primary-100">
+        <Card className="p-6 bg-gradient-to-br from-primary-50 dark:from-primary-900/20 to-primary-100 dark:to-primary-900/30">
           <div className="flex items-center">
             <div className="p-3 bg-primary-600 rounded-xl mr-4">
               <Clock className="h-6 w-6 text-white" />
@@ -156,7 +156,7 @@ const AdminAbsenceManagement: React.FC = () => {
             </div>
           </div>
         </Card>
-        <Card className="p-6 bg-gradient-to-br from-green-50 to-green-100">
+        <Card className="p-6 bg-gradient-to-br from-green-50 dark:from-green-900/20 to-green-100 dark:to-green-900/30">
           <div className="flex items-center">
             <div className="p-3 bg-green-600 rounded-xl mr-4">
               <User className="h-6 w-6 text-white" />
@@ -172,7 +172,7 @@ const AdminAbsenceManagement: React.FC = () => {
       </div>
 
       <Card>
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             Actief Verzuim
           </h2>
@@ -217,8 +217,8 @@ const AdminAbsenceManagement: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{new Date(sickLeave.startDate).toLocaleDateString('nl-NL')}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          <span className={`text-sm font-medium ${isLongTerm ? 'text-orange-600' : 'text-gray-900 dark:text-gray-100'}`}>{daysSick} dagen</span>
-                          {isLongTerm && <AlertTriangle className="h-4 w-4 text-orange-600 ml-2" />}
+                          <span className={`text-sm font-medium ${isLongTerm ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-gray-100'}`}>{daysSick} dagen</span>
+                          {isLongTerm && <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400 ml-2" />}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{sickLeave.workCapacityPercentage}%</td>
@@ -227,7 +227,7 @@ const AdminAbsenceManagement: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {sickLeave.poortwachterActive ? (
-                          <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-primary-100 text-primary-800 rounded-full">
+                          <span className="inline-flex items-center px-3 py-1 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200 rounded-full">
                             <Clock className="h-3 w-3 mr-1" />Actief
                           </span>
                         ) : (
@@ -260,12 +260,12 @@ const AdminAbsenceManagement: React.FC = () => {
                     <span>{new Date(sickLeave.startDate).toLocaleDateString('nl-NL')}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className={`font-medium ${isLongTerm ? 'text-orange-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                    <span className={`font-medium ${isLongTerm ? 'text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}>
                       {daysSick} dagen {isLongTerm && '⚠️'}
                     </span>
                     <span className="text-gray-500 dark:text-gray-400">{sickLeave.workCapacityPercentage}% geschikt</span>
                     {sickLeave.poortwachterActive && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-primary-100 text-primary-800 rounded-full">
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-200 rounded-full">
                         <Clock className="h-3 w-3 mr-0.5" />PW
                       </span>
                     )}
@@ -281,17 +281,17 @@ const AdminAbsenceManagement: React.FC = () => {
       {/* Alerts for long-term cases */}
       {longTermCases.length > 0 && (
         <Card>
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-6 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center">
-              <AlertTriangle className="h-5 w-5 text-orange-600 mr-2" />
+              <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 mr-2" />
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 Aandachtspunten
               </h2>
             </div>
           </div>
           <div className="p-6">
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-              <p className="text-sm text-orange-800">
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-xl p-4">
+              <p className="text-sm text-orange-800 dark:text-orange-200">
                 <strong>{longTermCases.length} werknemers</strong> zijn langer dan 6 weken ziek. 
                 Overweeg contact op te nemen met de arbodienst en activeer de poortwachter procedure indien nog niet gedaan.
               </p>
