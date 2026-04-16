@@ -121,31 +121,89 @@ export const bankImportService = {
 
   parseMT940(rawData: string): BankTransaction[] {
     const transactions: BankTransaction[] = [];
-    const blocks = rawData.split(':86:');
 
-    for (let i = 1; i < blocks.length; i++) {
-      const block = blocks[i];
+    // Zoek alle :61: regels als transactie-entries, met de bijbehorende :86: beschrijving
+    const lines = rawData.split('\n');
+    let idx = 0;
 
-      const dateMatch = block.match(/:61:(\d{6})/);
-      const amountMatch = block.match(/([CD])(\d+),(\d+)/);
-      const descriptionMatch = block.match(/:86:(.*?)(?=:61:|$)/s);
+    while (idx < lines.length) {
+      const line = lines[idx].trim();
 
-      if (dateMatch && amountMatch) {
+      if (line.startsWith(':61:')) {
+        // Parse :61: transactieregel
+        // Format: :61:YYMMDD[MMDD]DC[R]amount,decNtttREF
+        const entryLine = line.substring(4); // strip ':61:'
+        const dateMatch = entryLine.match(/^(\d{6})/);
+        // D of C staat na de datum (6 cijfers) + optioneel 4 extra cijfers
+        const dcMatch = entryLine.match(/^\d{6,10}([DC])(\d+),(\d+)/);
+
+        if (!dateMatch || !dcMatch) {
+          idx++;
+          continue;
+        }
+
         const dateStr = dateMatch[1];
         const year = 2000 + parseInt(dateStr.substring(0, 2));
         const month = parseInt(dateStr.substring(2, 4)) - 1;
         const day = parseInt(dateStr.substring(4, 6));
+        const isCredit = dcMatch[1] === 'C';
+        const amount = parseFloat(`${dcMatch[2]}.${dcMatch[3]}`);
 
-        const isCredit = amountMatch[1] === 'C';
-        const amount = parseFloat(`${amountMatch[2]}.${amountMatch[3]}`);
+        // Haal IBAN op van de volgende regel(s) tot :86:
+        let accountNumber = '';
+        let continuation = '';
+        idx++;
+        while (idx < lines.length && !lines[idx].trim().startsWith(':86:') && !lines[idx].trim().startsWith(':61:') && !lines[idx].trim().startsWith(':62')) {
+          const contLine = lines[idx].trim();
+          if (contLine.match(/^[A-Z]{2}\d{2}[A-Z]{4}/)) {
+            accountNumber = contLine;
+          } else {
+            continuation += ' ' + contLine;
+          }
+          idx++;
+        }
+
+        // Parse :86: beschrijving
+        let description = '';
+        let beneficiary = '';
+        let reference = '';
+        if (idx < lines.length && lines[idx].trim().startsWith(':86:')) {
+          // Verzamel alle :86: regels (kan meerdere regels beslaan)
+          let descBlock = lines[idx].trim().substring(4); // strip ':86:'
+          idx++;
+          while (idx < lines.length) {
+            const nextLine = lines[idx].trim();
+            if (nextLine.startsWith(':') && nextLine.match(/^:\d{2}[A-Z]?:/)) break;
+            descBlock += ' ' + nextLine;
+            idx++;
+          }
+
+          // Extraheer velden uit de gestructureerde :86: beschrijving
+          const nameMatch = descBlock.match(/\/NAME\/(.*?)(?=\/[A-Z]{4}\/|$)/);
+          const remiMatch = descBlock.match(/\/REMI\/(.*?)(?=\/[A-Z]{4}\/|$)/);
+          const erefMatch = descBlock.match(/\/EREF\/(.*?)(?=\/[A-Z]{4}\/|$)/);
+
+          beneficiary = nameMatch ? nameMatch[1].trim() : '';
+          const remiText = remiMatch ? remiMatch[1].trim() : '';
+          const erefText = erefMatch ? erefMatch[1].trim() : '';
+
+          // Bouw volledige description op voor matching
+          description = [remiText, erefText, descBlock].filter(Boolean).join(' ');
+          reference = erefText || remiText;
+        }
 
         transactions.push({
-          id: `mt940-${i}`,
+          id: `mt940-${transactions.length}`,
           date: new Date(year, month, day),
           amount: isCredit ? amount : -amount,
-          description: descriptionMatch ? descriptionMatch[1].trim() : '',
+          description,
+          beneficiary: beneficiary || undefined,
+          reference: reference || undefined,
+          accountNumber: accountNumber || undefined,
           transactionType: isCredit ? 'credit' : 'debit',
         });
+      } else {
+        idx++;
       }
     }
 
