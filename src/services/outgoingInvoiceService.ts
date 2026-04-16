@@ -9,7 +9,7 @@ import {
   query,
   where,
   orderBy,
-  Timestamp
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { getThemeColorPreset } from '../utils/themeColors';
@@ -37,7 +37,8 @@ export interface OutgoingInvoice {
   description: string;
   invoiceDate: Date;
   dueDate: Date;
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  status: 'draft' | 'sent' | 'paid' | 'partial' | 'overdue' | 'cancelled';
+  paidAmount?: number;
   purchaseOrder?: string;
   projectCode?: string;
   paidAt?: Date;
@@ -286,6 +287,44 @@ export const outgoingInvoiceService = {
       console.error('Error marking as unpaid:', error);
       throw new Error('Kon factuur niet als onbetaald markeren');
     }
+  },
+
+  async addPartialPayment(invoiceId: string, amount: number): Promise<'paid' | 'partial'> {
+    const docRef = doc(db, COLLECTION_NAME, invoiceId);
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) throw new Error('Factuur niet gevonden');
+
+    const data = snapshot.data();
+    const currentPaid = data.paidAmount || 0;
+    const totalAmount = data.totalAmount || 0;
+    const newPaid = currentPaid + Math.abs(amount);
+    const isFullyPaid = newPaid >= totalAmount - 0.01;
+
+    await updateDoc(docRef, {
+      paidAmount: newPaid,
+      status: isFullyPaid ? 'paid' : 'partial',
+      ...(isFullyPaid ? { paidAt: new Date() } : {}),
+      updatedAt: new Date(),
+    });
+
+    return isFullyPaid ? 'paid' : 'partial';
+  },
+
+  async subtractPartialPayment(invoiceId: string, amount: number): Promise<void> {
+    const docRef = doc(db, COLLECTION_NAME, invoiceId);
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) return;
+
+    const data = snapshot.data();
+    const currentPaid = data.paidAmount || 0;
+    const newPaid = Math.max(0, currentPaid - Math.abs(amount));
+
+    await updateDoc(docRef, {
+      paidAmount: newPaid,
+      status: newPaid > 0 ? 'partial' : 'sent',
+      paidAt: null,
+      updatedAt: new Date(),
+    });
   },
 
   async deleteInvoice(invoiceId: string): Promise<void> {

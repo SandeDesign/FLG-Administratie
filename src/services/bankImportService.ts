@@ -556,9 +556,9 @@ export const bankImportService = {
         try {
           await matchedPaymentsService.deleteByTransactionId(companyId, transDoc.id);
           if (t.matchedInvoiceType === 'outgoing') {
-            await outgoingInvoiceService.markAsUnpaid(t.matchedInvoiceId);
+            await outgoingInvoiceService.subtractPartialPayment(t.matchedInvoiceId, t.amount);
           } else {
-            await incomingInvoiceService.markAsUnpaid(t.matchedInvoiceId);
+            await incomingInvoiceService.subtractPartialPayment(t.matchedInvoiceId, t.amount);
           }
         } catch (e) {
           console.error('Error cleaning up matched payment:', e);
@@ -672,8 +672,8 @@ export const bankImportService = {
 
     Object.keys(updates).forEach((key) => {
       if (key !== 'editHistory' && key !== 'updatedAt') {
-        const oldValue = currentData[key as keyof BankTransaction];
-        const newValue = updates[key as keyof BankTransaction];
+        const oldValue = (currentData as Record<string, unknown>)[key];
+        const newValue = (updates as Record<string, unknown>)[key];
 
         if (oldValue !== newValue) {
           editHistory.push({
@@ -681,15 +681,19 @@ export const bankImportService = {
             userId,
             userName,
             fieldChanged: key,
-            oldValue,
-            newValue,
+            oldValue: oldValue ?? null,
+            newValue: newValue ?? null,
           });
         }
       }
     });
 
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== undefined)
+    );
+
     await updateDoc(transactionRef, {
-      ...updates,
+      ...cleanUpdates,
       editHistory,
       updatedAt: Date.now(),
     });
@@ -731,9 +735,9 @@ export const bankImportService = {
     );
 
     if (transaction.matchedInvoiceType === 'outgoing') {
-      await outgoingInvoiceService.markAsPaid(transaction.matchedInvoiceId);
+      await outgoingInvoiceService.addPartialPayment(transaction.matchedInvoiceId, transaction.amount);
     } else {
-      await incomingInvoiceService.markAsPaid(transaction.matchedInvoiceId);
+      await incomingInvoiceService.addPartialPayment(transaction.matchedInvoiceId, transaction.amount);
     }
   },
 
@@ -756,9 +760,9 @@ export const bankImportService = {
 
     if (transaction.matchedInvoiceId && transaction.matchedInvoiceType) {
       if (transaction.matchedInvoiceType === 'outgoing') {
-        await outgoingInvoiceService.markAsUnpaid(transaction.matchedInvoiceId);
+        await outgoingInvoiceService.subtractPartialPayment(transaction.matchedInvoiceId, transaction.amount);
       } else {
-        await incomingInvoiceService.markAsUnpaid(transaction.matchedInvoiceId);
+        await incomingInvoiceService.subtractPartialPayment(transaction.matchedInvoiceId, transaction.amount);
       }
     }
   },

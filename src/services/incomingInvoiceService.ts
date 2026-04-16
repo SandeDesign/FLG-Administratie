@@ -2,6 +2,7 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   doc,
   updateDoc,
   deleteDoc,
@@ -36,7 +37,8 @@ export interface IncomingInvoice {
   description: string;
   invoiceDate: Date;
   dueDate: Date;
-  status: 'pending' | 'approved' | 'paid' | 'rejected';
+  status: 'pending' | 'approved' | 'paid' | 'partial' | 'rejected';
+  paidAmount?: number;
   approvedAt?: Date;
   approvedBy?: string;
   paidAt?: Date;
@@ -402,6 +404,44 @@ export const incomingInvoiceService = {
       console.error('Error marking as unpaid:', error);
       throw new Error('Kon factuur niet als onbetaald markeren');
     }
+  },
+
+  async addPartialPayment(invoiceId: string, amount: number): Promise<'paid' | 'partial'> {
+    const docRef = doc(db, COLLECTION_NAME, invoiceId);
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) throw new Error('Factuur niet gevonden');
+
+    const data = snapshot.data();
+    const currentPaid = data.paidAmount || 0;
+    const totalAmount = data.totalAmount || 0;
+    const newPaid = currentPaid + Math.abs(amount);
+    const isFullyPaid = newPaid >= totalAmount - 0.01;
+
+    await updateDoc(docRef, {
+      paidAmount: newPaid,
+      status: isFullyPaid ? 'paid' : 'partial',
+      ...(isFullyPaid ? { paidAt: Timestamp.fromDate(new Date()) } : {}),
+      updatedAt: Timestamp.fromDate(new Date()),
+    });
+
+    return isFullyPaid ? 'paid' : 'partial';
+  },
+
+  async subtractPartialPayment(invoiceId: string, amount: number): Promise<void> {
+    const docRef = doc(db, COLLECTION_NAME, invoiceId);
+    const snapshot = await getDoc(docRef);
+    if (!snapshot.exists()) return;
+
+    const data = snapshot.data();
+    const currentPaid = data.paidAmount || 0;
+    const newPaid = Math.max(0, currentPaid - Math.abs(amount));
+
+    await updateDoc(docRef, {
+      paidAmount: newPaid,
+      status: newPaid > 0 ? 'partial' : 'pending',
+      paidAt: null,
+      updatedAt: Timestamp.fromDate(new Date()),
+    });
   },
 
   // Process OCR (placeholder for Tesseract.js or Google Vision API)

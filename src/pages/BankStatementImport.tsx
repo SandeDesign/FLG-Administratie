@@ -525,6 +525,7 @@ const BankStatementImport: React.FC = () => {
         {
           matchedInvoiceId: invoice.id || '',
           matchedInvoiceType: type,
+          matchedInvoiceNumber: invoice.invoiceNumber,
           confidence: 100,
           status: 'pending',
         },
@@ -1761,83 +1762,145 @@ const BankStatementImport: React.FC = () => {
               </div>
             </div>
 
-            <div className="max-h-96 overflow-y-auto space-y-2">
-              {linkingTransaction.transaction.type === 'outgoing' ? (
-                <>
-                  <h4 className="text-sm font-medium text-green-600 mb-2">Uitgaande facturen</h4>
-                  {outgoingInvoices
-                    .filter(
-                      (inv) =>
-                        !invoiceSearchTerm ||
-                        inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
-                        inv.clientName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
-                    )
-                    .map((invoice) => (
-                      <button
-                        key={invoice.id}
-                        onClick={() => handleLinkInvoice(invoice, 'outgoing')}
-                        className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              {invoice.invoiceNumber}
+            <div className="max-h-96 overflow-y-auto space-y-4">
+              {/* Inkomende facturen (inkoop) — primair voor uitgaande betalingen */}
+              {(() => {
+                const filtered = incomingInvoices.filter(
+                  (inv) =>
+                    !invoiceSearchTerm ||
+                    inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
+                    inv.supplierName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
+                );
+                if (filtered.length === 0) return null;
+                return (
+                  <div>
+                    <h4 className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">
+                      Inkomende facturen (inkoop)
+                    </h4>
+                    <div className="space-y-2">
+                      {filtered.map((invoice) => {
+                        const paid = invoice.paidAmount || 0;
+                        const pct = invoice.totalAmount > 0 ? Math.min(100, (paid / invoice.totalAmount) * 100) : 0;
+                        const isPartial = paid > 0 && paid < invoice.totalAmount;
+                        return (
+                          <button
+                            key={invoice.id}
+                            onClick={() => handleLinkInvoice(invoice, 'incoming')}
+                            className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {invoice.invoiceNumber}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  {invoice.supplierName}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {safeFormatDate(invoice.invoiceDate, 'dd-MM-yyyy')}
+                                </div>
+                                {isPartial && (
+                                  <div className="mt-1.5">
+                                    <div className="flex justify-between text-xs text-amber-600 mb-0.5">
+                                      <span>Deelbetaling</span>
+                                      <span>€ {paid.toFixed(2)} / € {invoice.totalAmount.toFixed(2)}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-1">
+                                      <div className="bg-amber-500 h-1 rounded-full" style={{ width: `${pct}%` }} />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right ml-3 flex-shrink-0">
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  € {invoice.totalAmount.toFixed(2)}
+                                </div>
+                                <div className={`text-xs mt-1 ${
+                                  invoice.status === 'paid' ? 'text-green-600' :
+                                  invoice.status === 'partial' ? 'text-amber-600' :
+                                  'text-gray-500'
+                                }`}>{invoice.status}</div>
+                              </div>
                             </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              {invoice.clientName}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Uitgaande facturen (verkoop) — primair voor inkomende betalingen */}
+              {(() => {
+                const filtered = outgoingInvoices.filter(
+                  (inv) =>
+                    !invoiceSearchTerm ||
+                    inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
+                    inv.clientName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
+                );
+                if (filtered.length === 0) return null;
+                return (
+                  <div>
+                    <h4 className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
+                      Uitgaande facturen (verkoop)
+                    </h4>
+                    <div className="space-y-2">
+                      {filtered.map((invoice) => {
+                        const paid = invoice.paidAmount || 0;
+                        const pct = invoice.totalAmount > 0 ? Math.min(100, (paid / invoice.totalAmount) * 100) : 0;
+                        const isPartial = paid > 0 && paid < invoice.totalAmount;
+                        return (
+                          <button
+                            key={invoice.id}
+                            onClick={() => handleLinkInvoice(invoice, 'outgoing')}
+                            className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {invoice.invoiceNumber}
+                                </div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                  {invoice.clientName}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {safeFormatDate(invoice.invoiceDate, 'dd-MM-yyyy')}
+                                </div>
+                                {isPartial && (
+                                  <div className="mt-1.5">
+                                    <div className="flex justify-between text-xs text-amber-600 mb-0.5">
+                                      <span>Deelbetaling</span>
+                                      <span>€ {paid.toFixed(2)} / € {invoice.totalAmount.toFixed(2)}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-1">
+                                      <div className="bg-amber-500 h-1 rounded-full" style={{ width: `${pct}%` }} />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right ml-3 flex-shrink-0">
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  € {invoice.totalAmount.toFixed(2)}
+                                </div>
+                                <div className={`text-xs mt-1 ${
+                                  invoice.status === 'paid' ? 'text-green-600' :
+                                  invoice.status === 'partial' ? 'text-amber-600' :
+                                  'text-gray-500'
+                                }`}>{invoice.status}</div>
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {safeFormatDate(invoice.invoiceDate, 'dd-MM-yyyy')}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              € {invoice.totalAmount.toFixed(2)}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">{invoice.status}</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                </>
-              ) : (
-                <>
-                  <h4 className="text-sm font-medium text-red-600 mb-2">Inkomende facturen</h4>
-                  {incomingInvoices
-                    .filter(
-                      (inv) =>
-                        !invoiceSearchTerm ||
-                        inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
-                        inv.supplierName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
-                    )
-                    .map((invoice) => (
-                      <button
-                        key={invoice.id}
-                        onClick={() => handleLinkInvoice(invoice, 'incoming')}
-                        className="w-full p-3 text-left border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              {invoice.invoiceNumber}
-                            </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              {invoice.supplierName}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {safeFormatDate(invoice.invoiceDate, 'dd-MM-yyyy')}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              € {invoice.totalAmount.toFixed(2)}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">{invoice.status}</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                </>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {incomingInvoices.length === 0 && outgoingInvoices.length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+                  Geen facturen gevonden
+                </p>
               )}
             </div>
           </div>
