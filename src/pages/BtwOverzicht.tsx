@@ -104,6 +104,26 @@ const BtwOverzicht: React.FC = () => {
       ongeclassificeerd++;
       if (t.amount >= 0) ongeclassificeerdIn += t.amount;
       else ongeclassificeerdUit += Math.abs(t.amount);
+
+      const uncatKey = t.amount < 0 ? '_ongeclass_uit' : '_ongeclass_in';
+      let uncatRegel = regelMap.get(uncatKey);
+      if (!uncatRegel) {
+        uncatRegel = {
+          code: '—',
+          naam: t.amount < 0 ? 'Zonder grootboek (uitgaand)' : 'Zonder grootboek (inkomend)',
+          btwType: '?',
+          btwPercentage: 0,
+          nettoBedrag: 0,
+          btwBedrag: 0,
+          brutoBedrag: 0,
+          transactieCount: 0,
+        };
+        regelMap.set(uncatKey, uncatRegel);
+        btwRegels.push(uncatRegel);
+      }
+      uncatRegel.brutoBedrag += Math.abs(t.amount);
+      uncatRegel.nettoBedrag += Math.abs(t.amount);
+      uncatRegel.transactieCount++;
       continue;
     }
     const gb = gbMap.get(gbCode);
@@ -282,28 +302,37 @@ const BtwOverzicht: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {btwRegels.sort((a, b) => a.code.localeCompare(b.code)).map((r, i) => (
-                        <tr key={i} className="border-b border-gray-50 dark:border-gray-800 last:border-0">
-                          <td className="py-2 px-3 font-mono text-blue-600 dark:text-blue-400 font-bold">{r.code}</td>
-                          <td className="py-2 px-3 text-gray-900 dark:text-white">{r.naam}</td>
-                          <td className="py-2 px-3">
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              r.btwType === 'hoog' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
-                              r.btwType === 'laag' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                              r.btwType === 'verlegd' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
-                              'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                            }`}>
-                              {r.btwType} {r.btwPercentage > 0 ? `(${r.btwPercentage}%)` : ''}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3 text-right text-gray-900 dark:text-white">{fmt(r.nettoBedrag)}</td>
-                          <td className={`py-2 px-3 text-right font-medium ${r.btwBedrag > 0 ? 'text-green-600' : r.btwBedrag < 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                            {fmt(r.btwBedrag)}
-                          </td>
-                          <td className="py-2 px-3 text-right text-gray-900 dark:text-white">{fmt(r.brutoBedrag)}</td>
-                          <td className="py-2 px-3 text-right text-gray-500">{r.transactieCount}</td>
-                        </tr>
-                      ))}
+                      {btwRegels.sort((a, b) => a.code.localeCompare(b.code)).map((r, i) => {
+                        const isUncat = r.btwType === '?';
+                        return (
+                          <tr key={i} className={`border-b last:border-0 ${isUncat ? 'bg-amber-50/50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30' : 'border-gray-50 dark:border-gray-800'}`}>
+                            <td className={`py-2 px-3 font-mono font-bold ${isUncat ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>{r.code}</td>
+                            <td className={`py-2 px-3 ${isUncat ? 'text-amber-700 dark:text-amber-300 italic' : 'text-gray-900 dark:text-white'}`}>{r.naam}</td>
+                            <td className="py-2 px-3">
+                              {isUncat ? (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                                  onbekend
+                                </span>
+                              ) : (
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                  r.btwType === 'hoog' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                                  r.btwType === 'laag' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                  r.btwType === 'verlegd' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
+                                  'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                                }`}>
+                                  {r.btwType} {r.btwPercentage > 0 ? `(${r.btwPercentage}%)` : ''}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 text-right text-gray-900 dark:text-white">{fmt(r.nettoBedrag)}</td>
+                            <td className={`py-2 px-3 text-right font-medium ${isUncat ? 'text-gray-400' : r.btwBedrag > 0 ? 'text-green-600' : r.btwBedrag < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                              {isUncat ? '—' : fmt(r.btwBedrag)}
+                            </td>
+                            <td className="py-2 px-3 text-right text-gray-900 dark:text-white">{fmt(r.brutoBedrag)}</td>
+                            <td className="py-2 px-3 text-right text-gray-500">{r.transactieCount}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                     <tfoot>
                       <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-semibold">
@@ -327,40 +356,49 @@ const BtwOverzicht: React.FC = () => {
 
                 {/* Mobile card list */}
                 <div className="md:hidden space-y-2">
-                  {btwRegels.sort((a, b) => a.code.localeCompare(b.code)).map((r, i) => (
-                    <div key={i} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{r.code}</span>
-                          <span className="text-xs text-gray-900 dark:text-white truncate">{r.naam}</span>
+                  {btwRegels.sort((a, b) => a.code.localeCompare(b.code)).map((r, i) => {
+                    const isUncat = r.btwType === '?';
+                    return (
+                      <div key={i} className={`p-3 rounded-lg ${isUncat ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`font-mono text-xs font-bold ${isUncat ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>{r.code}</span>
+                            <span className={`text-xs truncate ${isUncat ? 'text-amber-700 dark:text-amber-300 italic' : 'text-gray-900 dark:text-white'}`}>{r.naam}</span>
+                          </div>
+                          {isUncat ? (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                              onbekend
+                            </span>
+                          ) : (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 ${
+                              r.btwType === 'hoog' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                              r.btwType === 'laag' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                              r.btwType === 'verlegd' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
+                              'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                            }`}>
+                              {r.btwType}{r.btwPercentage > 0 ? ` ${r.btwPercentage}%` : ''}
+                            </span>
+                          )}
                         </div>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 ${
-                          r.btwType === 'hoog' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
-                          r.btwType === 'laag' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                          r.btwType === 'verlegd' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
-                          'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                        }`}>
-                          {r.btwType}{r.btwPercentage > 0 ? ` ${r.btwPercentage}%` : ''}
-                        </span>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <span className="text-gray-500 block">Netto</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{fmt(r.nettoBedrag)}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500 block">BTW</span>
+                            <span className={`font-medium ${isUncat ? 'text-gray-400' : r.btwBedrag > 0 ? 'text-green-600' : r.btwBedrag < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                              {isUncat ? '—' : fmt(r.btwBedrag)}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-gray-500 block">Bruto</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{fmt(r.brutoBedrag)}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div>
-                          <span className="text-gray-500 block">Netto</span>
-                          <span className="font-medium text-gray-900 dark:text-white">{fmt(r.nettoBedrag)}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500 block">BTW</span>
-                          <span className={`font-medium ${r.btwBedrag > 0 ? 'text-green-600' : r.btwBedrag < 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                            {fmt(r.btwBedrag)}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-gray-500 block">Bruto</span>
-                          <span className="font-medium text-gray-900 dark:text-white">{fmt(r.brutoBedrag)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Mobile totaal */}
                   <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-t-2 border-gray-300 dark:border-gray-500">
