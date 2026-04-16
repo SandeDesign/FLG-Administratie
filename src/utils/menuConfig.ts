@@ -85,6 +85,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'incoming-post', name: 'Inkomende Post', href: '/incoming-post', icon: Mail, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'bank-statement-import', name: 'Bankafschrift Import', href: '/bank-statement-import', icon: FileInput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'grootboekrekeningen', name: 'Rekeningschema', href: '/grootboekrekeningen', icon: BookOpen, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'btw-overzicht', name: 'BTW Overzicht', href: '/btw-overzicht', icon: Receipt, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // PROJECT (project bedrijven)
   { id: 'project-production', name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin', 'manager'], companyTypes: ['project'] },
@@ -126,7 +127,7 @@ export interface Section {
 const SECTION_ITEMS: Record<string, string[]> = {
   Statistieken: ['statistics-employer', 'statistics-project', 'statistics-holding'],
   HR: ['employees', 'timesheet-approvals', 'internal-projects', 'payroll-processing', 'leave-approvals', 'absence-management'],
-  Financieel: ['invoice-relations', 'budgeting', 'admin-expenses', 'outgoing-invoices', 'incoming-invoices', 'incoming-invoices-stats', 'incoming-post', 'bank-statement-import', 'grootboekrekeningen'],
+  Financieel: ['invoice-relations', 'budgeting', 'admin-expenses', 'outgoing-invoices', 'incoming-invoices', 'incoming-invoices-stats', 'incoming-post', 'bank-statement-import', 'grootboekrekeningen', 'btw-overzicht'],
   Project: ['project-production', 'project-statistics', 'project-team'],
   'Mijn Zaken': ['timesheets', 'leave', 'absence', 'expenses-employee', 'payslips'],
   Systeem: ['tasks', 'companies', 'audit-log', 'users', 'investment-pitch', 'settings'],
