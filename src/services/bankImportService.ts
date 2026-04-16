@@ -287,6 +287,8 @@ export const bankImportService = {
     const outgoingInvoices = await outgoingInvoiceService.getInvoices(userId, companyId);
     const incomingInvoices = await incomingInvoiceService.getInvoices(userId, companyId);
 
+    console.log('[matchTransactions] outgoing facturen:', outgoingInvoices.length, '| incoming facturen:', incomingInvoices.length, '| transacties:', transactions.length, '| skipFilter:', skipMatchedFilter);
+
     let availableOutgoingInvoices = outgoingInvoices;
     let availableIncomingInvoices = incomingInvoices;
 
@@ -448,8 +450,12 @@ export const bankImportService = {
           type,
           status: invoice.status,
         });
+      } else if (confidence > 0) {
+        console.log('[findPossibleMatches] BIJNA match:', invoice.invoiceNumber, 'confidence:', confidence, 'voor transactie:', transaction.description.substring(0, 50));
       }
     }
+
+    console.log('[findPossibleMatches] type:', type, '| facturen gecheck:', invoices.length, '| matches gevonden:', matches.length, '| transactie bedrag:', transaction.amount);
 
     return matches.sort((a, b) => b.confidence - a.confidence);
   },
