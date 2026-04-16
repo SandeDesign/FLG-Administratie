@@ -354,14 +354,17 @@ export const bankImportService = {
     );
 
     const results: MatchResult[] = [];
+    const usedInvoiceIds = new Set<string>();
 
     for (const transaction of transactions) {
       let possibleMatches: MatchedInvoice[] = [];
 
       if (transaction.amount >= 0) {
-        possibleMatches = this.findPossibleMatches(transaction, availableOutgoingInvoices, 'outgoing');
+        const available = availableOutgoingInvoices.filter(inv => !usedInvoiceIds.has(inv.id || ''));
+        possibleMatches = this.findPossibleMatches(transaction, available, 'outgoing');
       } else {
-        possibleMatches = this.findPossibleMatches(transaction, availableIncomingInvoices, 'incoming');
+        const available = availableIncomingInvoices.filter(inv => !usedInvoiceIds.has(inv.id || ''));
+        possibleMatches = this.findPossibleMatches(transaction, available, 'incoming');
       }
 
       if (possibleMatches.length > 0) {
@@ -369,6 +372,8 @@ export const bankImportService = {
         const status: 'confirmed' | 'pending' | 'unmatched' =
           bestMatch.confidence >= 80 ? 'confirmed' :
           bestMatch.confidence >= 40 ? 'pending' : 'unmatched';
+
+        usedInvoiceIds.add(bestMatch.invoiceId);
 
         results.push({
           transaction,
