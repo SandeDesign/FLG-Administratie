@@ -344,14 +344,8 @@ export const bankImportService = {
     const outgoingInvoices = await outgoingInvoiceService.getInvoices(userId, companyId);
     const incomingInvoices = await incomingInvoiceService.getInvoices(userId, companyId);
 
-    const matchedInvoiceIds = await matchedPaymentsService.getMatchedInvoiceIds(companyId);
-
-    const availableOutgoingInvoices = outgoingInvoices.filter(
-      inv => !matchedInvoiceIds.has(inv.id || '')
-    );
-    const availableIncomingInvoices = incomingInvoices.filter(
-      inv => !matchedInvoiceIds.has(inv.id || '')
-    );
+    const availableOutgoingInvoices = outgoingInvoices;
+    const availableIncomingInvoices = incomingInvoices;
 
     const results: MatchResult[] = [];
     const usedInvoiceIds = new Set<string>();
