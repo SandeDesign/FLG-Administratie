@@ -45,6 +45,7 @@ import {
 } from '../types/bankImport';
 import { Grootboekrekening, Crediteur, Debiteur } from '../types/supplier';
 import { grootboekCategoryLabels } from '../utils/grootboekTemplate';
+import { generateGrootboekPDF } from '../lib/generateGrootboekPDF';
 import { format as formatDate } from 'date-fns';
 import Modal from '../components/ui/Modal';
 import { usePageTitle } from '../contexts/PageTitleContext';
@@ -189,6 +190,16 @@ const BankStatementImport: React.FC = () => {
       return;
     }
 
+    // Controleer of het opgegeven formaat overeenkomt met de geplakte data
+    const detectedFormat = bankImportService.detectFormat(rawData);
+    if (detectedFormat !== 'unknown' && detectedFormat !== format) {
+      showError(
+        'Verkeerd formaat',
+        `De geplakte data lijkt ${detectedFormat}-formaat te zijn, maar je hebt ${format} geselecteerd. Schakel over naar ${detectedFormat} of plak de juiste data.`
+      );
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -204,16 +215,36 @@ const BankStatementImport: React.FC = () => {
         parsedTransactions = bankImportService.parseMT940(rawData);
       }
 
-      const enrichedTransactions: BankTransaction[] = parsedTransactions.map((t, idx) => ({
-        ...t,
-        id: `temp-${idx}`,
-        type: t.amount >= 0 ? 'outgoing' : 'incoming',
-        status: 'unmatched' as const,
-        companyId: selectedCompany.id,
-        importId: 'temp',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }));
+      if (parsedTransactions.length === 0) {
+        showError(
+          'Geen transacties gevonden',
+          'Controleer het formaat en de kolomnamen. Zorg dat de data tenminste een datum, bedrag en omschrijving kolom heeft.'
+        );
+        setLoading(false);
+        return;
+      }
+
+      const existingSignatures = await bankImportService.checkDuplicates(
+        [],
+        selectedCompany.id
+      );
+
+      const enrichedTransactions: BankTransaction[] = parsedTransactions.map((t, idx) => {
+        const sig = bankImportService.makeTransactionSignature(t);
+        return {
+          ...t,
+          id: `temp-${idx}`,
+          type: t.amount >= 0 ? 'outgoing' : 'incoming',
+          status: 'unmatched' as const,
+          companyId: selectedCompany.id,
+          importId: 'temp',
+          isDuplicate: existingSignatures.has(sig),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+      });
+
+      const duplicateCount = enrichedTransactions.filter(t => t.isDuplicate).length;
 
       const results = await bankImportService.matchTransactions(
         enrichedTransactions,
@@ -223,7 +254,10 @@ const BankStatementImport: React.FC = () => {
 
       setMatchResults(results);
       setShowPreview(true);
-      success('Geslaagd', `${parsedTransactions.length} transacties geparsed`);
+      const msg = duplicateCount > 0
+        ? `${parsedTransactions.length} transacties gevonden, waarvan ${duplicateCount} mogelijke duplicaten`
+        : `${parsedTransactions.length} transacties gevonden`;
+      success('Geslaagd', msg);
     } catch (e: any) {
       showError('Parse fout', e.message || 'Kon bankafschrift niet verwerken');
       console.error(e);
@@ -292,12 +326,19 @@ const BankStatementImport: React.FC = () => {
 
       let newCrediteuren = 0;
       let newDebiteuren = 0;
+      let autoCategorised = 0;
+      const userName = user.displayName || user.email || 'Unknown';
+
+
       for (const result of matchResults) {
         const t = result.transaction;
         const beneficiary = t.beneficiary?.trim();
         if (!beneficiary) continue;
 
         try {
+          const firestoreId = idMap.get(t.id);
+
+
           if (t.amount < 0) {
             const crediteur = await supplierService.findOrCreateCrediteur(
               selectedCompany.id,
@@ -310,6 +351,19 @@ const BankStatementImport: React.FC = () => {
               t.amount,
               result.status === 'confirmed'
             );
+            // Auto-categorisatie op basis van eerder geleerde grootboekrekening
+            if (firestoreId && crediteur.standaardGrootboek && !t.grootboekrekening) {
+              await bankImportService.updateTransaction(
+                firestoreId,
+                {
+                  grootboekrekening: crediteur.standaardGrootboek,
+                  grootboekrekeningName: crediteur.standaardGrootboekNaam,
+                },
+                user.uid,
+                userName
+              );
+              autoCategorised++;
+            }
           } else {
             const debiteur = await supplierService.findOrCreateDebiteur(
               selectedCompany.id,
@@ -322,9 +376,22 @@ const BankStatementImport: React.FC = () => {
               t.amount,
               result.status === 'confirmed'
             );
+            // Auto-categorisatie op basis van eerder geleerde grootboekrekening
+            if (firestoreId && debiteur.standaardGrootboek && !t.grootboekrekening) {
+              await bankImportService.updateTransaction(
+                firestoreId,
+                {
+                  grootboekrekening: debiteur.standaardGrootboek,
+                  grootboekrekeningName: debiteur.standaardGrootboekNaam,
+                },
+                user.uid,
+                userName
+              );
+              autoCategorised++;
+            }
           }
         } catch (e) {
-          console.error('Error creating crediteur/debiteur:', e);
+          console.error('Error processing crediteur/debiteur:', e);
         }
       }
 
@@ -336,6 +403,7 @@ const BankStatementImport: React.FC = () => {
       ];
       if (newCrediteuren > 0) parts.push(`${newCrediteuren} nieuwe crediteuren`);
       if (newDebiteuren > 0) parts.push(`${newDebiteuren} nieuwe debiteuren`);
+      if (autoCategorised > 0) parts.push(`${autoCategorised} automatisch gecategoriseerd`);
 
       success('Import geslaagd', parts.join(', ') + '.');
 
@@ -529,7 +597,45 @@ const BankStatementImport: React.FC = () => {
         user.uid,
         user.displayName || user.email || 'Unknown'
       );
-      success('Toegewezen', `Grootboekrekening ${gb.code} - ${gb.name} toegewezen`);
+
+      // Auto-leer: sla de grootboekrekening ook op bij de crediteur/debiteur
+      // zodat de volgende keer deze automatisch wordt voorgesteld
+      const allTransactions = Array.from(importTransactions.values()).flat();
+      const transaction = allTransactions.find(t => t.id === transactionId);
+      if (transaction?.beneficiary) {
+        try {
+          if (transaction.amount < 0) {
+            const crediteur = await supplierService.findOrCreateCrediteur(
+              selectedCompany.id,
+              transaction.beneficiary,
+              transaction.accountNumber
+            );
+            if (crediteur.id) {
+              await supplierService.updateCrediteur(crediteur.id, {
+                standaardGrootboek: gb.code,
+                standaardGrootboekNaam: gb.name,
+              });
+            }
+          } else {
+            const debiteur = await supplierService.findOrCreateDebiteur(
+              selectedCompany.id,
+              transaction.beneficiary,
+              transaction.accountNumber
+            );
+            if (debiteur.id) {
+              await supplierService.updateDebiteur(debiteur.id, {
+                standaardGrootboek: gb.code,
+                standaardGrootboekNaam: gb.name,
+              });
+            }
+          }
+          loadGrootboekData();
+        } catch {
+          // Niet kritiek als crediteur/debiteur update mislukt
+        }
+      }
+
+      success('Toegewezen', `${gb.code} - ${gb.name} toegewezen (onthouden voor toekomstige imports)`);
       setShowGrootboekModal(false);
       setSelectedTransactionForGrootboek(null);
       setGrootboekSearchTerm('');
@@ -561,6 +667,13 @@ const BankStatementImport: React.FC = () => {
       showError('Fout', e.message || 'Kon koppeling niet verwijderen');
     }
   };
+
+  const getDuplicateBadge = () => (
+    <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+      <AlertCircle className="w-3 h-3 mr-1" />
+      Mogelijk duplicaat
+    </span>
+  );
 
   const getStatusBadge = (status: 'confirmed' | 'pending' | 'unmatched', confidence?: number) => {
     if (status === 'confirmed') {
@@ -597,6 +710,7 @@ const BankStatementImport: React.FC = () => {
   const confirmedResults = matchResults.filter(r => r.status === 'confirmed');
   const pendingResults = matchResults.filter(r => r.status === 'pending');
   const unmatchedResults = matchResults.filter(r => r.status === 'unmatched');
+  const duplicateResults = matchResults.filter(r => r.transaction.isDuplicate);
 
   if (!selectedCompany) {
     return (
@@ -728,6 +842,20 @@ const BankStatementImport: React.FC = () => {
               </div>
             </div>
 
+            {duplicateResults.length > 0 && (
+              <div className="flex items-start gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <span className="font-medium text-orange-800 dark:text-orange-300">
+                    {duplicateResults.length} mogelijke duplicaten gevonden
+                  </span>
+                  <span className="text-orange-700 dark:text-orange-400 ml-1">
+                    — deze transacties lijken al eerder te zijn geïmporteerd (zelfde datum, bedrag en omschrijving). Ze worden gemarkeerd maar toch geïmporteerd.
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <button
                 onClick={() => setActiveTab('all')}
@@ -801,6 +929,7 @@ const BankStatementImport: React.FC = () => {
                                   € {Math.abs(result.transaction.amount).toFixed(2)}
                                 </span>
                                 {getStatusBadge(result.status, result.confidence)}
+                                {result.transaction.isDuplicate && getDuplicateBadge()}
                               </div>
                               <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
                                 {result.transaction.description}
@@ -865,6 +994,7 @@ const BankStatementImport: React.FC = () => {
                                   € {Math.abs(result.transaction.amount).toFixed(2)}
                                 </span>
                                 {getStatusBadge(result.status, result.confidence)}
+                                {result.transaction.isDuplicate && getDuplicateBadge()}
                               </div>
                               <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
                                 {result.transaction.description}
@@ -929,6 +1059,7 @@ const BankStatementImport: React.FC = () => {
                                   € {Math.abs(result.transaction.amount).toFixed(2)}
                                 </span>
                                 {getStatusBadge(result.status, result.confidence)}
+                                {result.transaction.isDuplicate && getDuplicateBadge()}
                               </div>
                               <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
                                 {result.transaction.description}
@@ -974,21 +1105,34 @@ const BankStatementImport: React.FC = () => {
                 <BookOpen className="w-4 h-4 mr-2" />
                 Rekeningschema
               </h3>
-              <Button
-                onClick={handleImportTemplate}
-                disabled={importingTemplate}
-                variant="outline"
-                className="text-xs px-2 py-1"
-              >
-                {importingTemplate ? (
-                  <LoadingSpinner size="sm" />
-                ) : (
-                  <>
-                    <Download className="w-3 h-3 mr-1" />
-                    Importeer sjabloon
-                  </>
+              <div className="flex items-center gap-1">
+                {grootboekrekeningen.length > 0 && (
+                  <Button
+                    onClick={() => generateGrootboekPDF(grootboekrekeningen, selectedCompany?.name || 'Bedrijf')}
+                    variant="outline"
+                    className="text-xs px-2 py-1"
+                    title="Download PDF voor boekhouder"
+                  >
+                    <FileText className="w-3 h-3 mr-1" />
+                    PDF
+                  </Button>
                 )}
-              </Button>
+                <Button
+                  onClick={handleImportTemplate}
+                  disabled={importingTemplate}
+                  variant="outline"
+                  className="text-xs px-2 py-1"
+                >
+                  {importingTemplate ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      <Download className="w-3 h-3 mr-1" />
+                      Importeer sjabloon
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {grootboekrekeningen.length}

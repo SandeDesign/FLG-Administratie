@@ -26,6 +26,7 @@ export interface BankTransaction {
   grootboekrekening?: string;
   grootboekrekeningName?: string;
   confidence?: number;
+  isDuplicate?: boolean;
   editHistory?: EditHistoryEntry[];
   createdAt: number;
   updatedAt: number;
