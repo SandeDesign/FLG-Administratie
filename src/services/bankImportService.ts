@@ -281,19 +281,24 @@ export const bankImportService = {
   async matchTransactions(
     transactions: BankTransaction[],
     userId: string,
-    companyId: string
+    companyId: string,
+    skipMatchedFilter?: boolean
   ): Promise<MatchResult[]> {
     const outgoingInvoices = await outgoingInvoiceService.getInvoices(userId, companyId);
     const incomingInvoices = await incomingInvoiceService.getInvoices(userId, companyId);
 
-    const matchedInvoiceIds = await matchedPaymentsService.getMatchedInvoiceIds(companyId);
+    let availableOutgoingInvoices = outgoingInvoices;
+    let availableIncomingInvoices = incomingInvoices;
 
-    const availableOutgoingInvoices = outgoingInvoices.filter(
-      inv => !matchedInvoiceIds.has(inv.id || '')
-    );
-    const availableIncomingInvoices = incomingInvoices.filter(
-      inv => !matchedInvoiceIds.has(inv.id || '')
-    );
+    if (!skipMatchedFilter) {
+      const matchedInvoiceIds = await matchedPaymentsService.getMatchedInvoiceIds(companyId);
+      availableOutgoingInvoices = outgoingInvoices.filter(
+        inv => !matchedInvoiceIds.has(inv.id || '')
+      );
+      availableIncomingInvoices = incomingInvoices.filter(
+        inv => !matchedInvoiceIds.has(inv.id || '')
+      );
+    }
 
     const results: MatchResult[] = [];
 
