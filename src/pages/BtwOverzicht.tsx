@@ -67,11 +67,12 @@ const BtwOverzicht: React.FC = () => {
     if (!selectedCompany) return;
     try {
       setLoading(true);
-      const [confirmed, gb] = await Promise.all([
+      const [confirmed, pending, gb] = await Promise.all([
         bankImportService.getTransactionsByStatus(selectedCompany.id, 'confirmed'),
+        bankImportService.getTransactionsByStatus(selectedCompany.id, 'pending'),
         supplierService.getGrootboekrekeningen(selectedCompany.id),
       ]);
-      setTransactions(confirmed);
+      setTransactions([...confirmed, ...pending]);
       setGrootboekrekeningen(gb);
     } catch (e) {
       console.error('Error loading BTW data:', e);
