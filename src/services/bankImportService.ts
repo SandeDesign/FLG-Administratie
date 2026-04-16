@@ -732,6 +732,6 @@ export const bankImportService = {
       }
     }
 
-    return await this.matchTransactions(transactions, userId, companyId);
+    return await this.matchTransactions(transactions, userId, companyId, true);
   },
 };

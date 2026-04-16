@@ -159,6 +159,9 @@ export const supplierService = {
         code: data.code,
         name: data.name,
         category: data.category,
+        type: data.type || 'debet',
+        btw: data.btw,
+        isDefault: data.isDefault,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as Grootboekrekening;
