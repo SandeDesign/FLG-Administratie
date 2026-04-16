@@ -494,7 +494,7 @@ const BtwOverzicht: React.FC = () => {
                             return (
                               <tr key={i} className="border-b border-gray-50 dark:border-gray-800 last:border-0">
                                 <td className="py-1.5 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                                  {formatDate(d, 'dd-MM-yyyy')}
+                                  {isNaN(d.getTime()) ? 'Onbekend' : formatDate(d, 'dd-MM-yyyy')}
                                 </td>
                                 <td className="py-1.5 px-2 text-gray-900 dark:text-white truncate max-w-[150px]">
                                   {t.beneficiary || '-'}
@@ -534,7 +534,7 @@ const BtwOverzicht: React.FC = () => {
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-0.5">
-                                  <span>{formatDate(d, 'dd-MM-yyyy')}</span>
+                                  <span>{isNaN(d.getTime()) ? 'Onbekend' : formatDate(d, 'dd-MM-yyyy')}</span>
                                   {t.grootboekrekening && (
                                     <span className="font-mono text-blue-600 dark:text-blue-400 font-bold">{t.grootboekrekening}</span>
                                   )}

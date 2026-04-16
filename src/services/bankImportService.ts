@@ -167,6 +167,7 @@ export const bankImportService = {
         let description = '';
         let beneficiary = '';
         let reference = '';
+        let fallbackDate: Date | null = null;
         if (idx < lines.length && lines[idx].trim().startsWith(':86:')) {
           // Verzamel alle :86: regels (kan meerdere regels beslaan)
           let descBlock = lines[idx].trim().substring(4); // strip ':86:'
@@ -182,19 +183,34 @@ export const bankImportService = {
           const nameMatch = descBlock.match(/\/NAME\/(.*?)(?=\/[A-Z]{4}\/|$)/);
           const remiMatch = descBlock.match(/\/REMI\/(.*?)(?=\/[A-Z]{4}\/|$)/);
           const erefMatch = descBlock.match(/\/EREF\/(.*?)(?=\/[A-Z]{4}\/|$)/);
+          const isdtMatch = descBlock.match(/\/ISDT\/\s*(\d{4})-?\s*(\d{2})-?\s*(\d{2})/);
 
           beneficiary = nameMatch ? nameMatch[1].trim() : '';
           const remiText = remiMatch ? remiMatch[1].trim() : '';
           const erefText = erefMatch ? erefMatch[1].trim() : '';
+
+          if (isdtMatch) {
+            const isdtDate = new Date(
+              parseInt(isdtMatch[1]),
+              parseInt(isdtMatch[2]) - 1,
+              parseInt(isdtMatch[3])
+            );
+            if (!isNaN(isdtDate.getTime())) {
+              fallbackDate = isdtDate;
+            }
+          }
 
           // Bouw volledige description op voor matching
           description = [remiText, erefText, descBlock].filter(Boolean).join(' ');
           reference = erefText || remiText;
         }
 
+        const parsedDate = new Date(year, month, day);
+        const finalDate = isNaN(parsedDate.getTime()) && fallbackDate ? fallbackDate : parsedDate;
+
         transactions.push({
           id: `mt940-${transactions.length}`,
-          date: new Date(year, month, day),
+          date: finalDate,
           amount: isCredit ? amount : -amount,
           description,
           beneficiary: beneficiary || undefined,
