@@ -351,6 +351,77 @@ const BtwOverzicht: React.FC = () => {
             </Card>
           )}
 
+          {periodTransactions.length > 0 && (
+            <Card>
+              <div className="p-4">
+                <details>
+                  <summary className="cursor-pointer flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Transacties in periode ({periodTransactions.length})
+                    </h2>
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="text-green-600 dark:text-green-400 font-medium">
+                        <TrendingUp className="w-3.5 h-3.5 inline mr-1" />
+                        {fmt(ongeclassificeerdIn + btwRegels.filter(r => r.brutoBedrag < 0).reduce((s, r) => s + Math.abs(r.brutoBedrag), 0))} in
+                      </span>
+                      <span className="text-red-600 dark:text-red-400 font-medium">
+                        <TrendingDown className="w-3.5 h-3.5 inline mr-1" />
+                        {fmt(ongeclassificeerdUit + btwRegels.filter(r => r.brutoBedrag > 0).reduce((s, r) => s + r.brutoBedrag, 0))} uit
+                      </span>
+                    </div>
+                  </summary>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
+                          <th className="text-left py-2 px-2">Datum</th>
+                          <th className="text-left py-2 px-2">Begunstigde</th>
+                          <th className="text-left py-2 px-2">Omschrijving</th>
+                          <th className="text-left py-2 px-2">Grootboek</th>
+                          <th className="text-right py-2 px-2">Bedrag</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {periodTransactions
+                          .sort((a, b) => {
+                            const da = a.date instanceof Date ? a.date.getTime() : a.date;
+                            const db = b.date instanceof Date ? b.date.getTime() : b.date;
+                            return (da as number) - (db as number);
+                          })
+                          .map((t, i) => {
+                            const d = t.date instanceof Date ? t.date : new Date(t.date);
+                            return (
+                              <tr key={i} className="border-b border-gray-50 dark:border-gray-800 last:border-0">
+                                <td className="py-1.5 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                  {formatDate(d, 'dd-MM-yyyy')}
+                                </td>
+                                <td className="py-1.5 px-2 text-gray-900 dark:text-white truncate max-w-[150px]">
+                                  {t.beneficiary || '-'}
+                                </td>
+                                <td className="py-1.5 px-2 text-gray-600 dark:text-gray-400 truncate max-w-[250px]">
+                                  {t.matchedInvoiceNumber || t.description?.substring(0, 60) || '-'}
+                                </td>
+                                <td className="py-1.5 px-2">
+                                  {t.grootboekrekening ? (
+                                    <span className="text-xs font-mono text-blue-600 dark:text-blue-400">{t.grootboekrekening}</span>
+                                  ) : (
+                                    <span className="text-xs text-amber-600 dark:text-amber-400">—</span>
+                                  )}
+                                </td>
+                                <td className={`py-1.5 px-2 text-right font-medium whitespace-nowrap ${t.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                  {t.amount >= 0 ? '+' : ''}{fmt(t.amount)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              </div>
+            </Card>
+          )}
+
           <Card>
             <div className="p-4">
               <div className="flex items-center justify-between">
