@@ -484,10 +484,7 @@ export const bankImportService = {
   },
 
   async deleteImport(companyId: string, importId: string): Promise<void> {
-    const batch = writeBatch(db);
-
-    await deleteDoc(doc(db, 'bankImports', importId));
-
+    // 1. Haal alle transacties op vóór verwijdering (nodig voor matched payments cleanup)
     const transactionsQuery = query(
       collection(db, 'bankTransactions'),
       where('companyId', '==', companyId),
@@ -495,10 +492,29 @@ export const bankImportService = {
     );
     const transactionsSnapshot = await getDocs(transactionsQuery);
 
-    transactionsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
+    // 2. Voor elke confirmed transactie: verwijder matched payment + markeer factuur als onbetaald
+    for (const transDoc of transactionsSnapshot.docs) {
+      const t = transDoc.data() as BankTransaction;
+      if (t.status === 'confirmed' && t.matchedInvoiceId && t.matchedInvoiceType) {
+        try {
+          await matchedPaymentsService.deleteByTransactionId(companyId, transDoc.id);
+          if (t.matchedInvoiceType === 'outgoing') {
+            await outgoingInvoiceService.markAsUnpaid(t.matchedInvoiceId);
+          } else {
+            await incomingInvoiceService.markAsUnpaid(t.matchedInvoiceId);
+          }
+        } catch (e) {
+          console.error('Error cleaning up matched payment:', e);
+        }
+      }
+    }
 
+    // 3. Verwijder de import + alle transacties
+    const batch = writeBatch(db);
+    await deleteDoc(doc(db, 'bankImports', importId));
+    transactionsSnapshot.forEach((d) => {
+      batch.delete(d.ref);
+    });
     await batch.commit();
   },
 
