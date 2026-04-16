@@ -26,6 +26,36 @@ import { incomingInvoiceService, IncomingInvoice } from './incomingInvoiceServic
 import { matchedPaymentsService } from './matchedPaymentsService';
 
 export const bankImportService = {
+  detectFormat(rawData: string): 'CSV' | 'MT940' | 'unknown' {
+    const trimmed = rawData.trim();
+    if (!trimmed) return 'unknown';
+
+    // MT940 kenmerken: begint met :20: of :61:, of bevat :86: of :61: blokken
+    if (
+      trimmed.startsWith(':20:') ||
+      trimmed.startsWith(':61:') ||
+      /:\d{2}[A-Z]?:/.test(trimmed.substring(0, 20)) ||
+      trimmed.includes(':86:') ||
+      trimmed.includes(':61:')
+    ) {
+      return 'MT940';
+    }
+
+    // CSV kenmerken: meerdere regels met consistente delimiter
+    const lines = trimmed.split('\n').filter(l => l.trim()).slice(0, 5);
+    if (lines.length >= 2) {
+      const delimiters = [';', ',', '\t'];
+      for (const delim of delimiters) {
+        const counts = lines.map(l => (l.match(new RegExp(`\\${delim === '\t' ? '\\t' : delim}`, 'g')) || []).length);
+        if (counts[0] > 0 && counts.every(c => c === counts[0])) {
+          return 'CSV';
+        }
+      }
+    }
+
+    return 'unknown';
+  },
+
   parseCSV(rawData: string): ParsedCSV {
     const lines = rawData.trim().split('\n').filter(line => line.trim());
     if (lines.length === 0) throw new Error('CSV bestand is leeg');
@@ -215,6 +245,37 @@ export const bankImportService = {
     }
 
     return parseFloat(amountStr);
+  },
+
+  makeTransactionSignature(t: Pick<BankTransaction, 'date' | 'amount' | 'description'>): string {
+    const date = t.date instanceof Date ? t.date.getTime() : t.date;
+    const d = new Date(date);
+    const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    return `${dateKey}_${t.amount.toFixed(2)}_${t.description.substring(0, 50).trim().toLowerCase()}`;
+  },
+
+  async checkDuplicates(
+    transactions: BankTransaction[],
+    companyId: string
+  ): Promise<Set<string>> {
+    const q = query(
+      collection(db, 'bankTransactions'),
+      where('companyId', '==', companyId)
+    );
+    const snapshot = await getDocs(q);
+    const existingSignatures = new Set<string>();
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const sig = this.makeTransactionSignature({
+        date: data.date,
+        amount: data.amount,
+        description: data.description || '',
+      });
+      existingSignatures.add(sig);
+    });
+
+    return existingSignatures;
   },
 
   async matchTransactions(
@@ -452,7 +513,7 @@ export const bankImportService = {
     transactions.forEach((transaction) => {
       const transactionRef = doc(collection(db, 'bankTransactions'));
       idMap.set(transaction.id, transactionRef.id);
-      batch.set(transactionRef, {
+      const raw: Record<string, unknown> = {
         ...transaction,
         id: transactionRef.id,
         date: typeof transaction.date === 'number' ? transaction.date : transaction.date.getTime(),
@@ -460,7 +521,12 @@ export const bankImportService = {
         importId,
         createdAt: Date.now(),
         updatedAt: Date.now(),
-      });
+      };
+      // Firestore accepteert geen undefined values
+      const cleaned = Object.fromEntries(
+        Object.entries(raw).filter(([, v]) => v !== undefined)
+      );
+      batch.set(transactionRef, cleaned);
     });
 
     await batch.commit();
