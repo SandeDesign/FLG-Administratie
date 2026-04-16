@@ -95,13 +95,15 @@ const BtwOverzicht: React.FC = () => {
   const btwRegels: BtwRegel[] = [];
   const regelMap = new Map<string, BtwRegel>();
   let ongeclassificeerd = 0;
-  let ongeclassificeerdBedrag = 0;
+  let ongeclassificeerdIn = 0;
+  let ongeclassificeerdUit = 0;
 
   for (const t of periodTransactions) {
     const gbCode = t.grootboekrekening;
     if (!gbCode) {
       ongeclassificeerd++;
-      ongeclassificeerdBedrag += Math.abs(t.amount);
+      if (t.amount >= 0) ongeclassificeerdIn += t.amount;
+      else ongeclassificeerdUit += Math.abs(t.amount);
       continue;
     }
     const gb = gbMap.get(gbCode);
@@ -208,7 +210,7 @@ const BtwOverzicht: React.FC = () => {
                   {ongeclassificeerd} van {periodTransactions.length} transacties zonder grootboekrekening
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-                  Totaal {fmt(ongeclassificeerdBedrag)} niet meegenomen in BTW berekening. Wijs grootboekrekeningen toe via Bankafschrift Import.
+                  {fmt(ongeclassificeerdIn)} inkomend / {fmt(ongeclassificeerdUit)} uitgaand — niet meegenomen in BTW berekening.
                 </p>
               </div>
               <div className="flex-shrink-0">
@@ -332,7 +334,7 @@ const BtwOverzicht: React.FC = () => {
                       {ongeclassificeerd} transacties zonder grootboekrekening
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Totaal {fmt(ongeclassificeerdBedrag)} — wijs een grootboekrekening toe op de Bankafschrift Import pagina om BTW te berekenen.
+                      {fmt(ongeclassificeerdIn)} inkomend / {fmt(ongeclassificeerdUit)} uitgaand — wijs grootboekrekeningen toe via Bankafschrift Import.
                     </p>
                   </>
                 ) : (
