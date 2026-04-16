@@ -57,7 +57,7 @@ const BtwOverzicht: React.FC = () => {
 
   if (userRole !== 'admin') {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <EmptyState icon={Shield} title="Geen toegang" description="Alleen administrators kunnen het BTW overzicht bekijken" />
       </div>
     );
@@ -115,7 +115,7 @@ const BtwOverzicht: React.FC = () => {
     if (!regel) {
       regel = {
         code: gbCode,
-        naam: gb.name,
+        naam: gb?.name || gbCode,
         btwType,
         btwPercentage: pct,
         nettoBedrag: 0,
@@ -177,14 +177,14 @@ const BtwOverzicht: React.FC = () => {
 
   if (!selectedCompany) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <EmptyState icon={Receipt} title="Geen bedrijf geselecteerd" description="Selecteer eerst een bedrijf" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">BTW Overzicht</h1>
@@ -201,60 +201,60 @@ const BtwOverzicht: React.FC = () => {
       ) : (
         <>
           {ongeclassificeerd > 0 && (
-            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                <Receipt className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <div className="flex flex-col sm:flex-row sm:items-start gap-3 p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                  <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                    {ongeclassificeerd} van {periodTransactions.length} zonder grootboekrekening
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                    {fmt(ongeclassificeerdIn)} in / {fmt(ongeclassificeerdUit)} uit
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="font-medium text-amber-800 dark:text-amber-300">
-                  {ongeclassificeerd} van {periodTransactions.length} transacties zonder grootboekrekening
-                </p>
-                <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-                  {fmt(ongeclassificeerdIn)} inkomend / {fmt(ongeclassificeerdUit)} uitgaand — niet meegenomen in BTW berekening.
-                </p>
-              </div>
-              <div className="flex-shrink-0">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200">
-                  {Math.round(((periodTransactions.length - ongeclassificeerd) / periodTransactions.length) * 100)}% geclassificeerd
-                </span>
-              </div>
+              <span className="inline-flex self-start items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 flex-shrink-0">
+                {Math.round(((periodTransactions.length - ongeclassificeerd) / periodTransactions.length) * 100)}%
+              </span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
             <Card>
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingDown className="w-5 h-5 text-red-500" />
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Af te dragen BTW</h3>
+              <div className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Af te dragen BTW</h3>
                 </div>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{fmt(totalAfdracht)}</div>
-                <p className="text-xs text-gray-500 mt-1">BTW op verkopen/inkomsten</p>
+                <div className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{fmt(totalAfdracht)}</div>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">BTW op verkopen/inkomsten</p>
               </div>
             </Card>
             <Card>
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Voorbelasting</h3>
+              <div className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Voorbelasting</h3>
                 </div>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{fmt(totalVoorbelasting)}</div>
-                <p className="text-xs text-gray-500 mt-1">BTW op inkopen/kosten</p>
+                <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{fmt(totalVoorbelasting)}</div>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">BTW op inkopen/kosten</p>
               </div>
             </Card>
             <Card>
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowRight className="w-5 h-5 text-blue-500" />
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              <div className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
                     {saldo >= 0 ? 'Te betalen' : 'Terug te ontvangen'}
                   </h3>
                 </div>
-                <div className={`text-2xl font-bold ${saldo >= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                <div className={`text-xl sm:text-2xl font-bold ${saldo >= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                   {fmt(Math.abs(saldo))}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {periodTransactions.length} geboekte transacties in periode
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                  {periodTransactions.length} transacties in periode
                 </p>
               </div>
             </Card>
@@ -262,11 +262,13 @@ const BtwOverzicht: React.FC = () => {
 
           {btwRegels.length > 0 ? (
             <Card>
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Specificatie per grootboekrekening</h2>
-                </div>
-                <div className="overflow-x-auto">
+              <div className="p-3 sm:p-4">
+                <h2 className="text-sm sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
+                  Specificatie per grootboekrekening
+                </h2>
+
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
@@ -322,27 +324,84 @@ const BtwOverzicht: React.FC = () => {
                     </tfoot>
                   </table>
                 </div>
+
+                {/* Mobile card list */}
+                <div className="md:hidden space-y-2">
+                  {btwRegels.sort((a, b) => a.code.localeCompare(b.code)).map((r, i) => (
+                    <div key={i} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{r.code}</span>
+                          <span className="text-xs text-gray-900 dark:text-white truncate">{r.naam}</span>
+                        </div>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 ${
+                          r.btwType === 'hoog' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                          r.btwType === 'laag' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                          r.btwType === 'verlegd' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
+                          'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                        }`}>
+                          {r.btwType}{r.btwPercentage > 0 ? ` ${r.btwPercentage}%` : ''}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-gray-500 block">Netto</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{fmt(r.nettoBedrag)}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 block">BTW</span>
+                          <span className={`font-medium ${r.btwBedrag > 0 ? 'text-green-600' : r.btwBedrag < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                            {fmt(r.btwBedrag)}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-gray-500 block">Bruto</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{fmt(r.brutoBedrag)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Mobile totaal */}
+                  <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg border-t-2 border-gray-300 dark:border-gray-500">
+                    <div className="text-xs font-semibold text-gray-900 dark:text-white mb-2">Totaal</div>
+                    <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+                      <div>
+                        <span className="text-gray-500 block">Netto</span>
+                        <span className="text-gray-900 dark:text-white">{fmt(btwRegels.reduce((s, r) => s + r.nettoBedrag, 0))}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 block">BTW</span>
+                        <span className="text-gray-900 dark:text-white">{fmt(btwRegels.reduce((s, r) => s + r.btwBedrag, 0))}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-gray-500 block">Bruto</span>
+                        <span className="text-gray-900 dark:text-white">{fmt(btwRegels.reduce((s, r) => s + r.brutoBedrag, 0))}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Card>
           ) : (
             <Card>
-              <div className="p-8 text-center">
-                <Receipt className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <div className="p-6 sm:p-8 text-center">
+                <Receipt className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                 {ongeclassificeerd > 0 ? (
                   <>
-                    <p className="text-gray-900 dark:text-white font-medium">
+                    <p className="text-sm text-gray-900 dark:text-white font-medium">
                       {ongeclassificeerd} transacties zonder grootboekrekening
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {fmt(ongeclassificeerdIn)} inkomend / {fmt(ongeclassificeerdUit)} uitgaand — wijs grootboekrekeningen toe via Bankafschrift Import.
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Wijs grootboekrekeningen toe via Bankafschrift Import.
                     </p>
                   </>
                 ) : (
                   <>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       Geen geboekte transacties in deze periode.
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                       Importeer bankafschriften en wijs grootboekrekeningen toe.
                     </p>
                   </>
@@ -353,24 +412,26 @@ const BtwOverzicht: React.FC = () => {
 
           {periodTransactions.length > 0 && (
             <Card>
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 <details>
-                  <summary className="cursor-pointer flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Transacties in periode ({periodTransactions.length})
+                  <summary className="cursor-pointer flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                    <h2 className="text-sm sm:text-lg font-semibold text-gray-900 dark:text-white">
+                      Transacties ({periodTransactions.length})
                     </h2>
-                    <div className="flex items-center gap-3 text-sm">
+                    <div className="flex items-center gap-3 text-xs sm:text-sm">
                       <span className="text-green-600 dark:text-green-400 font-medium">
-                        <TrendingUp className="w-3.5 h-3.5 inline mr-1" />
+                        <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline mr-0.5" />
                         {fmt(ongeclassificeerdIn + btwRegels.filter(r => r.brutoBedrag < 0).reduce((s, r) => s + Math.abs(r.brutoBedrag), 0))} in
                       </span>
                       <span className="text-red-600 dark:text-red-400 font-medium">
-                        <TrendingDown className="w-3.5 h-3.5 inline mr-1" />
+                        <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline mr-0.5" />
                         {fmt(ongeclassificeerdUit + btwRegels.filter(r => r.brutoBedrag > 0).reduce((s, r) => s + r.brutoBedrag, 0))} uit
                       </span>
                     </div>
                   </summary>
-                  <div className="mt-3 overflow-x-auto">
+
+                  {/* Desktop table */}
+                  <div className="mt-3 hidden sm:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
@@ -385,8 +446,8 @@ const BtwOverzicht: React.FC = () => {
                         {periodTransactions
                           .sort((a, b) => {
                             const da = a.date instanceof Date ? a.date.getTime() : a.date;
-                            const db = b.date instanceof Date ? b.date.getTime() : b.date;
-                            return (da as number) - (db as number);
+                            const dbb = b.date instanceof Date ? b.date.getTime() : b.date;
+                            return (da as number) - (dbb as number);
                           })
                           .map((t, i) => {
                             const d = t.date instanceof Date ? t.date : new Date(t.date);
@@ -417,36 +478,75 @@ const BtwOverzicht: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Mobile card list */}
+                  <div className="mt-3 sm:hidden space-y-1">
+                    {periodTransactions
+                      .sort((a, b) => {
+                        const da = a.date instanceof Date ? a.date.getTime() : a.date;
+                        const dbb = b.date instanceof Date ? b.date.getTime() : b.date;
+                        return (da as number) - (dbb as number);
+                      })
+                      .map((t, i) => {
+                        const d = t.date instanceof Date ? t.date : new Date(t.date);
+                        return (
+                          <div key={i} className="p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-0.5">
+                                  <span>{formatDate(d, 'dd-MM-yyyy')}</span>
+                                  {t.grootboekrekening && (
+                                    <span className="font-mono text-blue-600 dark:text-blue-400 font-bold">{t.grootboekrekening}</span>
+                                  )}
+                                  {!t.grootboekrekening && (
+                                    <span className="text-amber-500">geen GB</span>
+                                  )}
+                                </div>
+                                <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                                  {t.beneficiary || '-'}
+                                </p>
+                                <p className="text-[10px] text-gray-500 truncate mt-0.5">
+                                  {t.matchedInvoiceNumber || t.description?.substring(0, 50) || '-'}
+                                </p>
+                              </div>
+                              <span className={`text-xs font-semibold flex-shrink-0 ${t.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {t.amount >= 0 ? '+' : ''}{fmt(t.amount)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </details>
               </div>
             </Card>
           )}
 
           <Card>
-            <div className="p-4">
-              <div className="flex items-center justify-between">
+            <div className="p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     Dagboek Export
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Exporteer geboekte transacties voor je boekhoudpakket
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Exporteer voor je boekhoudpakket
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <select
                     value={exportFormat}
                     onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
-                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    className="flex-1 sm:flex-none px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
                     <option value="csv">Algemeen CSV</option>
                     <option value="exact_online">Exact Online</option>
                     <option value="snelstart">SnelStart</option>
                     <option value="twinfield">Twinfield</option>
                   </select>
-                  <Button onClick={handleExportDagboek} disabled={exporting || periodTransactions.length === 0} variant="outline">
-                    {exporting ? <LoadingSpinner size="sm" /> : <><Download className="w-4 h-4 mr-1" />Exporteer</>}
+                  <Button onClick={handleExportDagboek} disabled={exporting || periodTransactions.length === 0} variant="outline" className="flex-shrink-0">
+                    {exporting ? <LoadingSpinner size="sm" /> : <><Download className="w-4 h-4 mr-1" />Export</>}
                   </Button>
                 </div>
               </div>

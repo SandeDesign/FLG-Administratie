@@ -65,7 +65,7 @@ const Grootboekrekeningen: React.FC = () => {
 
   if (userRole !== 'admin') {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <EmptyState icon={Shield} title="Geen toegang" description="Alleen administrators kunnen het rekeningschema beheren" />
       </div>
     );
@@ -209,7 +209,7 @@ const Grootboekrekeningen: React.FC = () => {
 
   if (!selectedCompany) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <EmptyState icon={BookOpen} title="Geen bedrijf geselecteerd" description="Selecteer eerst een bedrijf" />
       </div>
     );
@@ -217,7 +217,7 @@ const Grootboekrekeningen: React.FC = () => {
 
   const FormFields = () => (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Code</label>
           <input
@@ -250,7 +250,7 @@ const Grootboekrekeningen: React.FC = () => {
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categorie</label>
           <select
@@ -280,24 +280,24 @@ const Grootboekrekeningen: React.FC = () => {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rekeningschema</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             {rekeningen.length} rekeningen in {Object.keys(grouped).length} categorieën
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => { resetForm(); setShowAddModal(true); }} variant="outline">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button onClick={() => { resetForm(); setShowAddModal(true); }} variant="outline" className="text-sm">
             <Plus className="w-4 h-4 mr-1" />
             Toevoegen
           </Button>
-          <Button onClick={handleImportTemplate} disabled={importingTemplate} variant="outline">
+          <Button onClick={handleImportTemplate} disabled={importingTemplate} variant="outline" className="text-sm">
             {importingTemplate ? <LoadingSpinner size="sm" /> : <><Upload className="w-4 h-4 mr-1" />Sjabloon</>}
           </Button>
           {rekeningen.length > 0 && (
-            <Button onClick={() => generateGrootboekPDF(rekeningen, selectedCompany.name)} variant="outline">
+            <Button onClick={() => generateGrootboekPDF(rekeningen, selectedCompany.name)} variant="outline" className="text-sm">
               <FileText className="w-4 h-4 mr-1" />
               PDF
             </Button>
@@ -306,7 +306,7 @@ const Grootboekrekeningen: React.FC = () => {
       </div>
 
       <Card>
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -314,7 +314,7 @@ const Grootboekrekeningen: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Zoek op code, naam of categorie..."
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
             />
           </div>
         </div>
@@ -324,10 +324,10 @@ const Grootboekrekeningen: React.FC = () => {
         <div className="flex justify-center py-12"><LoadingSpinner size="lg" /></div>
       ) : rekeningen.length === 0 ? (
         <Card>
-          <div className="p-12 text-center">
-            <BookOpen className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <div className="p-8 sm:p-12 text-center">
+            <BookOpen className="w-12 sm:w-16 h-12 sm:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nog geen rekeningschema</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
               Importeer het standaard MKB-rekeningschema of voeg handmatig rekeningen toe.
             </p>
             <Button onClick={handleImportTemplate} disabled={importingTemplate}>
@@ -343,117 +343,207 @@ const Grootboekrekeningen: React.FC = () => {
               <Card key={category}>
                 <button
                   onClick={() => toggleCategory(category)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  className="w-full flex items-center justify-between p-3 sm:p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-blue-700 dark:text-blue-400">{category}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <span className="text-xs sm:text-sm font-semibold text-blue-700 dark:text-blue-400 truncate">{category}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full flex-shrink-0">
                       {accounts.length}
                     </span>
                   </div>
-                  {isCollapsed ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronUp className="w-4 h-4 text-gray-400" />}
+                  {isCollapsed ? <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />}
                 </button>
                 {!isCollapsed && (
                   <div className="border-t border-gray-100 dark:border-gray-700">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                          <th className="text-left px-4 py-2 w-20">Code</th>
-                          <th className="text-left px-4 py-2">Naam</th>
-                          <th className="text-left px-4 py-2 w-16">Type</th>
-                          <th className="text-left px-4 py-2 w-20">BTW</th>
-                          <th className="text-right px-4 py-2 w-24">Acties</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {accounts.map((r) => (
-                          <tr key={r.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                            {editingId === r.id ? (
-                              <>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="text"
-                                    value={formData.code}
-                                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                    className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <select
-                                    value={formData.type}
-                                    onChange={(e) => setFormData({ ...formData, type: e.target.value as 'debet' | 'credit' })}
-                                    className="w-full px-1 py-1 text-xs border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                                  >
-                                    <option value="debet">D</option>
-                                    <option value="credit">C</option>
-                                  </select>
-                                </td>
-                                <td className="px-4 py-2">
-                                  <select
-                                    value={formData.btw}
-                                    onChange={(e) => setFormData({ ...formData, btw: e.target.value })}
-                                    className="w-full px-1 py-1 text-xs border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                                  >
-                                    {BTW_OPTIONS.map((o) => (
-                                      <option key={o.value} value={o.value}>{o.value || '-'}</option>
-                                    ))}
-                                  </select>
-                                </td>
-                                <td className="px-4 py-2 text-right">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <button onClick={handleSaveEdit} disabled={saving} className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900 rounded">
-                                      <Save className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button onClick={resetForm} className="p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                                      <X className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </>
-                            ) : (
-                              <>
-                                <td className="px-4 py-2">
-                                  <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">{r.code}</span>
-                                </td>
-                                <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{r.name}</td>
-                                <td className="px-4 py-2">
-                                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                    {/* Desktop table */}
+                    <div className="hidden sm:block">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                            <th className="text-left px-4 py-2 w-20">Code</th>
+                            <th className="text-left px-4 py-2">Naam</th>
+                            <th className="text-left px-4 py-2 w-16">Type</th>
+                            <th className="text-left px-4 py-2 w-20">BTW</th>
+                            <th className="text-right px-4 py-2 w-24">Acties</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {accounts.map((r) => (
+                            <tr key={r.id} className="border-b border-gray-50 dark:border-gray-800 last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                              {editingId === r.id ? (
+                                <>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="text"
+                                      value={formData.code}
+                                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                      className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <input
+                                      type="text"
+                                      value={formData.name}
+                                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                      className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <select
+                                      value={formData.type}
+                                      onChange={(e) => setFormData({ ...formData, type: e.target.value as 'debet' | 'credit' })}
+                                      className="w-full px-1 py-1 text-xs border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                                    >
+                                      <option value="debet">D</option>
+                                      <option value="credit">C</option>
+                                    </select>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <select
+                                      value={formData.btw}
+                                      onChange={(e) => setFormData({ ...formData, btw: e.target.value })}
+                                      className="w-full px-1 py-1 text-xs border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                                    >
+                                      {BTW_OPTIONS.map((o) => (
+                                        <option key={o.value} value={o.value}>{o.value || '-'}</option>
+                                      ))}
+                                    </select>
+                                  </td>
+                                  <td className="px-4 py-2 text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button onClick={handleSaveEdit} disabled={saving} className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900 rounded">
+                                        <Save className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button onClick={resetForm} className="p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </>
+                              ) : (
+                                <>
+                                  <td className="px-4 py-2">
+                                    <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">{r.code}</span>
+                                  </td>
+                                  <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{r.name}</td>
+                                  <td className="px-4 py-2">
+                                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                                      r.type === 'debet'
+                                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                                        : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                                    }`}>
+                                      {r.type === 'debet' ? 'D' : 'C'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {r.btw && (
+                                      <span className="text-xs text-gray-500 dark:text-gray-400">{r.btw}</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2 text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button onClick={() => handleEdit(r)} className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded">
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button onClick={() => handleDelete(r)} className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded">
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile card list */}
+                    <div className="sm:hidden divide-y divide-gray-50 dark:divide-gray-800">
+                      {accounts.map((r) => (
+                        <div key={r.id} className="p-3">
+                          {editingId === r.id ? (
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  value={formData.code}
+                                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                                  placeholder="Code"
+                                  className="w-full px-2 py-1.5 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                                />
+                                <select
+                                  value={formData.type}
+                                  onChange={(e) => setFormData({ ...formData, type: e.target.value as 'debet' | 'credit' })}
+                                  className="w-full px-2 py-1.5 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                                >
+                                  <option value="debet">Debet</option>
+                                  <option value="credit">Credit</option>
+                                </select>
+                              </div>
+                              <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Naam"
+                                className="w-full px-2 py-1.5 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                              />
+                              <select
+                                value={formData.btw}
+                                onChange={(e) => setFormData({ ...formData, btw: e.target.value })}
+                                className="w-full px-2 py-1.5 text-sm border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                              >
+                                {BTW_OPTIONS.map((o) => (
+                                  <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                              </select>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={handleSaveEdit}
+                                  disabled={saving}
+                                  className="flex-1 flex items-center justify-center gap-1 py-1.5 text-sm text-white bg-green-600 rounded-lg"
+                                >
+                                  <Save className="w-3.5 h-3.5" /> Opslaan
+                                </button>
+                                <button
+                                  onClick={resetForm}
+                                  className="flex-1 flex items-center justify-center gap-1 py-1.5 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg"
+                                >
+                                  <X className="w-3.5 h-3.5" /> Annuleren
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400">{r.code}</span>
+                                  <span className={`text-[10px] font-medium px-1 py-0.5 rounded ${
                                     r.type === 'debet'
                                       ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
                                       : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
                                   }`}>
                                     {r.type === 'debet' ? 'D' : 'C'}
                                   </span>
-                                </td>
-                                <td className="px-4 py-2">
                                   {r.btw && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">{r.btw}</span>
+                                    <span className="text-[10px] text-gray-400">{r.btw}</span>
                                   )}
-                                </td>
-                                <td className="px-4 py-2 text-right">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <button onClick={() => handleEdit(r)} className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded">
-                                      <Edit2 className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button onClick={() => handleDelete(r)} className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded">
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                                </div>
+                                <p className="text-sm text-gray-900 dark:text-white mt-0.5 truncate">{r.name}</p>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <button onClick={() => handleEdit(r)} className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded">
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleDelete(r)} className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </Card>
