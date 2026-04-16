@@ -94,13 +94,18 @@ const BtwOverzicht: React.FC = () => {
 
   const btwRegels: BtwRegel[] = [];
   const regelMap = new Map<string, BtwRegel>();
+  let ongeclassificeerd = 0;
+  let ongeclassificeerdBedrag = 0;
 
   for (const t of periodTransactions) {
     const gbCode = t.grootboekrekening;
-    if (!gbCode) continue;
+    if (!gbCode) {
+      ongeclassificeerd++;
+      ongeclassificeerdBedrag += Math.abs(t.amount);
+      continue;
+    }
     const gb = gbMap.get(gbCode);
-    if (!gb) continue;
-    const btwType = gb.btw || 'geen';
+    const btwType = gb?.btw || 'geen';
     const pct = BTW_PERCENTAGES[btwType] ?? 0;
 
     const key = `${gbCode}_${btwType}`;
@@ -193,6 +198,27 @@ const BtwOverzicht: React.FC = () => {
         <div className="flex justify-center py-12"><LoadingSpinner size="lg" /></div>
       ) : (
         <>
+          {ongeclassificeerd > 0 && (
+            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                <Receipt className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-amber-800 dark:text-amber-300">
+                  {ongeclassificeerd} van {periodTransactions.length} transacties zonder grootboekrekening
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+                  Totaal {fmt(ongeclassificeerdBedrag)} niet meegenomen in BTW berekening. Wijs grootboekrekeningen toe via Bankafschrift Import.
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200">
+                  {Math.round(((periodTransactions.length - ongeclassificeerd) / periodTransactions.length) * 100)}% geclassificeerd
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <div className="p-4">
@@ -300,12 +326,25 @@ const BtwOverzicht: React.FC = () => {
             <Card>
               <div className="p-8 text-center">
                 <Receipt className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-600 dark:text-gray-400">
-                  Geen geboekte transacties met grootboekrekening in deze periode.
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                  Importeer bankafschriften en wijs grootboekrekeningen toe.
-                </p>
+                {ongeclassificeerd > 0 ? (
+                  <>
+                    <p className="text-gray-900 dark:text-white font-medium">
+                      {ongeclassificeerd} transacties zonder grootboekrekening
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Totaal {fmt(ongeclassificeerdBedrag)} — wijs een grootboekrekening toe op de Bankafschrift Import pagina om BTW te berekenen.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Geen geboekte transacties in deze periode.
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                      Importeer bankafschriften en wijs grootboekrekeningen toe.
+                    </p>
+                  </>
+                )}
               </div>
             </Card>
           )}

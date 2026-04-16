@@ -146,8 +146,7 @@ export const supplierService = {
   async getGrootboekrekeningen(companyId: string): Promise<Grootboekrekening[]> {
     const q = query(
       collection(db, GROOTBOEK_COLLECTION),
-      where('companyId', '==', companyId),
-      orderBy('code', 'asc')
+      where('companyId', '==', companyId)
     );
 
     const snapshot = await getDocs(q);
@@ -165,7 +164,7 @@ export const supplierService = {
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as Grootboekrekening;
-    });
+    }).sort((a, b) => a.code.localeCompare(b.code));
   },
 
   /**
