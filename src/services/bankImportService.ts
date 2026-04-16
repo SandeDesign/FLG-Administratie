@@ -353,8 +353,6 @@ export const bankImportService = {
       inv => !matchedInvoiceIds.has(inv.id || '')
     );
 
-    console.log('[matchTransactions] outgoing:', outgoingInvoices.length, 'available:', availableOutgoingInvoices.length, '| incoming:', incomingInvoices.length, 'available:', availableIncomingInvoices.length, '| matchedIds:', matchedInvoiceIds.size);
-
     const results: MatchResult[] = [];
 
     for (const transaction of transactions) {
@@ -503,12 +501,8 @@ export const bankImportService = {
           type,
           status: invoice.status,
         });
-      } else if (confidence > 0) {
-        console.log('[findPossibleMatches] BIJNA match:', invoice.invoiceNumber, 'confidence:', confidence, 'voor transactie:', transaction.description.substring(0, 50));
       }
     }
-
-    console.log('[findPossibleMatches] type:', type, '| facturen gecheck:', invoices.length, '| matches gevonden:', matches.length, '| transactie bedrag:', transaction.amount);
 
     return matches.sort((a, b) => b.confidence - a.confidence);
   },

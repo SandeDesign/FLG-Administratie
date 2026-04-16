@@ -65,6 +65,7 @@ import TimesheetExport from './pages/TimesheetExport';
 import Tasks from './pages/Tasks';
 // ✅ BANK STATEMENT IMPORT - NIEUW!
 import BankStatementImport from './pages/BankStatementImport';
+import Grootboekrekeningen from './pages/Grootboekrekeningen';
 import InternalProjects from './pages/InternalProjects';
 import EmployeeAgenda from './pages/EmployeeAgenda';
 import EmployeeTasks from './pages/EmployeeTasks';
@@ -148,6 +149,7 @@ function App() {
                           <Route path="incoming-invoices-stats" element={<IncomingInvoicesStats />} />
                           {/* ✅ NEW ROUTE - Bank Statement Import */}
                           <Route path="bank-statement-import" element={<BankStatementImport />} />
+                          <Route path="grootboekrekeningen" element={<Grootboekrekeningen />} />
                           
                           {/* ✅ DATA & EXPORTS */}
                           <Route path="timesheet-export" element={<TimesheetExport />} />

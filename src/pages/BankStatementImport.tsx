@@ -64,6 +64,7 @@ const BankStatementImport: React.FC = () => {
   const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0, phase: '' });
   const [showPreview, setShowPreview] = useState(false);
   const [imports, setImports] = useState<BankImport[]>([]);
   const [expandedImport, setExpandedImport] = useState<string | null>(null);
@@ -238,6 +239,7 @@ const BankStatementImport: React.FC = () => {
 
     try {
       setImporting(true);
+      setImportProgress({ current: 0, total: matchResults.length, phase: 'Transacties opslaan...' });
 
       const confirmed = matchResults.filter(r => r.status === 'confirmed');
       const pending = matchResults.filter(r => r.status === 'pending');
@@ -270,6 +272,7 @@ const BankStatementImport: React.FC = () => {
       }));
 
       const idMap = await bankImportService.saveTransactions(allTransactions, selectedCompany.id, importId);
+      setImportProgress({ current: 0, total: confirmed.length, phase: 'Matches bevestigen...' });
 
       let confirmedCount = 0;
       for (const result of confirmed) {
@@ -284,6 +287,7 @@ const BankStatementImport: React.FC = () => {
                 user.displayName || user.email || 'Unknown'
               );
               confirmedCount++;
+              setImportProgress(p => ({ ...p, current: confirmedCount }));
             }
           } catch (e) {
             console.error('Error confirming transaction:', e);
@@ -295,8 +299,10 @@ const BankStatementImport: React.FC = () => {
       let newDebiteuren = 0;
       let autoCategorised = 0;
       const userName = user.displayName || user.email || 'Unknown';
+      const withBeneficiary = matchResults.filter(r => r.transaction.beneficiary?.trim());
+      setImportProgress({ current: 0, total: withBeneficiary.length, phase: 'Crediteuren & debiteuren verwerken...' });
 
-
+      let processed = 0;
       for (const result of matchResults) {
         const t = result.transaction;
         const beneficiary = t.beneficiary?.trim();
@@ -304,7 +310,6 @@ const BankStatementImport: React.FC = () => {
 
         try {
           const firestoreId = idMap.get(t.id);
-
 
           if (t.amount < 0) {
             const crediteur = await supplierService.findOrCreateCrediteur(
@@ -318,7 +323,6 @@ const BankStatementImport: React.FC = () => {
               t.amount,
               result.status === 'confirmed'
             );
-            // Auto-categorisatie op basis van eerder geleerde grootboekrekening
             if (firestoreId && crediteur.standaardGrootboek && !t.grootboekrekening) {
               await bankImportService.updateTransaction(
                 firestoreId,
@@ -343,7 +347,6 @@ const BankStatementImport: React.FC = () => {
               t.amount,
               result.status === 'confirmed'
             );
-            // Auto-categorisatie op basis van eerder geleerde grootboekrekening
             if (firestoreId && debiteur.standaardGrootboek && !t.grootboekrekening) {
               await bankImportService.updateTransaction(
                 firestoreId,
@@ -360,7 +363,11 @@ const BankStatementImport: React.FC = () => {
         } catch (e) {
           console.error('Error processing crediteur/debiteur:', e);
         }
+        processed++;
+        setImportProgress(p => ({ ...p, current: processed }));
       }
+
+      setImportProgress({ current: 0, total: 0, phase: 'Afronden...' });
 
       const parts = [
         `${confirmed.length} bevestigd`,
@@ -1047,21 +1054,46 @@ const BankStatementImport: React.FC = () => {
 
             <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
               <Button onClick={handleImport} disabled={importing}>
-                {importing ? (
-                  <>
-                    <LoadingSpinner size="sm" />
-                    Importeren...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Importeer {matchResults.length} transacties
-                  </>
-                )}
+                <Upload className="w-4 h-4 mr-2" />
+                Importeer {matchResults.length} transacties
               </Button>
             </div>
           </div>
         </Card>
+      )}
+
+      {importing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="text-center space-y-4">
+              <div className="relative mx-auto w-16 h-16">
+                <LoadingSpinner size="lg" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Import bezig...
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {importProgress.phase}
+              </p>
+              {importProgress.total > 0 && (
+                <div className="space-y-2">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div
+                      className="h-2.5 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.round((importProgress.current / importProgress.total) * 100)}%`,
+                        backgroundColor: '#cd853f',
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                    {importProgress.current} / {importProgress.total}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
