@@ -477,6 +477,46 @@ const BankStatementImport: React.FC = () => {
     if (!user || !selectedCompany) return;
 
     try {
+      const allTransactions = Array.from(importTransactions.values()).flat();
+      const t = allTransactions.find(tx => tx.id === transactionId);
+
+      if (t && !t.grootboekrekening && t.beneficiary) {
+        try {
+          const isOutgoing = t.amount < 0;
+          if (isOutgoing) {
+            const crediteur = await supplierService.findOrCreateCrediteur(
+              selectedCompany.id,
+              t.beneficiary,
+              t.accountNumber
+            );
+            if (crediteur.standaardGrootboek) {
+              await bankImportService.updateTransaction(
+                transactionId,
+                { grootboekrekening: crediteur.standaardGrootboek, grootboekrekeningName: crediteur.standaardGrootboekNaam || crediteur.standaardGrootboek },
+                user.uid,
+                user.displayName || user.email || 'Unknown'
+              );
+            }
+          } else {
+            const debiteur = await supplierService.findOrCreateDebiteur(
+              selectedCompany.id,
+              t.beneficiary,
+              t.accountNumber
+            );
+            if (debiteur.standaardGrootboek) {
+              await bankImportService.updateTransaction(
+                transactionId,
+                { grootboekrekening: debiteur.standaardGrootboek, grootboekrekeningName: debiteur.standaardGrootboekNaam || debiteur.standaardGrootboek },
+                user.uid,
+                user.displayName || user.email || 'Unknown'
+              );
+            }
+          }
+        } catch {
+          // Niet kritiek
+        }
+      }
+
       await bankImportService.confirmTransaction(
         transactionId,
         selectedCompany.id,
@@ -519,21 +559,55 @@ const BankStatementImport: React.FC = () => {
 
     try {
       const transactionId = linkingTransaction.transaction.id;
+      const t = linkingTransaction.transaction;
+
+      const updateData: Partial<BankTransaction> = {
+        matchedInvoiceId: invoice.id || '',
+        matchedInvoiceType: type,
+        matchedInvoiceNumber: invoice.invoiceNumber,
+        confidence: 100,
+        status: 'pending',
+      };
+
+      if (!t.grootboekrekening && t.beneficiary) {
+        try {
+          if (type === 'incoming') {
+            const crediteur = await supplierService.findOrCreateCrediteur(
+              selectedCompany.id,
+              t.beneficiary,
+              t.accountNumber
+            );
+            if (crediteur.standaardGrootboek) {
+              updateData.grootboekrekening = crediteur.standaardGrootboek;
+              updateData.grootboekrekeningName = crediteur.standaardGrootboekNaam || crediteur.standaardGrootboek;
+            }
+          } else {
+            const debiteur = await supplierService.findOrCreateDebiteur(
+              selectedCompany.id,
+              t.beneficiary,
+              t.accountNumber
+            );
+            if (debiteur.standaardGrootboek) {
+              updateData.grootboekrekening = debiteur.standaardGrootboek;
+              updateData.grootboekrekeningName = debiteur.standaardGrootboekNaam || debiteur.standaardGrootboek;
+            }
+          }
+        } catch {
+          // Niet kritiek als crediteur/debiteur lookup mislukt
+        }
+      }
 
       await bankImportService.updateTransaction(
         transactionId,
-        {
-          matchedInvoiceId: invoice.id || '',
-          matchedInvoiceType: type,
-          matchedInvoiceNumber: invoice.invoiceNumber,
-          confidence: 100,
-          status: 'pending',
-        },
+        updateData,
         user.uid,
         user.displayName || user.email || 'Unknown'
       );
 
-      success('Gekoppeld', `Transactie gekoppeld aan ${invoice.invoiceNumber}`);
+      const gbMsg = updateData.grootboekrekening
+        ? ` (${updateData.grootboekrekening} automatisch toegewezen)`
+        : '';
+      success('Gekoppeld', `Transactie gekoppeld aan ${invoice.invoiceNumber}${gbMsg}`);
       setShowLinkModal(false);
       setLinkingTransaction(null);
       loadImportHistory();
