@@ -281,26 +281,21 @@ export const bankImportService = {
   async matchTransactions(
     transactions: BankTransaction[],
     userId: string,
-    companyId: string,
-    skipMatchedFilter?: boolean
+    companyId: string
   ): Promise<MatchResult[]> {
     const outgoingInvoices = await outgoingInvoiceService.getInvoices(userId, companyId);
     const incomingInvoices = await incomingInvoiceService.getInvoices(userId, companyId);
 
-    console.log('[matchTransactions] outgoing facturen:', outgoingInvoices.length, '| incoming facturen:', incomingInvoices.length, '| transacties:', transactions.length, '| skipFilter:', skipMatchedFilter);
+    const matchedInvoiceIds = await matchedPaymentsService.getMatchedInvoiceIds(companyId);
 
-    let availableOutgoingInvoices = outgoingInvoices;
-    let availableIncomingInvoices = incomingInvoices;
+    const availableOutgoingInvoices = outgoingInvoices.filter(
+      inv => !matchedInvoiceIds.has(inv.id || '')
+    );
+    const availableIncomingInvoices = incomingInvoices.filter(
+      inv => !matchedInvoiceIds.has(inv.id || '')
+    );
 
-    if (!skipMatchedFilter) {
-      const matchedInvoiceIds = await matchedPaymentsService.getMatchedInvoiceIds(companyId);
-      availableOutgoingInvoices = outgoingInvoices.filter(
-        inv => !matchedInvoiceIds.has(inv.id || '')
-      );
-      availableIncomingInvoices = incomingInvoices.filter(
-        inv => !matchedInvoiceIds.has(inv.id || '')
-      );
-    }
+    console.log('[matchTransactions] outgoing:', outgoingInvoices.length, 'available:', availableOutgoingInvoices.length, '| incoming:', incomingInvoices.length, 'available:', availableIncomingInvoices.length, '| matchedIds:', matchedInvoiceIds.size);
 
     const results: MatchResult[] = [];
 
@@ -738,6 +733,6 @@ export const bankImportService = {
       }
     }
 
-    return await this.matchTransactions(transactions, userId, companyId, true);
+    return await this.matchTransactions(transactions, userId, companyId);
   },
 };

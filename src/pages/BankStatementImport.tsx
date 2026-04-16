@@ -219,8 +219,7 @@ const BankStatementImport: React.FC = () => {
       const results = await bankImportService.matchTransactions(
         enrichedTransactions,
         queryUserId,
-        selectedCompany.id,
-        true
+        selectedCompany.id
       );
 
       setMatchResults(results);
