@@ -22,6 +22,9 @@ export interface BankTransaction {
   importId: string;
   matchedInvoiceId?: string;
   matchedInvoiceType?: 'outgoing' | 'incoming';
+  matchedInvoiceNumber?: string;
+  grootboekrekening?: string;
+  grootboekrekeningName?: string;
   confidence?: number;
   editHistory?: EditHistoryEntry[];
   createdAt: number;
@@ -81,13 +84,7 @@ export interface BankImport {
 export interface ParsedCSV {
   headers: string[];
   rows: string[][];
-  detectedFormat: {
-    dateColumn: number;
-    amountColumn: number;
-    descriptionColumn: number;
-    beneficiaryColumn?: number;
-    referenceColumn?: number;
-  };
+  detectedFormat: CSVColumnMapping;
 }
 
 export interface CSVColumnMapping {

@@ -19,6 +19,11 @@ import {
   ArrowUpCircle,
   TrendingUp,
   TrendingDown,
+  BookOpen,
+  Users,
+  Download,
+  UserPlus,
+  Tag,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -30,6 +35,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { bankImportService } from '../services/bankImportService';
 import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
 import { incomingInvoiceService, IncomingInvoice } from '../services/incomingInvoiceService';
+import { supplierService } from '../services/supplierService';
 import {
   BankTransaction,
   BankImport,
@@ -37,6 +43,8 @@ import {
   CSVColumnMapping,
   MatchedInvoice,
 } from '../types/bankImport';
+import { Grootboekrekening, Crediteur, Debiteur } from '../types/supplier';
+import { grootboekCategoryLabels } from '../utils/grootboekTemplate';
 import { format as formatDate } from 'date-fns';
 import Modal from '../components/ui/Modal';
 import { usePageTitle } from '../contexts/PageTitleContext';
@@ -73,6 +81,14 @@ const BankStatementImport: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const [importTransactions, setImportTransactions] = useState<Map<string, BankTransaction[]>>(new Map());
+
+  const [grootboekrekeningen, setGrootboekrekeningen] = useState<Grootboekrekening[]>([]);
+  const [crediteuren, setCrediteuren] = useState<Crediteur[]>([]);
+  const [debiteuren, setDebiteuren] = useState<Debiteur[]>([]);
+  const [importingTemplate, setImportingTemplate] = useState(false);
+  const [showGrootboekModal, setShowGrootboekModal] = useState(false);
+  const [selectedTransactionForGrootboek, setSelectedTransactionForGrootboek] = useState<string | null>(null);
+  const [grootboekSearchTerm, setGrootboekSearchTerm] = useState('');
 
   const safeFormatDate = (date: Date | number | string | undefined, fmt: string): string => {
     if (!date) return 'Onbekend';
@@ -140,10 +156,27 @@ const BankStatementImport: React.FC = () => {
     }
   }, [selectedCompany]);
 
+  const loadGrootboekData = useCallback(async () => {
+    if (!selectedCompany) return;
+    try {
+      const [gb, cred, deb] = await Promise.all([
+        supplierService.getGrootboekrekeningen(selectedCompany.id),
+        supplierService.getCrediteuren(selectedCompany.id),
+        supplierService.getDebiteuren(selectedCompany.id),
+      ]);
+      setGrootboekrekeningen(gb);
+      setCrediteuren(cred);
+      setDebiteuren(deb);
+    } catch (e) {
+      console.error('Error loading grootboek data:', e);
+    }
+  }, [selectedCompany]);
+
   useEffect(() => {
     loadImportHistory();
     loadInvoices();
-  }, [loadImportHistory, loadInvoices]);
+    loadGrootboekData();
+  }, [loadImportHistory, loadInvoices, loadGrootboekData]);
 
   const handleParse = async () => {
     if (!rawData.trim()) {
@@ -232,18 +265,19 @@ const BankStatementImport: React.FC = () => {
         confidence: r.confidence,
         matchedInvoiceId: r.matchedInvoice?.invoiceId,
         matchedInvoiceType: r.matchedInvoice?.type,
+        matchedInvoiceNumber: r.matchedInvoice?.invoiceNumber,
       }));
 
-      await bankImportService.saveTransactions(allTransactions, selectedCompany.id, importId);
+      const idMap = await bankImportService.saveTransactions(allTransactions, selectedCompany.id, importId);
 
       let confirmedCount = 0;
       for (const result of confirmed) {
         if (result.matchedInvoice?.invoiceId) {
           try {
-            const transactionDoc = allTransactions.find(t => t.id === result.transaction.id);
-            if (transactionDoc) {
+            const firestoreId = idMap.get(result.transaction.id);
+            if (firestoreId) {
               await bankImportService.confirmTransaction(
-                transactionDoc.id,
+                firestoreId,
                 selectedCompany.id,
                 user.uid,
                 user.displayName || user.email || 'Unknown'
@@ -256,16 +290,61 @@ const BankStatementImport: React.FC = () => {
         }
       }
 
-      success(
-        'Import geslaagd',
-        `${confirmed.length} bevestigd, ${pending.length} ter beoordeling, ${unmatched.length} onbekend. ${confirmedCount} facturen gemarkeerd als betaald.`
-      );
+      let newCrediteuren = 0;
+      let newDebiteuren = 0;
+      for (const result of matchResults) {
+        const t = result.transaction;
+        const beneficiary = t.beneficiary?.trim();
+        if (!beneficiary) continue;
+
+        try {
+          if (t.amount < 0) {
+            const crediteur = await supplierService.findOrCreateCrediteur(
+              selectedCompany.id,
+              beneficiary,
+              t.accountNumber
+            );
+            if (crediteur.transactionCount === 0) newCrediteuren++;
+            await supplierService.updateCrediteurTotals(
+              crediteur.id!,
+              t.amount,
+              result.status === 'confirmed'
+            );
+          } else {
+            const debiteur = await supplierService.findOrCreateDebiteur(
+              selectedCompany.id,
+              beneficiary,
+              t.accountNumber
+            );
+            if (debiteur.transactionCount === 0) newDebiteuren++;
+            await supplierService.updateDebiteurTotals(
+              debiteur.id!,
+              t.amount,
+              result.status === 'confirmed'
+            );
+          }
+        } catch (e) {
+          console.error('Error creating crediteur/debiteur:', e);
+        }
+      }
+
+      const parts = [
+        `${confirmed.length} bevestigd`,
+        `${pending.length} ter beoordeling`,
+        `${unmatched.length} onbekend`,
+        `${confirmedCount} facturen als betaald`,
+      ];
+      if (newCrediteuren > 0) parts.push(`${newCrediteuren} nieuwe crediteuren`);
+      if (newDebiteuren > 0) parts.push(`${newDebiteuren} nieuwe debiteuren`);
+
+      success('Import geslaagd', parts.join(', ') + '.');
 
       setRawData('');
       setMatchResults([]);
       setShowPreview(false);
       loadImportHistory();
       loadInvoices();
+      loadGrootboekData();
     } catch (e: any) {
       showError('Import fout', e.message || 'Kon import niet opslaan');
       console.error(e);
@@ -417,6 +496,46 @@ const BankStatementImport: React.FC = () => {
       loadImportHistory();
     } catch (e: any) {
       showError('Fout', e.message || 'Kon koppeling niet opslaan');
+    }
+  };
+
+  const handleImportTemplate = async () => {
+    if (!selectedCompany) return;
+    try {
+      setImportingTemplate(true);
+      const count = await supplierService.importGrootboekTemplate(selectedCompany.id);
+      if (count > 0) {
+        success('Rekeningschema geimporteerd', `${count} grootboekrekeningen aangemaakt`);
+        loadGrootboekData();
+      } else {
+        success('Rekeningschema', 'Alle rekeningen bestaan al');
+      }
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon rekeningschema niet importeren');
+    } finally {
+      setImportingTemplate(false);
+    }
+  };
+
+  const handleAssignGrootboek = async (transactionId: string, gb: Grootboekrekening) => {
+    if (!user || !selectedCompany) return;
+    try {
+      await bankImportService.updateTransaction(
+        transactionId,
+        {
+          grootboekrekening: gb.code,
+          grootboekrekeningName: gb.name,
+        },
+        user.uid,
+        user.displayName || user.email || 'Unknown'
+      );
+      success('Toegewezen', `Grootboekrekening ${gb.code} - ${gb.name} toegewezen`);
+      setShowGrootboekModal(false);
+      setSelectedTransactionForGrootboek(null);
+      setGrootboekSearchTerm('');
+      loadImportHistory();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon grootboekrekening niet toewijzen');
     }
   };
 
@@ -847,6 +966,129 @@ const BankStatementImport: React.FC = () => {
         </Card>
       )}
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card>
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Rekeningschema
+              </h3>
+              <Button
+                onClick={handleImportTemplate}
+                disabled={importingTemplate}
+                variant="outline"
+                className="text-xs px-2 py-1"
+              >
+                {importingTemplate ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  <>
+                    <Download className="w-3 h-3 mr-1" />
+                    Importeer sjabloon
+                  </>
+                )}
+              </Button>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {grootboekrekeningen.length}
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              grootboekrekeningen
+            </p>
+            {grootboekrekeningen.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {Object.entries(
+                  grootboekrekeningen.reduce((acc, gb) => {
+                    acc[gb.category] = (acc[gb.category] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>)
+                ).slice(0, 4).map(([cat, count]) => (
+                  <div key={cat} className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                    <span>{grootboekCategoryLabels[cat as keyof typeof grootboekCategoryLabels] || cat}</span>
+                    <span>{count}</span>
+                  </div>
+                ))}
+                {Object.keys(
+                  grootboekrekeningen.reduce((acc, gb) => {
+                    acc[gb.category] = true;
+                    return acc;
+                  }, {} as Record<string, boolean>)
+                ).length > 4 && (
+                  <div className="text-xs text-gray-500 dark:text-gray-500">
+                    + meer categorien...
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center mb-3">
+              <Users className="w-4 h-4 mr-2 text-red-500" />
+              Crediteuren
+            </h3>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {crediteuren.length}
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              leveranciers / schuldeisers
+            </p>
+            {crediteuren.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {crediteuren.slice(0, 4).map((c) => (
+                  <div key={c.id} className="flex justify-between text-xs">
+                    <span className="text-gray-600 dark:text-gray-400 truncate mr-2">
+                      {c.code} - {c.name}
+                    </span>
+                    <span className="text-red-600 whitespace-nowrap">
+                      {c.transactionCount}x
+                    </span>
+                  </div>
+                ))}
+                {crediteuren.length > 4 && (
+                  <div className="text-xs text-gray-500">+ {crediteuren.length - 4} meer...</div>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center mb-3">
+              <Users className="w-4 h-4 mr-2 text-green-500" />
+              Debiteuren
+            </h3>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              {debiteuren.length}
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              klanten / betalers
+            </p>
+            {debiteuren.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {debiteuren.slice(0, 4).map((d) => (
+                  <div key={d.id} className="flex justify-between text-xs">
+                    <span className="text-gray-600 dark:text-gray-400 truncate mr-2">
+                      {d.code} - {d.name}
+                    </span>
+                    <span className="text-green-600 whitespace-nowrap">
+                      {d.transactionCount}x
+                    </span>
+                  </div>
+                ))}
+                {debiteuren.length > 4 && (
+                  <div className="text-xs text-gray-500">+ {debiteuren.length - 4} meer...</div>
+                )}
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
       <Card>
         <div className="p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -946,8 +1188,25 @@ const BankStatementImport: React.FC = () => {
                                       </span>
                                     </div>
                                     <div className="text-gray-600 dark:text-gray-400">{t.description}</div>
+                                    {t.grootboekrekening && (
+                                      <div className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                        <Tag className="w-2.5 h-2.5 mr-1" />
+                                        {t.grootboekrekening} - {t.grootboekrekeningName}
+                                      </div>
+                                    )}
                                   </div>
                                   <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedTransactionForGrootboek(t.id);
+                                        setShowGrootboekModal(true);
+                                        setGrootboekSearchTerm('');
+                                      }}
+                                      className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                      title="Grootboekrekening toewijzen"
+                                    >
+                                      <BookOpen className="w-3 h-3" />
+                                    </button>
                                     <button
                                       onClick={() => handleUnconfirmTransaction(t.id)}
                                       className="p-1 text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900 rounded"
@@ -1053,8 +1312,30 @@ const BankStatementImport: React.FC = () => {
                                           <div className="text-gray-600 dark:text-gray-400">
                                             {t.description}
                                           </div>
+                                          {t.beneficiary && (
+                                            <div className="text-gray-500 dark:text-gray-500 mt-0.5">
+                                              {t.amount < 0 ? 'Crediteur' : 'Debiteur'}: {t.beneficiary}
+                                            </div>
+                                          )}
+                                          {t.grootboekrekening && (
+                                            <div className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                              <Tag className="w-2.5 h-2.5 mr-1" />
+                                              {t.grootboekrekening} - {t.grootboekrekeningName}
+                                            </div>
+                                          )}
                                         </div>
                                         <div className="flex items-center gap-1">
+                                          <button
+                                            onClick={() => {
+                                              setSelectedTransactionForGrootboek(t.id);
+                                              setShowGrootboekModal(true);
+                                              setGrootboekSearchTerm('');
+                                            }}
+                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                            title="Grootboekrekening toewijzen"
+                                          >
+                                            <BookOpen className="w-3 h-3" />
+                                          </button>
                                           <button
                                             onClick={() => handleEditTransaction(t)}
                                             className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
@@ -1206,8 +1487,30 @@ const BankStatementImport: React.FC = () => {
                                           <div className="text-gray-600 dark:text-gray-400">
                                             {t.description}
                                           </div>
+                                          {t.beneficiary && (
+                                            <div className="text-gray-500 dark:text-gray-500 mt-0.5">
+                                              {t.amount < 0 ? 'Crediteur' : 'Debiteur'}: {t.beneficiary}
+                                            </div>
+                                          )}
+                                          {t.grootboekrekening && (
+                                            <div className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                                              <Tag className="w-2.5 h-2.5 mr-1" />
+                                              {t.grootboekrekening} - {t.grootboekrekeningName}
+                                            </div>
+                                          )}
                                         </div>
                                         <div className="flex items-center gap-1">
+                                          <button
+                                            onClick={() => {
+                                              setSelectedTransactionForGrootboek(t.id);
+                                              setShowGrootboekModal(true);
+                                              setGrootboekSearchTerm('');
+                                            }}
+                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
+                                            title="Grootboekrekening toewijzen"
+                                          >
+                                            <BookOpen className="w-3 h-3" />
+                                          </button>
                                           <button
                                             onClick={() => handleEditTransaction(t)}
                                             className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
@@ -1391,6 +1694,100 @@ const BankStatementImport: React.FC = () => {
                 </>
               )}
             </div>
+          </div>
+        </Modal>
+      )}
+      {showGrootboekModal && selectedTransactionForGrootboek && (
+        <Modal
+          isOpen={showGrootboekModal}
+          onClose={() => {
+            setShowGrootboekModal(false);
+            setSelectedTransactionForGrootboek(null);
+            setGrootboekSearchTerm('');
+          }}
+          title="Grootboekrekening toewijzen"
+          size="lg"
+        >
+          <div className="space-y-4">
+            {grootboekrekeningen.length === 0 ? (
+              <div className="text-center py-6">
+                <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600 dark:text-gray-400 mb-3">
+                  Nog geen rekeningschema ingeladen
+                </p>
+                <Button onClick={handleImportTemplate} disabled={importingTemplate}>
+                  {importingTemplate ? (
+                    <LoadingSpinner size="sm" />
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Importeer standaard rekeningschema
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={grootboekSearchTerm}
+                    onChange={(e) => setGrootboekSearchTerm(e.target.value)}
+                    placeholder="Zoek op code of naam..."
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div className="max-h-96 overflow-y-auto space-y-1">
+                  {Object.entries(
+                    grootboekrekeningen
+                      .filter(
+                        (gb) =>
+                          !grootboekSearchTerm ||
+                          gb.code.includes(grootboekSearchTerm) ||
+                          gb.name.toLowerCase().includes(grootboekSearchTerm.toLowerCase()) ||
+                          (grootboekCategoryLabels[gb.category as keyof typeof grootboekCategoryLabels] || '')
+                            .toLowerCase()
+                            .includes(grootboekSearchTerm.toLowerCase())
+                      )
+                      .reduce((acc, gb) => {
+                        const label = grootboekCategoryLabels[gb.category as keyof typeof grootboekCategoryLabels] || gb.category;
+                        if (!acc[label]) acc[label] = [];
+                        acc[label].push(gb);
+                        return acc;
+                      }, {} as Record<string, Grootboekrekening[]>)
+                  ).map(([category, accounts]) => (
+                    <div key={category}>
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-50 dark:bg-gray-800 sticky top-0">
+                        {category}
+                      </div>
+                      {accounts.map((gb) => (
+                        <button
+                          key={gb.id}
+                          onClick={() => handleAssignGrootboek(selectedTransactionForGrootboek, gb)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400 w-12">
+                              {gb.code}
+                            </span>
+                            <span className="text-gray-900 dark:text-white">{gb.name}</span>
+                          </div>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            gb.type === 'debet'
+                              ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                              : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                          }`}>
+                            {gb.type}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </Modal>
       )}
