@@ -604,13 +604,21 @@ const BankStatementImport: React.FC = () => {
         user.displayName || user.email || 'Unknown'
       );
 
+      await bankImportService.confirmTransaction(
+        transactionId,
+        selectedCompany.id,
+        user.uid,
+        user.displayName || user.email || 'Unknown'
+      );
+
       const gbMsg = updateData.grootboekrekening
         ? ` (${updateData.grootboekrekening} automatisch toegewezen)`
         : '';
-      success('Gekoppeld', `Transactie gekoppeld aan ${invoice.invoiceNumber}${gbMsg}`);
+      success('Bevestigd', `Gekoppeld en bevestigd: ${invoice.invoiceNumber}${gbMsg}`);
       setShowLinkModal(false);
       setLinkingTransaction(null);
       loadImportHistory();
+      loadInvoices();
     } catch (e: any) {
       showError('Fout', e.message || 'Kon koppeling niet opslaan');
     }
