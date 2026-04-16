@@ -1063,32 +1063,35 @@ const BankStatementImport: React.FC = () => {
       )}
 
       {importing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
-            <div className="text-center space-y-4">
-              <div className="relative mx-auto w-16 h-16">
-                <LoadingSpinner size="lg" />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
+            <div className="text-center space-y-5">
+              <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
+                <Upload className="w-6 h-6 text-amber-600 dark:text-amber-400 animate-pulse" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Import bezig...
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {importProgress.phase}
-              </p>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Import bezig...
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {importProgress.phase}
+                </p>
+              </div>
               {importProgress.total > 0 && (
-                <div className="space-y-2">
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                <div className="space-y-1.5">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
                     <div
-                      className="h-2.5 rounded-full transition-all duration-300"
+                      className="h-full rounded-full transition-all duration-300 ease-out"
                       style={{
                         width: `${Math.round((importProgress.current / importProgress.total) * 100)}%`,
                         backgroundColor: '#cd853f',
                       }}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
-                    {importProgress.current} / {importProgress.total}
-                  </p>
+                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>{importProgress.current} / {importProgress.total}</span>
+                    <span>{Math.round((importProgress.current / importProgress.total) * 100)}%</span>
+                  </div>
                 </div>
               )}
             </div>
