@@ -90,6 +90,7 @@ const BtwOverzicht: React.FC = () => {
 
   const periodTransactions = transactions.filter(t => {
     const d = t.date instanceof Date ? t.date : new Date(t.date);
+    if (!d || isNaN(d.getTime())) return true;
     return d >= start && d <= end;
   });
 
