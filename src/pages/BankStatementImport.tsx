@@ -190,16 +190,6 @@ const BankStatementImport: React.FC = () => {
       return;
     }
 
-    // Controleer of het opgegeven formaat overeenkomt met de geplakte data
-    const detectedFormat = bankImportService.detectFormat(rawData);
-    if (detectedFormat !== 'unknown' && detectedFormat !== format) {
-      showError(
-        'Verkeerd formaat',
-        `De geplakte data lijkt ${detectedFormat}-formaat te zijn, maar je hebt ${format} geselecteerd. Schakel over naar ${detectedFormat} of plak de juiste data.`
-      );
-      return;
-    }
-
     try {
       setLoading(true);
 
@@ -215,50 +205,27 @@ const BankStatementImport: React.FC = () => {
         parsedTransactions = bankImportService.parseMT940(rawData);
       }
 
-      if (parsedTransactions.length === 0) {
-        showError(
-          'Geen transacties gevonden',
-          'Controleer het formaat en de kolomnamen. Zorg dat de data tenminste een datum, bedrag en omschrijving kolom heeft.'
-        );
-        setLoading(false);
-        return;
-      }
-
-      const existingSignatures = await bankImportService.checkDuplicates(
-        [],
-        selectedCompany.id
-      );
-
-      const enrichedTransactions: BankTransaction[] = parsedTransactions.map((t, idx) => {
-        const sig = bankImportService.makeTransactionSignature(t);
-        return {
-          ...t,
-          id: `temp-${idx}`,
-          type: t.amount >= 0 ? 'outgoing' : 'incoming',
-          status: 'unmatched' as const,
-          companyId: selectedCompany.id,
-          importId: 'temp',
-          isDuplicate: existingSignatures.has(sig),
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-      });
-
-      const duplicateCount = enrichedTransactions.filter(t => t.isDuplicate).length;
+      const enrichedTransactions: BankTransaction[] = parsedTransactions.map((t, idx) => ({
+        ...t,
+        id: `temp-${idx}`,
+        type: t.amount >= 0 ? 'outgoing' : 'incoming',
+        status: 'unmatched' as const,
+        companyId: selectedCompany.id,
+        importId: 'temp',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      }));
 
       const results = await bankImportService.matchTransactions(
         enrichedTransactions,
         queryUserId,
         selectedCompany.id,
-        true // preview: toon ALLE mogelijke matches, niet filteren op eerder gematched
+        true
       );
 
       setMatchResults(results);
       setShowPreview(true);
-      const msg = duplicateCount > 0
-        ? `${parsedTransactions.length} transacties gevonden, waarvan ${duplicateCount} mogelijke duplicaten`
-        : `${parsedTransactions.length} transacties gevonden`;
-      success('Geslaagd', msg);
+      success('Geslaagd', `${parsedTransactions.length} transacties geparsed`);
     } catch (e: any) {
       showError('Parse fout', e.message || 'Kon bankafschrift niet verwerken');
       console.error(e);
