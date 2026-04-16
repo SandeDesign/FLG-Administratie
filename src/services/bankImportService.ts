@@ -445,13 +445,16 @@ export const bankImportService = {
     transactions: BankTransaction[],
     companyId: string,
     importId: string
-  ): Promise<void> {
+  ): Promise<Map<string, string>> {
     const batch = writeBatch(db);
+    const idMap = new Map<string, string>();
 
     transactions.forEach((transaction) => {
       const transactionRef = doc(collection(db, 'bankTransactions'));
+      idMap.set(transaction.id, transactionRef.id);
       batch.set(transactionRef, {
         ...transaction,
+        id: transactionRef.id,
         date: typeof transaction.date === 'number' ? transaction.date : transaction.date.getTime(),
         companyId,
         importId,
@@ -461,6 +464,7 @@ export const bankImportService = {
     });
 
     await batch.commit();
+    return idMap;
   },
 
   async getTransactionsByImport(companyId: string, importId: string): Promise<BankTransaction[]> {
@@ -580,7 +584,7 @@ export const bankImportService = {
       companyId,
       transaction.matchedInvoiceId,
       transaction.matchedInvoiceType,
-      transaction.matchedInvoiceId,
+      transaction.matchedInvoiceNumber || transaction.matchedInvoiceId,
       transactionId,
       transaction.importId,
       userId,
