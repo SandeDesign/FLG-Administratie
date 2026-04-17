@@ -19,6 +19,8 @@ import { usePageTitle } from '../contexts/PageTitleContext';
 import PeriodSelector from '../components/ui/PeriodSelector';
 import { bankImportService } from '../services/bankImportService';
 import { supplierService } from '../services/supplierService';
+import { outgoingInvoiceService, OutgoingInvoice } from '../services/outgoingInvoiceService';
+import { incomingInvoiceService, IncomingInvoice } from '../services/incomingInvoiceService';
 import { dagboekExportService, ExportFormat } from '../services/dagboekExportService';
 import { generateBtwPDF } from '../lib/generateBtwPDF';
 import { BankTransaction } from '../types/bankImport';
@@ -74,7 +76,7 @@ function sortByDate(a: BankTransaction, b: BankTransaction): number {
 }
 
 const BtwOverzicht: React.FC = () => {
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const { selectedCompany, selectedYear, selectedQuarter } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('BTW Overzicht');
@@ -82,25 +84,31 @@ const BtwOverzicht: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [grootboekrekeningen, setGrootboekrekeningen] = useState<Grootboekrekening[]>([]);
+  const [outgoingInvoices, setOutgoingInvoices] = useState<OutgoingInvoice[]>([]);
+  const [incomingInvoices, setIncomingInvoices] = useState<IncomingInvoice[]>([]);
   const [exporting, setExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportChoice>('csv');
 
   const loadData = useCallback(async () => {
-    if (!selectedCompany) return;
+    if (!selectedCompany || !user) return;
     try {
       setLoading(true);
-      const [confirmed, gb] = await Promise.all([
+      const [confirmed, gb, outInv, inInv] = await Promise.all([
         bankImportService.getTransactionsByStatus(selectedCompany.id, 'confirmed'),
         supplierService.getGrootboekrekeningen(selectedCompany.id),
+        outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id),
+        incomingInvoiceService.getInvoices(user.uid, selectedCompany.id),
       ]);
       setTransactions(confirmed);
       setGrootboekrekeningen(gb);
+      setOutgoingInvoices(outInv);
+      setIncomingInvoices(inInv);
     } catch (e) {
       console.error('Error loading BTW data:', e);
     } finally {
       setLoading(false);
     }
-  }, [selectedCompany]);
+  }, [selectedCompany, user]);
 
   useEffect(() => {
     loadData();
@@ -124,12 +132,39 @@ const BtwOverzicht: React.FC = () => {
 
   const { start, end } = getQuarterDateRange(selectedYear, selectedQuarter);
   const gbMap = new Map(grootboekrekeningen.map((g) => [g.code, g]));
+  const outInvMap = new Map(outgoingInvoices.map((i) => [i.id || '', i]));
+  const inInvMap = new Map(incomingInvoices.map((i) => [i.id || '', i]));
 
   const periodTransactions = transactions.filter((t) => {
     const d = toDate(t.date);
     if (!isValid(d)) return true;
     return d >= start && d <= end;
   });
+
+  // --- Resolve BTW bron per transactie: factuur > grootboek ---
+  // Als transactie gekoppeld is aan factuur → gebruik vatAmount van de factuur
+  // (proportioneel voor deelbetalingen). Anders fallback naar grootboek BTW tarief.
+  const deriveBtw = (t: BankTransaction): { netto: number; btw: number; effPct: number; source: 'invoice' | 'grootboek' | 'none' } => {
+    const abs = Math.abs(t.amount);
+    if (t.matchedInvoiceId) {
+      const inv = t.matchedInvoiceType === 'outgoing'
+        ? outInvMap.get(t.matchedInvoiceId)
+        : inInvMap.get(t.matchedInvoiceId);
+      if (inv && inv.totalAmount > 0 && inv.vatAmount >= 0) {
+        const ratio = abs / inv.totalAmount;
+        const netto = inv.amount * ratio;
+        const btw = inv.vatAmount * ratio;
+        const effPct = inv.amount > 0 ? Math.round((inv.vatAmount / inv.amount) * 100) : 0;
+        return { netto, btw, effPct, source: 'invoice' };
+      }
+    }
+    const gb = t.grootboekrekening ? gbMap.get(t.grootboekrekening) : undefined;
+    const btwType = gb?.btw || 'geen';
+    const pct = BTW_PERCENTAGES[btwType] ?? 0;
+    const netto = pct > 0 ? abs / (1 + pct / 100) : abs;
+    const btw = abs - netto;
+    return { netto, btw, effPct: pct, source: gb ? 'grootboek' : 'none' };
+  };
 
   // --- Build BTW regels (single source of truth) ---
   const regelMap = new Map<string, BtwRegel>();
@@ -139,6 +174,7 @@ const BtwOverzicht: React.FC = () => {
     const gbCode = t.grootboekrekening;
     const isIn = t.amount >= 0;
     const abs = Math.abs(t.amount);
+    const { netto, btw } = deriveBtw(t);
 
     let key: string;
     let code: string;
@@ -179,9 +215,6 @@ const BtwOverzicht: React.FC = () => {
       regelMap.set(key, regel);
       btwRegels.push(regel);
     }
-
-    const netto = pct > 0 ? abs / (1 + pct / 100) : abs;
-    const btw = abs - netto;
 
     if (isIn) {
       regel.inBruto += abs;
@@ -230,6 +263,8 @@ const BtwOverzicht: React.FC = () => {
         generateBtwPDF(
           periodTransactions,
           grootboekrekeningen,
+          outgoingInvoices,
+          incomingInvoices,
           selectedCompany.name,
           selectedYear,
           selectedQuarter
@@ -375,6 +410,7 @@ const BtwOverzicht: React.FC = () => {
                         const netto = netNetto(r);
                         const btw = netBtw(r);
                         const bruto = netBruto(r);
+                        const viaInvoice = r.btwPercentage === 0 && Math.abs(btw) > 0.01;
                         return (
                           <tr
                             key={i}
@@ -394,6 +430,10 @@ const BtwOverzicht: React.FC = () => {
                               {isUncat ? (
                                 <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
                                   onbekend
+                                </span>
+                              ) : viaInvoice ? (
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                  via factuur
                                 </span>
                               ) : (
                                 <span
@@ -456,6 +496,7 @@ const BtwOverzicht: React.FC = () => {
                     const netto = netNetto(r);
                     const btw = netBtw(r);
                     const bruto = netBruto(r);
+                    const viaInvoice = r.btwPercentage === 0 && Math.abs(btw) > 0.01;
                     return (
                       <div
                         key={i}
@@ -477,6 +518,10 @@ const BtwOverzicht: React.FC = () => {
                           {isUncat ? (
                             <span className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
                               onbekend
+                            </span>
+                          ) : viaInvoice ? (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                              via factuur
                             </span>
                           ) : (
                             <span
