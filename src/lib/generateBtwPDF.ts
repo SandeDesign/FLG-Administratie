@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import { BankTransaction } from '../types/bankImport';
 import { Grootboekrekening } from '../types/supplier';
+import { OutgoingInvoice } from '../services/outgoingInvoiceService';
+import { IncomingInvoice } from '../services/incomingInvoiceService';
 
 const colors = {
   bronze: { r: 205, g: 133, b: 63 },
@@ -55,6 +57,8 @@ function formatDutchDate(d: Date): string {
 export const generateBtwPDF = (
   transactions: BankTransaction[],
   grootboekrekeningen: Grootboekrekening[],
+  outgoingInvoices: OutgoingInvoice[],
+  incomingInvoices: IncomingInvoice[],
   companyName: string,
   year: number,
   quarter: number | null
@@ -73,6 +77,32 @@ export const generateBtwPDF = (
 
   // --- Berekeningen ---
   const gbMap = new Map(grootboekrekeningen.map((g) => [g.code, g]));
+  const outInvMap = new Map(outgoingInvoices.map((i) => [i.id || '', i]));
+  const inInvMap = new Map(incomingInvoices.map((i) => [i.id || '', i]));
+
+  // BTW afgeleid per transactie: factuur > grootboek
+  const deriveBtw = (t: BankTransaction): { netto: number; btw: number; pct: number } => {
+    const abs = Math.abs(t.amount);
+    if (t.matchedInvoiceId) {
+      const inv = t.matchedInvoiceType === 'outgoing'
+        ? outInvMap.get(t.matchedInvoiceId)
+        : inInvMap.get(t.matchedInvoiceId);
+      if (inv && inv.totalAmount > 0 && inv.vatAmount >= 0) {
+        const ratio = abs / inv.totalAmount;
+        const netto = inv.amount * ratio;
+        const btw = inv.vatAmount * ratio;
+        const pct = inv.amount > 0 ? Math.round((inv.vatAmount / inv.amount) * 100) : 0;
+        return { netto, btw, pct };
+      }
+    }
+    const gb = t.grootboekrekening ? gbMap.get(t.grootboekrekening) : undefined;
+    const btwType = gb?.btw || 'geen';
+    const pct = BTW_PERCENTAGES[btwType] ?? 0;
+    const netto = pct > 0 ? abs / (1 + pct / 100) : abs;
+    const btw = abs - netto;
+    return { netto, btw, pct };
+  };
+
   const regelMap = new Map<string, {
     code: string; naam: string; btwType: string; btwPct: number;
     inNetto: number; inBtw: number; inBruto: number;
@@ -83,6 +113,7 @@ export const generateBtwPDF = (
   for (const t of transactions) {
     const isIn = t.amount >= 0;
     const abs = Math.abs(t.amount);
+    const { netto, btw } = deriveBtw(t);
     let key: string, code: string, naam: string, btwType: string, pct: number;
 
     if (t.grootboekrekening) {
@@ -106,8 +137,6 @@ export const generateBtwPDF = (
       regelMap.set(key, r);
     }
 
-    const netto = pct > 0 ? abs / (1 + pct / 100) : abs;
-    const btw = abs - netto;
     if (isIn) { r.inBruto += abs; r.inNetto += netto; r.inBtw += btw; }
     else { r.uitBruto += abs; r.uitNetto += netto; r.uitBtw += btw; }
     r.count++;
@@ -400,14 +429,14 @@ export const generateBtwPDF = (
       checkBreak(6);
       if (y === 20) drawTxHeaders();
 
-      const gb = t.grootboekrekening ? gbMap.get(t.grootboekrekening) : undefined;
-      const btwType = gb?.btw || (t.grootboekrekening ? 'geen' : '?');
-      const pct = BTW_PERCENTAGES[btwType] ?? 0;
-      const abs = Math.abs(t.amount);
-      const netto = pct > 0 ? abs / (1 + pct / 100) : abs;
-      const btw = abs - netto;
+      const { netto, btw, pct } = deriveBtw(t);
       const sign = t.amount >= 0 ? 1 : -1;
       const isUncat = !t.grootboekrekening;
+      const btwLabel = isUncat
+        ? '?'
+        : btw > 0
+          ? (t.matchedInvoiceId ? `factuur ${pct}%` : `${pct}%`)
+          : 'geen';
 
       if (isUncat) {
         pdf.setFillColor(colors.amberBg.r, colors.amberBg.g, colors.amberBg.b);
@@ -445,7 +474,7 @@ export const generateBtwPDF = (
       x += tGb;
 
       pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      pdf.text(isUncat ? '?' : `${btwType}${pct > 0 ? ` ${pct}%` : ''}`, x, y + 3.8); x += tBtw;
+      pdf.text(btwLabel, x, y + 3.8); x += tBtw;
 
       pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
       pdf.text(isUncat ? '—' : fmt(sign * netto), x + tNetto - 2, y + 3.8, { align: 'right' }); x += tNetto;
