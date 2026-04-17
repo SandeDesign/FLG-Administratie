@@ -150,12 +150,19 @@ const BtwOverzicht: React.FC = () => {
       const inv = t.matchedInvoiceType === 'outgoing'
         ? outInvMap.get(t.matchedInvoiceId)
         : inInvMap.get(t.matchedInvoiceId);
-      if (inv && inv.totalAmount > 0 && inv.vatAmount >= 0) {
-        const ratio = abs / inv.totalAmount;
-        const netto = inv.amount * ratio;
-        const btw = inv.vatAmount * ratio;
-        const effPct = inv.amount > 0 ? Math.round((inv.vatAmount / inv.amount) * 100) : 0;
-        return { netto, btw, effPct, source: 'invoice' };
+      if (inv) {
+        const total = Number(inv.totalAmount);
+        let vat = Number(inv.vatAmount);
+        let net = Number(inv.amount);
+        if (!isFinite(vat)) vat = 0;
+        if (!isFinite(net) && isFinite(total)) net = total - vat;
+        if (isFinite(total) && total > 0 && isFinite(net) && isFinite(vat)) {
+          const ratio = abs / total;
+          const netto = net * ratio;
+          const btw = vat * ratio;
+          const effPct = net > 0 ? Math.round((vat / net) * 100) : 0;
+          return { netto, btw, effPct, source: 'invoice' };
+        }
       }
     }
     const gb = t.grootboekrekening ? gbMap.get(t.grootboekrekening) : undefined;
