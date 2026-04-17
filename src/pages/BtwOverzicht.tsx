@@ -20,10 +20,13 @@ import PeriodSelector from '../components/ui/PeriodSelector';
 import { bankImportService } from '../services/bankImportService';
 import { supplierService } from '../services/supplierService';
 import { dagboekExportService, ExportFormat } from '../services/dagboekExportService';
+import { generateBtwPDF } from '../lib/generateBtwPDF';
 import { BankTransaction } from '../types/bankImport';
 import { Grootboekrekening } from '../types/supplier';
 import { getQuarterDateRange } from '../utils/dateFilters';
 import { format as formatDate } from 'date-fns';
+
+type ExportChoice = ExportFormat | 'pdf';
 
 interface BtwRegel {
   code: string;
@@ -80,7 +83,7 @@ const BtwOverzicht: React.FC = () => {
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [grootboekrekeningen, setGrootboekrekeningen] = useState<Grootboekrekening[]>([]);
   const [exporting, setExporting] = useState(false);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('csv');
+  const [exportFormat, setExportFormat] = useState<ExportChoice>('csv');
 
   const loadData = useCallback(async () => {
     if (!selectedCompany) return;
@@ -222,6 +225,19 @@ const BtwOverzicht: React.FC = () => {
     if (!selectedCompany) return;
     try {
       setExporting(true);
+
+      if (exportFormat === 'pdf') {
+        generateBtwPDF(
+          periodTransactions,
+          grootboekrekeningen,
+          selectedCompany.name,
+          selectedYear,
+          selectedQuarter
+        );
+        success('PDF gegenereerd', 'BTW overzicht PDF gedownload');
+        return;
+      }
+
       const regels = await dagboekExportService.buildDagboekRegels(
         selectedCompany.id,
         periodTransactions,
@@ -235,7 +251,7 @@ const BtwOverzicht: React.FC = () => {
       );
       success('Geëxporteerd', `Dagboek export (${exportFormat}) gedownload`);
     } catch (e: any) {
-      showError('Fout', e.message || 'Kon dagboek niet exporteren');
+      showError('Fout', e.message || 'Kon export niet genereren');
     } finally {
       setExporting(false);
     }
@@ -666,13 +682,14 @@ const BtwOverzicht: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <select
                     value={exportFormat}
-                    onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
+                    onChange={(e) => setExportFormat(e.target.value as ExportChoice)}
                     className="flex-1 sm:flex-none px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
                     <option value="csv">Algemeen CSV</option>
                     <option value="exact_online">Exact Online</option>
                     <option value="snelstart">SnelStart</option>
                     <option value="twinfield">Twinfield</option>
+                    <option value="pdf">PDF overzicht (alle transacties + BTW)</option>
                   </select>
                   <Button
                     onClick={handleExportDagboek}
