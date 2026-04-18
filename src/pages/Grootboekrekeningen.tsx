@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { BookOpen, Plus, Download, FileText, Search, CreditCard as Edit2, Trash2, Save, X, ChevronDown, ChevronUp, Shield, Upload, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -334,28 +335,68 @@ const Grootboekrekeningen: React.FC = () => {
     if (!file) return;
 
     setImportFileName(file.name);
+    const isXlsx = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls');
+
     const reader = new FileReader();
 
     reader.onload = (ev) => {
-      const content = ev.target?.result as string;
-      if (!content) {
-        showError('Fout', 'Bestand kon niet worden gelezen');
-        return;
-      }
+      try {
+        let parsed: Array<{ code: string; name: string; category: GrootboekCategory; type: 'debet' | 'credit' }> = [];
 
-      const parsed = parseExcelOrCSV(content);
-      if (parsed.length === 0) {
-        showError('Fout', 'Geen geldige rijen gevonden in het bestand. Controleer de kolomnamen (Code, Omschrijving, Type, Debet / Credit).');
-        return;
-      }
+        if (isXlsx) {
+          const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
 
-      setImportPreviewData(parsed);
-      setShowImportPreview(true);
+          parsed = rows
+            .map((row) => {
+              const keys = Object.keys(row).map(k => k.toLowerCase().trim());
+              const getVal = (candidates: string[]) => {
+                for (const c of candidates) {
+                  const key = Object.keys(row).find(k => k.toLowerCase().trim() === c);
+                  if (key) return String(row[key]).trim();
+                }
+                return '';
+              };
+
+              const code = getVal(['code', 'rekeningnummer', 'nr']);
+              const name = getVal(['omschrijving', 'naam', 'name', 'description']);
+              const excelType = getVal(['type', 'soort', 'categorie']);
+              const dcRaw = getVal(['debet / credit', 'debet/credit', 'dc', 'd/c', 'type debet credit']).toLowerCase();
+              const dc: 'debet' | 'credit' = dcRaw === 'credit' || dcRaw === 'c' ? 'credit' : 'debet';
+
+              if (!code || !name) return null;
+              return { code, name, category: mapExcelTypeToCategory(excelType), type: dc };
+            })
+            .filter(Boolean) as typeof parsed;
+        } else {
+          const content = ev.target?.result as string;
+          if (!content) {
+            showError('Fout', 'Bestand kon niet worden gelezen');
+            return;
+          }
+          parsed = parseExcelOrCSV(content);
+        }
+
+        if (parsed.length === 0) {
+          showError('Fout', 'Geen geldige rijen gevonden. Controleer de kolomnamen (Code, Omschrijving, Type, Debet / Credit).');
+          return;
+        }
+
+        setImportPreviewData(parsed);
+        setShowImportPreview(true);
+      } catch {
+        showError('Fout', 'Bestand kon niet worden verwerkt. Controleer het formaat.');
+      }
     };
 
-    reader.readAsText(file, 'UTF-8');
+    if (isXlsx) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file, 'UTF-8');
+    }
 
-    // Reset input
     e.target.value = '';
   };
 
@@ -473,7 +514,7 @@ const Grootboekrekeningen: React.FC = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv,.txt,.tsv"
+        accept=".xlsx,.xls,.csv,.txt,.tsv"
         className="hidden"
         onChange={handleFileSelect}
       />
