@@ -405,28 +405,12 @@ const Grootboekrekeningen: React.FC = () => {
     try {
       setImportingExcel(true);
 
-      const existing = await supplierService.getGrootboekrekeningen(selectedCompany.id);
-      const existingCodes = new Set(existing.map(r => r.code));
+      const result = await supplierService.batchImportGrootboekrekeningen(
+        selectedCompany.id,
+        importPreviewData
+      );
 
-      let added = 0;
-      let skipped = 0;
-
-      for (const row of importPreviewData) {
-        if (existingCodes.has(row.code)) {
-          skipped++;
-          continue;
-        }
-        await supplierService.addGrootboekrekening(
-          selectedCompany.id,
-          row.code,
-          row.name,
-          row.category,
-          row.type
-        );
-        added++;
-      }
-
-      success('Geïmporteerd', `${added} rekeningen toegevoegd${skipped > 0 ? `, ${skipped} al bestaand overgeslagen` : ''}`);
+      success('Geïmporteerd', `${result.added} rekeningen toegevoegd${result.skipped > 0 ? `, ${result.skipped} al bestaand overgeslagen` : ''}`);
       setShowImportPreview(false);
       setImportPreviewData([]);
       loadData();

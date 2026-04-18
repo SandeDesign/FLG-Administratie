@@ -251,6 +251,45 @@ export const supplierService = {
   },
 
   /**
+   * Batch import van grootboekrekeningen (via Excel/CSV upload)
+   * Schrijft in batches van max 500 om Firestore limiet te respecteren
+   */
+  async batchImportGrootboekrekeningen(
+    companyId: string,
+    rows: Array<{ code: string; name: string; category: string; type: 'debet' | 'credit'; btw?: string }>
+  ): Promise<{ added: number; skipped: number }> {
+    const existing = await this.getGrootboekrekeningen(companyId);
+    const existingCodes = new Set(existing.map(r => r.code));
+    const now = Timestamp.fromDate(new Date());
+
+    const toAdd = rows.filter(r => !existingCodes.has(r.code));
+    const skipped = rows.length - toAdd.length;
+
+    const BATCH_SIZE = 400;
+    for (let i = 0; i < toAdd.length; i += BATCH_SIZE) {
+      const chunk = toAdd.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+      for (const row of chunk) {
+        const ref = doc(collection(db, GROOTBOEK_COLLECTION));
+        const data: Record<string, unknown> = {
+          companyId,
+          code: row.code,
+          name: row.name,
+          category: row.category,
+          type: row.type,
+          createdAt: now,
+          updatedAt: now,
+        };
+        if (row.btw) data.btw = row.btw;
+        batch.set(ref, data);
+      }
+      await batch.commit();
+    }
+
+    return { added: toAdd.length, skipped };
+  },
+
+  /**
    * Verwijder alle grootboekrekeningen van een bedrijf
    */
   async clearGrootboekrekeningen(companyId: string): Promise<void> {
