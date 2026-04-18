@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { BookOpen, Plus, Download, FileText, Search, CreditCard as Edit2, Trash2, Save, X, ChevronDown, ChevronUp, Shield, Upload, FileSpreadsheet, AlertTriangle } from 'lucide-react';
+import { BookOpen, Plus, Download, FileText, Search, CreditCard as Edit2, Trash2, Save, X, ChevronDown, ChevronUp, Shield, Upload, FileSpreadsheet, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Card from '../components/ui/Card';
@@ -170,6 +170,12 @@ const Grootboekrekeningen: React.FC = () => {
     code: string; name: string; category: GrootboekCategory; type: 'debet' | 'credit';
   }>>([]);
   const [importFileName, setImportFileName] = useState('');
+  const [replaceBeforeImport, setReplaceBeforeImport] = useState(false);
+  const [showReplaceModal, setShowReplaceModal] = useState(false);
+  const [replacingTemplate, setReplacingTemplate] = useState(false);
+  const [previewPage, setPreviewPage] = useState(0);
+  const fileReplaceInputRef = useRef<HTMLInputElement>(null);
+  const PREVIEW_PAGE_SIZE = 100;
 
   if (userRole !== 'admin') {
     return (
@@ -330,10 +336,28 @@ const Grootboekrekeningen: React.FC = () => {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReplaceWithTemplate = async () => {
+    if (!selectedCompany) return;
+    try {
+      setReplacingTemplate(true);
+      await supplierService.clearGrootboekrekeningen(selectedCompany.id);
+      const count = await supplierService.importGrootboekTemplate(selectedCompany.id);
+      success('Vervangen', `Rekeningschema vervangen — ${count} standaard rekeningen geladen`);
+      setShowReplaceModal(false);
+      loadData();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon sjabloon niet laden');
+    } finally {
+      setReplacingTemplate(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, replaceMode = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setReplaceBeforeImport(replaceMode);
+    setPreviewPage(0);
     setImportFileName(file.name);
     const isXlsx = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls');
 
@@ -404,15 +428,21 @@ const Grootboekrekeningen: React.FC = () => {
     if (!selectedCompany || importPreviewData.length === 0) return;
     try {
       setImportingExcel(true);
-
+      if (replaceBeforeImport) {
+        await supplierService.clearGrootboekrekeningen(selectedCompany.id);
+      }
       const result = await supplierService.batchImportGrootboekrekeningen(
         selectedCompany.id,
         importPreviewData
       );
-
-      success('Geïmporteerd', `${result.added} rekeningen toegevoegd${result.skipped > 0 ? `, ${result.skipped} al bestaand overgeslagen` : ''}`);
+      const msg = replaceBeforeImport
+        ? `Rekeningschema vervangen — ${result.added} rekeningen geladen`
+        : `${result.added} rekeningen toegevoegd${result.skipped > 0 ? `, ${result.skipped} al bestaand overgeslagen` : ''}`;
+      success('Geïmporteerd', msg);
       setShowImportPreview(false);
       setImportPreviewData([]);
+      setReplaceBeforeImport(false);
+      setShowReplaceModal(false);
       loadData();
     } catch (e: any) {
       showError('Fout', e.message || 'Importeren mislukt');
@@ -500,7 +530,14 @@ const Grootboekrekeningen: React.FC = () => {
         type="file"
         accept=".xlsx,.xls,.csv,.txt,.tsv"
         className="hidden"
-        onChange={handleFileSelect}
+        onChange={(e) => handleFileSelect(e, false)}
+      />
+      <input
+        ref={fileReplaceInputRef}
+        type="file"
+        accept=".xlsx,.xls,.csv,.txt,.tsv"
+        className="hidden"
+        onChange={(e) => handleFileSelect(e, true)}
       />
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -526,6 +563,14 @@ const Grootboekrekeningen: React.FC = () => {
           </Button>
           <Button onClick={handleImportTemplate} disabled={importingTemplate} variant="outline" className="text-sm">
             {importingTemplate ? <LoadingSpinner size="sm" /> : <><Upload className="w-4 h-4 mr-1" />Sjabloon</>}
+          </Button>
+          <Button
+            onClick={() => setShowReplaceModal(true)}
+            variant="outline"
+            className="text-sm text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+          >
+            <RefreshCw className="w-4 h-4 mr-1" />
+            Vervang sjabloon
           </Button>
           {rekeningen.length > 0 && (
             <>
@@ -848,57 +893,169 @@ const Grootboekrekeningen: React.FC = () => {
       {/* Modal: Excel import preview */}
       <Modal
         isOpen={showImportPreview}
-        onClose={() => { setShowImportPreview(false); setImportPreviewData([]); }}
+        onClose={() => { setShowImportPreview(false); setImportPreviewData([]); setReplaceBeforeImport(false); }}
         title={`Excel import — ${importFileName}`}
-        size="lg"
+        size="xl"
       >
         <div className="space-y-4">
-          <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-            <p className="text-sm text-blue-800 dark:text-blue-300">
-              <strong>{importPreviewData.length} rekeningen</strong> gevonden. Bestaande codes worden overgeslagen.
-            </p>
+          {replaceBeforeImport ? (
+            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                <strong>Vervanging actief:</strong> alle bestaande rekeningen worden verwijderd voordat de{' '}
+                <strong>{importPreviewData.length} rekeningen</strong> uit dit bestand worden geladen.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                <strong>{importPreviewData.length} rekeningen</strong> gevonden. Bestaande codes worden overgeslagen.
+              </p>
+            </div>
+          )}
+
+          {/* Samenvatting per categorie */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {Object.entries(
+              importPreviewData.reduce((acc, r) => {
+                const label = grootboekCategoryLabels[r.category as keyof typeof grootboekCategoryLabels] || r.category;
+                acc[label] = (acc[label] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>)
+            ).map(([label, count]) => (
+              <div key={label} className="flex items-center justify-between px-3 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs">
+                <span className="text-gray-600 dark:text-gray-400 truncate">{label}</span>
+                <span className="ml-2 font-semibold text-gray-900 dark:text-white flex-shrink-0">{count}</span>
+              </div>
+            ))}
           </div>
 
-          <div className="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+          {/* Paginering */}
+          {importPreviewData.length > PREVIEW_PAGE_SIZE && (
+            <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+              <span>
+                Rijen {previewPage * PREVIEW_PAGE_SIZE + 1}–{Math.min((previewPage + 1) * PREVIEW_PAGE_SIZE, importPreviewData.length)} van {importPreviewData.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPreviewPage(p => Math.max(0, p - 1))}
+                  disabled={previewPage === 0}
+                  className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="px-2">{previewPage + 1} / {Math.ceil(importPreviewData.length / PREVIEW_PAGE_SIZE)}</span>
+                <button
+                  onClick={() => setPreviewPage(p => Math.min(Math.ceil(importPreviewData.length / PREVIEW_PAGE_SIZE) - 1, p + 1))}
+                  disabled={(previewPage + 1) * PREVIEW_PAGE_SIZE >= importPreviewData.length}
+                  className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="max-h-[55vh] overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
+              <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 z-10">
                 <tr className="text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left px-3 py-2">Code</th>
+                  <th className="text-left px-3 py-2 w-16">Code</th>
                   <th className="text-left px-3 py-2">Naam</th>
-                  <th className="text-left px-3 py-2">Categorie</th>
-                  <th className="text-left px-3 py-2">D/C</th>
+                  <th className="text-left px-3 py-2 hidden sm:table-cell">Categorie</th>
+                  <th className="text-left px-3 py-2 w-12">D/C</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {importPreviewData.map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                    <td className="px-3 py-1.5 font-mono text-blue-600 dark:text-blue-400 font-bold">{row.code}</td>
-                    <td className="px-3 py-1.5 text-gray-900 dark:text-white">{row.name}</td>
-                    <td className="px-3 py-1.5 text-gray-500 dark:text-gray-400 text-xs">
-                      {grootboekCategoryLabels[row.category as keyof typeof grootboekCategoryLabels] || row.category}
-                    </td>
-                    <td className="px-3 py-1.5">
-                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                        row.type === 'debet'
-                          ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                      }`}>
-                        {row.type === 'debet' ? 'D' : 'C'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {importPreviewData
+                  .slice(previewPage * PREVIEW_PAGE_SIZE, (previewPage + 1) * PREVIEW_PAGE_SIZE)
+                  .map((row, i) => (
+                    <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                      <td className="px-3 py-1.5 font-mono text-blue-600 dark:text-blue-400 font-bold">{row.code}</td>
+                      <td className="px-3 py-1.5 text-gray-900 dark:text-white">{row.name}</td>
+                      <td className="px-3 py-1.5 text-gray-500 dark:text-gray-400 text-xs hidden sm:table-cell">
+                        {grootboekCategoryLabels[row.category as keyof typeof grootboekCategoryLabels] || row.category}
+                      </td>
+                      <td className="px-3 py-1.5">
+                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                          row.type === 'debet'
+                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        }`}>
+                          {row.type === 'debet' ? 'D' : 'C'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <Button variant="outline" onClick={() => { setShowImportPreview(false); setImportPreviewData([]); }} disabled={importingExcel}>
+            <Button variant="outline" onClick={() => { setShowImportPreview(false); setImportPreviewData([]); setReplaceBeforeImport(false); }} disabled={importingExcel}>
               Annuleren
             </Button>
-            <Button onClick={handleConfirmImport} disabled={importingExcel}>
-              {importingExcel ? <LoadingSpinner size="sm" /> : <><Download className="w-4 h-4 mr-1" />Importeren</>}
+            <Button
+              onClick={handleConfirmImport}
+              disabled={importingExcel}
+              className={replaceBeforeImport ? 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600' : ''}
+            >
+              {importingExcel ? <LoadingSpinner size="sm" /> : replaceBeforeImport ? <><RefreshCw className="w-4 h-4 mr-1" />Vervangen</>  : <><Download className="w-4 h-4 mr-1" />Importeren</>}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: Vervang sjabloon */}
+      <Modal
+        isOpen={showReplaceModal}
+        onClose={() => setShowReplaceModal(false)}
+        title="Rekeningschema vervangen"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Bestaand rekeningschema wordt gewist</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                Alle huidige rekeningen van <strong>{selectedCompany.name}</strong> worden verwijderd en vervangen.
+                Kies hoe je wilt vervangen:
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              onClick={handleReplaceWithTemplate}
+              disabled={replacingTemplate}
+              className="flex flex-col items-start gap-2 p-4 border-2 border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-500 rounded-xl transition-colors text-left"
+            >
+              <div className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">Standaard sjabloon</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Laad het ingebouwde MKB-rekeningschema</p>
+              {replacingTemplate && <LoadingSpinner size="sm" />}
+            </button>
+
+            <button
+              onClick={() => { fileReplaceInputRef.current?.click(); }}
+              disabled={replacingTemplate}
+              className="flex flex-col items-start gap-2 p-4 border-2 border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-500 rounded-xl transition-colors text-left"
+            >
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">Excel bestand</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Upload je eigen rekeningschema (.xlsx / .csv)</p>
+            </button>
+          </div>
+
+          <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700">
+            <Button variant="outline" onClick={() => setShowReplaceModal(false)} disabled={replacingTemplate}>
+              Annuleren
             </Button>
           </div>
         </div>
