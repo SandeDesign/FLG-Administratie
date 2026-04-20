@@ -75,7 +75,7 @@ export const generateBtwPDF = (
   year: number,
   quarter: number | null
 ) => {
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const marginL = 15;
@@ -415,12 +415,11 @@ export const generateBtwPDF = (
 
   // Kolommen
   const cCode = 16;
-  const cBtw = 20;
-  const cNetto = 28;
-  const cBtwBedrag = 28;
-  const cBruto = 28;
+  const cNetto = 30;
+  const cBtwBedrag = 30;
+  const cBruto = 30;
   const cCount = 10;
-  const cName = contentWidth - cCode - cBtw - cNetto - cBtwBedrag - cBruto - cCount;
+  const cName = contentWidth - cCode - cNetto - cBtwBedrag - cBruto - cCount;
 
   const drawSpecHeaders = () => {
     pdf.setFillColor(colors.headerBg.r, colors.headerBg.g, colors.headerBg.b);
@@ -431,7 +430,6 @@ export const generateBtwPDF = (
     let x = marginL + 2;
     pdf.text('Code', x, y + 4.8); x += cCode;
     pdf.text('Rekening', x, y + 4.8); x += cName;
-    pdf.text('BTW', x, y + 4.8); x += cBtw;
     pdf.text('Netto', x + cNetto - 2, y + 4.8, { align: 'right' }); x += cNetto;
     pdf.text('BTW bedrag', x + cBtwBedrag - 2, y + 4.8, { align: 'right' }); x += cBtwBedrag;
     pdf.text('Bruto', x + cBruto - 2, y + 4.8, { align: 'right' }); x += cBruto;
@@ -495,10 +493,6 @@ export const generateBtwPDF = (
       pdf.text(nameTrunc, x, y + 4); x += cName;
 
       pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      const btwLabel = r.isUncat ? '—' : `${r.btwPct > 0 ? r.btwPct + '%' : r.btwType}`;
-      pdf.text(btwLabel, x, y + 4); x += cBtw;
-
       pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
       pdf.text(r.isUncat ? '—' : fmt(r.netto), x + cNetto - 2, y + 4, { align: 'right' }); x += cNetto;
 
@@ -538,7 +532,7 @@ export const generateBtwPDF = (
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(colors.catText.r, colors.catText.g, colors.catText.b);
     let sx = marginL + 2;
-    pdf.text(`Subtotaal`, sx, y + 4.5); sx += cCode + cName + cBtw;
+    pdf.text(`Subtotaal`, sx, y + 4.5); sx += cCode + cName;
     if (groep.key !== '?') {
       pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
       pdf.text(fmt(grpNetto), sx + cNetto - 2, y + 4.5, { align: 'right' });
@@ -571,7 +565,7 @@ export const generateBtwPDF = (
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(colors.white.r, colors.white.g, colors.white.b);
   let tx = marginL + 2;
-  pdf.text('TOTAAL', tx, y + 4.8); tx += cCode + cName + cBtw;
+  pdf.text('TOTAAL', tx, y + 4.8); tx += cCode + cName;
   pdf.text(fmt(rows.reduce((s, r) => s + (r.isUncat ? 0 : r.netto), 0)), tx + cNetto - 2, y + 4.8, { align: 'right' }); tx += cNetto;
   pdf.text(fmt(rows.reduce((s, r) => s + (r.isUncat ? 0 : r.btw), 0)), tx + cBtwBedrag - 2, y + 4.8, { align: 'right' }); tx += cBtwBedrag;
   pdf.text(fmt(rows.reduce((s, r) => s + r.bruto, 0)), tx + cBruto - 2, y + 4.8, { align: 'right' }); tx += cBruto;
@@ -593,10 +587,10 @@ export const generateBtwPDF = (
 
     // Kolommen transacties — schoner, minder cramped
     const tDate = 18;
-    const tBen = 48;
-    const tGb = 16;
-    const tBtw = 14;
-    const tBruto = 30;
+    const tBen = 46;
+    const tGb = 14;
+    const tBtw = 12;
+    const tBruto = 28;
     const tDesc = contentWidth - tDate - tBen - tGb - tBtw - tBruto;
 
     const drawTxHeaders = () => {
