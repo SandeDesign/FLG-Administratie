@@ -94,6 +94,15 @@ const BankStatementImport: React.FC = () => {
   const [selectedTransactionForGrootboek, setSelectedTransactionForGrootboek] = useState<string | null>(null);
   const [grootboekSearchTerm, setGrootboekSearchTerm] = useState('');
   const [bulkConfirming, setBulkConfirming] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
+  const toggleSection = (key: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
 
   const safeFormatDate = (date: Date | number | string | undefined, fmt: string): string => {
     if (!date) return 'Onbekend';
@@ -1597,50 +1606,88 @@ const BankStatementImport: React.FC = () => {
                           )}
                         </div>
 
-                        {confirmed.length > 0 && (
-                          <div>
-                            <div className="px-4 py-1.5 text-xs font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/10 border-b border-gray-100 dark:border-gray-700/50">
-                              Bevestigd ({confirmed.length})
+                        {confirmed.length > 0 && (() => {
+                          const key = `${imp.id}-confirmed`;
+                          const isOpen = expandedSections.has(key);
+                          return (
+                            <div>
+                              <button
+                                onClick={() => toggleSection(key)}
+                                className="w-full flex items-center justify-between px-4 py-1.5 text-xs font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/10 hover:bg-green-100 dark:hover:bg-green-900/20 border-b border-gray-100 dark:border-gray-700/50 transition-colors"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  Bevestigd ({confirmed.length})
+                                </span>
+                                {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                              {isOpen && (
+                                <div className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-900">
+                                  {confirmed.map((t) => (
+                                    <div key={t.id}>{renderTxRow(t, false)}</div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-900">
-                              {confirmed.map((t) => (
-                                <div key={t.id}>{renderTxRow(t, false)}</div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
 
-                        {pending.length > 0 && (
-                          <div>
-                            <div className="px-4 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border-b border-gray-100 dark:border-gray-700/50">
-                              Ter beoordeling ({pending.length})
+                        {pending.length > 0 && (() => {
+                          const key = `${imp.id}-pending`;
+                          const isOpen = expandedSections.has(key);
+                          return (
+                            <div>
+                              <button
+                                onClick={() => toggleSection(key)}
+                                className="w-full flex items-center justify-between px-4 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 hover:bg-amber-100 dark:hover:bg-amber-900/20 border-b border-gray-100 dark:border-gray-700/50 transition-colors"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  Ter beoordeling ({pending.length})
+                                </span>
+                                {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                              {isOpen && (
+                                <div className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-900">
+                                  {pending.map((t) => {
+                                    const isEditing = editingTransaction === t.id;
+                                    return (
+                                      <div key={t.id}>
+                                        {renderTxRow(t, isEditing)}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
-                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-900">
-                              {pending.map((t) => {
-                                const isEditing = editingTransaction === t.id;
+                          );
+                        })()}
 
-                                return (
-                                  <div key={t.id}>
-                                    {renderTxRow(t, isEditing)}
-                                  </div>
-                                );
-                              })}
+                        {unmatched.length > 0 && (() => {
+                          const key = `${imp.id}-unmatched`;
+                          const isOpen = expandedSections.has(key);
+                          return (
+                            <div>
+                              <button
+                                onClick={() => toggleSection(key)}
+                                className="w-full flex items-center justify-between px-4 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700/50 transition-colors"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <AlertCircle className="w-3.5 h-3.5" />
+                                  Geen match ({unmatched.length})
+                                </span>
+                                {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                              {isOpen && (
+                                <div className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-900">
+                                  {unmatched.map((t) => (
+                                    <div key={t.id}>{renderTxRow(t, editingTransaction === t.id)}</div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        )}
-
-                        {unmatched.length > 0 && (
-                          <div>
-                            <div className="px-4 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700/50">
-                              Geen match ({unmatched.length})
-                            </div>
-                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-900">
-                              {unmatched.map((t) => (
-                                <div key={t.id}>{renderTxRow(t, editingTransaction === t.id)}</div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
