@@ -371,24 +371,36 @@ const Grootboekrekeningen: React.FC = () => {
           const data = new Uint8Array(ev.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
 
-          parsed = rows
+          // Read as raw arrays so we can detect the real header row
+          const rawRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' });
+
+          // Find the row that has 'code' and 'omschrijving'/'naam' (skip filter rows at top)
+          let headerRowIdx = 0;
+          for (let i = 0; i < Math.min(rawRows.length, 15); i++) {
+            const row = (rawRows[i] as unknown[]).map(c => String(c).toLowerCase().trim());
+            const hasCode = row.some(c => c === 'code' || c === 'rekeningnummer' || c === 'nr');
+            const hasName = row.some(c => c === 'omschrijving' || c === 'naam' || c === 'name');
+            if (hasCode && hasName) { headerRowIdx = i; break; }
+          }
+
+          const headers = (rawRows[headerRowIdx] as unknown[]).map(c => String(c).toLowerCase().trim());
+          const codeIdx = headers.findIndex(h => h === 'code' || h === 'rekeningnummer' || h === 'nr');
+          const nameIdx = headers.findIndex(h => h === 'omschrijving' || h === 'naam' || h === 'name' || h === 'description');
+          const typeIdx = headers.findIndex(h => h === 'type' || h === 'soort' || h === 'categorie');
+          const dcIdx  = headers.findIndex(h => h.includes('debet') || h.includes('credit') || h === 'dc' || h === 'd/c');
+
+          parsed = (rawRows.slice(headerRowIdx + 1) as unknown[][])
             .map((row) => {
-              const keys = Object.keys(row).map(k => k.toLowerCase().trim());
-              const getVal = (candidates: string[]) => {
-                for (const c of candidates) {
-                  const key = Object.keys(row).find(k => k.toLowerCase().trim() === c);
-                  if (key) return String(row[key]).trim();
-                }
-                return '';
-              };
+              const cell = (idx: number) => idx >= 0 ? String(row[idx] ?? '').trim() : '';
 
-              const code = getVal(['code', 'rekeningnummer', 'nr']);
-              const name = getVal(['omschrijving', 'naam', 'name', 'description']);
-              const excelType = getVal(['type', 'soort', 'categorie']);
-              const dcRaw = getVal(['debet / credit', 'debet/credit', 'dc', 'd/c', 'type debet credit']).toLowerCase();
-              const dc: 'debet' | 'credit' = dcRaw === 'credit' || dcRaw === 'c' ? 'credit' : 'debet';
+              // Pad code to 4 digits — Excel stores 0001 as the number 1
+              const rawCode = cell(codeIdx >= 0 ? codeIdx : 0);
+              const code = rawCode ? rawCode.padStart(4, '0') : '';
+              const name = cell(nameIdx >= 0 ? nameIdx : 1);
+              const excelType = cell(typeIdx >= 0 ? typeIdx : 2);
+              const dcRaw = cell(dcIdx >= 0 ? dcIdx : headers.length - 1).toLowerCase();
+              const dc: 'debet' | 'credit' = dcRaw.includes('credit') || dcRaw === 'c' ? 'credit' : 'debet';
 
               if (!code || !name) return null;
               return { code, name, category: mapExcelTypeToCategory(excelType), type: dc };
