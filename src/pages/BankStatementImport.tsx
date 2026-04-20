@@ -24,6 +24,8 @@ import {
   Download,
   UserPlus,
   Tag,
+  CheckSquare,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -91,6 +93,7 @@ const BankStatementImport: React.FC = () => {
   const [showGrootboekModal, setShowGrootboekModal] = useState(false);
   const [selectedTransactionForGrootboek, setSelectedTransactionForGrootboek] = useState<string | null>(null);
   const [grootboekSearchTerm, setGrootboekSearchTerm] = useState('');
+  const [bulkConfirming, setBulkConfirming] = useState(false);
 
   const safeFormatDate = (date: Date | number | string | undefined, fmt: string): string => {
     if (!date) return 'Onbekend';
@@ -545,6 +548,40 @@ const BankStatementImport: React.FC = () => {
     }
   };
 
+  const handleBulkConfirmPending = async (pendingTransactions: BankTransaction[]) => {
+    if (!user || !selectedCompany || pendingTransactions.length === 0) return;
+    if (!confirm(`${pendingTransactions.length} transacties bevestigen?`)) return;
+    try {
+      setBulkConfirming(true);
+      const toConfirm = pendingTransactions.filter(t => t.matchedInvoiceId);
+      for (const t of toConfirm) {
+        try {
+          // Apply match rule for grootboek if not yet set
+          if (!t.grootboekrekening) {
+            const rules = await bankImportService.applyMatchRulesToTransactions([t], selectedCompany.id);
+            const rule = rules.get(t.id);
+            if (rule) {
+              await bankImportService.updateTransaction(
+                t.id,
+                { grootboekrekening: rule.code, grootboekrekeningName: rule.name },
+                user.uid,
+                user.displayName || user.email || 'Unknown'
+              );
+            }
+          }
+          await bankImportService.confirmTransaction(t.id, selectedCompany.id, user.uid, user.displayName || user.email || 'Unknown');
+        } catch { /* doorgaan met de rest */ }
+      }
+      success('Bevestigd', `${toConfirm.length} transacties bevestigd`);
+      loadImportHistory();
+      loadInvoices();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Bulk bevestiging mislukt');
+    } finally {
+      setBulkConfirming(false);
+    }
+  };
+
   const handleOpenLinkModal = (result: MatchResult) => {
     setLinkingTransaction(result);
     setShowLinkModal(true);
@@ -655,10 +692,24 @@ const BankStatementImport: React.FC = () => {
         user.displayName || user.email || 'Unknown'
       );
 
-      // Auto-leer: sla de grootboekrekening ook op bij de crediteur/debiteur
-      // zodat de volgende keer deze automatisch wordt voorgesteld
       const allTransactions = Array.from(importTransactions.values()).flat();
       const transaction = allTransactions.find(t => t.id === transactionId);
+
+      // Sla matchregel op per IBAN/naam — wordt toegepast bij volgende imports
+      if (transaction) {
+        try {
+          await bankImportService.saveOrUpdateMatchRule(
+            selectedCompany.id,
+            user.uid,
+            transaction.accountNumber,
+            transaction.beneficiary,
+            gb.code,
+            gb.name
+          );
+        } catch { /* niet kritiek */ }
+      }
+
+      // Sla ook op bij de crediteur/debiteur voor bestaande werkwijze
       if (transaction?.beneficiary) {
         try {
           if (transaction.amount < 0) {
@@ -687,12 +738,10 @@ const BankStatementImport: React.FC = () => {
             }
           }
           loadGrootboekData();
-        } catch {
-          // Niet kritiek als crediteur/debiteur update mislukt
-        }
+        } catch { /* niet kritiek */ }
       }
 
-      success('Toegewezen', `${gb.code} - ${gb.name} toegewezen (onthouden voor toekomstige imports)`);
+      success('Toegewezen', `${gb.code} - ${gb.name} toegewezen en onthouden`);
       setShowGrootboekModal(false);
       setSelectedTransactionForGrootboek(null);
       setGrootboekSearchTerm('');
@@ -768,6 +817,145 @@ const BankStatementImport: React.FC = () => {
   const pendingResults = matchResults.filter(r => r.status === 'pending');
   const unmatchedResults = matchResults.filter(r => r.status === 'unmatched');
   const duplicateResults = matchResults.filter(r => r.transaction.isDuplicate);
+
+  const openGrootboekModal = (txId: string) => {
+    setSelectedTransactionForGrootboek(txId);
+    setShowGrootboekModal(true);
+    setGrootboekSearchTerm('');
+  };
+
+  const renderTxRow = (t: BankTransaction, isEditing: boolean) => {
+    const borderColor =
+      t.isDuplicate ? 'border-l-orange-400' :
+      t.status === 'confirmed' ? 'border-l-green-500' :
+      t.status === 'pending' ? 'border-l-amber-400' :
+      'border-l-gray-300 dark:border-l-gray-600';
+
+    const confidence = t.confidence || 0;
+    const confColor = confidence >= 80 ? 'bg-green-500' : confidence >= 40 ? 'bg-amber-400' : 'bg-red-400';
+
+    if (isEditing) {
+      return (
+        <div className="space-y-2 p-3">
+          <div className="grid grid-cols-2 gap-2">
+            <input type="date" value={editedData.date ? safeFormatDate(editedData.date, 'yyyy-MM-dd') : ''}
+              onChange={(e) => setEditedData({ ...editedData, date: new Date(e.target.value).getTime() })}
+              className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 text-xs" />
+            <input type="number" step="0.01" value={editedData.amount || 0}
+              onChange={(e) => setEditedData({ ...editedData, amount: parseFloat(e.target.value) })}
+              className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 text-xs" />
+          </div>
+          <input type="text" value={editedData.description || ''}
+            onChange={(e) => setEditedData({ ...editedData, description: e.target.value })}
+            className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600 text-xs" />
+          <div className="flex gap-1">
+            <button onClick={() => handleSaveEdit(t.id)} className="px-2 py-1 bg-green-600 text-white rounded text-xs">Opslaan</button>
+            <button onClick={() => { setEditingTransaction(null); setEditedData({}); }} className="px-2 py-1 bg-gray-500 text-white rounded text-xs">Annuleren</button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`flex items-start gap-3 text-xs p-2.5 border-l-4 ${borderColor}`}>
+        {/* Datum + richting */}
+        <div className="flex-shrink-0 flex flex-col items-center gap-0.5 w-[68px]">
+          {t.type === 'outgoing'
+            ? <TrendingUp className="w-3 h-3 text-green-600" />
+            : <TrendingDown className="w-3 h-3 text-red-600" />}
+          <span className="text-[10px] text-gray-400 text-center leading-tight">{safeFormatDate(t.date, 'dd-MM-yy')}</span>
+        </div>
+
+        {/* Partij + omschrijving + grootboek */}
+        <div className="flex-1 min-w-0">
+          {t.beneficiary && (
+            <div className="font-medium text-gray-900 dark:text-white truncate">{t.beneficiary}</div>
+          )}
+          <div className="text-gray-500 dark:text-gray-400 truncate">{t.description}</div>
+          {t.matchedInvoiceId && (
+            <div className="text-[10px] text-blue-600 dark:text-blue-400 mt-0.5">
+              ↔ {t.matchedInvoiceNumber || t.matchedInvoiceId}
+            </div>
+          )}
+          {/* Grootboek chip — altijd zichtbaar, klikbaar */}
+          <button
+            onClick={() => openGrootboekModal(t.id)}
+            className={`mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors ${
+              t.grootboekrekening
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200'
+                : 'border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-blue-400 hover:text-blue-500'
+            }`}
+          >
+            <Tag className="w-2.5 h-2.5" />
+            {t.grootboekrekening ? `${t.grootboekrekening} · ${t.grootboekrekeningName}` : 'Kies rekening'}
+          </button>
+          {/* Confidence bar */}
+          {t.status !== 'confirmed' && confidence > 0 && (
+            <div className="mt-1 flex items-center gap-1">
+              <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-1 overflow-hidden">
+                <div className={`h-1 rounded-full ${confColor}`} style={{ width: `${confidence}%` }} />
+              </div>
+              <span className="text-[10px] text-gray-400">{confidence}%</span>
+            </div>
+          )}
+        </div>
+
+        {/* Bedrag + acties */}
+        <div className="flex-shrink-0 flex flex-col items-end gap-1">
+          <span className={`font-bold ${t.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            € {Math.abs(t.amount).toFixed(2)}
+          </span>
+          {t.isDuplicate && (
+            <span className="text-[10px] px-1 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">dup.</span>
+          )}
+          <div className="flex items-center gap-0.5 mt-0.5">
+            {t.status === 'confirmed' && (
+              <button onClick={() => handleUnconfirmTransaction(t.id)}
+                className="p-1 text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded"
+                title="Terugdraaien">
+                <X className="w-3 h-3" />
+              </button>
+            )}
+            {t.status !== 'confirmed' && (
+              <>
+                {t.matchedInvoiceId && (
+                  <button onClick={() => handleConfirmTransaction(t.id)}
+                    className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded"
+                    title="Bevestigen">
+                    <CheckCircle className="w-3 h-3" />
+                  </button>
+                )}
+                <button onClick={() => handleRefreshMatch(t.id)} disabled={refreshing}
+                  className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded"
+                  title="Ververs match">
+                  <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+                <button onClick={() => handleEditTransaction(t)}
+                  className="p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  title="Bewerken">
+                  <Edit2 className="w-3 h-3" />
+                </button>
+                <button onClick={() => {
+                  const result: MatchResult = { transaction: t, status: t.status, confidence: t.confidence || 0 };
+                  handleOpenLinkModal(result);
+                }} className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded"
+                  title="Handmatig koppelen">
+                  <Link className="w-3 h-3" />
+                </button>
+                {t.matchedInvoiceId && (
+                  <button onClick={() => handleUnlinkTransaction(t.id)}
+                    className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                    title="Ontkoppelen">
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (!selectedCompany) {
     return (
@@ -1391,60 +1579,32 @@ const BankStatementImport: React.FC = () => {
                     </div>
 
                     {expandedImport === imp.id && transactions.length > 0 && (
-                      <div className="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 space-y-4">
+                      <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                        {/* Stats bar */}
+                        <div className="flex items-center gap-3 px-4 py-2 text-xs border-b border-gray-200 dark:border-gray-700">
+                          <span className="flex items-center gap-1 text-green-600"><CheckCircle className="w-3 h-3" />{confirmed.length} bevestigd</span>
+                          <span className="flex items-center gap-1 text-amber-500"><Clock className="w-3 h-3" />{pending.length} ter beoordeling</span>
+                          <span className="flex items-center gap-1 text-gray-500"><AlertCircle className="w-3 h-3" />{unmatched.length} geen match</span>
+                          {pending.filter(t => t.matchedInvoiceId).length > 0 && (
+                            <button
+                              onClick={() => handleBulkConfirmPending(pending)}
+                              disabled={bulkConfirming}
+                              className="ml-auto flex items-center gap-1 px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors"
+                            >
+                              {bulkConfirming ? <LoadingSpinner size="sm" /> : <CheckSquare className="w-3 h-3" />}
+                              Bevestig alle ter beoordeling
+                            </button>
+                          )}
+                        </div>
+
                         {confirmed.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-medium text-green-600 dark:text-green-400 mb-2 flex items-center">
-                              <CheckCircle className="w-4 h-4 mr-1" />
+                            <div className="px-4 py-1.5 text-xs font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/10 border-b border-gray-100 dark:border-gray-700/50">
                               Bevestigd ({confirmed.length})
-                            </h4>
-                            <div className="space-y-1">
+                            </div>
+                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-900">
                               {confirmed.map((t) => (
-                                <div
-                                  key={t.id}
-                                  className="text-xs p-3 bg-white dark:bg-gray-900 rounded border border-green-200 dark:border-green-800 flex justify-between items-center"
-                                >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      {t.type === 'outgoing' ? (
-                                        <TrendingUp className="w-3 h-3 text-green-600" />
-                                      ) : (
-                                        <TrendingDown className="w-3 h-3 text-red-600" />
-                                      )}
-                                      <span>{safeFormatDate(t.date, 'dd-MM-yyyy')}</span>
-                                      <span className={t.amount >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                        € {Math.abs(t.amount).toFixed(2)}
-                                      </span>
-                                    </div>
-                                    <div className="text-gray-600 dark:text-gray-400">{t.description}</div>
-                                    {t.grootboekrekening && (
-                                      <div className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                                        <Tag className="w-2.5 h-2.5 mr-1" />
-                                        {t.grootboekrekening} - {t.grootboekrekeningName}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => {
-                                        setSelectedTransactionForGrootboek(t.id);
-                                        setShowGrootboekModal(true);
-                                        setGrootboekSearchTerm('');
-                                      }}
-                                      className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                      title="Grootboekrekening toewijzen"
-                                    >
-                                      <BookOpen className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleUnconfirmTransaction(t.id)}
-                                      className="p-1 text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900 rounded"
-                                      title="Terugdraaien"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </div>
+                                <div key={t.id}>{renderTxRow(t, false)}</div>
                               ))}
                             </div>
                           </div>
@@ -1452,172 +1612,16 @@ const BankStatementImport: React.FC = () => {
 
                         {pending.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2 flex items-center">
-                              <Clock className="w-4 h-4 mr-1" />
+                            <div className="px-4 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border-b border-gray-100 dark:border-gray-700/50">
                               Ter beoordeling ({pending.length})
-                            </h4>
-                            <div className="space-y-1">
+                            </div>
+                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-900">
                               {pending.map((t) => {
                                 const isEditing = editingTransaction === t.id;
 
                                 return (
-                                  <div
-                                    key={t.id}
-                                    className="text-xs p-3 bg-white dark:bg-gray-900 rounded border border-yellow-200 dark:border-yellow-800"
-                                  >
-                                    {isEditing ? (
-                                      <div className="space-y-2">
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <input
-                                            type="date"
-                                            value={
-                                              editedData.date
-                                                ? safeFormatDate(editedData.date, 'yyyy-MM-dd')
-                                                : ''
-                                            }
-                                            onChange={(e) =>
-                                              setEditedData({
-                                                ...editedData,
-                                                date: new Date(e.target.value).getTime(),
-                                              })
-                                            }
-                                            className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                                          />
-                                          <input
-                                            type="number"
-                                            step="0.01"
-                                            value={editedData.amount || 0}
-                                            onChange={(e) =>
-                                              setEditedData({
-                                                ...editedData,
-                                                amount: parseFloat(e.target.value),
-                                              })
-                                            }
-                                            className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                                          />
-                                        </div>
-                                        <input
-                                          type="text"
-                                          value={editedData.description || ''}
-                                          onChange={(e) =>
-                                            setEditedData({ ...editedData, description: e.target.value })
-                                          }
-                                          className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                                        />
-                                        <div className="flex gap-1">
-                                          <button
-                                            onClick={() => handleSaveEdit(t.id)}
-                                            className="px-2 py-1 bg-green-600 text-white rounded text-xs"
-                                          >
-                                            Opslaan
-                                          </button>
-                                          <button
-                                            onClick={() => {
-                                              setEditingTransaction(null);
-                                              setEditedData({});
-                                            }}
-                                            className="px-2 py-1 bg-gray-600 text-white rounded text-xs"
-                                          >
-                                            Annuleren
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div className="flex justify-between items-center">
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            {t.type === 'outgoing' ? (
-                                              <TrendingUp className="w-3 h-3 text-green-600" />
-                                            ) : (
-                                              <TrendingDown className="w-3 h-3 text-red-600" />
-                                            )}
-                                            <span>{safeFormatDate(t.date, 'dd-MM-yyyy')}</span>
-                                            <span
-                                              className={t.amount >= 0 ? 'text-green-600' : 'text-red-600'}
-                                            >
-                                              € {Math.abs(t.amount).toFixed(2)}
-                                            </span>
-                                          </div>
-                                          <div className="text-gray-600 dark:text-gray-400">
-                                            {t.description}
-                                          </div>
-                                          {t.beneficiary && (
-                                            <div className="text-gray-500 dark:text-gray-500 mt-0.5">
-                                              {t.amount < 0 ? 'Crediteur' : 'Debiteur'}: {t.beneficiary}
-                                            </div>
-                                          )}
-                                          {t.grootboekrekening && (
-                                            <div className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                                              <Tag className="w-2.5 h-2.5 mr-1" />
-                                              {t.grootboekrekening} - {t.grootboekrekeningName}
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <button
-                                            onClick={() => {
-                                              setSelectedTransactionForGrootboek(t.id);
-                                              setShowGrootboekModal(true);
-                                              setGrootboekSearchTerm('');
-                                            }}
-                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                            title="Grootboekrekening toewijzen"
-                                          >
-                                            <BookOpen className="w-3 h-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleEditTransaction(t)}
-                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                            title="Bewerken"
-                                          >
-                                            <Edit2 className="w-3 h-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleRefreshMatch(t.id)}
-                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                            title="Ververs match"
-                                            disabled={refreshing}
-                                          >
-                                            <RefreshCw
-                                              className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`}
-                                            />
-                                          </button>
-                                          {t.matchedInvoiceId ? (
-                                            <>
-                                              <button
-                                                onClick={() => handleConfirmTransaction(t.id)}
-                                                className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900 rounded"
-                                                title="Bevestigen"
-                                              >
-                                                <CheckCircle className="w-3 h-3" />
-                                              </button>
-                                              <button
-                                                onClick={() => handleUnlinkTransaction(t.id)}
-                                                className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded"
-                                                title="Ontkoppelen"
-                                              >
-                                                <X className="w-3 h-3" />
-                                              </button>
-                                            </>
-                                          ) : (
-                                            <button
-                                              onClick={() => {
-                                                const result: MatchResult = {
-                                                  transaction: t,
-                                                  status: t.status,
-                                                  confidence: t.confidence || 0,
-                                                };
-                                                handleOpenLinkModal(result);
-                                              }}
-                                              className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                              title="Handmatig koppelen"
-                                            >
-                                              <Link className="w-3 h-3" />
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
+                                  <div key={t.id}>
+                                    {renderTxRow(t, isEditing)}
                                   </div>
                                 );
                               })}
@@ -1627,156 +1631,13 @@ const BankStatementImport: React.FC = () => {
 
                         {unmatched.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 flex items-center">
-                              <AlertCircle className="w-4 h-4 mr-1" />
+                            <div className="px-4 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700/50">
                               Geen match ({unmatched.length})
-                            </h4>
-                            <div className="space-y-1">
-                              {unmatched.map((t) => {
-                                const isEditing = editingTransaction === t.id;
-
-                                return (
-                                  <div
-                                    key={t.id}
-                                    className="text-xs p-3 bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700"
-                                  >
-                                    {isEditing ? (
-                                      <div className="space-y-2">
-                                        <div className="grid grid-cols-2 gap-2">
-                                          <input
-                                            type="date"
-                                            value={
-                                              editedData.date
-                                                ? safeFormatDate(editedData.date, 'yyyy-MM-dd')
-                                                : ''
-                                            }
-                                            onChange={(e) =>
-                                              setEditedData({
-                                                ...editedData,
-                                                date: new Date(e.target.value).getTime(),
-                                              })
-                                            }
-                                            className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                                          />
-                                          <input
-                                            type="number"
-                                            step="0.01"
-                                            value={editedData.amount || 0}
-                                            onChange={(e) =>
-                                              setEditedData({
-                                                ...editedData,
-                                                amount: parseFloat(e.target.value),
-                                              })
-                                            }
-                                            className="px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                                          />
-                                        </div>
-                                        <input
-                                          type="text"
-                                          value={editedData.description || ''}
-                                          onChange={(e) =>
-                                            setEditedData({ ...editedData, description: e.target.value })
-                                          }
-                                          className="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-                                        />
-                                        <div className="flex gap-1">
-                                          <button
-                                            onClick={() => handleSaveEdit(t.id)}
-                                            className="px-2 py-1 bg-green-600 text-white rounded text-xs"
-                                          >
-                                            Opslaan
-                                          </button>
-                                          <button
-                                            onClick={() => {
-                                              setEditingTransaction(null);
-                                              setEditedData({});
-                                            }}
-                                            className="px-2 py-1 bg-gray-600 text-white rounded text-xs"
-                                          >
-                                            Annuleren
-                                          </button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div className="flex justify-between items-center">
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            {t.type === 'outgoing' ? (
-                                              <TrendingUp className="w-3 h-3 text-green-600" />
-                                            ) : (
-                                              <TrendingDown className="w-3 h-3 text-red-600" />
-                                            )}
-                                            <span>{safeFormatDate(t.date, 'dd-MM-yyyy')}</span>
-                                            <span
-                                              className={t.amount >= 0 ? 'text-green-600' : 'text-red-600'}
-                                            >
-                                              € {Math.abs(t.amount).toFixed(2)}
-                                            </span>
-                                          </div>
-                                          <div className="text-gray-600 dark:text-gray-400">
-                                            {t.description}
-                                          </div>
-                                          {t.beneficiary && (
-                                            <div className="text-gray-500 dark:text-gray-500 mt-0.5">
-                                              {t.amount < 0 ? 'Crediteur' : 'Debiteur'}: {t.beneficiary}
-                                            </div>
-                                          )}
-                                          {t.grootboekrekening && (
-                                            <div className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                                              <Tag className="w-2.5 h-2.5 mr-1" />
-                                              {t.grootboekrekening} - {t.grootboekrekeningName}
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <button
-                                            onClick={() => {
-                                              setSelectedTransactionForGrootboek(t.id);
-                                              setShowGrootboekModal(true);
-                                              setGrootboekSearchTerm('');
-                                            }}
-                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                            title="Grootboekrekening toewijzen"
-                                          >
-                                            <BookOpen className="w-3 h-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleEditTransaction(t)}
-                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                            title="Bewerken"
-                                          >
-                                            <Edit2 className="w-3 h-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleRefreshMatch(t.id)}
-                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                            title="Ververs match"
-                                            disabled={refreshing}
-                                          >
-                                            <RefreshCw
-                                              className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`}
-                                            />
-                                          </button>
-                                          <button
-                                            onClick={() => {
-                                              const result: MatchResult = {
-                                                transaction: t,
-                                                status: t.status,
-                                                confidence: t.confidence || 0,
-                                              };
-                                              handleOpenLinkModal(result);
-                                            }}
-                                            className="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900 rounded"
-                                            title="Handmatig koppelen"
-                                          >
-                                            <Link className="w-3 h-3" />
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                            </div>
+                            <div className="divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-900">
+                              {unmatched.map((t) => (
+                                <div key={t.id}>{renderTxRow(t, editingTransaction === t.id)}</div>
+                              ))}
                             </div>
                           </div>
                         )}
