@@ -806,4 +806,100 @@ export const bankImportService = {
 
     return await this.matchTransactions(transactions, userId, companyId);
   },
+
+  // ==========================================
+  // BANK MATCH RULES (leergeheugen per IBAN/naam)
+  // ==========================================
+
+  async saveOrUpdateMatchRule(
+    companyId: string,
+    userId: string,
+    iban: string | undefined,
+    namePattern: string | undefined,
+    grootboekCode: string,
+    grootboekName: string
+  ): Promise<void> {
+    if (!iban && !namePattern) return;
+    const key = iban || namePattern!;
+
+    const q = query(
+      collection(db, 'bankMatchRules'),
+      where('companyId', '==', companyId),
+      iban ? where('iban', '==', iban) : where('namePattern', '==', namePattern)
+    );
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const existing = snapshot.docs[0];
+      await updateDoc(doc(db, 'bankMatchRules', existing.id), {
+        grootboekCode,
+        grootboekName,
+        usageCount: (existing.data().usageCount || 0) + 1,
+        updatedAt: Date.now(),
+      });
+    } else {
+      await addDoc(collection(db, 'bankMatchRules'), {
+        companyId,
+        userId,
+        iban: iban || null,
+        namePattern: namePattern || null,
+        key,
+        grootboekCode,
+        grootboekName,
+        usageCount: 1,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    }
+  },
+
+  async getMatchRules(companyId: string): Promise<Array<{
+    id: string; iban: string | null; namePattern: string | null;
+    grootboekCode: string; grootboekName: string; usageCount: number;
+  }>> {
+    const q = query(
+      collection(db, 'bankMatchRules'),
+      where('companyId', '==', companyId),
+      orderBy('usageCount', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => ({
+      id: d.id,
+      iban: d.data().iban || null,
+      namePattern: d.data().namePattern || null,
+      grootboekCode: d.data().grootboekCode,
+      grootboekName: d.data().grootboekName,
+      usageCount: d.data().usageCount || 0,
+    }));
+  },
+
+  async applyMatchRulesToTransactions(
+    transactions: BankTransaction[],
+    companyId: string
+  ): Promise<Map<string, { code: string; name: string }>> {
+    const rules = await this.getMatchRules(companyId);
+    const result = new Map<string, { code: string; name: string }>();
+
+    for (const t of transactions) {
+      if (t.grootboekrekening) continue;
+
+      // IBAN match has priority
+      if (t.accountNumber) {
+        const rule = rules.find(r => r.iban && r.iban === t.accountNumber);
+        if (rule) {
+          result.set(t.id, { code: rule.grootboekCode, name: rule.grootboekName });
+          continue;
+        }
+      }
+      // Name match fallback
+      if (t.beneficiary) {
+        const nameLower = t.beneficiary.toLowerCase();
+        const rule = rules.find(r => r.namePattern && nameLower.includes(r.namePattern.toLowerCase()));
+        if (rule) {
+          result.set(t.id, { code: rule.grootboekCode, name: rule.grootboekName });
+        }
+      }
+    }
+    return result;
+  },
 };
