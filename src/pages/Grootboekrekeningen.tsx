@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { BookOpen, Plus, Download, FileText, Search, CreditCard as Edit2, Trash2, Save, X, ChevronDown, ChevronUp, Shield, Upload, FileSpreadsheet, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, Plus, Download, FileText, Search, CreditCard as Edit2, Trash2, Save, X, ChevronDown, ChevronUp, Shield, Upload, FileSpreadsheet, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight, BookmarkPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Card from '../components/ui/Card';
@@ -11,7 +11,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import Modal from '../components/ui/Modal';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import { supplierService } from '../services/supplierService';
-import { Grootboekrekening, GrootboekCategory } from '../types/supplier';
+import { Grootboekrekening, GrootboekCategory, GrootboekTemplate } from '../types/supplier';
 import { grootboekCategoryLabels } from '../utils/grootboekTemplate';
 import { generateGrootboekPDF } from '../lib/generateGrootboekPDF';
 
@@ -139,12 +139,10 @@ function parseExcelOrCSV(content: string): Array<{
 }
 
 const Grootboekrekeningen: React.FC = () => {
-  const { userRole } = useAuth();
+  const { userRole, adminUserId } = useAuth();
   const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('Rekeningschema');
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [rekeningen, setRekeningen] = useState<Grootboekrekening[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,6 +174,14 @@ const Grootboekrekeningen: React.FC = () => {
   const [previewPage, setPreviewPage] = useState(0);
   const fileReplaceInputRef = useRef<HTMLInputElement>(null);
   const PREVIEW_PAGE_SIZE = 100;
+
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const [saveTemplateName, setSaveTemplateName] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [savedTemplates, setSavedTemplates] = useState<GrootboekTemplate[]>([]);
+  const [selectedSavedTemplate, setSelectedSavedTemplate] = useState('');
+  const [loadingSavedTemplates, setLoadingSavedTemplates] = useState(false);
+  const [loadingSelectedTemplate, setLoadingSelectedTemplate] = useState(false);
 
   if (userRole !== 'admin') {
     return (
@@ -349,6 +355,78 @@ const Grootboekrekeningen: React.FC = () => {
       showError('Fout', e.message || 'Kon sjabloon niet laden');
     } finally {
       setReplacingTemplate(false);
+    }
+  };
+
+  const handleSaveAsTemplate = async () => {
+    if (!selectedCompany || !adminUserId || !saveTemplateName.trim()) {
+      showError('Fout', 'Geef een naam voor het sjabloon');
+      return;
+    }
+    try {
+      setSavingTemplate(true);
+      await supplierService.saveGrootboekAsTemplate(
+        adminUserId,
+        selectedCompany.id,
+        saveTemplateName.trim(),
+        rekeningen
+      );
+      success('Opgeslagen', `Sjabloon "${saveTemplateName.trim()}" opgeslagen met ${rekeningen.length} rekeningen`);
+      setShowSaveTemplateModal(false);
+      setSaveTemplateName('');
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon sjabloon niet opslaan');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const loadSavedTemplates = async () => {
+    if (!adminUserId) return;
+    try {
+      setLoadingSavedTemplates(true);
+      const templates = await supplierService.listGrootboekTemplates(adminUserId);
+      setSavedTemplates(templates);
+      if (templates.length > 0) setSelectedSavedTemplate(templates[0].id || '');
+    } catch {
+      // silent
+    } finally {
+      setLoadingSavedTemplates(false);
+    }
+  };
+
+  const handleLoadSavedTemplate = async () => {
+    if (!selectedCompany || !selectedSavedTemplate) return;
+    const template = savedTemplates.find((t) => t.id === selectedSavedTemplate);
+    if (!template) return;
+    try {
+      setLoadingSelectedTemplate(true);
+      await supplierService.clearGrootboekrekeningen(selectedCompany.id);
+      const result = await supplierService.batchImportGrootboekrekeningen(
+        selectedCompany.id,
+        template.entries
+      );
+      success('Ingeladen', `Sjabloon "${template.name}" ingeladen — ${result.added} rekeningen`);
+      setShowReplaceModal(false);
+      loadData();
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon sjabloon niet inladen');
+    } finally {
+      setLoadingSelectedTemplate(false);
+    }
+  };
+
+  const handleDeleteSavedTemplate = async (templateId: string, templateName: string) => {
+    if (!confirm(`Sjabloon "${templateName}" verwijderen?`)) return;
+    try {
+      await supplierService.deleteGrootboekTemplate(templateId);
+      const updated = savedTemplates.filter((t) => t.id !== templateId);
+      setSavedTemplates(updated);
+      if (selectedSavedTemplate === templateId) {
+        setSelectedSavedTemplate(updated[0]?.id || '');
+      }
+    } catch (e: any) {
+      showError('Fout', e.message || 'Kon sjabloon niet verwijderen');
     }
   };
 
@@ -538,13 +616,6 @@ const Grootboekrekeningen: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <input
-        ref={fileInputRef}
-        type="file"
-        accept=".xlsx,.xls,.csv,.txt,.tsv"
-        className="hidden"
-        onChange={(e) => handleFileSelect(e, false)}
-      />
-      <input
         ref={fileReplaceInputRef}
         type="file"
         accept=".xlsx,.xls,.csv,.txt,.tsv"
@@ -564,20 +635,11 @@ const Grootboekrekeningen: React.FC = () => {
             <Plus className="w-4 h-4 mr-1" />
             Toevoegen
           </Button>
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            variant="outline"
-            className="text-sm"
-            title="CSV of TSV bestand uploaden (geëxporteerd vanuit Excel)"
-          >
-            <FileSpreadsheet className="w-4 h-4 mr-1" />
-            Excel import
-          </Button>
           <Button onClick={handleImportTemplate} disabled={importingTemplate} variant="outline" className="text-sm">
             {importingTemplate ? <LoadingSpinner size="sm" /> : <><Upload className="w-4 h-4 mr-1" />Sjabloon</>}
           </Button>
           <Button
-            onClick={() => setShowReplaceModal(true)}
+            onClick={() => { setShowReplaceModal(true); loadSavedTemplates(); }}
             variant="outline"
             className="text-sm text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
           >
@@ -586,6 +648,14 @@ const Grootboekrekeningen: React.FC = () => {
           </Button>
           {rekeningen.length > 0 && (
             <>
+              <Button
+                onClick={() => { setSaveTemplateName(selectedCompany.name); setShowSaveTemplateModal(true); }}
+                variant="outline"
+                className="text-sm text-green-700 dark:text-green-400 border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+              >
+                <BookmarkPlus className="w-4 h-4 mr-1" />
+                Opslaan als sjabloon
+              </Button>
               <Button onClick={() => generateGrootboekPDF(rekeningen, selectedCompany.name)} variant="outline" className="text-sm">
                 <FileText className="w-4 h-4 mr-1" />
                 PDF
@@ -1038,10 +1108,10 @@ const Grootboekrekeningen: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               onClick={handleReplaceWithTemplate}
-              disabled={replacingTemplate}
+              disabled={replacingTemplate || loadingSelectedTemplate}
               className="flex flex-col items-start gap-2 p-4 border-2 border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-500 rounded-xl transition-colors text-left"
             >
               <div className="flex items-center gap-2">
@@ -1054,7 +1124,7 @@ const Grootboekrekeningen: React.FC = () => {
 
             <button
               onClick={() => { fileReplaceInputRef.current?.click(); }}
-              disabled={replacingTemplate}
+              disabled={replacingTemplate || loadingSelectedTemplate}
               className="flex flex-col items-start gap-2 p-4 border-2 border-gray-200 dark:border-gray-700 hover:border-amber-400 dark:hover:border-amber-500 rounded-xl transition-colors text-left"
             >
               <div className="flex items-center gap-2">
@@ -1063,11 +1133,92 @@ const Grootboekrekeningen: React.FC = () => {
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Upload je eigen rekeningschema (.xlsx / .csv)</p>
             </button>
+
+            <div className="flex flex-col items-start gap-2 p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-left">
+              <div className="flex items-center gap-2">
+                <BookmarkPlus className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <span className="font-semibold text-gray-900 dark:text-white text-sm">Opgeslagen sjabloon</span>
+              </div>
+              {loadingSavedTemplates ? (
+                <LoadingSpinner size="sm" />
+              ) : savedTemplates.length === 0 ? (
+                <p className="text-xs text-gray-400 dark:text-gray-500">Nog geen opgeslagen sjablonen</p>
+              ) : (
+                <div className="w-full space-y-2">
+                  {savedTemplates.map((t) => (
+                    <div key={t.id} className="flex items-center gap-1">
+                      <button
+                        onClick={() => setSelectedSavedTemplate(t.id || '')}
+                        className={`flex-1 text-left text-xs px-2 py-1 rounded truncate transition-colors ${
+                          selectedSavedTemplate === t.id
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-medium'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        {t.name}
+                        <span className="ml-1 text-gray-400 text-[10px]">({t.entries.length})</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSavedTemplate(t.id!, t.name)}
+                        className="p-0.5 text-red-400 hover:text-red-600 flex-shrink-0"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <Button
+                    onClick={handleLoadSavedTemplate}
+                    disabled={!selectedSavedTemplate || loadingSelectedTemplate || replacingTemplate}
+                    className="w-full text-xs bg-green-600 hover:bg-green-700 text-white border-green-600 mt-1"
+                  >
+                    {loadingSelectedTemplate ? <LoadingSpinner size="sm" /> : 'Inladen'}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700">
-            <Button variant="outline" onClick={() => setShowReplaceModal(false)} disabled={replacingTemplate}>
+            <Button variant="outline" onClick={() => setShowReplaceModal(false)} disabled={replacingTemplate || loadingSelectedTemplate}>
               Annuleren
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: Opslaan als sjabloon */}
+      <Modal
+        isOpen={showSaveTemplateModal}
+        onClose={() => { setShowSaveTemplateModal(false); setSaveTemplateName(''); }}
+        title="Opslaan als sjabloon"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Sla het rekeningschema van <strong>{selectedCompany.name}</strong> op als herbruikbaar sjabloon ({rekeningen.length} rekeningen).
+            Je kunt dit sjabloon daarna bij andere bedrijven inladen via "Vervang sjabloon".
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sjabloonnaam</label>
+            <input
+              type="text"
+              value={saveTemplateName}
+              onChange={(e) => setSaveTemplateName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAsTemplate(); }}
+              placeholder="bijv. Standaard FLG schema"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+            <Button variant="outline" onClick={() => { setShowSaveTemplateModal(false); setSaveTemplateName(''); }} disabled={savingTemplate}>
+              Annuleren
+            </Button>
+            <Button
+              onClick={handleSaveAsTemplate}
+              disabled={savingTemplate || !saveTemplateName.trim()}
+              className="bg-green-600 hover:bg-green-700 text-white border-green-600"
+            >
+              {savingTemplate ? <LoadingSpinner size="sm" /> : <><BookmarkPlus className="w-4 h-4 mr-1" />Opslaan</>}
             </Button>
           </div>
         </div>
