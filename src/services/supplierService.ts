@@ -13,11 +13,12 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Supplier, Grootboekrekening, Crediteur, Debiteur } from '../types/supplier';
+import { Supplier, Grootboekrekening, GrootboekTemplate, Crediteur, Debiteur } from '../types/supplier';
 import { grootboekTemplate } from '../utils/grootboekTemplate';
 
 const SUPPLIERS_COLLECTION = 'suppliers';
 const GROOTBOEK_COLLECTION = 'grootboekrekeningen';
+const GROOTBOEK_TEMPLATES_COLLECTION = 'grootboekTemplates';
 const CREDITEUREN_COLLECTION = 'crediteuren';
 const DEBITEUREN_COLLECTION = 'debiteuren';
 
@@ -301,6 +302,58 @@ export const supplierService = {
       }
     }
     await batch.commit();
+  },
+
+  // ==========================================
+  // GROOTBOEK TEMPLATES (opgeslagen schema's)
+  // ==========================================
+
+  async saveGrootboekAsTemplate(
+    adminUserId: string,
+    sourceCompanyId: string,
+    name: string,
+    rekeningen: Grootboekrekening[]
+  ): Promise<string> {
+    const entries = rekeningen.map((r) => ({
+      code: r.code,
+      name: r.name,
+      category: r.category,
+      type: r.type,
+      ...(r.btw ? { btw: r.btw } : {}),
+    }));
+    const now = Timestamp.fromDate(new Date());
+    const ref = await addDoc(collection(db, GROOTBOEK_TEMPLATES_COLLECTION), {
+      name,
+      userId: adminUserId,
+      sourceCompanyId,
+      entries,
+      createdAt: now,
+    });
+    return ref.id;
+  },
+
+  async listGrootboekTemplates(adminUserId: string): Promise<GrootboekTemplate[]> {
+    const q = query(
+      collection(db, GROOTBOEK_TEMPLATES_COLLECTION),
+      where('userId', '==', adminUserId),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        name: data.name,
+        userId: data.userId,
+        sourceCompanyId: data.sourceCompanyId,
+        entries: data.entries || [],
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
+      } as GrootboekTemplate;
+    });
+  },
+
+  async deleteGrootboekTemplate(templateId: string): Promise<void> {
+    await deleteDoc(doc(db, GROOTBOEK_TEMPLATES_COLLECTION, templateId));
   },
 
   // ==========================================

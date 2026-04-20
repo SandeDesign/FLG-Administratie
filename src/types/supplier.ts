@@ -43,6 +43,21 @@ export type GrootboekCategory =
   | 'financiele_baten_lasten'
   | 'overige';
 
+export interface GrootboekTemplate {
+  id?: string;
+  name: string;
+  userId: string;
+  sourceCompanyId: string;
+  entries: Array<{
+    code: string;
+    name: string;
+    category: GrootboekCategory;
+    type: 'debet' | 'credit';
+    btw?: 'hoog' | 'laag' | 'geen' | 'verlegd';
+  }>;
+  createdAt: Date;
+}
+
 export interface Crediteur {
   id?: string;
   companyId: string;
