@@ -92,8 +92,14 @@ export const generateBtwPDF = (
   const outInvMap = new Map(outgoingInvoices.map((i) => [i.id || '', i]));
   const inInvMap = new Map(incomingInvoices.map((i) => [i.id || '', i]));
 
-  // BTW afgeleid per transactie: factuur > grootboek
-  const deriveBtw = (t: BankTransaction): { netto: number; btw: number; pct: number } => {
+  // Effectieve BTW info per transactie (invoice > grootboek), consistent btwType + bedragen
+  const pctToType = (pct: number): string => {
+    if (pct >= 20 && pct <= 22) return 'hoog';
+    if (pct >= 8 && pct <= 10) return 'laag';
+    return 'geen';
+  };
+
+  const getEffective = (t: BankTransaction): { btwType: string; pct: number; netto: number; btw: number } => {
     const abs = Math.abs(t.amount);
     if (t.matchedInvoiceId) {
       const inv = t.matchedInvoiceType === 'outgoing'
@@ -110,7 +116,7 @@ export const generateBtwPDF = (
           const netto = net * ratio;
           const btw = vat * ratio;
           const pct = net > 0 ? Math.round((vat / net) * 100) : 0;
-          return { netto, btw, pct };
+          return { btwType: pctToType(pct), pct, netto, btw };
         }
       }
     }
@@ -119,7 +125,12 @@ export const generateBtwPDF = (
     const pct = BTW_PERCENTAGES[btwType] ?? 0;
     const netto = pct > 0 ? abs / (1 + pct / 100) : abs;
     const btw = abs - netto;
-    return { netto, btw, pct };
+    return { btwType, pct, netto, btw };
+  };
+
+  const deriveBtw = (t: BankTransaction): { netto: number; btw: number; pct: number } => {
+    const e = getEffective(t);
+    return { netto: e.netto, btw: e.btw, pct: e.pct };
   };
 
   const regelMap = new Map<string, {
@@ -132,14 +143,16 @@ export const generateBtwPDF = (
   for (const t of transactions) {
     const isIn = t.amount >= 0;
     const abs = Math.abs(t.amount);
-    const { netto, btw } = deriveBtw(t);
+    const eff = getEffective(t);
+    const netto = eff.netto;
+    const btw = eff.btw;
     let key: string, code: string, naam: string, btwType: string, pct: number;
 
     if (t.grootboekrekening) {
       const gb = gbMap.get(t.grootboekrekening);
-      btwType = gb?.btw || 'geen';
-      pct = BTW_PERCENTAGES[btwType] ?? 0;
-      key = t.grootboekrekening;
+      btwType = eff.btwType;
+      pct = eff.pct;
+      key = `${t.grootboekrekening}_${btwType}`;
       code = t.grootboekrekening;
       naam = gb?.name || t.grootboekrekening;
     } else {
@@ -189,19 +202,17 @@ export const generateBtwPDF = (
   const totaalUit = transactions.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const zonderGb = transactions.filter((t) => !t.grootboekrekening).length;
 
-  // BTW per tarief aggregatie
+  // BTW per tarief aggregatie — gebruikt effectieve BTW uit invoice/grootboek
   const tariefMap = new Map<string, { netto: number; btw: number; bruto: number; count: number }>();
   for (const t of transactions) {
     if (!t.grootboekrekening) continue;
-    const gb = gbMap.get(t.grootboekrekening);
-    const btwType = gb?.btw || 'geen';
+    const eff = getEffective(t);
     const abs = Math.abs(t.amount);
     const sign = t.amount >= 0 ? 1 : -1;
-    const { netto, btw } = deriveBtw(t);
-    let entry = tariefMap.get(btwType);
-    if (!entry) { entry = { netto: 0, btw: 0, bruto: 0, count: 0 }; tariefMap.set(btwType, entry); }
-    entry.netto += sign * netto;
-    entry.btw += sign * btw;
+    let entry = tariefMap.get(eff.btwType);
+    if (!entry) { entry = { netto: 0, btw: 0, bruto: 0, count: 0 }; tariefMap.set(eff.btwType, entry); }
+    entry.netto += sign * eff.netto;
+    entry.btw += sign * eff.btw;
     entry.bruto += sign * abs;
     entry.count++;
   }
@@ -268,25 +279,29 @@ export const generateBtwPDF = (
   const boxH = 32;
 
   const drawBox = (x: number, label: string, value: string, sublabel: string, accent: { r: number; g: number; b: number }) => {
-    pdf.setFillColor(colors.light.r, colors.light.g, colors.light.b);
+    // Modern minimalist box: witte achtergrond, dunne border, bronze accent top bar
+    pdf.setFillColor(colors.white.r, colors.white.g, colors.white.b);
     pdf.rect(x, y, boxW, boxH, 'F');
     pdf.setFillColor(accent.r, accent.g, accent.b);
-    pdf.rect(x, y, 3, boxH, 'F');
+    pdf.rect(x, y, boxW, 2, 'F');
     pdf.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
-    pdf.setLineWidth(0.2);
+    pdf.setLineWidth(0.3);
     pdf.rect(x, y, boxW, boxH);
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-    pdf.text(label, x + 6, y + 7);
-    pdf.setFontSize(16);
+
+    pdf.setFontSize(7.5);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(accent.r, accent.g, accent.b);
-    pdf.text(value, x + 6, y + 18);
+    pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
+    pdf.text(label.toUpperCase(), x + 5, y + 9);
+
+    pdf.setFontSize(18);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
+    pdf.text(value, x + 5, y + 20);
+
     pdf.setFontSize(7.5);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-    pdf.text(sublabel, x + 6, y + 26);
+    pdf.text(sublabel, x + 5, y + 27);
   };
 
   drawBox(marginL, 'Af te dragen BTW', fmt(totaalAfdracht), 'BTW op verkopen (inkomend)', colors.red);
@@ -316,29 +331,29 @@ export const generateBtwPDF = (
   if (zonderGb > 0) {
     pdf.setFillColor(colors.amberBg.r, colors.amberBg.g, colors.amberBg.b);
     pdf.rect(marginL, y, contentWidth, 8, 'F');
-    pdf.setFillColor(colors.amber.r, colors.amber.g, colors.amber.b);
-    pdf.rect(marginL, y, 3, 8, 'F');
+    pdf.setDrawColor(colors.amber.r, colors.amber.g, colors.amber.b);
+    pdf.setLineWidth(0.3);
+    pdf.rect(marginL, y, contentWidth, 8);
     pdf.setFontSize(8);
     pdf.setTextColor(colors.amber.r, colors.amber.g, colors.amber.b);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`${zonderGb} transacties zonder grootboekrekening — niet meegerekend in BTW totalen`, marginL + 6, y + 5.2);
+    pdf.text(`${zonderGb} transacties zonder grootboekrekening — niet meegerekend in BTW totalen`, marginL + 4, y + 5.2);
     y += 12;
   } else {
     y += 4;
   }
 
-  // --- Bronze separator ---
-  pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
-  pdf.setLineWidth(0.5);
-  pdf.line(marginL, y, pageWidth - marginR, y);
-  y += 7;
-
   // --- BTW PER TARIEF (2x2 grid) ---
+  y += 4;
+  pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+  pdf.setLineWidth(0.8);
+  pdf.line(marginL, y, marginL + 40, y);
+  y += 4;
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
-  pdf.text('BTW per tarief', marginL, y);
-  y += 6;
+  pdf.text('BTW PER TARIEF', marginL, y);
+  y += 5;
 
   const tarW = (contentWidth - 5) / 2;
   const tarH = 30;
@@ -350,52 +365,55 @@ export const generateBtwPDF = (
     const yPos = y + row * (tarH + 4);
     const tarData = tariefMap.get(key);
 
-    pdf.setFillColor(colors.light.r, colors.light.g, colors.light.b);
+    // Modern card: white bg, thin border, bronze top accent
+    pdf.setFillColor(colors.white.r, colors.white.g, colors.white.b);
     pdf.rect(xPos, yPos, tarW, tarH, 'F');
     pdf.setFillColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
-    pdf.rect(xPos, yPos, 3, tarH, 'F');
+    pdf.rect(xPos, yPos, tarW, 2, 'F');
     pdf.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
-    pdf.setLineWidth(0.2);
+    pdf.setLineWidth(0.3);
     pdf.rect(xPos, yPos, tarW, tarH);
 
-    pdf.setFontSize(10);
+    // Header: rate label
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
-    pdf.text(label, xPos + 7, yPos + 7);
+    pdf.text(label, xPos + 6, yPos + 10);
 
     if (tarData && tarData.count > 0) {
       pdf.setFontSize(7.5);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      pdf.text(`${tarData.count} transacties`, xPos + tarW - 4, yPos + 7, { align: 'right' });
+      pdf.text(`${tarData.count} transacties`, xPos + tarW - 4, yPos + 10, { align: 'right' });
 
+      // Values in 3 rows
       pdf.setFontSize(8);
       pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      pdf.text('Netto', xPos + 7, yPos + 15);
+      pdf.text('Netto', xPos + 6, yPos + 18);
       pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(fmt(tarData.netto), xPos + tarW - 4, yPos + 15, { align: 'right' });
+      pdf.text(fmt(tarData.netto), xPos + tarW - 4, yPos + 18, { align: 'right' });
 
       if (pct > 0) {
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-        pdf.text(`BTW ${pct}%`, xPos + 7, yPos + 21);
+        pdf.text(`BTW ${pct}%`, xPos + 6, yPos + 23);
         pdf.setTextColor(tarData.btw >= 0 ? colors.red.r : colors.green.r, tarData.btw >= 0 ? colors.red.g : colors.green.g, tarData.btw >= 0 ? colors.red.b : colors.green.b);
         pdf.setFont('helvetica', 'bold');
-        pdf.text(fmt(tarData.btw), xPos + tarW - 4, yPos + 21, { align: 'right' });
+        pdf.text(fmt(tarData.btw), xPos + tarW - 4, yPos + 23, { align: 'right' });
       }
 
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      pdf.text('Bruto', xPos + 7, yPos + 27);
+      pdf.text('Bruto', xPos + 6, yPos + 28);
       pdf.setTextColor(tarData.bruto >= 0 ? colors.green.r : colors.red.r, tarData.bruto >= 0 ? colors.green.g : colors.red.g, tarData.bruto >= 0 ? colors.green.b : colors.red.b);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(fmt(tarData.bruto), xPos + tarW - 4, yPos + 27, { align: 'right' });
+      pdf.text(fmt(tarData.bruto), xPos + tarW - 4, yPos + 28, { align: 'right' });
     } else {
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'italic');
       pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      pdf.text('Geen transacties', xPos + 7, yPos + 18);
+      pdf.text('Geen transacties', xPos + 6, yPos + 20);
     }
   });
 
@@ -403,38 +421,42 @@ export const generateBtwPDF = (
 
   // --- Specificatie tabel ---
   checkBreak(20);
+  y += 4;
   pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
-  pdf.setLineWidth(0.5);
-  pdf.line(marginL, y, pageWidth - marginR, y);
-  y += 7;
+  pdf.setLineWidth(0.8);
+  pdf.line(marginL, y, marginL + 40, y);
+  y += 4;
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
-  pdf.text('Specificatie per grootboekrekening', marginL, y);
-  y += 6;
+  pdf.text('SPECIFICATIE PER GROOTBOEKREKENING', marginL, y);
+  y += 5;
 
   // Kolommen
-  const cCode = 16;
-  const cNetto = 30;
-  const cBtwBedrag = 30;
-  const cBruto = 30;
-  const cCount = 10;
+  const cCode = 18;
+  const cNetto = 32;
+  const cBtwBedrag = 32;
+  const cBruto = 32;
+  const cCount = 16;
   const cName = contentWidth - cCode - cNetto - cBtwBedrag - cBruto - cCount;
 
   const drawSpecHeaders = () => {
-    pdf.setFillColor(colors.headerBg.r, colors.headerBg.g, colors.headerBg.b);
-    pdf.rect(marginL, y, contentWidth, 7, 'F');
-    pdf.setFontSize(8);
+    pdf.setFontSize(7.5);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(colors.white.r, colors.white.g, colors.white.b);
+    pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
     let x = marginL + 2;
-    pdf.text('Code', x, y + 4.8); x += cCode;
-    pdf.text('Rekening', x, y + 4.8); x += cName;
-    pdf.text('Netto', x + cNetto - 2, y + 4.8, { align: 'right' }); x += cNetto;
-    pdf.text('BTW bedrag', x + cBtwBedrag - 2, y + 4.8, { align: 'right' }); x += cBtwBedrag;
-    pdf.text('Bruto', x + cBruto - 2, y + 4.8, { align: 'right' }); x += cBruto;
-    pdf.text('#', x + cCount - 2, y + 4.8, { align: 'right' });
-    y += 7;
+    pdf.text('CODE', x, y + 4); x += cCode;
+    pdf.text('REKENING', x, y + 4); x += cName;
+    pdf.text('NETTO', x + cNetto - 4, y + 4, { align: 'right' }); x += cNetto;
+    pdf.text('BTW BEDRAG', x + cBtwBedrag - 4, y + 4, { align: 'right' }); x += cBtwBedrag;
+    pdf.text('BRUTO', x + cBruto - 4, y + 4, { align: 'right' }); x += cBruto;
+    pdf.text('AANTAL', x + cCount - 4, y + 4, { align: 'right' });
+    y += 6;
+    // dunne bronze onderlijn
+    pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+    pdf.setLineWidth(0.6);
+    pdf.line(marginL, y, pageWidth - marginR, y);
+    y += 3;
   };
 
   drawSpecHeaders();
@@ -450,71 +472,71 @@ export const generateBtwPDF = (
 
   let idx = 0;
   for (const groep of groepen) {
-    // Groep header (blauw, zoals Grootboek PDF)
+    // Groep header — minimalistisch: dunne bronze lijn + uppercase titel
     checkBreak(14);
-    y += 2;
-    pdf.setFillColor(colors.catBg.r, colors.catBg.g, colors.catBg.b);
-    pdf.rect(marginL, y, contentWidth, 6, 'F');
-    pdf.setFontSize(8.5);
+    y += 4;
+    pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+    pdf.setLineWidth(0.8);
+    pdf.line(marginL, y, marginL + 40, y);
+    y += 4;
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(colors.catText.r, colors.catText.g, colors.catText.b);
-    pdf.text(groep.label, marginL + 2, y + 4.2);
-    pdf.setFontSize(7.5);
+    pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
+    pdf.text(groep.label.toUpperCase(), marginL, y);
+    pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-    pdf.text(`${groep.rows.length} rekening${groep.rows.length !== 1 ? 'en' : ''}`, pageWidth - marginR - 2, y + 4.2, { align: 'right' });
-    y += 6;
+    pdf.text(`${groep.rows.length} rekening${groep.rows.length !== 1 ? 'en' : ''}`, pageWidth - marginR, y, { align: 'right' });
+    y += 4;
 
     let grpNetto = 0, grpBtw = 0, grpBruto = 0, grpCount = 0;
     for (const r of groep.rows) {
       checkBreak(7);
       if (y === 20) drawSpecHeaders();
 
+      // Subtiele highlight voor uncat, anders geen fill
       if (r.isUncat) {
         pdf.setFillColor(colors.amberBg.r, colors.amberBg.g, colors.amberBg.b);
-      } else if (idx % 2 === 0) {
-        pdf.setFillColor(colors.light.r, colors.light.g, colors.light.b);
-      } else {
-        pdf.setFillColor(colors.white.r, colors.white.g, colors.white.b);
+        pdf.rect(marginL, y, contentWidth, 6, 'F');
       }
-      pdf.rect(marginL, y, contentWidth, 6, 'F');
 
-      pdf.setFontSize(8);
-      pdf.setTextColor(r.isUncat ? colors.amber.r : colors.blue.r, r.isUncat ? colors.amber.g : colors.blue.g, r.isUncat ? colors.amber.b : colors.blue.b);
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(r.isUncat ? colors.amber.r : colors.bronze.r, r.isUncat ? colors.amber.g : colors.bronze.g, r.isUncat ? colors.amber.b : colors.bronze.b);
       pdf.setFont('helvetica', 'bold');
       let x = marginL + 2;
       pdf.text(r.code, x, y + 4); x += cCode;
 
       pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
       pdf.setFont('helvetica', r.isUncat ? 'italic' : 'normal');
+      pdf.setFontSize(8.5);
       const nameTrunc = pdf.getTextWidth(r.naam) > cName - 2
         ? pdf.splitTextToSize(r.naam, cName - 2)[0]
         : r.naam;
       pdf.text(nameTrunc, x, y + 4); x += cName;
 
       pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.5);
       pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
-      pdf.text(r.isUncat ? '—' : fmt(r.netto), x + cNetto - 2, y + 4, { align: 'right' }); x += cNetto;
+      pdf.text(r.isUncat ? '—' : fmt(r.netto), x + cNetto - 4, y + 4, { align: 'right' }); x += cNetto;
 
       if (r.isUncat || r.btw === 0) {
         pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-        pdf.text('—', x + cBtwBedrag - 2, y + 4, { align: 'right' });
+        pdf.text('—', x + cBtwBedrag - 4, y + 4, { align: 'right' });
       } else {
         pdf.setTextColor(r.btw > 0 ? colors.red.r : colors.green.r, r.btw > 0 ? colors.red.g : colors.green.g, r.btw > 0 ? colors.red.b : colors.green.b);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(fmt(r.btw), x + cBtwBedrag - 2, y + 4, { align: 'right' });
         pdf.setFont('helvetica', 'normal');
+        pdf.text(fmt(r.btw), x + cBtwBedrag - 4, y + 4, { align: 'right' });
       }
       x += cBtwBedrag;
 
       pdf.setTextColor(r.bruto > 0 ? colors.green.r : r.bruto < 0 ? colors.red.r : colors.dark.r, r.bruto > 0 ? colors.green.g : r.bruto < 0 ? colors.red.g : colors.dark.g, r.bruto > 0 ? colors.green.b : r.bruto < 0 ? colors.red.b : colors.dark.b);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(fmt(r.bruto), x + cBruto - 2, y + 4, { align: 'right' }); x += cBruto;
+      pdf.text(fmt(r.bruto), x + cBruto - 4, y + 4, { align: 'right' }); x += cBruto;
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      pdf.text(String(r.count), x + cCount - 2, y + 4, { align: 'right' });
+      pdf.text(String(r.count), x + cCount - 4, y + 4, { align: 'right' });
 
-      // Rij scheiding
+      // Zeer dunne rij scheiding
       pdf.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
       pdf.setLineWidth(0.1);
       pdf.line(marginL, y + 6, pageWidth - marginR, y + 6);
@@ -524,66 +546,87 @@ export const generateBtwPDF = (
       idx++;
     }
 
-    // Groep subtotaal
-    checkBreak(7);
-    pdf.setFillColor(colors.catBg.r, colors.catBg.g, colors.catBg.b);
-    pdf.rect(marginL, y, contentWidth, 6.5, 'F');
-    pdf.setFontSize(7.5);
+    // Groep subtotaal — dunne lijn + bold text, geen fill
+    checkBreak(8);
+    y += 1;
+    pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+    pdf.setLineWidth(0.4);
+    pdf.line(marginL, y, pageWidth - marginR, y);
+    y += 3;
+    pdf.setFontSize(8.5);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(colors.catText.r, colors.catText.g, colors.catText.b);
+    pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
     let sx = marginL + 2;
-    pdf.text(`Subtotaal`, sx, y + 4.5); sx += cCode + cName;
+    pdf.text(`Subtotaal`, sx, y + 3); sx += cCode + cName;
     if (groep.key !== '?') {
-      pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
-      pdf.text(fmt(grpNetto), sx + cNetto - 2, y + 4.5, { align: 'right' });
+      pdf.text(fmt(grpNetto), sx + cNetto - 4, y + 3, { align: 'right' });
     } else {
       pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      pdf.text('—', sx + cNetto - 2, y + 4.5, { align: 'right' });
+      pdf.text('—', sx + cNetto - 4, y + 3, { align: 'right' });
+      pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
     }
     sx += cNetto;
     if (groep.key !== '?' && grpBtw !== 0) {
       pdf.setTextColor(grpBtw > 0 ? colors.red.r : colors.green.r, grpBtw > 0 ? colors.red.g : colors.green.g, grpBtw > 0 ? colors.red.b : colors.green.b);
-      pdf.text(fmt(grpBtw), sx + cBtwBedrag - 2, y + 4.5, { align: 'right' });
+      pdf.text(fmt(grpBtw), sx + cBtwBedrag - 4, y + 3, { align: 'right' });
     } else {
       pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      pdf.text('—', sx + cBtwBedrag - 2, y + 4.5, { align: 'right' });
+      pdf.text('—', sx + cBtwBedrag - 4, y + 3, { align: 'right' });
     }
     sx += cBtwBedrag;
     pdf.setTextColor(grpBruto > 0 ? colors.green.r : grpBruto < 0 ? colors.red.r : colors.dark.r, grpBruto > 0 ? colors.green.g : grpBruto < 0 ? colors.red.g : colors.dark.g, grpBruto > 0 ? colors.green.b : grpBruto < 0 ? colors.red.b : colors.dark.b);
-    pdf.text(fmt(grpBruto), sx + cBruto - 2, y + 4.5, { align: 'right' }); sx += cBruto;
+    pdf.text(fmt(grpBruto), sx + cBruto - 4, y + 3, { align: 'right' }); sx += cBruto;
     pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-    pdf.text(String(grpCount), sx + cCount - 2, y + 4.5, { align: 'right' });
-    y += 6.5;
-    y += 3;
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(String(grpCount), sx + cCount - 4, y + 3, { align: 'right' });
+    y += 6;
+    y += 4;
   }
 
-  // Totaal regel
-  checkBreak(8);
-  pdf.setFillColor(colors.headerBg.r, colors.headerBg.g, colors.headerBg.b);
-  pdf.rect(marginL, y, contentWidth, 7, 'F');
-  pdf.setFontSize(8);
+  // Grand total — dikke bronze lijn + bold, geen fill
+  checkBreak(12);
+  y += 2;
+  pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+  pdf.setLineWidth(1.2);
+  pdf.line(marginL, y, pageWidth - marginR, y);
+  y += 5;
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(colors.white.r, colors.white.g, colors.white.b);
+  pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
   let tx = marginL + 2;
-  pdf.text('TOTAAL', tx, y + 4.8); tx += cCode + cName;
-  pdf.text(fmt(rows.reduce((s, r) => s + (r.isUncat ? 0 : r.netto), 0)), tx + cNetto - 2, y + 4.8, { align: 'right' }); tx += cNetto;
-  pdf.text(fmt(rows.reduce((s, r) => s + (r.isUncat ? 0 : r.btw), 0)), tx + cBtwBedrag - 2, y + 4.8, { align: 'right' }); tx += cBtwBedrag;
-  pdf.text(fmt(rows.reduce((s, r) => s + r.bruto, 0)), tx + cBruto - 2, y + 4.8, { align: 'right' }); tx += cBruto;
-  pdf.text(String(rows.reduce((s, r) => s + r.count, 0)), tx + cCount - 2, y + 4.8, { align: 'right' });
-  y += 11;
+  pdf.text('TOTAAL', tx, y); tx += cCode + cName;
+  pdf.text(fmt(rows.reduce((s, r) => s + (r.isUncat ? 0 : r.netto), 0)), tx + cNetto - 4, y, { align: 'right' }); tx += cNetto;
+  const totalBtw = rows.reduce((s, r) => s + (r.isUncat ? 0 : r.btw), 0);
+  pdf.setTextColor(totalBtw > 0 ? colors.red.r : totalBtw < 0 ? colors.green.r : colors.dark.r, totalBtw > 0 ? colors.red.g : totalBtw < 0 ? colors.green.g : colors.dark.g, totalBtw > 0 ? colors.red.b : totalBtw < 0 ? colors.green.b : colors.dark.b);
+  pdf.text(fmt(totalBtw), tx + cBtwBedrag - 4, y, { align: 'right' }); tx += cBtwBedrag;
+  pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
+  pdf.text(fmt(rows.reduce((s, r) => s + r.bruto, 0)), tx + cBruto - 4, y, { align: 'right' }); tx += cBruto;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
+  pdf.text(String(rows.reduce((s, r) => s + r.count, 0)), tx + cCount - 4, y, { align: 'right' });
+  y += 2;
+  pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+  pdf.setLineWidth(0.3);
+  pdf.line(marginL, y, pageWidth - marginR, y);
+  y += 8;
 
   // --- Transacties overzicht (per maand gegroepeerd) ---
   if (transactions.length > 0) {
     checkBreak(25);
+    y += 4;
     pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
-    pdf.setLineWidth(0.5);
-    pdf.line(marginL, y, pageWidth - marginR, y);
-    y += 7;
+    pdf.setLineWidth(0.8);
+    pdf.line(marginL, y, marginL + 40, y);
+    y += 4;
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
-    pdf.text(`Transactiedetails (${transactions.length})`, marginL, y);
-    y += 7;
+    pdf.text(`TRANSACTIEDETAILS`, marginL, y);
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
+    pdf.text(`${transactions.length} transactie${transactions.length !== 1 ? 's' : ''}`, marginL + 55, y);
+    y += 5;
 
     // Kolommen transacties — schoner, minder cramped
     const tDate = 18;
@@ -594,19 +637,21 @@ export const generateBtwPDF = (
     const tDesc = contentWidth - tDate - tBen - tGb - tBtw - tBruto;
 
     const drawTxHeaders = () => {
-      pdf.setFillColor(colors.headerBg.r, colors.headerBg.g, colors.headerBg.b);
-      pdf.rect(marginL, y, contentWidth, 7, 'F');
       pdf.setFontSize(7.5);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(colors.white.r, colors.white.g, colors.white.b);
+      pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
       let x = marginL + 2;
-      pdf.text('Datum', x, y + 4.8); x += tDate;
-      pdf.text('Begunstigde', x, y + 4.8); x += tBen;
-      pdf.text('Omschrijving / factuur', x, y + 4.8); x += tDesc;
-      pdf.text('GB', x, y + 4.8); x += tGb;
-      pdf.text('BTW%', x, y + 4.8); x += tBtw;
-      pdf.text('Bedrag', x + tBruto - 2, y + 4.8, { align: 'right' });
-      y += 7;
+      pdf.text('DATUM', x, y + 4); x += tDate;
+      pdf.text('BEGUNSTIGDE', x, y + 4); x += tBen;
+      pdf.text('OMSCHRIJVING / FACTUUR', x, y + 4); x += tDesc;
+      pdf.text('GB', x, y + 4); x += tGb;
+      pdf.text('BTW%', x, y + 4); x += tBtw;
+      pdf.text('BEDRAG', x + tBruto - 4, y + 4, { align: 'right' });
+      y += 6;
+      pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+      pdf.setLineWidth(0.6);
+      pdf.line(marginL, y, pageWidth - marginR, y);
+      y += 3;
     };
 
     drawTxHeaders();
@@ -631,28 +676,30 @@ export const generateBtwPDF = (
 
     let tIdx = 0;
     for (const [maandKey, maandTxs] of maandGroepen) {
-      // Maand header
-      checkBreak(12);
-      y += 2;
+      // Maand header — minimalistisch: bronze lijn + uppercase titel
+      checkBreak(14);
+      y += 4;
+      pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+      pdf.setLineWidth(0.8);
+      pdf.line(marginL, y, marginL + 40, y);
+      y += 4;
       const maandLabel = maandKey !== 'onbekend'
         ? new Date(maandKey + '-01').toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' })
         : 'Onbekende datum';
       const maandBruto = maandTxs.reduce((s, t) => s + t.amount, 0);
 
-      pdf.setFillColor(colors.catBg.r, colors.catBg.g, colors.catBg.b);
-      pdf.rect(marginL, y, contentWidth, 6, 'F');
-      pdf.setFontSize(8.5);
+      pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(colors.catText.r, colors.catText.g, colors.catText.b);
-      pdf.text(maandLabel.charAt(0).toUpperCase() + maandLabel.slice(1), marginL + 2, y + 4.2);
-      pdf.setFontSize(7.5);
+      pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
+      pdf.text(maandLabel.toUpperCase(), marginL, y);
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-      pdf.text(`${maandTxs.length} transacties`, marginL + 65, y + 4.2);
+      pdf.text(`${maandTxs.length} transactie${maandTxs.length !== 1 ? 's' : ''}`, marginL + 70, y);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(maandBruto >= 0 ? colors.green.r : colors.red.r, maandBruto >= 0 ? colors.green.g : colors.red.g, maandBruto >= 0 ? colors.green.b : colors.red.b);
-      pdf.text(fmt(maandBruto), pageWidth - marginR - 2, y + 4.2, { align: 'right' });
-      y += 6;
+      pdf.text(fmt(maandBruto), pageWidth - marginR, y, { align: 'right' });
+      y += 4;
 
       for (const t of maandTxs) {
         checkBreak(6);
@@ -660,18 +707,15 @@ export const generateBtwPDF = (
 
         const { btw, pct } = deriveBtw(t);
         const isUncat = !t.grootboekrekening;
-        const btwLabel = isUncat ? '?' : btw > 0 ? `${pct}%` : '0%';
+        const btwLabel = isUncat ? '—' : btw > 0 ? `${pct}%` : '0%';
 
+        // Alleen voor uncat subtiele highlight
         if (isUncat) {
           pdf.setFillColor(colors.amberBg.r, colors.amberBg.g, colors.amberBg.b);
-        } else if (tIdx % 2 === 0) {
-          pdf.setFillColor(colors.light.r, colors.light.g, colors.light.b);
-        } else {
-          pdf.setFillColor(colors.white.r, colors.white.g, colors.white.b);
+          pdf.rect(marginL, y, contentWidth, 5.5, 'F');
         }
-        pdf.rect(marginL, y, contentWidth, 5.5, 'F');
 
-        pdf.setFontSize(7.5);
+        pdf.setFontSize(8);
         pdf.setFont('helvetica', 'normal');
         let x = marginL + 2;
 
@@ -685,12 +729,12 @@ export const generateBtwPDF = (
 
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
-        const descText = t.matchedInvoiceNumber || t.description?.substring(0, 50) || '-';
+        const descText = t.matchedInvoiceNumber || t.description?.substring(0, 60) || '-';
         const descTrunc = pdf.splitTextToSize(descText, tDesc - 2)[0];
         pdf.text(descTrunc, x, y + 3.8); x += tDesc;
 
         if (t.grootboekrekening) {
-          pdf.setTextColor(colors.blue.r, colors.blue.g, colors.blue.b);
+          pdf.setTextColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
           pdf.setFont('helvetica', 'bold');
           pdf.text(t.grootboekrekening, x, y + 3.8);
         } else {
@@ -705,10 +749,10 @@ export const generateBtwPDF = (
 
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(t.amount >= 0 ? colors.green.r : colors.red.r, t.amount >= 0 ? colors.green.g : colors.red.g, t.amount >= 0 ? colors.green.b : colors.red.b);
-        pdf.text(fmt(t.amount), x + tBruto - 2, y + 3.8, { align: 'right' });
+        pdf.text(fmt(t.amount), x + tBruto - 4, y + 3.8, { align: 'right' });
         pdf.setFont('helvetica', 'normal');
 
-        // Rij scheidingslijn
+        // Dunne rij scheidingslijn
         pdf.setDrawColor(colors.border.r, colors.border.g, colors.border.b);
         pdf.setLineWidth(0.1);
         pdf.line(marginL, y + 5.5, pageWidth - marginR, y + 5.5);
@@ -717,20 +761,34 @@ export const generateBtwPDF = (
         tIdx++;
       }
 
-      y += 3;
+      y += 4;
     }
 
-    // Grand totaal transacties
-    checkBreak(8);
+    // Grand totaal transacties — dikke bronze lijn, bold
+    checkBreak(12);
+    y += 2;
     const totalBruto = transactions.reduce((s, t) => s + t.amount, 0);
-    pdf.setFillColor(colors.headerBg.r, colors.headerBg.g, colors.headerBg.b);
-    pdf.rect(marginL, y, contentWidth, 7, 'F');
-    pdf.setFontSize(8);
+    pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+    pdf.setLineWidth(1.2);
+    pdf.line(marginL, y, pageWidth - marginR, y);
+    y += 5;
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(colors.white.r, colors.white.g, colors.white.b);
-    pdf.text(`TOTAAL (${transactions.length} transacties)`, marginL + 2, y + 4.8);
-    pdf.text(fmt(totalBruto), pageWidth - marginR - 2, y + 4.8, { align: 'right' });
-    y += 11;
+    pdf.setTextColor(colors.dark.r, colors.dark.g, colors.dark.b);
+    pdf.text(`TOTAAL`, marginL + 2, y);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(colors.mid.r, colors.mid.g, colors.mid.b);
+    pdf.setFontSize(8);
+    pdf.text(`${transactions.length} transactie${transactions.length !== 1 ? 's' : ''}`, marginL + 25, y);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(totalBruto >= 0 ? colors.green.r : colors.red.r, totalBruto >= 0 ? colors.green.g : colors.red.g, totalBruto >= 0 ? colors.green.b : colors.red.b);
+    pdf.text(fmt(totalBruto), pageWidth - marginR - 2, y, { align: 'right' });
+    y += 2;
+    pdf.setDrawColor(colors.bronze.r, colors.bronze.g, colors.bronze.b);
+    pdf.setLineWidth(0.3);
+    pdf.line(marginL, y, pageWidth - marginR, y);
+    y += 8;
   }
 
   addFooter();
