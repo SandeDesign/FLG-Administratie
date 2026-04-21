@@ -56,6 +56,14 @@ export interface IncomingInvoice {
 const COLLECTION_NAME = 'incomingInvoices';
 const ARCHIVE_COLLECTION_NAME = 'invoiceArchives';
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const isQuotaError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return msg.includes('429') || msg.includes('quota') || msg.includes('resource-exhausted') || msg.includes('too-many-requests');
+};
+
 /**
  * Generate a unique reference number for incoming invoices
  * Format: INK-YYYY-####
@@ -64,31 +72,43 @@ export async function generateIncomingInvoiceReference(companyId: string): Promi
   const year = new Date().getFullYear();
   const counterRef = doc(db, 'companies', companyId, 'counters', 'incomingInvoices');
 
-  return await runTransaction(db, async (transaction) => {
-    const counterDoc = await transaction.get(counterRef);
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      return await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterRef);
 
-    let currentNumber = 1;
-    let currentYear = year;
+        let currentNumber = 1;
+        let currentYear = year;
 
-    if (counterDoc.exists()) {
-      const data = counterDoc.data();
-      currentYear = data.year || year;
-      currentNumber = data.number || 1;
+        if (counterDoc.exists()) {
+          const data = counterDoc.data();
+          currentYear = data.year || year;
+          currentNumber = data.number || 1;
 
-      if (currentYear !== year) {
-        currentYear = year;
-        currentNumber = 1;
+          if (currentYear !== year) {
+            currentYear = year;
+            currentNumber = 1;
+          }
+        }
+
+        transaction.set(counterRef, {
+          year: currentYear,
+          number: currentNumber + 1,
+          lastUpdated: Timestamp.now()
+        });
+
+        return `INK-${year}-${String(currentNumber).padStart(4, '0')}`;
+      });
+    } catch (error) {
+      if (isQuotaError(error) && attempt < 4) {
+        await sleep(Math.pow(2, attempt) * 1000);
+        continue;
       }
+      throw error;
     }
-
-    transaction.set(counterRef, {
-      year: currentYear,
-      number: currentNumber + 1,
-      lastUpdated: Timestamp.now()
-    });
-
-    return `INK-${year}-${String(currentNumber).padStart(4, '0')}`;
-  });
+  }
+  // Fallback: timestamp-based reference to avoid blocking the upload
+  return `INK-${year}-T${Date.now().toString().slice(-6)}`;
 }
 
 /**

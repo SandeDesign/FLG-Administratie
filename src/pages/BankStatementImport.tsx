@@ -79,6 +79,7 @@ const BankStatementImport: React.FC = () => {
   const [linkingTransaction, setLinkingTransaction] = useState<MatchResult | null>(null);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [invoiceSearchTerm, setInvoiceSearchTerm] = useState('');
+  const [showAlreadyLinked, setShowAlreadyLinked] = useState(false);
 
   const [outgoingInvoices, setOutgoingInvoices] = useState<OutgoingInvoice[]>([]);
   const [incomingInvoices, setIncomingInvoices] = useState<IncomingInvoice[]>([]);
@@ -1705,6 +1706,7 @@ const BankStatementImport: React.FC = () => {
             setShowLinkModal(false);
             setLinkingTransaction(null);
             setInvoiceSearchTerm('');
+            setShowAlreadyLinked(false);
           }}
           title="Koppel aan factuur"
           size="lg"
@@ -1737,9 +1739,20 @@ const BankStatementImport: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Zoek factuur
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Zoek factuur
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={showAlreadyLinked}
+                    onChange={(e) => setShowAlreadyLinked(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded accent-amber-500"
+                  />
+                  Toon al gekoppeld
+                </label>
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -1755,11 +1768,17 @@ const BankStatementImport: React.FC = () => {
             <div className="max-h-96 overflow-y-auto space-y-4">
               {/* Inkomende facturen (inkoop) — primair voor uitgaande betalingen */}
               {(() => {
+                const linkedIds = new Set(
+                  Array.from(importTransactions.values()).flat()
+                    .filter(t => t.matchedInvoiceId)
+                    .map(t => t.matchedInvoiceId!)
+                );
                 const filtered = incomingInvoices.filter(
                   (inv) =>
-                    !invoiceSearchTerm ||
-                    inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
-                    inv.supplierName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
+                    (showAlreadyLinked || !linkedIds.has(inv.id || '')) &&
+                    (!invoiceSearchTerm ||
+                      inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
+                      inv.supplierName.toLowerCase().includes(invoiceSearchTerm.toLowerCase()))
                 );
                 if (filtered.length === 0) return null;
                 return (
@@ -1822,11 +1841,17 @@ const BankStatementImport: React.FC = () => {
 
               {/* Uitgaande facturen (verkoop) — primair voor inkomende betalingen */}
               {(() => {
+                const linkedIds = new Set(
+                  Array.from(importTransactions.values()).flat()
+                    .filter(t => t.matchedInvoiceId)
+                    .map(t => t.matchedInvoiceId!)
+                );
                 const filtered = outgoingInvoices.filter(
                   (inv) =>
-                    !invoiceSearchTerm ||
-                    inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
-                    inv.clientName.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
+                    (showAlreadyLinked || !linkedIds.has(inv.id || '')) &&
+                    (!invoiceSearchTerm ||
+                      inv.invoiceNumber.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
+                      inv.clientName.toLowerCase().includes(invoiceSearchTerm.toLowerCase()))
                 );
                 if (filtered.length === 0) return null;
                 return (
