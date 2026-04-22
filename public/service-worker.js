@@ -79,7 +79,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ─── App shell caching (bestaande gedrag) ───────────────────────────────────
-const CACHE_NAME = 'flg-admin-v2.2.0';
+const CACHE_NAME = 'flg-admin-v2.2.1';
 const urlsToCache = ['/', '/Logo.png', '/manifest.json', '/index.html'];
 
 self.addEventListener('install', (event) => {
