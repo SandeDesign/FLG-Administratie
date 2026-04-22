@@ -125,13 +125,13 @@ const BankStatementImport: React.FC = () => {
     }
   };
 
-  if (userRole !== 'admin') {
+  if (userRole !== 'admin' && userRole !== 'boekhouder') {
     return (
       <div className="p-6">
         <EmptyState
           icon={Shield}
           title="Geen toegang"
-          description="Alleen administrators kunnen bankafschriften importeren"
+          description="Alleen administrators en boekhouders kunnen bankafschriften importeren"
         />
       </div>
     );

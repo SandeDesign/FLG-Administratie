@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { Company, Employee, Branch, DashboardStats } from '../types';
-import { getCompanies, getEmployees, getBranches, getPendingLeaveApprovals, getUserSettings, getUserRole, getCompanyById } from '../services/firebase';
+import { getCompanies, getEmployees, getBranches, getPendingLeaveApprovals, getUserSettings, getUserRole, getCompanyById, syncBoekhouderAssignments } from '../services/firebase';
 import { getPendingExpenses } from '../services/firebase';
 import { getPayrollCalculations } from '../services/payrollService';
 import { getPendingTimesheets } from '../services/timesheetService';
@@ -192,6 +192,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.error('Error loading manager company:', error);
           companiesData = [];
         }
+      } else if (userRole === 'boekhouder') {
+        // ✅ BOEKHOUDER: Laad companies van ALLE toegewezen admins
+        try {
+          const assignedAdminIds = await syncBoekhouderAssignments(
+            user.email || '',
+            user.uid
+          );
+          console.log('Boekhouder assigned admins:', assignedAdminIds);
+
+          if (assignedAdminIds.length === 0) {
+            console.warn('Boekhouder has no assigned admins yet.');
+            companiesData = [];
+            employeesData = [];
+            branchesData = [];
+          } else {
+            const companyResults = await Promise.all(
+              assignedAdminIds.map(id => getCompanies(id).catch(() => []))
+            );
+            companiesData = companyResults.flat();
+
+            // Employees en branches worden per geselecteerd bedrijf geladen in de pagina's
+            // Boekhouder hoeft niet globaal alle medewerkers te zien
+            employeesData = [];
+            branchesData = [];
+          }
+
+          // queryUserId wordt dynamisch bepaald in pagina's obv selectedCompany.userId
+          setQueryUserId(null);
+        } catch (error) {
+          console.error('Error loading boekhouder data:', error);
+          companiesData = [];
+        }
       } else {
         // ✅ ADMIN/EMPLOYEE: Load all companies
         const [companies, employees, branches] = await Promise.all([
@@ -304,12 +336,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Main useEffect - ONLY depends on auth values - runs ONCE on login
   useEffect(() => {
-    if (user && adminUserId && (userRole === 'admin' || userRole === 'employee' || userRole === 'manager')) {
+    if (user && adminUserId && (userRole === 'admin' || userRole === 'employee' || userRole === 'manager' || userRole === 'boekhouder')) {
       loadData();
     } else {
       setLoading(false);
     }
   }, [user?.uid, adminUserId, userRole]);
+
+  // Boekhouder: wanneer een bedrijf geselecteerd wordt, zet queryUserId op de eigenaar
+  // van dat bedrijf zodat alle pagina's data laden uit de juiste admin namespace.
+  useEffect(() => {
+    if (userRole === 'boekhouder' && selectedCompany?.userId) {
+      setQueryUserId(selectedCompany.userId);
+    }
+  }, [userRole, selectedCompany?.userId]);
 
   // ✅ REFRESH ONLY recalculates dashboard stats WITHOUT reloading data or changing company
   const refreshDashboardStats = useCallback(async () => {

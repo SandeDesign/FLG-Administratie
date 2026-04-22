@@ -39,13 +39,18 @@ import { supplierService } from '../services/supplierService';
 
 const IncomingInvoicesStats: React.FC = () => {
   const { user, adminUserId, userRole } = useAuth();
-  const { selectedCompany, selectedYear, selectedQuarter } = useApp();
+  const { selectedCompany, selectedYear, selectedQuarter, queryUserId } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('Inkoopbonnen');
 
   // ✅ Role-based permissions
   const isAdmin = userRole === 'admin';
   const isManager = userRole === 'manager';
+  const isBoekhouder = userRole === 'boekhouder';
+  // Boekhouder leest alleen mee (geen mutaties)
+  const canEdit = isAdmin || isManager;
+  // Data-queries moeten altijd onder de admin-namespace gebeuren
+  const dataUserId = queryUserId || selectedCompany?.userId || adminUserId;
 
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +69,7 @@ const IncomingInvoicesStats: React.FC = () => {
 
   // Load Invoices from Firestore
   const loadInvoices = useCallback(async () => {
-    if (!user || !adminUserId || !selectedCompany) {
+    if (!user || !dataUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -72,7 +77,7 @@ const IncomingInvoicesStats: React.FC = () => {
     try {
       setLoading(true);
       const data = await incomingInvoiceService.getInvoices(
-        adminUserId,
+        dataUserId,
         selectedCompany.id
       );
       setInvoices(data);
@@ -82,7 +87,7 @@ const IncomingInvoicesStats: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedCompany, showError]);
+  }, [user, dataUserId, selectedCompany, showError]);
 
   useEffect(() => {
     loadInvoices();

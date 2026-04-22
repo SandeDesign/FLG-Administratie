@@ -405,6 +405,16 @@ export interface UserSettings {
   defaultCompanyId?: string;  // Default bedrijf dat wordt geladen
   favoritePages?: { [companyId: string]: string[] };  // Favorieten per bedrijf
   bottomNavItems?: { [companyId: string]: BottomNavItem[] };  // Custom bottom nav iconen per bedrijf (3 items)
+  // ✅ Co-admin mechanisme
+  primaryAdminUserId?: string;
+  primaryAdminEmail?: string;
+  coAdminEmails?: string[];
+  // ✅ Boekhouder mechanisme
+  // Op admin user: lijst van boekhouder-emails die toegang hebben tot zijn bedrijven
+  boekhouderEmails?: string[];
+  // Op boekhouder user: UID's van admins die hem toegang gegeven hebben
+  assignedAdminUserIds?: string[];
+  visibleCompanyIds?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -557,8 +567,14 @@ export interface CAO {
 export interface UserRole {
   id: string;
   uid: string;
-  role: 'admin' | 'employee';
+  role: 'admin' | 'co-admin' | 'manager' | 'boekhouder' | 'employee';
   employeeId?: string;
+  assignedCompanyId?: string;
+  /**
+   * Voor boekhouder: lijst van admin UID's waarvan de boekhouder financiële data mag inzien.
+   * Wordt onderhouden door iedere admin die de boekhouder toegang geeft via Settings.
+   */
+  assignedAdminUserIds?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

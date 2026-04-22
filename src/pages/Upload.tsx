@@ -20,9 +20,9 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { key: 'facturen', label: 'Inkomende Facturen', icon: UploadIcon, roles: ['admin', 'manager'] },
-  { key: 'post',     label: 'Inkomende Post',     icon: Mail,       roles: ['admin', 'co-admin'] },
-  { key: 'verkoop',  label: 'Uitgaande Facturen', icon: Send,       roles: ['admin', 'manager'] },
+  { key: 'facturen', label: 'Inkomende Facturen', icon: UploadIcon, roles: ['admin', 'manager', 'boekhouder'] },
+  { key: 'post',     label: 'Inkomende Post',     icon: Mail,       roles: ['admin', 'co-admin', 'boekhouder'] },
+  { key: 'verkoop',  label: 'Uitgaande Facturen', icon: Send,       roles: ['admin', 'manager', 'boekhouder'] },
 ];
 
 const Upload: React.FC = () => {

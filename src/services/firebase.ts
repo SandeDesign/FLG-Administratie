@@ -1314,6 +1314,68 @@ export const canUserManageCompany = async (userId: string, companyId: string): P
   }
 };
 
+/**
+ * Boekhouder mechanisme:
+ * - Admin houdt lijst `boekhouderEmails` bij in zijn userSettings.
+ * - Iedere boekhouder heeft `assignedAdminUserIds` in zijn eigen userSettings
+ *   (plus op het users-doc zelf voor queries).
+ *
+ * `getAssignedAdminsForBoekhouder` leest de admin UID's uit userSettings.
+ */
+export const getAssignedAdminsForBoekhouder = async (
+  boekhouderEmail: string,
+  boekhouderUid: string
+): Promise<string[]> => {
+  try {
+    const ids = new Set<string>();
+
+    // 1. Directe lookup: userSettings van boekhouder
+    const selfSnap = await getDocs(
+      query(collection(db, 'userSettings'), where('userId', '==', boekhouderUid))
+    );
+    selfSnap.docs.forEach(d => {
+      const assigned = d.data().assignedAdminUserIds as string[] | undefined;
+      if (Array.isArray(assigned)) assigned.forEach(id => id && ids.add(id));
+    });
+
+    // 2. Fallback / sync: zoek alle admins die deze boekhouder-email gelinkt hebben
+    if (boekhouderEmail) {
+      const linked = await getDocs(
+        query(collection(db, 'userSettings'), where('boekhouderEmails', 'array-contains', boekhouderEmail))
+      );
+      linked.docs.forEach(d => {
+        const adminId = d.data().userId as string | undefined;
+        if (adminId) ids.add(adminId);
+      });
+    }
+
+    return Array.from(ids);
+  } catch (error) {
+    console.error('Error loading assigned admins for boekhouder:', error);
+    return [];
+  }
+};
+
+/**
+ * Synchroniseer `assignedAdminUserIds` in userSettings van de boekhouder
+ * met de admins die hem daadwerkelijk in `boekhouderEmails` hebben staan.
+ * Idempotent: safe to call op iedere login van een boekhouder.
+ */
+export const syncBoekhouderAssignments = async (
+  boekhouderEmail: string,
+  boekhouderUid: string
+): Promise<string[]> => {
+  const adminIds = await getAssignedAdminsForBoekhouder(boekhouderEmail, boekhouderUid);
+
+  try {
+    await saveUserSettings(boekhouderUid, { assignedAdminUserIds: adminIds });
+  } catch (error) {
+    console.error('Error syncing boekhouder userSettings:', error);
+  }
+
+  return adminIds;
+};
+
 // Get primary admin UID for a co-admin email
 export const getPrimaryAdminForCoAdmin = async (coAdminEmail: string): Promise<string | null> => {
   try {

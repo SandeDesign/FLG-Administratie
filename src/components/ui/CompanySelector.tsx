@@ -7,8 +7,8 @@ export const CompanySelector: React.FC = () => {
   const { companies, selectedCompany, setSelectedCompany } = useApp();
   const { userRole } = useAuth();
 
-  // Only show for admin and manager
-  if (!userRole || !['admin', 'manager'].includes(userRole) || !companies || companies.length === 0) {
+  // Only show for admin, manager en boekhouder
+  if (!userRole || !['admin', 'manager', 'boekhouder'].includes(userRole) || !companies || companies.length === 0) {
     return null;
   }
 

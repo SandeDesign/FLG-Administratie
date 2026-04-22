@@ -66,6 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else if (roleData?.role === 'manager') {
             // Manager gets their own UID so they can load their assigned company
             setAdminUserId(user.uid);
+          } else if (roleData?.role === 'boekhouder') {
+            // Boekhouder: eigen UID — AppContext laadt companies van alle toegewezen admins
+            setAdminUserId(user.uid);
           } else if (roleData?.role === 'employee' && roleData?.employeeId) {
             const employeeDoc = await getEmployeeById(roleData.employeeId);
             if (employeeDoc) {

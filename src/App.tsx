@@ -39,6 +39,7 @@ import HoldingStatistics from './pages/HoldingStatistics';
 // ✅ NEW ADMIN PAGES
 import AdminDashboard from './pages/AdminDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
+import BoekhouderDashboard from './pages/BoekhouderDashboard';
 import AdminExpenses from './pages/AdminExpenses';
 import AdminUsers from './pages/AdminUsers';
 import AdminRoles from './pages/AdminRoles';
@@ -214,6 +215,40 @@ function App() {
 
                           {/* Manager systeem */}
                           <Route path="tasks" element={<Tasks />} />
+                          <Route path="settings" element={<Settings />} />
+
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </Layout>
+                    }
+                  />
+                )}
+
+                {/* ✅ BOEKHOUDER ROUTES */}
+                {userRole === 'boekhouder' && (
+                  <Route
+                    path="/*"
+                    element={
+                      <Layout>
+                        <Routes>
+                          <Route index element={<BoekhouderDashboard />} />
+
+                          {/* Financieel (read-only voor verkoop/inkoop, volledig voor grootboek/btw) */}
+                          <Route path="invoice-relations" element={<InvoiceRelations />} />
+                          <Route path="budgeting" element={<Budgeting />} />
+                          <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
+                          <Route path="incoming-invoices-stats" element={<IncomingInvoicesStats />} />
+                          <Route path="bank-statement-import" element={<BankStatementImport />} />
+                          <Route path="grootboekrekeningen" element={<Grootboekrekeningen />} />
+                          <Route path="btw-overzicht" element={<BtwOverzicht />} />
+                          <Route path="admin-expenses" element={<AdminExpenses />} />
+
+                          {/* Uploads voor alle 3 de tabs */}
+                          <Route path="upload" element={<Upload />} />
+                          <Route path="incoming-invoices" element={<Navigate to="/upload?tab=facturen" replace />} />
+                          <Route path="incoming-post" element={<Navigate to="/upload?tab=post" replace />} />
+
+                          {/* Instellingen */}
                           <Route path="settings" element={<Settings />} />
 
                           <Route path="*" element={<NotFound />} />

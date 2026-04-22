@@ -77,7 +77,7 @@ function sortByDate(a: BankTransaction, b: BankTransaction): number {
 
 const BtwOverzicht: React.FC = () => {
   const { userRole, user } = useAuth();
-  const { selectedCompany, selectedYear, selectedQuarter } = useApp();
+  const { selectedCompany, selectedYear, selectedQuarter, queryUserId } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('BTW Overzicht');
 
@@ -91,13 +91,15 @@ const BtwOverzicht: React.FC = () => {
 
   const loadData = useCallback(async () => {
     if (!selectedCompany || !user) return;
+    // Boekhouder gebruikt company.userId (eigenaar admin), admin zijn eigen uid
+    const effectiveUserId = queryUserId || selectedCompany.userId || user.uid;
     try {
       setLoading(true);
       const [confirmed, gb, outInv, inInv] = await Promise.all([
         bankImportService.getTransactionsByStatus(selectedCompany.id, 'confirmed'),
         supplierService.getGrootboekrekeningen(selectedCompany.id),
-        outgoingInvoiceService.getInvoices(user.uid, selectedCompany.id),
-        incomingInvoiceService.getInvoices(user.uid, selectedCompany.id),
+        outgoingInvoiceService.getInvoices(effectiveUserId, selectedCompany.id),
+        incomingInvoiceService.getInvoices(effectiveUserId, selectedCompany.id),
       ]);
       setTransactions(confirmed);
       setGrootboekrekeningen(gb);
@@ -108,16 +110,16 @@ const BtwOverzicht: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedCompany, user]);
+  }, [selectedCompany, user, queryUserId]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  if (userRole !== 'admin') {
+  if (userRole !== 'admin' && userRole !== 'boekhouder') {
     return (
       <div className="p-4 sm:p-6">
-        <EmptyState icon={Shield} title="Geen toegang" description="Alleen administrators kunnen het BTW overzicht bekijken" />
+        <EmptyState icon={Shield} title="Geen toegang" description="Alleen administrators en boekhouders kunnen het BTW overzicht bekijken" />
       </div>
     );
   }

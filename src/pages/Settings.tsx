@@ -154,7 +154,7 @@ const Settings: React.FC = () => {
   const { success, error: showError } = useToast();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
   usePageTitle('Instellingen');
-  const [activeTab, setActiveTab] = useState<'account' | 'visibility' | 'default-company' | 'year-filter' | 'invoice' | 'co-admins' | 'favorites' | 'mobile-nav'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'visibility' | 'default-company' | 'year-filter' | 'invoice' | 'co-admins' | 'boekhouders' | 'favorites' | 'mobile-nav'>('account');
   const [loading, setLoading] = useState(false);
   const [selectedDefaultCompanyId, setSelectedDefaultCompanyId] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -170,6 +170,10 @@ const Settings: React.FC = () => {
   // Co-admin state
   const [coAdminEmail, setCoAdminEmail] = useState('');
   const [coAdmins, setCoAdmins] = useState<string[]>([]);
+
+  // Boekhouder state
+  const [boekhouderEmail, setBoekhouderEmail] = useState('');
+  const [boekhouders, setBoekhouders] = useState<string[]>([]);
 
   // Favorites state - nu per bedrijf
   const [favoritePages, setFavoritePages] = useState<string[]>([]);
@@ -207,6 +211,7 @@ const Settings: React.FC = () => {
       console.log('Loading settings:', settings);
       setSelectedDefaultCompanyId(settings?.defaultCompanyId || '');
       setCoAdmins(settings?.coAdminEmails || []);
+      setBoekhouders(settings?.boekhouderEmails || []);
 
       // Ensure favoritePages is an object, not an array
       const favoritePages = settings?.favoritePages;
@@ -346,6 +351,84 @@ const Settings: React.FC = () => {
     } catch (error) {
       console.error('Error removing co-admin:', error);
       showError('Fout bij verwijderen', 'Kon co-admin niet verwijderen');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddBoekhouder = async () => {
+    if (!user || !boekhouderEmail) return;
+
+    if (!boekhouderEmail.includes('@')) {
+      showError('Ongeldig e-mailadres', 'Voer een geldig e-mailadres in');
+      return;
+    }
+
+    if (boekhouders.includes(boekhouderEmail)) {
+      showError('Al toegevoegd', 'Deze boekhouder heeft al toegang');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      // Probeer een Firebase account aan te maken (bestaand account → alleen linken)
+      const result = await createFirebaseUser(boekhouderEmail, 'DeInstallatie1234!!');
+      if (!result.success) {
+        showError('Account aanmaken mislukt', result.error || 'Kon Firebase account niet aanmaken');
+        return;
+      }
+
+      if (result.alreadyExists) {
+        success('Account bestaat al', `${boekhouderEmail} heeft al een bestaand account`);
+      } else if (result.uid) {
+        // Nieuw account: maak user role aan als boekhouder
+        try {
+          await addDoc(collection(db, 'users'), {
+            uid: result.uid,
+            role: 'boekhouder',
+            email: boekhouderEmail,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+          });
+          // Initiële userSettings met deze admin in assignedAdminUserIds
+          await saveUserSettings(result.uid, {
+            email: boekhouderEmail,
+            assignedAdminUserIds: [user.uid],
+          });
+        } catch (firestoreError) {
+          console.error('Error creating boekhouder documents:', firestoreError);
+          showError('Waarschuwing', 'Account aangemaakt maar kon profiel niet initialiseren');
+        }
+        success('Account aangemaakt!', `Boekhouder ${boekhouderEmail} aangemaakt met wachtwoord: DeInstallatie1234!!`);
+      }
+
+      // Voeg email toe aan admin's boekhouderEmails lijst
+      const newBoekhouders = [...boekhouders, boekhouderEmail];
+      await saveUserSettings(user.uid, { boekhouderEmails: newBoekhouders });
+      setBoekhouders(newBoekhouders);
+      setBoekhouderEmail('');
+      success('Boekhouder toegevoegd', `${boekhouderEmail} kan nu jouw financiële gegevens inzien`);
+    } catch (error) {
+      console.error('Error adding boekhouder:', error);
+      showError('Fout bij toevoegen', 'Kon boekhouder niet toevoegen');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemoveBoekhouder = async (email: string) => {
+    if (!user) return;
+
+    try {
+      setSaving(true);
+      const newBoekhouders = boekhouders.filter(e => e !== email);
+      await saveUserSettings(user.uid, { boekhouderEmails: newBoekhouders });
+      setBoekhouders(newBoekhouders);
+      success('Boekhouder verwijderd', `${email} heeft geen toegang meer`);
+    } catch (error) {
+      console.error('Error removing boekhouder:', error);
+      showError('Fout bij verwijderen', 'Kon boekhouder niet verwijderen');
     } finally {
       setSaving(false);
     }
@@ -552,6 +635,7 @@ const Settings: React.FC = () => {
       { id: 'year-filter', name: 'Jaar Filter', icon: Calendar },
       { id: 'invoice', name: 'Factuurnummer', icon: FileText },
       { id: 'co-admins', name: 'Co-Admins', icon: UserPlus },
+      { id: 'boekhouders', name: 'Boekhouders', icon: UserPlus },
       { id: 'favorites', name: 'Favorieten', icon: Star },
       { id: 'mobile-nav', name: 'Mobiele Nav', icon: Smartphone },
     ] : []),
@@ -1040,6 +1124,87 @@ const Settings: React.FC = () => {
                 <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                   <p className="text-xs text-blue-800">
                     <strong>Let op:</strong> Co-admins krijgen volledige toegang tot al je bedrijven, werknemers en financiële gegevens. Voeg alleen vertrouwde personen toe.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'boekhouders' && isAdminOrManager && (
+        <div className="space-y-6">
+          <Card>
+            <div className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-indigo-600" />
+                Boekhouders Beheren
+              </h2>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Geef je boekhouder toegang tot <strong>al jouw bedrijven</strong>. De boekhouder ziet verkoop- en inkoopfacturen read-only,
+                  en krijgt volledige toegang tot grootboek, BTW overzicht, bankafschriften en uploads.
+                </p>
+
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    <input
+                      type="email"
+                      value={boekhouderEmail}
+                      onChange={(e) => setBoekhouderEmail(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddBoekhouder()}
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      placeholder="boekhouder@voorbeeld.nl"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleAddBoekhouder}
+                    disabled={saving || !boekhouderEmail}
+                    size="sm"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Toevoegen
+                  </Button>
+                </div>
+
+                {boekhouders.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Huidige boekhouders:</p>
+                    {boekhouders.map((email) => (
+                      <div
+                        key={email}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          <span className="text-sm text-gray-900 dark:text-gray-100">{email}</span>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveBoekhouder(email)}
+                          className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors"
+                          disabled={saving}
+                          title="Verwijderen"
+                        >
+                          <XIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {boekhouders.length === 0 && (
+                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-center">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Nog geen boekhouders toegevoegd
+                    </p>
+                  </div>
+                )}
+
+                <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                  <p className="text-xs text-indigo-800 dark:text-indigo-300">
+                    <strong>Let op:</strong> Boekhouders zien verkoop en inkoop alleen read-only, maar hebben wel volledige toegang
+                    tot BTW, grootboek, bankafschriften en uploads. Boekhouders zien geen werknemers- of verlofgegevens.
                   </p>
                 </div>
               </div>

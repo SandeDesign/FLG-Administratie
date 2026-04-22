@@ -183,10 +183,10 @@ const Grootboekrekeningen: React.FC = () => {
   const [loadingSavedTemplates, setLoadingSavedTemplates] = useState(false);
   const [loadingSelectedTemplate, setLoadingSelectedTemplate] = useState(false);
 
-  if (userRole !== 'admin') {
+  if (userRole !== 'admin' && userRole !== 'boekhouder') {
     return (
       <div className="p-4 sm:p-6">
-        <EmptyState icon={Shield} title="Geen toegang" description="Alleen administrators kunnen het rekeningschema beheren" />
+        <EmptyState icon={Shield} title="Geen toegang" description="Alleen administrators en boekhouders kunnen het rekeningschema beheren" />
       </div>
     );
   }
