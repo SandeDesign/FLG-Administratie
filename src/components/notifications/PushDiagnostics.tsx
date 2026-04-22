@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { getMessaging, getToken, isSupported } from 'firebase/messaging';
 import { collection, doc, getDocs } from 'firebase/firestore';
-import app, { db, auth } from '../../lib/firebase';
+import app, { db } from '../../lib/firebase';
 
 const VAPID_KEY_FROM_CODE =
   (import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined) ||
@@ -35,7 +35,7 @@ const INITIAL: Check[] = [
   { id: 'messaging', label: '6. Firebase Messaging support check', status: 'idle' },
   { id: 'token', label: '7. FCM token ophalen (getToken)', status: 'idle' },
   { id: 'firestore', label: '8. Token opgeslagen in Firestore', status: 'idle' },
-  { id: 'server', label: '9. Netlify send-push function bereikbaar', status: 'idle' },
+  { id: 'server', label: '9. PHP push proxy bereikbaar (internedata.nl/fcm-send.php)', status: 'idle' },
 ];
 
 export const PushDiagnostics: React.FC = () => {
@@ -196,20 +196,18 @@ export const PushDiagnostics: React.FC = () => {
       update('firestore', { status: 'fail', detail: `Firestore read failed: ${e?.message || e}` });
     }
 
-    // 9. Server function
+    // 9. PHP push proxy
     update('server', { status: 'running' });
     try {
-      const idToken = await auth.currentUser!.getIdToken();
-      const res = await fetch('/.netlify/functions/send-push', {
+      const res = await fetch('https://internedata.nl/fcm-send.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
           userIds: [user.uid],
           title: '🧪 Diagnostic test',
-          body: 'Als je deze ziet: server + token + device werken allemaal.',
+          body: 'Als je deze push ontvangt: server + token + device werken allemaal.',
           url: '/',
           category: 'system_update',
         }),
@@ -219,25 +217,35 @@ export const PushDiagnostics: React.FC = () => {
         const body = await res.json().catch(() => ({}));
         update('server', {
           status: 'fail',
-          detail: `503 push_disabled — FIREBASE_SERVICE_ACCOUNT_JSON ontbreekt op de server. ${body.message || ''}`,
+          detail: `503 — ${body.error || 'service_account_missing'}. Pad in fcm-send.php klopt mogelijk niet.`,
         });
-      } else if (res.status === 401) {
+      } else if (res.status === 403) {
         update('server', {
           status: 'fail',
-          detail: '401 — ID token afgewezen. Controleer dat service account bij zelfde project hoort.',
+          detail: '403 — Origin not allowed. Voeg deze URL toe aan ALLOWED_ORIGINS in fcm-send.php.',
         });
       } else if (!res.ok) {
         const text = await res.text().catch(() => '');
-        update('server', { status: 'fail', detail: `${res.status} — ${text.substring(0, 200)}` });
+        update('server', { status: 'fail', detail: `${res.status} — ${text.substring(0, 300)}` });
       } else {
         const body = await res.json();
-        update('server', {
-          status: 'ok',
-          detail: `Sent: ${body.sent}, Failed: ${body.failed}, Dead tokens removed: ${body.deletedTokens}`,
-        });
+        if (body.sent > 0) {
+          update('server', {
+            status: 'ok',
+            detail: `Sent: ${body.sent}, Failed: ${body.failed}, Dead tokens removed: ${body.deletedTokens}. Push komt binnen op je device!`,
+          });
+        } else {
+          update('server', {
+            status: 'warn',
+            detail: `PHP antwoordde 200 maar geen tokens verstuurd (sent=${body.sent}, failed=${body.failed}). Check dat users/${user.uid}/fcmTokens niet leeg is.`,
+          });
+        }
       }
     } catch (e: any) {
-      update('server', { status: 'fail', detail: `Fetch error: ${e?.message || e}` });
+      update('server', {
+        status: 'fail',
+        detail: `Fetch error: ${e?.message || e}. Check CORS / SSL / DNS van internedata.nl.`,
+      });
     }
 
     setRunning(false);
