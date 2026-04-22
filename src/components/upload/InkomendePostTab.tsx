@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Upload,
   Mail,
   Calendar,
   DollarSign,
   CheckCircle,
-  Clock,
   Trash2,
   Eye,
   Plus,
@@ -13,15 +12,13 @@ import {
   FileText,
   AlertCircle,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useApp } from '../contexts/AppContext';
-import { useNavigate } from 'react-router-dom';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { useToast } from '../hooks/useToast';
-import { EmptyState } from '../components/ui/EmptyState';
-import Modal from '../components/ui/Modal';
+import { useAuth } from '../../contexts/AuthContext';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useToast } from '../../hooks/useToast';
+import { EmptyState } from '../ui/EmptyState';
+import Modal from '../ui/Modal';
 import {
   getIncomingPost,
   createIncomingPost,
@@ -31,29 +28,27 @@ import {
   markPostAsProcessed,
   createTask,
   getCompanyUsers,
-} from '../services/firebase';
-import { IncomingPost, PostStatus, PostActionType } from '../types';
-import { usePageTitle } from '../contexts/PageTitleContext';
+} from '../../services/firebase';
+import { IncomingPost, PostStatus, PostActionType, Company } from '../../types';
 
-const IncomingPostPage: React.FC = () => {
+interface Props {
+  selectedCompany: Company;
+}
+
+const InkomendePostTab: React.FC<Props> = ({ selectedCompany }) => {
   const { user } = useAuth();
-  const { selectedCompany } = useApp();
   const { success, error: showError } = useToast();
-  usePageTitle('Inkomende Post');
-  const navigate = useNavigate();
 
   const [posts, setPosts] = useState<IncomingPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Modal states
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState<IncomingPost | null>(null);
 
-  // Form states
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string>('');
   const [formData, setFormData] = useState({
@@ -68,14 +63,11 @@ const IncomingPostPage: React.FC = () => {
     priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
   });
 
-  // Filters
   const [filterStatus, setFilterStatus] = useState<PostStatus | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Company users for task assignment
   const [companyUsers, setCompanyUsers] = useState<Array<{ uid: string; email: string; displayName?: string }>>([]);
 
-  // Task form state
   const [taskForm, setTaskForm] = useState({
     title: '',
     description: '',
@@ -89,6 +81,7 @@ const IncomingPostPage: React.FC = () => {
       loadPosts();
       loadCompanyUsers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, selectedCompany]);
 
   const loadCompanyUsers = async () => {
@@ -128,7 +121,6 @@ const IncomingPostPage: React.FC = () => {
     }
 
     setUploadedFile(file);
-    // Create preview URL
     const url = URL.createObjectURL(file);
     setUploadedFileUrl(url);
   };
@@ -154,10 +146,8 @@ const IncomingPostPage: React.FC = () => {
     try {
       setUploading(true);
 
-      // Upload file
       const uploadResult = await uploadPostFile(uploadedFile, selectedCompany.name);
 
-      // Create post entry
       const postData = {
         companyId: selectedCompany.id,
         sender: formData.sender,
@@ -234,7 +224,6 @@ const IncomingPostPage: React.FC = () => {
 
   const handleCreateTaskFromPost = async (post: IncomingPost) => {
     setSelectedPost(post);
-    // Pre-fill task form with post data
     setTaskForm({
       title: `Post: ${post.subject}`,
       description: `Afzender: ${post.sender}\n\n${post.actionDescription || ''}`,
@@ -268,7 +257,6 @@ const IncomingPostPage: React.FC = () => {
 
       const taskId = await createTask(user.uid, taskData);
 
-      // Update post with related task ID
       await updateIncomingPost(selectedPost.id, user.uid, {
         relatedTaskId: taskId,
         companyId: selectedCompany.id,
@@ -368,14 +356,10 @@ const IncomingPostPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="hidden lg:block">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Inkomende Post</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {selectedCompany?.name} - {posts.length} document{posts.length !== 1 ? 'en' : ''}
-          </p>
-        </div>
+      <div className="flex justify-between items-center gap-4">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {posts.length} document{posts.length !== 1 ? 'en' : ''}
+        </p>
         <div className="flex gap-2">
           <Button
             onClick={() => setShowFilters(!showFilters)}
@@ -405,7 +389,6 @@ const IncomingPostPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
       {showFilters && (
         <Card>
           <div className="flex gap-4">
@@ -429,15 +412,13 @@ const IncomingPostPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Drag & Drop Zone */}
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={`
-          border-2 border-dashed rounded-lg p-8 text-center transition-colors
-          ${isDragOver ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10' : 'border-gray-300 dark:border-gray-600'}
-        `}
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          isDragOver ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10' : 'border-gray-300 dark:border-gray-600'
+        }`}
       >
         <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
         <p className="text-gray-600 dark:text-gray-400 mb-2">
@@ -448,7 +429,6 @@ const IncomingPostPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Post List */}
       {filteredPosts.length === 0 ? (
         <EmptyState
           icon={Mail}
@@ -460,7 +440,6 @@ const IncomingPostPage: React.FC = () => {
           {filteredPosts.map((post) => (
             <Card key={post.id} className="hover:shadow-md transition-shadow">
               <div className="flex items-start gap-4">
-                {/* Preview */}
                 <div className="flex-shrink-0">
                   {post.fileUrl && (
                     <a
@@ -484,7 +463,6 @@ const IncomingPostPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -519,7 +497,6 @@ const IncomingPostPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Actions */}
                   <div className="flex gap-2 mt-3">
                     {post.status !== 'processed' && (
                       <Button
@@ -568,7 +545,6 @@ const IncomingPostPage: React.FC = () => {
         </div>
       )}
 
-      {/* Upload Modal */}
       <Modal
         isOpen={showUploadModal}
         onClose={() => {
@@ -578,7 +554,6 @@ const IncomingPostPage: React.FC = () => {
         title="Post Uploaden"
       >
         <div className="space-y-4">
-          {/* File Preview */}
           {uploadedFileUrl && (
             <div className="border rounded-lg p-4">
               {uploadedFile?.type === 'application/pdf' ? (
@@ -595,7 +570,6 @@ const IncomingPostPage: React.FC = () => {
             </div>
           )}
 
-          {/* Form */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Afzender *
@@ -747,7 +721,6 @@ const IncomingPostPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Detail Modal */}
       <Modal
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
@@ -825,7 +798,6 @@ const IncomingPostPage: React.FC = () => {
         )}
       </Modal>
 
-      {/* Task Creation Modal */}
       <Modal
         isOpen={showTaskModal}
         onClose={() => {
@@ -911,9 +883,9 @@ const IncomingPostPage: React.FC = () => {
               className="w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white dark:bg-gray-800 dark:text-gray-100"
               size={4}
             >
-              {companyUsers.map(user => (
-                <option key={user.uid} value={user.uid}>
-                  {user.displayName || user.email}
+              {companyUsers.map(u => (
+                <option key={u.uid} value={u.uid}>
+                  {u.displayName || u.email}
                 </option>
               ))}
             </select>
@@ -948,4 +920,4 @@ const IncomingPostPage: React.FC = () => {
   );
 };
 
-export default IncomingPostPage;
+export default InkomendePostTab;

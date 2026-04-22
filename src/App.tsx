@@ -55,8 +55,7 @@ import Payslips from './pages/Payslips';
 import InvoiceRelations from './pages/InvoiceRelations';
 // ✅ FACTUREN IMPORTS
 import OutgoingInvoices from './pages/OutgoingInvoices';
-import IncomingInvoices from './pages/IncomingInvoices';
-import IncomingPost from './pages/IncomingPost';
+import Upload from './pages/Upload';
 // ✅ INCOMING INVOICES STATS - NIEUW!
 import IncomingInvoicesStats from './pages/IncomingInvoicesStats';
 // ✅ BUDGETING - NIEUW!
@@ -144,8 +143,10 @@ function App() {
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
                           <Route path="budgeting" element={<Budgeting />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
-                          <Route path="incoming-invoices" element={<IncomingInvoices />} />
-                          <Route path="incoming-post" element={<IncomingPost />} />
+                          <Route path="upload" element={<Upload />} />
+                          {/* Backwards-compat redirects for old URLs and iframes */}
+                          <Route path="incoming-invoices" element={<Navigate to="/upload?tab=facturen" replace />} />
+                          <Route path="incoming-post" element={<Navigate to="/upload?tab=post" replace />} />
                           {/* ✅ NEW ROUTE - Incoming Invoices Stats Dashboard */}
                           <Route path="incoming-invoices-stats" element={<IncomingInvoicesStats />} />
                           {/* ✅ NEW ROUTE - Bank Statement Import */}
@@ -204,7 +205,8 @@ function App() {
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
                           <Route path="budgeting" element={<Budgeting />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
-                          <Route path="incoming-invoices" element={<IncomingInvoices />} />
+                          <Route path="upload" element={<Upload />} />
+                          <Route path="incoming-invoices" element={<Navigate to="/upload?tab=facturen" replace />} />
                           <Route path="incoming-invoices-stats" element={<IncomingInvoicesStats />} />
 
                           {/* Manager kan exporteren */}
