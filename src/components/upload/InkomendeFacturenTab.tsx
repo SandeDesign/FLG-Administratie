@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Upload,
   Zap,
@@ -8,17 +8,15 @@ import {
   ArrowRight,
   RotateCw,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useApp } from '../contexts/AppContext';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { useToast } from '../hooks/useToast';
-import { EmptyState } from '../components/ui/EmptyState';
-import { uploadAndSaveInvoice } from '../services/incomingInvoiceService';
-import { processInvoiceFile } from '../services/ocrService';
-import { usePageTitle } from '../contexts/PageTitleContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useToast } from '../../hooks/useToast';
+import { uploadAndSaveInvoice } from '../../services/incomingInvoiceService';
+import { processInvoiceFile } from '../../services/ocrService';
+import { Company } from '../../types';
 
 interface OCRResult {
   id: string;
@@ -32,29 +30,15 @@ interface OCRResult {
   confidence: number;
 }
 
-const IncomingInvoices: React.FC = () => {
-  const { user, adminUserId } = useAuth();
-  const { selectedCompany: contextCompany, companies, setSelectedCompany } = useApp();
-  const { success, error: showError } = useToast();
-  usePageTitle('Inkoopbonnen uploaden');
+interface Props {
+  selectedCompany: Company;
+}
+
+const InkomendeFacturenTab: React.FC<Props> = ({ selectedCompany }) => {
+  const { user } = useAuth();
+  const { error: showError } = useToast();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const companyIdFromUrl = searchParams.get('companyId');
 
-  // Als companyId via URL is meegegeven (vanuit iframe), gebruik dat bedrijf
-  useEffect(() => {
-    if (companyIdFromUrl && companies.length > 0) {
-      const targetCompany = companies.find(c => c.id === companyIdFromUrl);
-      if (targetCompany && targetCompany.id !== contextCompany?.id) {
-        setSelectedCompany(targetCompany);
-      }
-    }
-  }, [companyIdFromUrl, companies, contextCompany?.id, setSelectedCompany]);
-
-  // Gebruik het bedrijf uit URL params als dat beschikbaar is, anders het context bedrijf
-  const selectedCompany = companyIdFromUrl
-    ? companies.find(c => c.id === companyIdFromUrl) || contextCompany
-    : contextCompany;
   const [uploading, setUploading] = useState(false);
   const [processingFiles, setProcessingFiles] = useState<string[]>([]);
   const [ocrProgress, setOcrProgress] = useState(0);
@@ -87,7 +71,6 @@ const IncomingInvoices: React.FC = () => {
     setTotalProcessed(0);
     const results: OCRResult[] = [];
 
-    // ✅ Parallel verwerking met limiet van 3 tegelijk
     const PARALLEL_LIMIT = 3;
     const processFile = async (file: File) => {
       setProcessingFiles(prev => [...prev, file.name]);
@@ -101,7 +84,7 @@ const IncomingInvoices: React.FC = () => {
           file,
           selectedCompany.id,
           selectedCompany.name,
-          selectedCompany.userId, // ✅ FIX: Use company's admin userId so admins can see manager uploads
+          selectedCompany.userId,
           user.email || undefined,
           {
             supplierName: ocrResult.invoiceData.supplierName,
@@ -131,7 +114,6 @@ const IncomingInvoices: React.FC = () => {
         };
 
         results.push(result);
-        console.log(`✅ Processed ${file.name}`);
       } catch (ocrError) {
         console.error('OCR error:', ocrError);
         showError('OCR fout', `${file.name}: ${ocrError instanceof Error ? ocrError.message : 'OCR verwerking mislukt'}`);
@@ -142,7 +124,6 @@ const IncomingInvoices: React.FC = () => {
     };
 
     try {
-      // Process in batches of PARALLEL_LIMIT
       for (let i = 0; i < validFiles.length; i += PARALLEL_LIMIT) {
         const batch = validFiles.slice(i, i + PARALLEL_LIMIT);
         await Promise.all(batch.map(processFile));
@@ -178,43 +159,23 @@ const IncomingInvoices: React.FC = () => {
     setIsDragOver(false);
   };
 
-  if (!selectedCompany) {
-    return (
-      <EmptyState
-        icon={HardDrive}
-        title="Geen bedrijf geselecteerd"
-        description="Selecteer een bedrijf om facturen te beheren"
-      />
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div className="hidden lg:block">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Inkoopbonnen uploaden</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Upload facturen voor {selectedCompany.name}
-          </p>
-        </div>
-        <div className="flex space-x-2 mt-4 sm:mt-0">
-          <label className="cursor-pointer">
-            <Button as="span" icon={Upload} disabled={uploading}>
-              {uploading ? 'Uploaden...' : 'Upload Factuur'}
-            </Button>
-            <input
-              type="file"
-              multiple
-              accept=".pdf,image/*"
-              className="hidden"
-              onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-            />
-          </label>
-        </div>
+      <div className="flex justify-end">
+        <label className="cursor-pointer">
+          <Button as="span" icon={Upload} disabled={uploading}>
+            {uploading ? 'Uploaden...' : 'Upload Factuur'}
+          </Button>
+          <input
+            type="file"
+            multiple
+            accept=".pdf,image/*"
+            className="hidden"
+            onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+          />
+        </label>
       </div>
 
-      {/* OCR Progress */}
       {processingFiles.length > 0 && (
         <Card>
           <div className="p-6">
@@ -248,7 +209,6 @@ const IncomingInvoices: React.FC = () => {
         </Card>
       )}
 
-      {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <Card className="max-w-md w-full">
@@ -293,7 +253,6 @@ const IncomingInvoices: React.FC = () => {
         </div>
       )}
 
-      {/* Upload Zone */}
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${ isDragOver ? 'border-primary-400 bg-primary-50' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400' }`}
         onDrop={handleDrop}
@@ -322,7 +281,6 @@ const IncomingInvoices: React.FC = () => {
         </p>
       </div>
 
-      {/* OCR Results */}
       {ocrResults.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Verwerkte facturen</h2>
@@ -384,4 +342,4 @@ const IncomingInvoices: React.FC = () => {
   );
 };
 
-export default IncomingInvoices;
+export default InkomendeFacturenTab;

@@ -1351,7 +1351,7 @@ const IncomingInvoicesStats: React.FC = () => {
               </button>
             </div>
             <iframe
-              src={`/incoming-invoices?embed=true${selectedCompany ? `&companyId=${selectedCompany.id}` : ''}`}
+              src={`/upload?tab=facturen&embed=true${selectedCompany ? `&companyId=${selectedCompany.id}` : ''}`}
               className="flex-1 w-full border-0"
               title="Factuur uploaden"
             />

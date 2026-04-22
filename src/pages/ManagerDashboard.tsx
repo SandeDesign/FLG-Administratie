@@ -305,7 +305,7 @@ const ManagerDashboard: React.FC = () => {
                   </div>
                 </div>
               </button>
-              <button onClick={() => navigate('/incoming-invoices')} className="group">
+              <button onClick={() => navigate('/upload?tab=facturen')} className="group">
                 <div className="rounded-xl p-6 bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center">
                     <div className="p-4 bg-primary-100 dark:bg-primary-900/30 rounded-xl mb-3 group-hover:scale-110 transition-transform">
@@ -418,7 +418,7 @@ const ManagerDashboard: React.FC = () => {
               <FileText className="h-6 w-6 text-primary-600 dark:text-primary-400" />
               Recente Inkoopbonnen
             </h2>
-            <button onClick={() => navigate('/incoming-invoices')} className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
+            <button onClick={() => navigate('/upload?tab=facturen')} className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Alles bekijken →
             </button>
           </div>

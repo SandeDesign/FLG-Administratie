@@ -80,9 +80,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'budgeting', name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'admin-expenses', name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
   { id: 'outgoing-invoices', name: 'Verkoop', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'incoming-invoices', name: 'Inkomende Facturen', href: '/incoming-invoices', icon: Upload, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'incoming-invoices-stats', name: 'Inkoop', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'incoming-post', name: 'Inkomende Post', href: '/incoming-post', icon: Mail, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'bank-statement-import', name: 'Bankafschrift Import', href: '/bank-statement-import', icon: FileInput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'grootboekrekeningen', name: 'Rekeningschema', href: '/grootboekrekeningen', icon: BookOpen, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'btw-overzicht', name: 'BTW Overzicht', href: '/btw-overzicht', icon: Receipt, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
@@ -105,6 +103,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['admin', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // SYSTEEM
+  { id: 'upload', name: 'Upload', href: '/upload', icon: Upload, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'tasks', name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'companies', name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
   { id: 'audit-log', name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
@@ -127,10 +126,10 @@ export interface Section {
 const SECTION_ITEMS: Record<string, string[]> = {
   Statistieken: ['statistics-employer', 'statistics-project', 'statistics-holding'],
   HR: ['employees', 'timesheet-approvals', 'internal-projects', 'payroll-processing', 'leave-approvals', 'absence-management'],
-  Financieel: ['invoice-relations', 'budgeting', 'admin-expenses', 'outgoing-invoices', 'incoming-invoices', 'incoming-invoices-stats', 'incoming-post', 'bank-statement-import', 'grootboekrekeningen', 'btw-overzicht'],
+  Financieel: ['invoice-relations', 'budgeting', 'admin-expenses', 'outgoing-invoices', 'incoming-invoices-stats', 'bank-statement-import', 'grootboekrekeningen', 'btw-overzicht'],
   Project: ['project-production', 'project-statistics', 'project-team'],
   'Mijn Zaken': ['timesheets', 'leave', 'absence', 'expenses-employee', 'payslips'],
-  Systeem: ['tasks', 'companies', 'audit-log', 'users', 'investment-pitch', 'settings'],
+  Systeem: ['upload', 'tasks', 'companies', 'audit-log', 'users', 'investment-pitch', 'settings'],
 };
 
 const SECTION_META: Array<{ title: string; icon: React.ComponentType<{ className?: string }>; color: string; defaultOpen?: boolean }> = [

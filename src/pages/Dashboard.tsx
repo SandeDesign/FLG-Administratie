@@ -609,7 +609,7 @@ const Dashboard: React.FC = () => {
           </button>
 
           <button
-            onClick={() => navigate('/incoming-invoices')}
+            onClick={() => navigate('/upload?tab=facturen')}
             className="p-5 rounded-lg border-2 border-purple-200 dark:border-gray-700 bg-purple-50 dark:bg-gray-800 hover:bg-purple-100 dark:hover:bg-gray-700 transition-all group"
           >
             <div className="flex items-start justify-between mb-3">
