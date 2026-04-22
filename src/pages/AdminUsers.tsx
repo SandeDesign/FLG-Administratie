@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Plus, CreditCard as Edit, Trash2, Search, Shield, Mail, Ban, UserCheck, AlertCircle } from 'lucide-react';
+import { Users, Plus, CreditCard as Edit, Trash2, Search, Shield, ShieldCheck, Mail, Ban, UserCheck, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import Card from '../components/ui/Card';
@@ -8,15 +8,18 @@ import ActionMenu from '../components/ui/ActionMenu';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
+import {
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
   where,
-  Timestamp
+  Timestamp,
+  deleteField,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import Modal from '../components/ui/Modal';
@@ -49,6 +52,8 @@ const AdminUsers: React.FC = () => {
   const [editFirstName, setEditFirstName] = useState('');
   const [editLastName, setEditLastName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editCoAdminLinked, setEditCoAdminLinked] = useState(false);
+  const [loadingCoAdminStatus, setLoadingCoAdminStatus] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const loadUsers = useCallback(async () => {
@@ -205,12 +210,30 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const handleEditUser = (userRole: UserRole) => {
+  const handleEditUser = async (userRole: UserRole) => {
     const nameParts = (userRole.displayName || '').split(' ');
     setEditFirstName(nameParts[0] || '');
     setEditLastName(nameParts.slice(1).join(' ') || '');
     setEditEmail(userRole.email || '');
+    setEditCoAdminLinked(false);
     setEditingUser(userRole);
+
+    // Laad co-admin status voor admin gebruikers
+    if ((userRole.role === 'admin' || userRole.role === 'co-admin') && userRole.uid && adminUserId) {
+      setLoadingCoAdminStatus(true);
+      try {
+        const settingsRef = doc(db, 'userSettings', userRole.uid);
+        const settingsDoc = await getDoc(settingsRef);
+        if (settingsDoc.exists()) {
+          const data = settingsDoc.data();
+          setEditCoAdminLinked(data.primaryAdminUserId === adminUserId);
+        }
+      } catch {
+        // geen settings = niet gekoppeld
+      } finally {
+        setLoadingCoAdminStatus(false);
+      }
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -222,6 +245,20 @@ const AdminUsers: React.FC = () => {
         lastName: editLastName.trim(),
         email: editEmail.trim(),
       });
+
+      // Koppel of ontkoppel co-admin voor admin gebruikers
+      if ((editingUser.role === 'admin' || editingUser.role === 'co-admin') && editingUser.uid && adminUserId) {
+        const settingsRef = doc(db, 'userSettings', editingUser.uid);
+        if (editCoAdminLinked) {
+          await setDoc(settingsRef, { primaryAdminUserId: adminUserId }, { merge: true });
+        } else {
+          const settingsDoc = await getDoc(settingsRef);
+          if (settingsDoc.exists() && settingsDoc.data().primaryAdminUserId) {
+            await updateDoc(settingsRef, { primaryAdminUserId: deleteField() });
+          }
+        }
+      }
+
       success('Opgeslagen', 'Gebruikersprofiel is bijgewerkt');
       setEditingUser(null);
       loadUsers();
@@ -240,6 +277,16 @@ const AdminUsers: React.FC = () => {
       case 'boekhouder': return 'text-indigo-600 bg-indigo-100';
       case 'employee': return 'text-green-600 bg-green-100';
       default: return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
+    }
+  };
+
+  const getRoleLabel = (role: UserRole['role']) => {
+    switch (role) {
+      case 'admin': return 'Administrator';
+      case 'co-admin': return 'Co-Admin';
+      case 'manager': return 'Manager';
+      case 'employee': return 'Werknemer';
+      default: return role;
     }
   };
 
@@ -593,6 +640,38 @@ const AdminUsers: React.FC = () => {
             onChange={e => setEditEmail(e.target.value)}
             placeholder="email@voorbeeld.nl"
           />
+
+          {/* Co-Admin koppeling — alleen voor admin gebruikers */}
+          {editingUser && (editingUser.role === 'admin' || editingUser.role === 'co-admin') && editingUser.uid !== user?.uid && (
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Co-Admin toegang</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Geeft deze gebruiker toegang tot dezelfde bedrijfsdata als jij
+                  </p>
+                </div>
+                {loadingCoAdminStatus ? (
+                  <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mt-0.5" />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditCoAdminLinked(!editCoAdminLinked)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${editCoAdminLinked ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'}`}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ease-in-out ${editCoAdminLinked ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                )}
+              </div>
+              {editCoAdminLinked && (
+                <p className="mt-2 text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Gekoppeld — ziet dezelfde bedrijven, medewerkers en facturen
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={() => setEditingUser(null)}>
               Annuleren
