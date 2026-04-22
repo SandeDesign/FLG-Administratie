@@ -18,6 +18,8 @@ export interface Notification {
     | 'compliance_alert'
     | 'system_update'
     | 'task_assigned'
+    | 'task_completed'
+    | 'task_deadline_reminder'
     | 'task_schedule_reminder'
     | 'task_schedule_overdue';
 

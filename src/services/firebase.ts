@@ -2041,11 +2041,81 @@ export const createTask = async (userId: string, taskData: any): Promise<string>
       }
     );
 
+    // Notificeer toegewezenen (fire-and-forget — taak is al opgeslagen)
+    notifyAssignmentChange(docRef.id, taskData.title, userId, [], taskData.assignedTo || []).catch(
+      err => console.error('[Tasks] assignment notify mislukt:', err)
+    );
+
     return docRef.id;
   } catch (error) {
     console.error('Error creating task:', error);
     throw error;
   }
+};
+
+/**
+ * Fire-and-forget notificatie helper die nieuwe toegewezenen informeert.
+ * Imports worden lazy gedaan om circulaire imports te vermijden.
+ */
+const notifyAssignmentChange = async (
+  taskId: string,
+  taskTitle: string,
+  assignedBy: string,
+  previousAssignees: string[],
+  newAssignees: string[]
+): Promise<void> => {
+  const added = newAssignees.filter(id => !previousAssignees.includes(id));
+  if (added.length === 0) return;
+
+  const { resolveToUserUids } = await import('./notificationTargeting');
+  const { NotificationService } = await import('./notificationService');
+  const uids = await resolveToUserUids(added);
+  if (uids.length === 0) return;
+  await NotificationService.notifyTaskAssignedBulk(uids, taskTitle, assignedBy, taskId);
+};
+
+/**
+ * Notificatie bij voltooien: naar opdrachtgever (userId + createdBy) en
+ * mede-toegewezenen, exclusief de voltooier zelf.
+ */
+const notifyTaskCompleted = async (
+  taskId: string,
+  taskData: any,
+  completedByUid: string
+): Promise<void> => {
+  const { resolveToUserUids, getTaskOwnerUids } = await import('./notificationTargeting');
+  const { NotificationService } = await import('./notificationService');
+
+  const assigneeUids = await resolveToUserUids(
+    Array.isArray(taskData.assignedTo) ? taskData.assignedTo : []
+  );
+  const ownerUids = getTaskOwnerUids({ userId: taskData.userId, createdBy: taskData.createdBy });
+
+  const recipientSet = new Set<string>([...ownerUids, ...assigneeUids]);
+  recipientSet.delete(completedByUid);
+  const recipients = Array.from(recipientSet);
+  if (recipients.length === 0) return;
+
+  // Naam van voltooier — best-effort via users collectie
+  let completedByName = 'Een collega';
+  try {
+    const q = query(collection(db, 'users'), where('uid', '==', completedByUid));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const u = snap.docs[0].data();
+      const name = u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim();
+      if (name) completedByName = name;
+    }
+  } catch {
+    // naam lookup is best-effort
+  }
+
+  await NotificationService.notifyTaskCompleted(
+    recipients,
+    taskData.title || 'Taak',
+    completedByName,
+    taskId
+  );
 };
 
 /**
@@ -2067,14 +2137,28 @@ export const updateTask = async (taskId: string, userId: string, updates: any): 
       throw new Error('Geen toegang tot deze taak');
     }
 
-    const updatedData = {
+    const updatedData: Record<string, any> = {
       ...updates,
       updatedAt: new Date(),
     };
 
+    // Detecteer transitie naar 'completed' (voor latere notify)
+    const justCompleted =
+      updates.status === 'completed' && taskData.status !== 'completed';
+
     // Als taak voltooid wordt, zet completedDate
     if (updates.status === 'completed' && !taskData.completedDate) {
       updatedData.completedDate = new Date();
+    }
+
+    // Reset reminderSentAt als dueDate in de toekomst opschuift voorbij de
+    // 1-uur-threshold — anders zouden we geen nieuwe reminder meer sturen.
+    if (updates.dueDate) {
+      const newDue = updates.dueDate instanceof Date ? updates.dueDate : new Date(updates.dueDate);
+      const msUntilDue = newDue.getTime() - Date.now();
+      if (msUntilDue > 60 * 60 * 1000) {
+        updatedData.reminderSentAt = null;
+      }
     }
 
     // Herbereken nextOccurrence bij wijziging van terugkerende instellingen
@@ -2091,6 +2175,25 @@ export const updateTask = async (taskId: string, userId: string, updates: any): 
 
     const dataToSave = convertToTimestamps(updatedData);
     await updateDoc(taskRef, dataToSave);
+
+    // Assignment diff → notify nieuwe toegewezenen
+    if (Array.isArray(updates.assignedTo)) {
+      const prev: string[] = Array.isArray(taskData.assignedTo) ? taskData.assignedTo : [];
+      notifyAssignmentChange(
+        taskId,
+        taskData.title || 'Taak',
+        userId,
+        prev,
+        updates.assignedTo
+      ).catch(err => console.error('[Tasks] assignment notify mislukt:', err));
+    }
+
+    // Completion → notify opdrachtgever + mede-toegewezenen (exclusief voltooier)
+    if (justCompleted) {
+      notifyTaskCompleted(taskId, taskData, userId).catch(err =>
+        console.error('[Tasks] completed notify mislukt:', err)
+      );
+    }
 
     // Audit log
     await AuditService.logAction(

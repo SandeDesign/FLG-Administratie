@@ -940,6 +940,11 @@ export interface BusinessTask {
   // Tags voor filtering
   tags?: string[];
 
+  // ✅ Push notificaties - deadline reminder tracking
+  // Gezet wanneer de 1-uur-voor-deadline push is verstuurd. Wordt gereset
+  // wanneer dueDate in de toekomst opschuift voorbij de 1-uur-threshold.
+  reminderSentAt?: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }

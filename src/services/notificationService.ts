@@ -11,7 +11,7 @@ import {
   Timestamp,
   limit as firestoreLimit,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import {
   Notification,
   NotificationPreferences,
@@ -83,8 +83,21 @@ export class NotificationService {
     userId: string,
     notification: Omit<Notification, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
+    // Verrijk channels op basis van device-tokens. Als er tokens zijn voor
+    // deze user, voeg 'push' toe als het nog niet inzit.
+    const finalChannels = Array.from(new Set(notification.channels));
+    try {
+      if (!finalChannels.includes('push')) {
+        const hasTokens = await this.userHasFcmTokens(userId);
+        if (hasTokens) finalChannels.push('push');
+      }
+    } catch {
+      // stilletjes doorgaan — push is een nice-to-have bovenop in_app/email
+    }
+
     const notificationData = convertToTimestamps({
       ...notification,
+      channels: finalChannels,
       userId,
       status: 'pending',
       createdAt: new Date(),
@@ -93,15 +106,75 @@ export class NotificationService {
 
     const docRef = await addDoc(collection(db, 'notifications'), notificationData);
 
-    if (notification.channels.includes('in_app')) {
+    if (finalChannels.includes('in_app')) {
       await this.sendInAppNotification(docRef.id);
     }
 
-    if (notification.channels.includes('email')) {
+    if (finalChannels.includes('email')) {
       await this.sendEmailNotification(docRef.id);
     }
 
+    if (finalChannels.includes('push')) {
+      await this.sendPushNotification(userId, {
+        title: notification.title,
+        body: notification.message,
+        url: notification.actionUrl,
+        taskId: notification.metadata?.entityId,
+        category: notification.category,
+      }).catch(err => console.warn('[Notifications] push mislukt:', err));
+    }
+
     return docRef.id;
+  }
+
+  /**
+   * Check of er minimaal 1 FCM token staat voor deze user.
+   */
+  private static async userHasFcmTokens(userId: string): Promise<boolean> {
+    const snap = await getDocs(
+      query(collection(db, 'users', userId, 'fcmTokens'), firestoreLimit(1))
+    );
+    return !snap.empty;
+  }
+
+  /**
+   * Roep de Netlify send-push function aan. Vereist een ingelogde user
+   * (voor ID token auth). Faalt stil als fetch niet beschikbaar of error.
+   */
+  private static async sendPushNotification(
+    targetUserId: string,
+    payload: {
+      title: string;
+      body: string;
+      url?: string;
+      taskId?: string;
+      category?: string;
+    }
+  ): Promise<void> {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    const idToken = await currentUser.getIdToken();
+    const response = await fetch('/.netlify/functions/send-push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        userIds: [targetUserId],
+        title: payload.title,
+        body: payload.body,
+        url: payload.url,
+        taskId: payload.taskId,
+        category: payload.category,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(`send-push ${response.status}: ${text}`);
+    }
   }
 
   static async getNotifications(
@@ -444,8 +517,61 @@ export class NotificationService {
       metadata: {
         entityId: taskId,
         entityType: 'task',
+        assignedBy,
       },
     });
+  }
+
+  /**
+   * Stuur naar meerdere users tegelijk. Faalt per user niet — logt wel.
+   */
+  static async notifyTaskAssignedBulk(
+    userIds: string[],
+    taskTitle: string,
+    assignedBy: string,
+    taskId: string
+  ): Promise<void> {
+    await Promise.all(
+      userIds.map(uid =>
+        this.notifyTaskAssigned(uid, taskTitle, assignedBy, taskId).catch(err =>
+          console.error(`[Notifications] task_assigned naar ${uid} mislukt:`, err)
+        )
+      )
+    );
+  }
+
+  /**
+   * Stuurt een "taak voltooid" melding naar alle ontvangers (opdrachtgever
+   * + mede-toegewezenen). actionUrl leidt naar de taken pagina.
+   */
+  static async notifyTaskCompleted(
+    userIds: string[],
+    taskTitle: string,
+    completedByName: string,
+    taskId: string
+  ): Promise<void> {
+    await Promise.all(
+      userIds.map(uid =>
+        this.createNotification(uid, {
+          userId: uid,
+          type: 'task',
+          category: 'task_completed',
+          priority: 'low',
+          title: 'Taak voltooid',
+          message: `${completedByName} heeft "${taskTitle}" afgerond.`,
+          actionUrl: '/tasks',
+          actionLabel: 'Bekijk taak',
+          channels: ['in_app'],
+          metadata: {
+            entityId: taskId,
+            entityType: 'task',
+            completedByName,
+          },
+        }).catch(err =>
+          console.error(`[Notifications] task_completed naar ${uid} mislukt:`, err)
+        )
+      )
+    );
   }
 
   static async notifyTaskScheduleReminder(
