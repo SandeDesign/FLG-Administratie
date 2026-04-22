@@ -7,8 +7,6 @@ import {
   Receipt,
   BookOpen,
   FileInput,
-  AlertCircle,
-  ArrowRight,
   Handshake,
   Wallet,
 } from 'lucide-react';
@@ -28,7 +26,7 @@ interface CompanyKpi {
   ownerUserId: string;
   outgoingTotal: number;
   incomingTotal: number;
-  openIncoming: number;
+  btwSaldo: number; // >0 = af te dragen, <0 = te ontvangen
 }
 
 const formatEuro = (value: number) =>
@@ -85,7 +83,9 @@ const BoekhouderDashboard: React.FC = () => {
 
             const outgoingTotal = filteredOut.reduce((sum: number, inv: any) => sum + Number(inv.totalAmount || 0), 0);
             const incomingTotal = filteredIn.reduce((sum: number, inv: any) => sum + Number(inv.totalAmount || 0), 0);
-            const openIncoming = filteredIn.filter((inv: any) => inv.status !== 'paid' && inv.status !== 'processed').length;
+            const outgoingVat = filteredOut.reduce((sum: number, inv: any) => sum + Number(inv.vatAmount || 0), 0);
+            const incomingVat = filteredIn.reduce((sum: number, inv: any) => sum + Number(inv.vatAmount || 0), 0);
+            const btwSaldo = outgoingVat - incomingVat;
 
             const kpi: CompanyKpi = {
               companyId: company.id,
@@ -93,7 +93,7 @@ const BoekhouderDashboard: React.FC = () => {
               ownerUserId: company.userId,
               outgoingTotal,
               incomingTotal,
-              openIncoming,
+              btwSaldo,
             };
             return kpi;
           } catch (error) {
@@ -104,7 +104,7 @@ const BoekhouderDashboard: React.FC = () => {
               ownerUserId: company.userId,
               outgoingTotal: 0,
               incomingTotal: 0,
-              openIncoming: 0,
+              btwSaldo: 0,
             } as CompanyKpi;
           }
         })
@@ -127,9 +127,9 @@ const BoekhouderDashboard: React.FC = () => {
       (acc, k) => ({
         outgoing: acc.outgoing + k.outgoingTotal,
         incoming: acc.incoming + k.incomingTotal,
-        openIncoming: acc.openIncoming + k.openIncoming,
+        btwSaldo: acc.btwSaldo + k.btwSaldo,
       }),
-      { outgoing: 0, incoming: 0, openIncoming: 0 }
+      { outgoing: 0, incoming: 0, btwSaldo: 0 }
     );
   }, [kpis]);
 
@@ -165,7 +165,7 @@ const BoekhouderDashboard: React.FC = () => {
               {selectedQuarter ? ` — Q${selectedQuarter} ${selectedYear}` : ` — heel ${selectedYear}`}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-3 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full sm:w-auto">
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30 text-center">
               <p className="text-xs text-white/80">Verkoop</p>
               <p className="text-lg font-bold">{formatEuro(totals.outgoing)}</p>
@@ -178,30 +178,15 @@ const BoekhouderDashboard: React.FC = () => {
               <p className="text-xs text-white/80">Resultaat</p>
               <p className={`text-lg font-bold ${resultaat < 0 ? 'text-red-200' : ''}`}>{formatEuro(resultaat)}</p>
             </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30 text-center">
+              <p className="text-xs text-white/80">{totals.btwSaldo >= 0 ? 'BTW af te dragen' : 'BTW te ontvangen'}</p>
+              <p className={`text-lg font-bold ${totals.btwSaldo < 0 ? 'text-emerald-200' : 'text-amber-200'}`}>
+                {formatEuro(Math.abs(totals.btwSaldo))}
+              </p>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Openstaande items */}
-      {totals.openIncoming > 0 && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-lg flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-              {totals.openIncoming} openstaande inkoopfactu{totals.openIncoming === 1 ? 'ur' : 'ren'}
-            </h3>
-            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-              Nog niet verwerkt of betaald in de geselecteerde periode.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/incoming-invoices-stats')}
-            className="text-amber-700 dark:text-amber-300 hover:underline font-semibold text-sm whitespace-nowrap flex items-center gap-1"
-          >
-            Bekijk <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      )}
 
       {/* Snelle acties */}
       <div>
@@ -293,9 +278,11 @@ const BoekhouderDashboard: React.FC = () => {
                               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatEuro(kpi.incomingTotal)}</p>
                             </div>
                             <div>
-                              <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Open</p>
-                              <p className={`text-sm font-semibold ${kpi.openIncoming > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-gray-100'}`}>
-                                {kpi.openIncoming}
+                              <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                BTW {kpi.btwSaldo >= 0 ? 'afdragen' : 'ontvangen'}
+                              </p>
+                              <p className={`text-sm font-semibold ${kpi.btwSaldo < 0 ? 'text-emerald-600 dark:text-emerald-400' : kpi.btwSaldo > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                {formatEuro(Math.abs(kpi.btwSaldo))}
                               </p>
                             </div>
                           </div>
