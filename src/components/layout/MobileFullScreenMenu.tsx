@@ -30,7 +30,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const [periodSelectorOpen, setPeriodSelectorOpen] = useState(false);
 
-  const canSelectCompany = (userRole === 'admin' || userRole === 'co-admin') && companies && companies.length > 1;
+  const canSelectCompany = (userRole === 'admin' || userRole === 'co-admin' || userRole === 'boekhouder') && companies && companies.length > 1;
 
   // Load favorite pages from user settings for the selected company
   useEffect(() => {

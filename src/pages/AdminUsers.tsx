@@ -29,7 +29,7 @@ import { repairAdminUsers, updateUserProfile } from '../services/firebase';
 interface UserRole {
   id: string;
   uid: string;
-  role: 'admin' | 'co-admin' | 'manager' | 'employee';
+  role: 'admin' | 'co-admin' | 'manager' | 'boekhouder' | 'employee';
   employeeId?: string | null;
   email?: string;
   displayName?: string;
@@ -274,6 +274,7 @@ const AdminUsers: React.FC = () => {
       case 'admin': return 'text-red-600 bg-red-100';
       case 'co-admin': return 'text-orange-600 bg-orange-100';
       case 'manager': return 'text-primary-600 bg-primary-100';
+      case 'boekhouder': return 'text-indigo-600 bg-indigo-100';
       case 'employee': return 'text-green-600 bg-green-100';
       default: return 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
     }
@@ -382,6 +383,7 @@ const AdminUsers: React.FC = () => {
                 <option value="all">Alle rollen</option>
                 <option value="admin">Administrator</option>
                 <option value="manager">Manager</option>
+                <option value="boekhouder">Boekhouder</option>
                 <option value="employee">Werknemer</option>
               </select>
             </div>
@@ -509,6 +511,7 @@ const AdminUsers: React.FC = () => {
                       >
                         <option value="admin">Administrator</option>
                         <option value="manager">Manager</option>
+                        <option value="boekhouder">Boekhouder</option>
                         <option value="employee">Werknemer</option>
                       </select>
                     </td>
@@ -597,6 +600,7 @@ const AdminUsers: React.FC = () => {
                 >
                   <option value="admin">Administrator</option>
                   <option value="manager">Manager</option>
+                  <option value="boekhouder">Boekhouder</option>
                   <option value="employee">Werknemer</option>
                 </select>
                 <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(systemUser.isActive !== false)}`}>

@@ -76,7 +76,7 @@ function sortByDate(a: BankTransaction, b: BankTransaction): number {
 }
 
 const BtwOverzicht: React.FC = () => {
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const { selectedCompany, selectedYear, selectedQuarter, queryUserId } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('BTW Overzicht');
@@ -90,14 +90,16 @@ const BtwOverzicht: React.FC = () => {
   const [exportFormat, setExportFormat] = useState<ExportChoice>('csv');
 
   const loadData = useCallback(async () => {
-    if (!selectedCompany || !queryUserId) return;
+    if (!selectedCompany || !user) return;
+    // Prioriteit: queryUserId (manager/boekhouder) > company.userId (boekhouder fallback) > user.uid (admin)
+    const effectiveUserId = queryUserId || selectedCompany.userId || user.uid;
     try {
       setLoading(true);
       const [confirmed, gb, outInv, inInv] = await Promise.all([
         bankImportService.getTransactionsByStatus(selectedCompany.id, 'confirmed'),
         supplierService.getGrootboekrekeningen(selectedCompany.id),
-        outgoingInvoiceService.getInvoices(queryUserId, selectedCompany.id),
-        incomingInvoiceService.getInvoices(queryUserId, selectedCompany.id),
+        outgoingInvoiceService.getInvoices(effectiveUserId, selectedCompany.id),
+        incomingInvoiceService.getInvoices(effectiveUserId, selectedCompany.id),
       ]);
       setTransactions(confirmed);
       setGrootboekrekeningen(gb);
@@ -108,16 +110,16 @@ const BtwOverzicht: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedCompany, user]);
+  }, [selectedCompany, user, queryUserId]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  if (userRole !== 'admin' && userRole !== 'co-admin') {
+  if (userRole !== 'admin' && userRole !== 'co-admin' && userRole !== 'boekhouder') {
     return (
       <div className="p-4 sm:p-6">
-        <EmptyState icon={Shield} title="Geen toegang" description="Alleen administrators kunnen het BTW overzicht bekijken" />
+        <EmptyState icon={Shield} title="Geen toegang" description="Alleen administrators en boekhouders kunnen het BTW overzicht bekijken" />
       </div>
     );
   }

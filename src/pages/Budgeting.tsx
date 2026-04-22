@@ -195,7 +195,8 @@ const initialFormData: BudgetFormData = {
 
 const Budgeting: React.FC = () => {
   const { user, adminUserId } = useAuth();
-  const { selectedCompany } = useApp();
+  const { selectedCompany, queryUserId } = useApp();
+  const dataUserId = queryUserId || selectedCompany?.userId || adminUserId;
   const { success, error: showError } = useToast();
   usePageTitle('Begroting & Projecties');
   const exportRef = useRef<HTMLDivElement>(null);
@@ -219,7 +220,7 @@ const Budgeting: React.FC = () => {
   // Investment Pitch State
 
   const loadData = useCallback(async () => {
-    if (!user || !adminUserId || !selectedCompany) {
+    if (!user || !dataUserId || !selectedCompany) {
       setLoading(false);
       return;
     }
@@ -228,13 +229,13 @@ const Budgeting: React.FC = () => {
       setLoading(true);
 
       // Load budget items
-      const items = await getBudgetItems(adminUserId, selectedCompany.id);
+      const items = await getBudgetItems(dataUserId, selectedCompany.id);
       setBudgetItems(items);
 
       // Load actual invoice data for comparison
       const [outgoing, incoming] = await Promise.all([
-        outgoingInvoiceService.getInvoices(adminUserId, selectedCompany.id),
-        incomingInvoiceService.getInvoices(adminUserId, selectedCompany.id),
+        outgoingInvoiceService.getInvoices(dataUserId, selectedCompany.id),
+        incomingInvoiceService.getInvoices(dataUserId, selectedCompany.id),
       ]);
 
       setOutgoingInvoices(outgoing);
@@ -242,7 +243,7 @@ const Budgeting: React.FC = () => {
 
       // Load payroll data for employer companies only
       if (selectedCompany.companyType === 'employer') {
-        const payroll = await getPayrollCalculations(adminUserId);
+        const payroll = await getPayrollCalculations(dataUserId);
         setPayrollCalculations(payroll);
       } else {
         setPayrollCalculations([]);
@@ -253,7 +254,7 @@ const Budgeting: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, adminUserId, selectedCompany, showError]);
+  }, [user, dataUserId, selectedCompany, showError]);
 
   useEffect(() => {
     loadData();

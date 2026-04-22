@@ -224,8 +224,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
           </div>
         )}
 
-        {/* Manager: Flat list without collapsible sections */}
-        {userRole === 'manager' ? (
+        {/* Manager / Boekhouder: Flat list without collapsible sections */}
+        {(userRole === 'manager' || userRole === 'boekhouder') ? (
           <div className="space-y-0.5">
             {filteredNavigation.filter(i => i.id !== 'dashboard').map((item) => (
               <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} />

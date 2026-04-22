@@ -51,8 +51,9 @@ interface ProductionWeek {
 }
 
 const OutgoingInvoices: React.FC = () => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { selectedCompany, employees, queryUserId, selectedYear, selectedQuarter } = useApp();
+  const isReadOnly = userRole === 'boekhouder';
   const { success, error: showError } = useToast();
   usePageTitle('Facturen');
 
@@ -1222,9 +1223,11 @@ const OutgoingInvoices: React.FC = () => {
           >
             {showFilters ? 'Sluiten' : 'Filter'}
           </Button>
-          <Button onClick={handleCreateNew} icon={Plus} size="sm">
-            Nieuw
-          </Button>
+          {!isReadOnly && (
+            <Button onClick={handleCreateNew} icon={Plus} size="sm">
+              Nieuw
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1368,63 +1371,65 @@ const OutgoingInvoices: React.FC = () => {
                         </div>
                       )}
 
-                      <div className="flex gap-1.5 flex-wrap text-xs">
-                        <Button
-                          onClick={() => handleDuplicateInvoice(invoice)}
-                          variant="secondary"
-                          size="sm"
-                          icon={Copy}
-                          className="flex-1"
-                          title="Kopieer naar nieuw concept"
-                        >
-                          Dupliceer
-                        </Button>
-
-                        <Button
-                          onClick={() => handleEdit(invoice)}
-                          variant="secondary"
-                          size="sm"
-                          icon={Edit}
-                          className="flex-1"
-                        >
-                          Bewerk
-                        </Button>
-
-                        {invoice.status === 'draft' && (
+                      {!isReadOnly && (
+                        <div className="flex gap-1.5 flex-wrap text-xs">
                           <Button
-                            onClick={() => handleSendInvoice(invoice.id!)}
-                            disabled={isLoading}
+                            onClick={() => handleDuplicateInvoice(invoice)}
+                            variant="secondary"
                             size="sm"
-                            icon={Send}
+                            icon={Copy}
+                            className="flex-1"
+                            title="Kopieer naar nieuw concept"
+                          >
+                            Dupliceer
+                          </Button>
+
+                          <Button
+                            onClick={() => handleEdit(invoice)}
+                            variant="secondary"
+                            size="sm"
+                            icon={Edit}
                             className="flex-1"
                           >
-                            {isLoading ? '...' : 'Verstuur'}
+                            Bewerk
                           </Button>
-                        )}
 
-                        {invoice.status === 'sent' && (
-                          <Button
-                            onClick={() => handleMarkAsPaid(invoice.id!)}
-                            size="sm"
-                            icon={CheckCircle}
-                            className="flex-1"
-                          >
-                            Betaald
-                          </Button>
-                        )}
+                          {invoice.status === 'draft' && (
+                            <Button
+                              onClick={() => handleSendInvoice(invoice.id!)}
+                              disabled={isLoading}
+                              size="sm"
+                              icon={Send}
+                              className="flex-1"
+                            >
+                              {isLoading ? '...' : 'Verstuur'}
+                            </Button>
+                          )}
 
-                        {invoice.status === 'draft' && (
-                          <Button
-                            onClick={() => handleDeleteInvoice(invoice.id!)}
-                            variant="danger"
-                            size="sm"
-                            icon={Trash2}
-                            className="flex-1"
-                          >
-                            Verwijder
-                          </Button>
-                        )}
-                      </div>
+                          {invoice.status === 'sent' && (
+                            <Button
+                              onClick={() => handleMarkAsPaid(invoice.id!)}
+                              size="sm"
+                              icon={CheckCircle}
+                              className="flex-1"
+                            >
+                              Betaald
+                            </Button>
+                          )}
+
+                          {invoice.status === 'draft' && (
+                            <Button
+                              onClick={() => handleDeleteInvoice(invoice.id!)}
+                              variant="danger"
+                              size="sm"
+                              icon={Trash2}
+                              className="flex-1"
+                            >
+                              Verwijder
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
