@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import { getEmployeeById } from '../../services/firebase';
 import Button from '../ui/Button';
+import PushPromptBanner from '../notifications/PushPromptBanner';
 
 interface EmployeeLayoutProps {
   children: React.ReactNode;
@@ -142,7 +143,8 @@ const EmployeeLayout: React.FC<EmployeeLayoutProps> = ({ children }) => {
 
         {/* Main Content */}
         <main className="flex-1 w-full md:ml-80 mt-16 md:mt-0 pb-24 md:pb-0">
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-4">
+            <PushPromptBanner />
             {children}
           </div>
         </main>

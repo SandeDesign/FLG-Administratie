@@ -16,6 +16,7 @@ import Sidebar from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileFullScreenMenu } from './MobileFullScreenMenu';
 import WeeklyTasksReminder, { WeeklyTasksReminderRef } from '../tasks/WeeklyTasksReminder';
+import PushPromptBanner from '../notifications/PushPromptBanner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -239,7 +240,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 lg:pb-0">
-          <div className="p-4 lg:p-6">
+          <div className="p-4 lg:p-6 space-y-4">
+            <PushPromptBanner />
             {children}
           </div>
         </main>

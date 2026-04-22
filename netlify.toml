@@ -13,6 +13,8 @@ node_bundler = "esbuild"
 # Disable secret scanning - API keys are properly stored in environment variables
 [template.environment]
 ANTHROPIC_API_KEY = "Add your Anthropic API key here"
+FIREBASE_SERVICE_ACCOUNT_JSON = "Full service account JSON (Firebase Console → Project Settings → Service accounts → Generate new private key)"
+VITE_FIREBASE_VAPID_KEY = "Web Push certificate key pair (Firebase Console → Project Settings → Cloud Messaging → Web configuration)"
 
 [[redirects]]
 from = "/api/*"
