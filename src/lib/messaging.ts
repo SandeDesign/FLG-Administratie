@@ -28,7 +28,13 @@ import {
   getDocs,
 } from 'firebase/firestore';
 
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
+// VAPID key: publieke helft van een keypair (private helft zit bij Firebase).
+// Mag veilig in frontend code — dit is exact hoe de rest van firebase.ts ook
+// publieke configs hardcoded heeft. import.meta.env wordt als override
+// gebruikt indien beschikbaar tijdens build.
+const VAPID_KEY =
+  (import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined) ||
+  'BNC4g-LWqqIwa-_yHnhM7y-aMZ0-uUYLeXPswZRQrohFFiSevJBpFJJj4uIGiuDEga0rJxPpwPgun-7mOyOdZQg';
 
 let messagingInstance: Messaging | null = null;
 
