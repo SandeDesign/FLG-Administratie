@@ -1383,12 +1383,12 @@ const BankStatementImport: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card>
           <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center">
-                <BookOpen className="w-4 h-4 mr-2" />
-                Rekeningschema
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center min-w-0">
+                <BookOpen className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Rekeningschema</span>
               </h3>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-wrap">
                 {grootboekrekeningen.length > 0 && (
                   <Button
                     onClick={() => generateGrootboekPDF(grootboekrekeningen, selectedCompany?.name || 'Bedrijf')}
@@ -1411,7 +1411,8 @@ const BankStatementImport: React.FC = () => {
                   ) : (
                     <>
                       <Download className="w-3 h-3 mr-1" />
-                      Importeer sjabloon
+                      <span className="hidden sm:inline">Importeer sjabloon</span>
+                      <span className="sm:hidden">Sjabloon</span>
                     </>
                   )}
                 </Button>
@@ -1517,7 +1518,7 @@ const BankStatementImport: React.FC = () => {
       </div>
 
       <Card>
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Import Geschiedenis
           </h2>
@@ -1542,11 +1543,11 @@ const BankStatementImport: React.FC = () => {
                     className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
                   >
                     <div
-                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="p-3 sm:p-4 flex items-start justify-between gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                       onClick={() => setExpandedImport(expandedImport === imp.id ? null : imp.id)}
                     >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="text-sm font-medium text-gray-900 dark:text-white">
                             {safeFormatDate(imp.importedAt, 'dd-MM-yyyy HH:mm')}
                           </span>
@@ -1556,6 +1557,8 @@ const BankStatementImport: React.FC = () => {
                           <span className="text-xs text-gray-600 dark:text-gray-400">
                             {imp.totalLines} regels
                           </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
                           <span className="text-xs text-green-600">
                             {confirmed.length} bevestigd
                           </span>
@@ -1566,11 +1569,11 @@ const BankStatementImport: React.FC = () => {
                             {unmatched.length} geen match
                           </span>
                         </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate">
                           Door: {imp.importedByName}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

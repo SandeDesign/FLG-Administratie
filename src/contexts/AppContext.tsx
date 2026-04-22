@@ -4,6 +4,14 @@ import { Company, Employee, Branch, DashboardStats } from '../types';
 import { getCompanies, getEmployees, getBranches, getUserSettings, getUserRole, getCompanyById, syncBoekhouderAssignments } from '../services/firebase';
 import { applyThemeColor } from '../utils/themeColors';
 
+// Voor boekhouder: lijst van toegewezen administraties (admins) met
+// basis-info zodat selectors een nette label kunnen tonen.
+export interface AssignedAdmin {
+  userId: string;
+  email: string;
+  displayName?: string;
+}
+
 interface AppContextType {
   companies: Company[];
   employees: Employee[];
@@ -15,6 +23,8 @@ interface AppContextType {
   loading: boolean;
   currentEmployeeId: string | null;
   queryUserId: string | null;
+  // Boekhouder-only: alle admins waar deze boekhouder toegang toe heeft
+  assignedAdmins: AssignedAdmin[];
   setSelectedCompany: (company: Company | null) => void;
   setSelectedYear: (year: number) => void;
   setSelectedQuarter: (quarter: number | null) => void;
@@ -33,6 +43,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedQuarter, setSelectedQuarterState] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [queryUserId, setQueryUserId] = useState<string | null>(null); // ✅ NIEUW: userId voor data queries
+  const [assignedAdmins, setAssignedAdmins] = useState<AssignedAdmin[]>([]);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     activeEmployees: 0,
     totalGrossThisMonth: 0,
@@ -155,6 +166,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             employeesData = [];
             branchesData = [];
             setQueryUserId(null);
+            setAssignedAdmins([]);
           } else {
             const companyResults = await Promise.all(
               assignedAdminIds.map(id => getCompanies(id).catch(() => []))
@@ -166,6 +178,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             employeesData = [];
             branchesData = [];
 
+            // Laad admin info (email + naam) voor elke toegewezen admin parallel
+            const adminInfos = await Promise.all(
+              assignedAdminIds.map(async (uid) => {
+                try {
+                  const settings = await getUserSettings(uid);
+                  return {
+                    userId: uid,
+                    email: settings?.email || '',
+                    displayName: settings?.displayName || '',
+                  } as AssignedAdmin;
+                } catch {
+                  return { userId: uid, email: '', displayName: '' } as AssignedAdmin;
+                }
+              })
+            );
+            setAssignedAdmins(adminInfos);
+
             // ✅ Start direct met eerste admin's UID als queryUserId zodat de initial
             // page render data laadt. Wisselt mee met selectedCompany via useEffect.
             setQueryUserId(companiesData[0]?.userId || assignedAdminIds[0]);
@@ -173,6 +202,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (error) {
           console.error('Error loading boekhouder data:', error);
           companiesData = [];
+          setAssignedAdmins([]);
         }
       } else {
         // ✅ ADMIN/EMPLOYEE: Load all companies
@@ -356,6 +386,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loading,
         currentEmployeeId,
         queryUserId,
+        assignedAdmins,
         setSelectedCompany,
         setSelectedYear,
         setSelectedQuarter,

@@ -724,26 +724,26 @@ const BtwOverzicht: React.FC = () => {
           <Card>
             <div className="p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
+                    <FileText className="w-4 h-4 flex-shrink-0" />
                     Dagboek Export
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Exporteer voor je boekhoudpakket
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
                   <select
                     value={exportFormat}
                     onChange={(e) => setExportFormat(e.target.value as ExportChoice)}
-                    className="flex-1 sm:flex-none px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   >
                     <option value="csv">Algemeen CSV</option>
                     <option value="exact_online">Exact Online</option>
                     <option value="snelstart">SnelStart</option>
                     <option value="twinfield">Twinfield</option>
-                    <option value="pdf">PDF overzicht (alle transacties + BTW)</option>
+                    <option value="pdf">PDF overzicht</option>
                   </select>
                   <Button
                     onClick={handleExportDagboek}
@@ -755,8 +755,8 @@ const BtwOverzicht: React.FC = () => {
                       <LoadingSpinner size="sm" />
                     ) : (
                       <>
-                        <Download className="w-4 h-4 mr-1" />
-                        Export
+                        <Download className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Export</span>
                       </>
                     )}
                   </Button>
