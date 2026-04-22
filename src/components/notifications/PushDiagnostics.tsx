@@ -35,7 +35,8 @@ const INITIAL: Check[] = [
   { id: 'messaging', label: '6. Firebase Messaging support check', status: 'idle' },
   { id: 'token', label: '7. FCM token ophalen (getToken)', status: 'idle' },
   { id: 'firestore', label: '8. Token opgeslagen in Firestore', status: 'idle' },
-  { id: 'server', label: '9. PHP push proxy bereikbaar (internedata.nl/fcm-send.php)', status: 'idle' },
+  { id: 'server-health', label: '9a. PHP self-check (GET internedata.nl/fcm-send.php)', status: 'idle' },
+  { id: 'server', label: '9b. PHP push proxy stuurt test push', status: 'idle' },
 ];
 
 export const PushDiagnostics: React.FC = () => {
@@ -196,7 +197,55 @@ export const PushDiagnostics: React.FC = () => {
       update('firestore', { status: 'fail', detail: `Firestore read failed: ${e?.message || e}` });
     }
 
-    // 9. PHP push proxy
+    // 9a. PHP self-check via GET — geeft uitsluitsel of service account,
+    // OAuth en Firestore allemaal werken vóór we überhaupt POST proberen.
+    update('server-health', { status: 'running' });
+    let healthOk = false;
+    try {
+      const healthRes = await fetch('https://internedata.nl/fcm-send.php', {
+        method: 'GET',
+      });
+      const health = await healthRes.json().catch(() => null);
+      if (!health) {
+        update('server-health', {
+          status: 'fail',
+          detail: `${healthRes.status} — geen JSON response. PHP draait niet of geeft HTML error.`,
+        });
+      } else if (!health.serviceAccountConfigured) {
+        update('server-health', {
+          status: 'fail',
+          detail: `service_account_not_configured — plak je JSON tussen NOWDOC markers in fcm-send.php (regel ~50).`,
+        });
+      } else if (!health.oauthOk) {
+        update('server-health', {
+          status: 'fail',
+          detail: `OAuth faalt (${health.error || 'unknown'}). Service account email: ${health.serviceAccountEmail || '?'}. HTTP: ${health.oauth?.oauthHttpCode || '?'}`,
+        });
+      } else if (!health.firestoreOk) {
+        update('server-health', {
+          status: 'fail',
+          detail: `Firestore call faalt (HTTP ${health.firestoreHttpCode}). Service account heeft mogelijk geen 'datastore' scope of project_id mismatch.`,
+        });
+      } else {
+        healthOk = true;
+        update('server-health', {
+          status: 'ok',
+          detail: `Service account ${health.serviceAccountEmail} → project ${health.serviceAccountProjectId} → Firestore reachable ✓`,
+        });
+      }
+    } catch (e: any) {
+      update('server-health', {
+        status: 'fail',
+        detail: `GET fetch error: ${e?.message || e}. Check DNS / SSL van internedata.nl.`,
+      });
+    }
+
+    // 9b. POST test — alleen zinvol als 9a groen.
+    if (!healthOk) {
+      update('server', { status: 'warn', detail: 'Overgeslagen omdat 9a faalde. Fix eerst de health-check.' });
+      setRunning(false);
+      return;
+    }
     update('server', { status: 'running' });
     try {
       const res = await fetch('https://internedata.nl/fcm-send.php', {
@@ -207,39 +256,35 @@ export const PushDiagnostics: React.FC = () => {
         body: JSON.stringify({
           userIds: [user.uid],
           title: '🧪 Diagnostic test',
-          body: 'Als je deze push ontvangt: server + token + device werken allemaal.',
+          body: 'Als je deze push ontvangt: alles werkt end-to-end.',
           url: '/',
           category: 'system_update',
         }),
       });
 
-      if (res.status === 503) {
-        const body = await res.json().catch(() => ({}));
+      const body = await res.json().catch(() => null);
+
+      if (res.status === 403) {
         update('server', {
           status: 'fail',
-          detail: `503 — ${body.error || 'service_account_missing'}. Pad in fcm-send.php klopt mogelijk niet.`,
-        });
-      } else if (res.status === 403) {
-        update('server', {
-          status: 'fail',
-          detail: '403 — Origin not allowed. Voeg deze URL toe aan ALLOWED_ORIGINS in fcm-send.php.',
+          detail: `403 — Origin '${window.location.origin}' niet whitelisted. Voeg toe aan ALLOWED_ORIGINS in fcm-send.php.`,
         });
       } else if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        update('server', { status: 'fail', detail: `${res.status} — ${text.substring(0, 300)}` });
+        update('server', {
+          status: 'fail',
+          detail: `${res.status} — ${body?.error || 'unknown'}: ${body?.message || ''}`,
+        });
+      } else if (body?.sent > 0) {
+        update('server', {
+          status: 'ok',
+          detail: `✓ Sent: ${body.sent}, Failed: ${body.failed}, Dead tokens removed: ${body.deletedTokens}. Push zou binnen seconden moeten binnenkomen.`,
+        });
       } else {
-        const body = await res.json();
-        if (body.sent > 0) {
-          update('server', {
-            status: 'ok',
-            detail: `Sent: ${body.sent}, Failed: ${body.failed}, Dead tokens removed: ${body.deletedTokens}. Push komt binnen op je device!`,
-          });
-        } else {
-          update('server', {
-            status: 'warn',
-            detail: `PHP antwoordde 200 maar geen tokens verstuurd (sent=${body.sent}, failed=${body.failed}). Check dat users/${user.uid}/fcmTokens niet leeg is.`,
-          });
-        }
+        const tokensInfo = body?.debug?.tokensFoundPerUser?.[user.uid] ?? '?';
+        update('server', {
+          status: 'warn',
+          detail: `PHP 200 OK maar 0 verstuurd. Tokens gevonden voor ${user.uid}: ${tokensInfo}. Mogelijk: Firestore rules blokkeren read, of subcollectie is leeg.`,
+        });
       }
     } catch (e: any) {
       update('server', {
