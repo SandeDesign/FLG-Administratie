@@ -31,7 +31,7 @@ const AVAILABLE_ICONS = [
   { name: 'Clock', icon: Clock, label: 'Uren', gradient: 'from-blue-500 to-blue-600' },
   { name: 'Users', icon: Users, label: 'Team', gradient: 'from-purple-500 to-purple-600' },
   { name: 'Send', icon: Send, label: 'Verkoop', gradient: 'from-green-500 to-green-600' },
-  { name: 'Upload', icon: Upload, label: 'Inkoop Upload', gradient: 'from-orange-500 to-orange-600' },
+  { name: 'Upload', icon: Upload, label: 'Upload', gradient: 'from-orange-500 to-orange-600' },
   { name: 'PieChart', icon: PieChart, label: 'Inkoop', gradient: 'from-orange-500 to-orange-600' },
   { name: 'CheckCircle2', icon: CheckCircle2, label: 'Goedkeuren', gradient: 'from-emerald-500 to-emerald-600' },
   { name: 'TrendingUp', icon: TrendingUp, label: 'Stats', gradient: 'from-indigo-500 to-indigo-600' },
@@ -117,7 +117,7 @@ export const BottomNavSettings: React.FC = () => {
         if (iconName === 'Clock') href = '/timesheets';
         else if (iconName === 'Users') href = '/employees';
         else if (iconName === 'Send') href = '/outgoing-invoices';
-        else if (iconName === 'Upload') href = '/incoming-invoices';
+        else if (iconName === 'Upload') href = '/upload';
         else if (iconName === 'CheckCircle2') href = userRole === 'admin' ? '/timesheet-approvals' : '/payslips';
         else if (iconName === 'TrendingUp') href = `/statistics/${selectedCompany.companyType}`;
         else if (iconName === 'Wallet') href = '/budgeting';
