@@ -661,9 +661,9 @@ const IncomingInvoicesStats: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Inkoop Bonnen
@@ -672,29 +672,32 @@ const IncomingInvoicesStats: React.FC = () => {
             Controleer alle inkoop bonnen.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant="secondary"
+            size="sm"
             onClick={() => setShowFilters(!showFilters)}
           >
-            <Filter className="w-4 h-4 mr-2" />
+            <Filter className="w-4 h-4 mr-1 sm:mr-2" />
             Filter
           </Button>
           {(isAdmin || isManager) && (
             <>
               <Button
                 variant="secondary"
+                size="sm"
                 onClick={() => setShowUploadModal(true)}
               >
-                <Upload className="w-4 h-4 mr-2" />
+                <Upload className="w-4 h-4 mr-1 sm:mr-2" />
                 Uploaden
               </Button>
               <Button
+                size="sm"
                 onClick={handleFetchFromEmail}
                 loading={isFetchingFromEmail}
                 disabled={isFetchingFromEmail || !selectedCompany}
               >
-                <Mail className="w-4 h-4 mr-2" />
+                <Mail className="w-4 h-4 mr-1 sm:mr-2" />
                 Mail
               </Button>
             </>
@@ -988,7 +991,7 @@ const IncomingInvoicesStats: React.FC = () => {
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
           {
             label: 'Totaal',

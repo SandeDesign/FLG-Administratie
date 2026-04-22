@@ -86,7 +86,7 @@ const Upload: React.FC = () => {
         </p>
       </div>
 
-      <div className="border-b border-gray-200 dark:border-gray-700">
+      <div className="border-b border-gray-200 dark:border-gray-700 -mx-4 px-4 sm:mx-0 sm:px-0">
         <nav className="-mb-px flex gap-1 overflow-x-auto">
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;

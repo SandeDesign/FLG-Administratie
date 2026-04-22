@@ -695,7 +695,7 @@ const OutgoingInvoices: React.FC = () => {
 
   if (!selectedCompany) {
     return (
-      <div className="space-y-6 px-4 sm:px-0">
+      <div className="space-y-6">
         <div className="hidden lg:block">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Facturen</h1>
         </div>
@@ -710,7 +710,7 @@ const OutgoingInvoices: React.FC = () => {
 
   if (view === 'create') {
     return (
-      <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 pb-24 sm:pb-6">
+      <div className="space-y-4 sm:space-y-6 pb-24 sm:pb-6">
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => setView('list')}
@@ -1207,7 +1207,7 @@ const OutgoingInvoices: React.FC = () => {
   }
 
   return (
-    <div className="space-y-3 px-4 sm:px-0 pb-6">
+    <div className="space-y-3 pb-6">
       <div className="flex items-center justify-between gap-3">
         <div className="hidden lg:block">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Facturen</h1>
