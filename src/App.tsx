@@ -39,7 +39,16 @@ import HoldingStatistics from './pages/HoldingStatistics';
 // ✅ NEW ADMIN PAGES
 import AdminDashboard from './pages/AdminDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
-import BoekhouderDashboard from './pages/BoekhouderDashboard';
+import BoekhouderDashboard from './pages/boekhouder/Dashboard';
+import BoekhouderInvoiceRelations from './pages/boekhouder/InvoiceRelations';
+import BoekhouderOutgoingInvoices from './pages/boekhouder/OutgoingInvoices';
+import BoekhouderIncomingInvoicesStats from './pages/boekhouder/IncomingInvoicesStats';
+import BoekhouderBankStatementImport from './pages/boekhouder/BankStatementImport';
+import BoekhouderGrootboekrekeningen from './pages/boekhouder/Grootboekrekeningen';
+import BoekhouderBtwOverzicht from './pages/boekhouder/BtwOverzicht';
+import BoekhouderExpenses from './pages/boekhouder/Expenses';
+import BoekhouderUpload from './pages/boekhouder/Upload';
+import BoekhouderSettings from './pages/boekhouder/Settings';
 import AdminExpenses from './pages/AdminExpenses';
 import AdminUsers from './pages/AdminUsers';
 import AdminRoles from './pages/AdminRoles';
@@ -224,32 +233,42 @@ function App() {
                   />
                 )}
 
-                {/* ✅ BOEKHOUDER ROUTES */}
+                {/* ✅ BOEKHOUDER ROUTES — eigen /boekhouder/* prefix */}
                 {userRole === 'boekhouder' && (
                   <Route
                     path="/*"
                     element={
                       <Layout>
                         <Routes>
-                          <Route index element={<BoekhouderDashboard />} />
+                          {/* Root → boekhouder dashboard */}
+                          <Route index element={<Navigate to="/boekhouder" replace />} />
 
-                          {/* Financieel (read-only voor verkoop/inkoop, volledig voor grootboek/btw) */}
-                          <Route path="invoice-relations" element={<InvoiceRelations />} />
-                          <Route path="budgeting" element={<Budgeting />} />
-                          <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
-                          <Route path="incoming-invoices-stats" element={<IncomingInvoicesStats />} />
-                          <Route path="bank-statement-import" element={<BankStatementImport />} />
-                          <Route path="grootboekrekeningen" element={<Grootboekrekeningen />} />
-                          <Route path="btw-overzicht" element={<BtwOverzicht />} />
-                          <Route path="admin-expenses" element={<AdminExpenses />} />
+                          {/* Boekhouder eigen pagina's */}
+                          <Route path="boekhouder" element={<BoekhouderDashboard />} />
+                          <Route path="boekhouder/invoice-relations" element={<BoekhouderInvoiceRelations />} />
+                          <Route path="boekhouder/outgoing-invoices" element={<BoekhouderOutgoingInvoices />} />
+                          <Route path="boekhouder/incoming-invoices-stats" element={<BoekhouderIncomingInvoicesStats />} />
+                          <Route path="boekhouder/bank-statement-import" element={<BoekhouderBankStatementImport />} />
+                          <Route path="boekhouder/grootboekrekeningen" element={<BoekhouderGrootboekrekeningen />} />
+                          <Route path="boekhouder/btw-overzicht" element={<BoekhouderBtwOverzicht />} />
+                          <Route path="boekhouder/admin-expenses" element={<BoekhouderExpenses />} />
+                          <Route path="boekhouder/upload" element={<BoekhouderUpload />} />
+                          <Route path="boekhouder/settings" element={<BoekhouderSettings />} />
+                          <Route path="boekhouder/incoming-invoices" element={<Navigate to="/boekhouder/upload?tab=facturen" replace />} />
+                          <Route path="boekhouder/incoming-post" element={<Navigate to="/boekhouder/upload?tab=post" replace />} />
 
-                          {/* Uploads voor alle 3 de tabs */}
-                          <Route path="upload" element={<Upload />} />
-                          <Route path="incoming-invoices" element={<Navigate to="/upload?tab=facturen" replace />} />
-                          <Route path="incoming-post" element={<Navigate to="/upload?tab=post" replace />} />
-
-                          {/* Instellingen */}
-                          <Route path="settings" element={<Settings />} />
+                          {/* Backwards-compat: oude paden redirecten naar /boekhouder/* */}
+                          <Route path="invoice-relations" element={<Navigate to="/boekhouder/invoice-relations" replace />} />
+                          <Route path="outgoing-invoices" element={<Navigate to="/boekhouder/outgoing-invoices" replace />} />
+                          <Route path="incoming-invoices-stats" element={<Navigate to="/boekhouder/incoming-invoices-stats" replace />} />
+                          <Route path="bank-statement-import" element={<Navigate to="/boekhouder/bank-statement-import" replace />} />
+                          <Route path="grootboekrekeningen" element={<Navigate to="/boekhouder/grootboekrekeningen" replace />} />
+                          <Route path="btw-overzicht" element={<Navigate to="/boekhouder/btw-overzicht" replace />} />
+                          <Route path="admin-expenses" element={<Navigate to="/boekhouder/admin-expenses" replace />} />
+                          <Route path="upload" element={<Navigate to="/boekhouder/upload" replace />} />
+                          <Route path="incoming-invoices" element={<Navigate to="/boekhouder/upload?tab=facturen" replace />} />
+                          <Route path="incoming-post" element={<Navigate to="/boekhouder/upload?tab=post" replace />} />
+                          <Route path="settings" element={<Navigate to="/boekhouder/settings" replace />} />
 
                           <Route path="*" element={<NotFound />} />
                         </Routes>

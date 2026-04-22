@@ -10,15 +10,15 @@ import {
   Handshake,
   Wallet,
 } from 'lucide-react';
-import Card from '../components/ui/Card';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { EmptyState } from '../components/ui/EmptyState';
-import { useAuth } from '../contexts/AuthContext';
-import { useApp } from '../contexts/AppContext';
-import { usePageTitle } from '../contexts/PageTitleContext';
-import { outgoingInvoiceService } from '../services/outgoingInvoiceService';
-import { incomingInvoiceService } from '../services/incomingInvoiceService';
-import { isInQuarter } from '../utils/dateFilters';
+import Card from '../../components/ui/Card';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { useAuth } from '../../contexts/AuthContext';
+import { useApp } from '../../contexts/AppContext';
+import { usePageTitle } from '../../contexts/PageTitleContext';
+import { outgoingInvoiceService } from '../../services/outgoingInvoiceService';
+import { incomingInvoiceService } from '../../services/incomingInvoiceService';
+import { isInQuarter } from '../../utils/dateFilters';
 
 interface CompanyKpi {
   companyId: string;
@@ -26,7 +26,7 @@ interface CompanyKpi {
   ownerUserId: string;
   outgoingTotal: number;
   incomingTotal: number;
-  btwSaldo: number; // >0 = af te dragen, <0 = te ontvangen
+  btwSaldo: number;
 }
 
 const formatEuro = (value: number) =>
@@ -193,12 +193,12 @@ const BoekhouderDashboard: React.FC = () => {
         <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">Snelle acties</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
-            { label: 'Verkoop', icon: Send, path: '/outgoing-invoices', gradient: 'from-emerald-500 to-emerald-600' },
-            { label: 'Inkoop', icon: Upload, path: '/incoming-invoices-stats', gradient: 'from-blue-500 to-blue-600' },
-            { label: 'Grootboek', icon: BookOpen, path: '/grootboekrekeningen', gradient: 'from-purple-500 to-purple-600' },
-            { label: 'BTW', icon: Receipt, path: '/btw-overzicht', gradient: 'from-amber-500 to-amber-600' },
-            { label: 'Bank', icon: FileInput, path: '/bank-statement-import', gradient: 'from-cyan-500 to-cyan-600' },
-            { label: 'Uploads', icon: Upload, path: '/upload', gradient: 'from-primary-500 to-primary-600' },
+            { label: 'Verkoop', icon: Send, path: '/boekhouder/outgoing-invoices', gradient: 'from-emerald-500 to-emerald-600' },
+            { label: 'Inkoop', icon: Upload, path: '/boekhouder/incoming-invoices-stats', gradient: 'from-blue-500 to-blue-600' },
+            { label: 'Grootboek', icon: BookOpen, path: '/boekhouder/grootboekrekeningen', gradient: 'from-purple-500 to-purple-600' },
+            { label: 'BTW', icon: Receipt, path: '/boekhouder/btw-overzicht', gradient: 'from-amber-500 to-amber-600' },
+            { label: 'Bank', icon: FileInput, path: '/boekhouder/bank-statement-import', gradient: 'from-cyan-500 to-cyan-600' },
+            { label: 'Uploads', icon: Upload, path: '/boekhouder/upload', gradient: 'from-primary-500 to-primary-600' },
           ].map((action) => (
             <button
               key={action.path}

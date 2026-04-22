@@ -629,6 +629,8 @@ const Settings: React.FC = () => {
 
   const isAdminOrManager = userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager';
   const isPrimaryAdmin = userRole === 'admin';
+  const isBoekhouder = userRole === 'boekhouder';
+  const canCustomizeMobileNav = isAdminOrManager || isBoekhouder;
   const tabs = [
     { id: 'account', name: 'Account', icon: User },
     ...(isAdminOrManager ? [
@@ -641,6 +643,8 @@ const Settings: React.FC = () => {
         { id: 'boekhouders', name: 'Boekhouders', icon: UserPlus },
       ] : []),
       { id: 'favorites', name: 'Favorieten', icon: Star },
+    ] : []),
+    ...(canCustomizeMobileNav ? [
       { id: 'mobile-nav', name: 'Mobiele Nav', icon: Smartphone },
     ] : []),
   ];
@@ -1302,7 +1306,7 @@ const Settings: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'mobile-nav' && isAdminOrManager && (
+      {activeTab === 'mobile-nav' && canCustomizeMobileNav && (
         <div className="space-y-6">
           <BottomNavSettings />
         </div>
