@@ -206,6 +206,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             companiesData = [];
             employeesData = [];
             branchesData = [];
+            setQueryUserId(null);
           } else {
             const companyResults = await Promise.all(
               assignedAdminIds.map(id => getCompanies(id).catch(() => []))
@@ -216,10 +217,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             // Boekhouder hoeft niet globaal alle medewerkers te zien
             employeesData = [];
             branchesData = [];
-          }
 
-          // queryUserId wordt dynamisch bepaald in pagina's obv selectedCompany.userId
-          setQueryUserId(null);
+            // ✅ Start direct met eerste admin's UID als queryUserId zodat de initial
+            // page render data laadt. Wisselt mee met selectedCompany via useEffect.
+            setQueryUserId(companiesData[0]?.userId || assignedAdminIds[0]);
+          }
         } catch (error) {
           console.error('Error loading boekhouder data:', error);
           companiesData = [];
