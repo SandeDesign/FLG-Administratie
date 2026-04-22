@@ -208,6 +208,11 @@ export const ICON_MAP: Record<string, React.ComponentType<{ className?: string; 
   Wallet,
   TrendingUp,
   ListTodo,
+  PieChart,
+  BookOpen,
+  FileInput,
+  Handshake,
+  Receipt,
 };
 
 /**
@@ -266,9 +271,9 @@ export const getBottomNavDefaults = (
 
   if (userRole === 'boekhouder') {
     return [
-      { href: '/boekhouder/outgoing-invoices', icon: 'Send', iconComponent: Send, label: 'Verkoop', gradient: 'from-primary-600 to-primary-700' },
-      { href: '/boekhouder/incoming-invoices-stats', icon: 'Upload', iconComponent: Upload, label: 'Inkoop', gradient: 'from-primary-500 to-primary-600' },
-      { href: '/boekhouder/btw-overzicht', icon: 'Wallet', iconComponent: Wallet, label: 'BTW', gradient: 'from-primary-600 to-primary-700' },
+      { href: '/boekhouder/upload', icon: 'Upload', iconComponent: Upload, label: 'Upload', gradient: 'from-primary-600 to-primary-700' },
+      { href: '/boekhouder/btw-overzicht', icon: 'Wallet', iconComponent: Wallet, label: 'BTW', gradient: 'from-primary-500 to-primary-600' },
+      { href: '/boekhouder/grootboekrekeningen', icon: 'BookOpen', iconComponent: BookOpen, label: 'Grootboek', gradient: 'from-primary-600 to-primary-700' },
     ];
   }
 
