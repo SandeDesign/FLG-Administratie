@@ -191,13 +191,38 @@ function getAccessToken($sa) {
 
 /**
  * Haal alle FCM tokens van een user op uit Firestore subcollectie.
+ *
+ * BELANGRIJK: We gebruiken runQuery, NIET documents.list.
+ * Reden: de client maakt alleen `users/{uid}/fcmTokens/{token}` aan, zonder
+ * eerst het parent document `users/{uid}` te schrijven. In Firestore heet dit
+ * een "missing ancestor" / ghost parent. De REST `documents.list` endpoint
+ * geeft dan 200 OK met lege body terug, terwijl de Web SDK de tokens wel
+ * gewoon ziet. `runQuery` (structured query) respecteert ghost parents wel
+ * en retourneert de documenten zoals verwacht.
  */
 function fetchTokensForUser($uid, $accessToken, &$debug) {
     $projectId = FCM_PROJECT_ID;
-    $url = "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/users/" . rawurlencode($uid) . "/fcmTokens";
+
+    // POST naar runQuery op de parent `users/{uid}`, met een structured
+    // query die de subcollectie `fcmTokens` selecteert.
+    $parent = "projects/$projectId/databases/(default)/documents/users/" . rawurlencode($uid);
+    $url = "https://firestore.googleapis.com/v1/$parent:runQuery";
+
+    $query = [
+        'structuredQuery' => [
+            'from' => [['collectionId' => 'fcmTokens']],
+            'limit' => 100,
+        ],
+    ];
+
     $ch = curl_init($url);
     curl_setopt_array($ch, [
-        CURLOPT_HTTPHEADER => ["Authorization: Bearer $accessToken"],
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($query),
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer $accessToken",
+            'Content-Type: application/json',
+        ],
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 15,
     ]);
@@ -206,22 +231,32 @@ function fetchTokensForUser($uid, $accessToken, &$debug) {
     curl_close($ch);
 
     $debug['firestoreHttpCode'] = $code;
+    $debug['firestoreUrl'] = $url;
+
     if ($code !== 200) {
-        $debug['firestoreError'] = substr((string)$resp, 0, 300);
+        $debug['firestoreError'] = substr((string)$resp, 0, 500);
         return [];
     }
+
+    // runQuery retourneert een array van objecten met { document: {...} }
+    // (en eventueel een leeg object als er 0 hits zijn).
     $data = json_decode($resp, true);
     $out = [];
-    foreach (($data['documents'] ?? []) as $doc) {
-        $name = $doc['name'] ?? '';
-        $token = $doc['fields']['token']['stringValue'] ?? null;
-        if (!$token && preg_match('#/fcmTokens/([^/]+)$#', $name, $m)) {
-            $token = $m[1];
-        }
-        if ($token) {
-            $out[] = ['token' => $token, 'docName' => $name];
+    if (is_array($data)) {
+        foreach ($data as $entry) {
+            $doc = $entry['document'] ?? null;
+            if (!$doc) continue;
+            $name = $doc['name'] ?? '';
+            $token = $doc['fields']['token']['stringValue'] ?? null;
+            if (!$token && preg_match('#/fcmTokens/([^/]+)$#', $name, $m)) {
+                $token = $m[1];
+            }
+            if ($token) {
+                $out[] = ['token' => $token, 'docName' => $name];
+            }
         }
     }
+    $debug['tokensParsed'] = count($out);
     return $out;
 }
 
