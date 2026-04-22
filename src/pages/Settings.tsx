@@ -184,7 +184,7 @@ const Settings: React.FC = () => {
   const [loadingInvoiceNumber, setLoadingInvoiceNumber] = useState(false);
 
   useEffect(() => {
-    if (user && userRole === 'admin' && activeTab === 'company') {
+    if (user && (userRole === 'admin' || userRole === 'co-admin') && activeTab === 'company') {
       loadDefaultCompany();
     }
   }, [user, userRole, activeTab, selectedCompany?.id]);
@@ -626,7 +626,8 @@ const Settings: React.FC = () => {
     }
   };
 
-  const isAdminOrManager = userRole === 'admin' || userRole === 'manager';
+  const isAdminOrManager = userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager';
+  const isPrimaryAdmin = userRole === 'admin';
   const tabs = [
     { id: 'account', name: 'Account', icon: User },
     ...(isAdminOrManager ? [
@@ -634,8 +635,10 @@ const Settings: React.FC = () => {
       { id: 'default-company', name: 'Standaard Bedrijf', icon: Building2 },
       { id: 'year-filter', name: 'Jaar Filter', icon: Calendar },
       { id: 'invoice', name: 'Factuurnummer', icon: FileText },
-      { id: 'co-admins', name: 'Co-Admins', icon: UserPlus },
-      { id: 'boekhouders', name: 'Boekhouders', icon: UserPlus },
+      ...(isPrimaryAdmin ? [
+        { id: 'co-admins', name: 'Co-Admins', icon: UserPlus },
+        { id: 'boekhouders', name: 'Boekhouders', icon: UserPlus },
+      ] : []),
       { id: 'favorites', name: 'Favorieten', icon: Star },
       { id: 'mobile-nav', name: 'Mobiele Nav', icon: Smartphone },
     ] : []),

@@ -30,12 +30,12 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const [periodSelectorOpen, setPeriodSelectorOpen] = useState(false);
 
-  const canSelectCompany = (userRole === 'admin' || userRole === 'boekhouder') && companies && companies.length > 1;
+  const canSelectCompany = (userRole === 'admin' || userRole === 'co-admin' || userRole === 'boekhouder') && companies && companies.length > 1;
 
   // Load favorite pages from user settings for the selected company
   useEffect(() => {
     const loadFavorites = async () => {
-      if (user && userRole === 'admin' && selectedCompany?.id) {
+      if (user && (userRole === 'admin' || userRole === 'co-admin') && selectedCompany?.id) {
         try {
           const settings = await getUserSettings(user.uid);
           if (settings?.favoritePages && settings.favoritePages[selectedCompany.id]) {
@@ -71,7 +71,7 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
   const dashboardItem = filteredNavigation.find(i => i.id === 'dashboard');
 
   // Favorite items (only for admin)
-  const favoriteItems = userRole === 'admin' && favoritePages.length > 0
+  const favoriteItems = (userRole === 'admin' || userRole === 'co-admin') && favoritePages.length > 0
     ? filteredNavigation.filter(i => favoritePages.includes(i.href) && i.id !== 'dashboard')
     : [];
 

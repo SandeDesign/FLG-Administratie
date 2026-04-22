@@ -33,7 +33,7 @@ export default function Payslips() {
       return;
     }
 
-    const effectiveEmployeeId = userRole === 'admin' ? selectedEmployeeId : currentEmployeeId;
+    const effectiveEmployeeId = (userRole === 'admin' || userRole === 'co-admin') ? selectedEmployeeId : currentEmployeeId;
 
     if (!effectiveEmployeeId) {
       setLoading(false);
@@ -197,7 +197,7 @@ export default function Payslips() {
 
   const companyEmployees = employees.filter(emp => emp.companyId === selectedCompany.id);
 
-  if (userRole === 'admin' && !selectedEmployeeId && companyEmployees.length === 0) {
+  if ((userRole === 'admin' || userRole === 'co-admin') && !selectedEmployeeId && companyEmployees.length === 0) {
     return (
       <div className="space-y-6">
         <div className="hidden lg:block">
@@ -218,11 +218,11 @@ export default function Payslips() {
         <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            {userRole === 'admin' ? 'Bekijk en beheer loonstroken' : 'Bekijk en download uw loonstroken'}
+            {(userRole === 'admin' || userRole === 'co-admin') ? 'Bekijk en beheer loonstroken' : 'Bekijk en download uw loonstroken'}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {userRole === 'admin' && companyEmployees.length > 0 && (
+          {(userRole === 'admin' || userRole === 'co-admin') && companyEmployees.length > 0 && (
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
@@ -251,7 +251,7 @@ export default function Payslips() {
         </div>
       </div>
 
-      {userRole === 'admin' && !selectedEmployeeId ? (
+      {(userRole === 'admin' || userRole === 'co-admin') && !selectedEmployeeId ? (
         <Card>
           <EmptyState
             icon={User}

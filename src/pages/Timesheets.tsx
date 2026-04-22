@@ -55,8 +55,8 @@ export default function Timesheets() {
       return;
     }
 
-    // Voor admin/manager: selecteerbare employee, voor employee: eigen currentEmployeeId
-    const effectiveEmployeeId = (userRole === 'admin' || userRole === 'manager') ? (selectedEmployeeId || currentEmployeeId) : currentEmployeeId;
+    // Voor admin/co-admin/manager: selecteerbare employee, voor employee: eigen currentEmployeeId
+    const effectiveEmployeeId = (userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager') ? (selectedEmployeeId || currentEmployeeId) : currentEmployeeId;
 
     if (!effectiveEmployeeId) {
       setLoading(false);
@@ -301,7 +301,7 @@ export default function Timesheets() {
   };
 
   useEffect(() => {
-    if ((userRole === 'admin' || userRole === 'manager') && !selectedEmployeeId && selectedCompany) {
+    if ((userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager') && !selectedEmployeeId && selectedCompany) {
       const companyEmployees = employees.filter(emp => emp.companyId === selectedCompany.id);
       if (userRole === 'manager' && currentEmployeeId) {
         const own = companyEmployees.find(emp => emp.id === currentEmployeeId);
@@ -687,7 +687,7 @@ export default function Timesheets() {
   }
 
   const companyEmployees = employees.filter(emp => emp.companyId === selectedCompany.id);
-  const effectiveEmployeeId = (userRole === 'admin' || userRole === 'manager') ? (selectedEmployeeId || currentEmployeeId) : currentEmployeeId;
+  const effectiveEmployeeId = (userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager') ? (selectedEmployeeId || currentEmployeeId) : currentEmployeeId;
 
   if (!effectiveEmployeeId) {
     return (
@@ -695,7 +695,7 @@ export default function Timesheets() {
         <div className="hidden lg:block">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Urenregistratie</h1>
         </div>
-        {userRole === 'admin' && companyEmployees.length === 0 ? (
+        {(userRole === 'admin' || userRole === 'co-admin') && companyEmployees.length === 0 ? (
           <EmptyState
             icon={Clock}
             title="Geen werknemers gevonden"
@@ -705,7 +705,7 @@ export default function Timesheets() {
           <EmptyState
             icon={Clock}
             title="Geen werknemer geselecteerd"
-            description={userRole === 'admin' ? 'Selecteer een werknemer uit de dropdown hierboven om uren te registreren.' : 'Selecteer een werknemer om uren te registreren.'}
+            description={(userRole === 'admin' || userRole === 'co-admin') ? 'Selecteer een werknemer uit de dropdown hierboven om uren te registreren.' : 'Selecteer een werknemer om uren te registreren.'}
           />
         )}
       </div>
@@ -766,7 +766,7 @@ export default function Timesheets() {
           </div>
 
           {/* Employee Selector (Admin/Manager) */}
-          {(userRole === 'admin' || userRole === 'manager') && companyEmployees.length > 1 && (
+          {(userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager') && companyEmployees.length > 1 && (
             <select
               value={selectedEmployeeId}
               onChange={(e) => setSelectedEmployeeId(e.target.value)}

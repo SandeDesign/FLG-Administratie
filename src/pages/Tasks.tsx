@@ -115,7 +115,7 @@ const Tasks: React.FC = () => {
         setAllPeople([...empPeople, ...nonEmpPeople]);
       };
       loadPeople().catch(() => {});
-      getInternalProjects(user.uid, selectedCompany.id).then(setInternalProjects).catch(() => {});
+      getInternalProjects(adminUserId!, selectedCompany.id).then(setInternalProjects).catch(() => {});
     }
   }, [user, selectedCompany]);
 

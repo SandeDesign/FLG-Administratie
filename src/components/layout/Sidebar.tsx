@@ -108,7 +108,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
   // Load favorite pages from user settings voor het geselecteerde bedrijf
   useEffect(() => {
     const loadFavorites = async () => {
-      if (user && userRole === 'admin' && selectedCompany?.id) {
+      if (user && (userRole === 'admin' || userRole === 'co-admin') && selectedCompany?.id) {
         try {
           const settings = await getUserSettings(user.uid);
           if (settings?.favoritePages && settings.favoritePages[selectedCompany.id]) {
@@ -150,7 +150,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
   const dashboardItem = filteredNavigation.find(i => i.id === 'dashboard');
 
   // Favorite items (only for admin)
-  const favoriteItems = userRole === 'admin' && favoritePages.length > 0
+  const favoriteItems = (userRole === 'admin' || userRole === 'co-admin') && favoritePages.length > 0
     ? filteredNavigation.filter(i => favoritePages.includes(i.href) && i.id !== 'dashboard')
     : [];
 

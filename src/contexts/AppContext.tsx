@@ -245,7 +245,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.log('Loaded branches:', branchesData.length);
 
       // Filter companies based on user's visibleCompanyIds setting
-      if (userRole === 'admin' && user) {
+      if ((userRole === 'admin' || userRole === 'co-admin') && user) {
         try {
           const userSettings = await getUserSettings(user.uid);
           const visibleIds = userSettings?.visibleCompanyIds;
@@ -265,7 +265,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Set default company
       let defaultCompanyId: string | null = null;
 
-      if (userRole === 'admin' && user) {
+      if ((userRole === 'admin' || userRole === 'co-admin') && user) {
         try {
           const userSettings = await getUserSettings(user.uid);
           defaultCompanyId = userSettings?.defaultCompanyId || null;
@@ -322,7 +322,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      if (userRole === 'admin') {
+      if (userRole === 'admin' || userRole === 'co-admin') {
         await calculateDashboardStats(companiesData, employeesData, branchesData, adminUserId);
       }
     } catch (error) {
@@ -336,7 +336,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Main useEffect - ONLY depends on auth values - runs ONCE on login
   useEffect(() => {
-    if (user && adminUserId && (userRole === 'admin' || userRole === 'employee' || userRole === 'manager' || userRole === 'boekhouder')) {
+    if (user && adminUserId && (userRole === 'admin' || userRole === 'co-admin' || userRole === 'employee' || userRole === 'manager' || userRole === 'boekhouder')) {
       loadData();
     } else {
       setLoading(false);
@@ -353,7 +353,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ✅ REFRESH ONLY recalculates dashboard stats WITHOUT reloading data or changing company
   const refreshDashboardStats = useCallback(async () => {
-    if (userRole === 'admin' && companies.length > 0 && employees.length > 0 && branches.length > 0) {
+    if ((userRole === 'admin' || userRole === 'co-admin') && companies.length > 0 && employees.length > 0 && branches.length > 0) {
       console.log('Refreshing dashboard stats only - NOT reloading data');
       await calculateDashboardStats(companies, employees, branches, adminUserId);
     }

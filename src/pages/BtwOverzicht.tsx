@@ -91,7 +91,7 @@ const BtwOverzicht: React.FC = () => {
 
   const loadData = useCallback(async () => {
     if (!selectedCompany || !user) return;
-    // Boekhouder gebruikt company.userId (eigenaar admin), admin zijn eigen uid
+    // Prioriteit: queryUserId (manager/boekhouder) > company.userId (boekhouder fallback) > user.uid (admin)
     const effectiveUserId = queryUserId || selectedCompany.userId || user.uid;
     try {
       setLoading(true);
@@ -116,7 +116,7 @@ const BtwOverzicht: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  if (userRole !== 'admin' && userRole !== 'boekhouder') {
+  if (userRole !== 'admin' && userRole !== 'co-admin' && userRole !== 'boekhouder') {
     return (
       <div className="p-4 sm:p-6">
         <EmptyState icon={Shield} title="Geen toegang" description="Alleen administrators en boekhouders kunnen het BTW overzicht bekijken" />

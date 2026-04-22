@@ -45,11 +45,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCurrentEmployeeId(roleData?.employeeId || null);
 
           if (roleData?.role === 'admin') {
-            // ✅ CHECK IF THIS ADMIN IS A CO-ADMIN
+            // ✅ CHECK IF THIS ADMIN IS A CO-ADMIN (Design A: role='admin' + primaryAdminUserId)
             // Get co-admin's own settings to find primary admin UID
             try {
               const userSettings = await getUserSettings(user.uid);
-              
+
               if (userSettings?.primaryAdminUserId) {
                 // ✅ This user is a co-admin - use primary admin's UID
                 console.log('[AuthContext] Co-admin detected, primaryAdminUserId:', userSettings.primaryAdminUserId);
@@ -61,6 +61,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             } catch (settingsError) {
               console.error('[AuthContext] Error loading user settings, using own UID:', settingsError);
+              setAdminUserId(user.uid);
+            }
+          } else if (roleData?.role === 'co-admin') {
+            // ✅ Design B co-admin: role stored as 'co-admin' in Firestore
+            try {
+              const userSettings = await getUserSettings(user.uid);
+              if (userSettings?.primaryAdminUserId) {
+                console.log('[AuthContext] Co-admin (co-admin role) detected, primaryAdminUserId:', userSettings.primaryAdminUserId);
+                setAdminUserId(userSettings.primaryAdminUserId);
+              } else {
+                console.warn('[AuthContext] Co-admin has no primaryAdminUserId, using own UID');
+                setAdminUserId(user.uid);
+              }
+            } catch (settingsError) {
+              console.error('[AuthContext] Error loading co-admin settings, using own UID:', settingsError);
               setAdminUserId(user.uid);
             }
           } else if (roleData?.role === 'manager') {
