@@ -7,6 +7,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   Copy,
+  ExternalLink,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMessaging, getToken, isSupported } from 'firebase/messaging';
@@ -241,10 +243,47 @@ export const PushDiagnostics: React.FC = () => {
     setRunning(false);
   };
 
+  const [swTestResult, setSwTestResult] = useState<string | null>(null);
+
   const copyToken = () => {
     if (token) {
       navigator.clipboard.writeText(token).catch(() => undefined);
     }
+  };
+
+  // Lokale test: vraag de SW zelf een notification te tonen. Bewijst dat
+  // de SW's showNotification API werkt (= dezelfde code die FCM push
+  // gebruikt). Als dit werkt ken je zeker dat binnenkomende pushes óók
+  // getoond worden.
+  const testLocalNotification = async () => {
+    setSwTestResult('Bezig…');
+    try {
+      if (Notification.permission !== 'granted') {
+        setSwTestResult('Geen permission — klik eerst Activeer in banner.');
+        return;
+      }
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification('🔔 Lokale SW test', {
+        body: 'Als je dit ziet: de service worker kan notifications tonen. Inkomende pushes gebruiken dezelfde code.',
+        icon: '/Logo-192.png',
+        badge: '/Logo-192.png',
+        tag: 'sw-local-test',
+        data: { url: '/' },
+      });
+      setSwTestResult('Notification getoond via SW ✓ (kijk in je notification center)');
+    } catch (e: any) {
+      setSwTestResult(`Error: ${e?.message || e}`);
+    }
+  };
+
+  // Kopieer token + open Firebase Console direct
+  const openFirebaseTest = async () => {
+    if (!token) return;
+    await navigator.clipboard.writeText(token).catch(() => undefined);
+    window.open(
+      'https://console.firebase.google.com/project/alloon/notification/compose',
+      '_blank'
+    );
   };
 
   return (
@@ -293,6 +332,49 @@ export const PushDiagnostics: React.FC = () => {
         ))}
       </ul>
 
+      {/* Test-actieknoppen — werken ook zonder server-config */}
+      <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 space-y-2">
+        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+          Harde tests (bypass de server)
+        </p>
+
+        <button
+          onClick={testLocalNotification}
+          className="w-full text-left p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 text-xs flex items-start gap-2"
+        >
+          <Zap className="h-4 w-4 text-primary-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-gray-900 dark:text-gray-100">
+              1. Test Service Worker notificatie lokaal
+            </p>
+            <p className="text-gray-600 dark:text-gray-400">
+              Toont een notificatie via dezelfde SW-code die inkomende pushes gebruikt. Als deze werkt: de SW werkt.
+            </p>
+            {swTestResult && (
+              <p className="mt-1 text-[11px] text-primary-700 dark:text-primary-300">
+                {swTestResult}
+              </p>
+            )}
+          </div>
+        </button>
+
+        <button
+          onClick={openFirebaseTest}
+          disabled={!token}
+          className="w-full text-left p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary-400 text-xs flex items-start gap-2 disabled:opacity-50"
+        >
+          <ExternalLink className="h-4 w-4 text-primary-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-gray-900 dark:text-gray-100">
+              2. Test echte push met app gesloten (via Firebase Console)
+            </p>
+            <p className="text-gray-600 dark:text-gray-400">
+              Kopieert token → opent Firebase Console in nieuwe tab. Plak token in "Test on device", sluit/minimize deze app, klik Test in Firebase → als push binnenkomt: alles werkt behalve onze server function.
+            </p>
+          </div>
+        </button>
+      </div>
+
       {token && (
         <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
           <div className="flex items-center justify-between mb-1">
@@ -307,9 +389,6 @@ export const PushDiagnostics: React.FC = () => {
           <code className="block text-[10px] break-all text-gray-600 dark:text-gray-400 font-mono">
             {token}
           </code>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            Plak deze in Firebase Console → Cloud Messaging → Send test message om rechtstreeks te testen of de OS-laag de notificatie accepteert (bypass onze server).
-          </p>
         </div>
       )}
     </div>
