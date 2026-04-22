@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { Company, Employee, Branch, DashboardStats } from '../types';
-import { getCompanies, getEmployees, getBranches, getPendingLeaveApprovals, getUserSettings, getUserRole, getCompanyById, syncBoekhouderAssignments } from '../services/firebase';
-import { getPendingExpenses } from '../services/firebase';
-import { getPayrollCalculations } from '../services/payrollService';
-import { getPendingTimesheets } from '../services/timesheetService';
+import { getCompanies, getEmployees, getBranches, getUserSettings, getUserRole, getCompanyById, syncBoekhouderAssignments } from '../services/firebase';
 import { applyThemeColor } from '../utils/themeColors';
 
 interface AppContextType {
@@ -47,74 +44,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Use ref to track if data is being loaded to prevent duplicate calls
   const isLoadingRef = useRef(false);
 
-  // Calculate dashboard stats - PURE FUNCTION, no setState in dependencies
+  // OPTIMALISATIE: vroeger deed dit 4 queries × N bedrijven (leave/timesheets/
+  // expenses/payroll) bij elke login + bij elke refreshDashboardStats call.
+  // dashboardStats wordt echter nergens uit de context gelezen (grep-check).
+  // Dashboard.tsx heeft z'n eigen loadAdminData die deze info ophaalt voor
+  // alleen de geselecteerde company — véél zuiniger.
+  // Functie blijft als no-op voor backwards compat met refreshDashboardStats
+  // callers in Employees/Companies pages.
   const calculateDashboardStats = useCallback(async (
     companiesData: Company[],
     employeesData: Employee[],
-    branchesData: Branch[],
-    userId: string
+    _branchesData: Branch[],
+    _userId: string
   ) => {
-    try {
-      const activeEmployees = employeesData.filter(emp => emp.status === 'active').length;
-      const companiesCount = companiesData.length;
-      const branchesCount = branchesData.length;
-
-      let totalPendingApprovals = 0;
-      let totalGrossThisMonth = 0;
-
-      if (companiesData.length > 0) {
-        try {
-          const pendingLeaveRequests = await Promise.all(
-            companiesData.map(company => getPendingLeaveApprovals(company.id, userId).catch(() => []))
-          );
-          totalPendingApprovals += pendingLeaveRequests.flat().length;
-        } catch (error) {
-          console.error('Error calculating pending leaves:', error);
-        }
-
-        try {
-          const pendingTimesheets = await Promise.all(
-            companiesData.map(company => getPendingTimesheets(userId, company.id).catch(() => []))
-          );
-          totalPendingApprovals += pendingTimesheets.flat().length;
-        } catch (error) {
-          console.error('Error calculating pending timesheets:', error);
-        }
-
-        try {
-          const pendingExpenses = await Promise.all(
-            companiesData.map(company => getPendingExpenses(company.id, userId).catch(() => []))
-          );
-          totalPendingApprovals += pendingExpenses.flat().length;
-        } catch (error) {
-          console.error('Error calculating pending expenses:', error);
-        }
-
-        try {
-          const currentMonth = new Date().getMonth();
-          const currentYear = new Date().getFullYear();
-          const payrollCalculations = await getPayrollCalculations(userId).catch(() => []);
-          totalGrossThisMonth = payrollCalculations.reduce((sum, calc) => {
-            if (calc.periodStartDate.getMonth() === currentMonth && calc.periodStartDate.getFullYear() === currentYear) {
-              return sum + calc.grossPay;
-            }
-            return sum;
-          }, 0);
-        } catch (error) {
-          console.error('Error calculating payroll:', error);
-        }
-      }
-
-      setDashboardStats({
-        activeEmployees,
-        totalGrossThisMonth,
-        companiesCount,
-        branchesCount,
-        pendingApprovals: totalPendingApprovals,
-      });
-    } catch (error) {
-      console.error('Error in calculateDashboardStats:', error);
-    }
+    setDashboardStats(prev => ({
+      ...prev,
+      activeEmployees: employeesData.filter(emp => emp.status === 'active').length,
+      companiesCount: companiesData.length,
+      branchesCount: _branchesData.length,
+    }));
   }, []);
 
   // Main load function - loads all data AND sets default company

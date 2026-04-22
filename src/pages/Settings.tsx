@@ -36,6 +36,7 @@ import { getFilteredNavigation, CompanyType } from '../utils/menuConfig';
 import CompaniesVisibilitySettings from '../components/settings/CompaniesVisibilitySettings';
 import { BottomNavSettings } from '../components/settings/BottomNavSettings';
 import { outgoingInvoiceService } from '../services/outgoingInvoiceService';
+import PushDiagnostics from '../components/notifications/PushDiagnostics';
 // ✅ Ensure this component is placed at: src/components/settings/CompaniesVisibilitySettings.tsx
 
 // Microsoft Koppeling Component
@@ -675,6 +676,13 @@ const Settings: React.FC = () => {
 
       {activeTab === 'account' && (
         <div className="space-y-6">
+          {/* Push notifications diagnostics */}
+          <Card>
+            <div className="p-6">
+              <PushDiagnostics />
+            </div>
+          </Card>
+
           {/* Profile Photo */}
           <Card>
             <div className="p-6">

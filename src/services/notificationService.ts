@@ -172,8 +172,11 @@ export class NotificationService {
     });
 
     if (!response.ok) {
+      // 503 = server niet geconfigureerd, 401 = token issue → beide graceful:
+      // push is nice-to-have bovenop in_app. Niet als error loggen.
+      if (response.status === 503 || response.status === 401) return;
       const text = await response.text().catch(() => '');
-      throw new Error(`send-push ${response.status}: ${text}`);
+      console.warn(`[Notifications] send-push ${response.status}: ${text}`);
     }
   }
 

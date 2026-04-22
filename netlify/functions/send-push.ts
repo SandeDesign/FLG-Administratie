@@ -41,6 +41,16 @@ const handler: Handler = async (event) => {
     return jsonResponse(405, { error: 'Method not allowed' });
   }
 
+  // Guard: als server niet geconfigureerd, geef 503 terug met duidelijke reden.
+  // Client catcht dit silent — push is graceful-optional bovenop in_app/email.
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    console.warn('[send-push] FIREBASE_SERVICE_ACCOUNT_JSON ontbreekt — zet in Netlify env vars');
+    return jsonResponse(503, {
+      error: 'push_disabled',
+      message: 'Server env var FIREBASE_SERVICE_ACCOUNT_JSON ontbreekt.',
+    });
+  }
+
   // Verifieer Firebase ID token
   const authHeader = event.headers.authorization || event.headers.Authorization || '';
   const match = authHeader.match(/^Bearer\s+(.+)$/i);

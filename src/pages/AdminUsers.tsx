@@ -129,9 +129,22 @@ const AdminUsers: React.FC = () => {
   }, [user, adminUserId, showError]);
 
   useEffect(() => {
-    if (adminUserId) {
-      repairAdminUsers(adminUserId).then(() => loadUsers());
+    if (!adminUserId) return;
+
+    // Cache repair 24u — was vroeger 2 queries per page-open, nu max 1x/dag.
+    const repairKey = `repairAdminUsers_${adminUserId}`;
+    const lastRepair = parseInt(localStorage.getItem(repairKey) || '0', 10);
+    const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+
+    if (lastRepair > oneDayAgo) {
+      loadUsers();
+      return;
     }
+
+    repairAdminUsers(adminUserId).then(() => {
+      localStorage.setItem(repairKey, String(Date.now()));
+      loadUsers();
+    });
   }, [loadUsers, adminUserId]);
 
   const filteredUsers = users.filter(userRole => {
