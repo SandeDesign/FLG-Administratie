@@ -60,7 +60,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
 
   // Dashboard is altijd het eerste item (fixed)
   const dashboardItem = {
-    href: '/',
+    href: userRole === 'boekhouder' ? '/boekhouder' : '/',
     icon: Home,
     label: 'Dashboard',
     gradient: 'from-primary-500 to-primary-600'

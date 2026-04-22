@@ -107,6 +107,9 @@ export const BottomNavSettings: React.FC = () => {
     try {
       setSaving(true);
 
+      // Prefix boekhouder paden
+      const prefix = userRole === 'boekhouder' ? '/boekhouder' : '';
+
       // Map icon names naar BottomNavItem objecten
       const bottomNavItems: BottomNavItem[] = selectedIcons.map(iconName => {
         const iconConfig = AVAILABLE_ICONS.find(i => i.name === iconName);
@@ -116,15 +119,15 @@ export const BottomNavSettings: React.FC = () => {
         let href = '/';
         if (iconName === 'Clock') href = '/timesheets';
         else if (iconName === 'Users') href = '/employees';
-        else if (iconName === 'Send') href = '/outgoing-invoices';
-        else if (iconName === 'Upload') href = '/upload';
+        else if (iconName === 'Send') href = `${prefix}/outgoing-invoices`;
+        else if (iconName === 'Upload') href = `${prefix}/upload`;
         else if (iconName === 'CheckCircle2') href = (userRole === 'admin' || userRole === 'co-admin') ? '/timesheet-approvals' : '/payslips';
         else if (iconName === 'TrendingUp') href = `/statistics/${selectedCompany.companyType}`;
-        else if (iconName === 'Wallet') href = '/budgeting';
+        else if (iconName === 'Wallet') href = userRole === 'boekhouder' ? '/boekhouder/btw-overzicht' : '/budgeting';
         else if (iconName === 'Cpu') href = '/project-production';
-        else if (iconName === 'PieChart') href = '/incoming-invoices-stats';
+        else if (iconName === 'PieChart') href = `${prefix}/incoming-invoices-stats`;
         else if (iconName === 'ListTodo') href = '/tasks';
-        else if (iconName === 'Settings') href = '/settings';
+        else if (iconName === 'Settings') href = `${prefix}/settings`;
 
         return {
           href,
