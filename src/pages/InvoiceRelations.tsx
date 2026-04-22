@@ -392,8 +392,8 @@ const InvoiceRelations: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="-mb-px flex space-x-8">
+      <div className="border-b border-gray-200 dark:border-gray-700 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <nav className="-mb-px flex gap-3 sm:gap-6 lg:gap-8 overflow-x-auto">
           <button
             onClick={() => setActiveTab('klanten')}
             className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors ${

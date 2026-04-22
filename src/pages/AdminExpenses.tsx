@@ -189,8 +189,8 @@ const AdminExpenses: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="hidden lg:block">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Declaraties Goedkeuring</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -198,14 +198,14 @@ const AdminExpenses: React.FC = () => {
           </p>
         </div>
         {pendingCount > 0 && (
-          <div className="flex items-center space-x-2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg">
-            <AlertCircle className="h-5 w-5" />
-            <span className="font-medium">{pendingCount} wachtend op goedkeuring</span>
+          <div className="flex items-center gap-2 bg-yellow-100 text-yellow-800 px-3 py-2 rounded-lg text-sm">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <span className="font-medium">{pendingCount} wachtend</span>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Concept</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">

@@ -980,8 +980,8 @@ const BankStatementImport: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="hidden lg:block">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Bankafschrift Import

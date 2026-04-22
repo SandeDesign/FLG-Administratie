@@ -302,7 +302,7 @@ const BtwOverzicht: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="hidden lg:block">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">BTW Overzicht</h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
