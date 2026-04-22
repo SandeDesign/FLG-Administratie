@@ -118,7 +118,7 @@ export const BottomNavSettings: React.FC = () => {
         else if (iconName === 'Users') href = '/employees';
         else if (iconName === 'Send') href = '/outgoing-invoices';
         else if (iconName === 'Upload') href = '/upload';
-        else if (iconName === 'CheckCircle2') href = userRole === 'admin' ? '/timesheet-approvals' : '/payslips';
+        else if (iconName === 'CheckCircle2') href = (userRole === 'admin' || userRole === 'co-admin') ? '/timesheet-approvals' : '/payslips';
         else if (iconName === 'TrendingUp') href = `/statistics/${selectedCompany.companyType}`;
         else if (iconName === 'Wallet') href = '/budgeting';
         else if (iconName === 'Cpu') href = '/project-production';

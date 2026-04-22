@@ -165,7 +165,7 @@ const Dashboard: React.FC = () => {
 
   // ========== LOAD HOLDING DATA ==========
   const loadHoldingData = useCallback(async () => {
-    if (!user || !adminUserId || !selectedCompany || userRole !== 'admin') return;
+    if (!user || !adminUserId || !selectedCompany || (userRole !== 'admin' && userRole !== 'co-admin')) return;
     if (selectedCompany.companyType !== 'holding') return;
 
     setDashLoading(true);
@@ -240,7 +240,7 @@ const Dashboard: React.FC = () => {
 
   // ========== LOAD ADMIN DATA ==========
   const loadAdminData = useCallback(async () => {
-    if (!user || !adminUserId || !selectedCompany || userRole !== 'admin') return;
+    if (!user || !adminUserId || !selectedCompany || (userRole !== 'admin' && userRole !== 'co-admin')) return;
 
     setDashLoading(true);
     try {
@@ -462,7 +462,7 @@ const Dashboard: React.FC = () => {
   }, [user, currentEmployeeId, userRole]);
 
   useEffect(() => {
-    if (userRole === 'admin') {
+    if (userRole === 'admin' || userRole === 'co-admin') {
       loadAdminData();
       if (selectedCompany?.companyType === 'holding') {
         loadHoldingData();
@@ -497,7 +497,7 @@ const Dashboard: React.FC = () => {
   const totalPending = pendingTimesheets.length + pendingLeave.length + pendingExpenses.length;
 
   // ========== HOLDING COMPANY DASHBOARD ==========
-  if (isHoldingCompany && (userRole === 'admin' || userRole === 'manager')) {
+  if (isHoldingCompany && (userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager')) {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Hero Header */}
@@ -641,7 +641,7 @@ const Dashboard: React.FC = () => {
   }
 
   // ========== PROJECT COMPANY DASHBOARD ==========
-  if (isProjectCompany && (userRole === 'admin' || userRole === 'manager')) {
+  if (isProjectCompany && (userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager')) {
     if (loadingProjectStats) {
       return <LoadingSpinner />;
     }
@@ -908,7 +908,7 @@ const Dashboard: React.FC = () => {
   }
 
   // ========== ADMIN/MANAGER EMPLOYER DASHBOARD ==========
-  if ((userRole === 'admin' || userRole === 'manager') && !isProjectCompany && !isHoldingCompany) {
+  if ((userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager') && !isProjectCompany && !isHoldingCompany) {
     return (
       <div className="space-y-4 pb-24 sm:pb-6 px-4 sm:px-0">
         {/* Hero Header */}
@@ -916,7 +916,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold">
-                {userRole === 'admin' ? 'Management Dashboard' : 'Team Dashboard'}
+                {(userRole === 'admin' || userRole === 'co-admin') ? 'Management Dashboard' : 'Team Dashboard'}
               </h1>
               <p className="text-primary-100 dark:text-gray-400 mt-1">{selectedCompany?.name || 'Loonadministratie'}</p>
             </div>

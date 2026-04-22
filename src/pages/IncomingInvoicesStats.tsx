@@ -44,7 +44,7 @@ const IncomingInvoicesStats: React.FC = () => {
   usePageTitle('Inkoopbonnen');
 
   // ✅ Role-based permissions
-  const isAdmin = userRole === 'admin';
+  const isAdmin = userRole === 'admin' || userRole === 'co-admin';
   const isManager = userRole === 'manager';
 
   const [invoices, setInvoices] = useState<IncomingInvoice[]>([]);

@@ -65,51 +65,51 @@ export const getItemDisplayName = (item: NavigationItem, role: string | null): s
 
 export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // DASHBOARD
-  { id: 'dashboard', name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'dashboard', name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: ['admin', 'co-admin', 'manager', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // HR / PERSONEEL (employer)
-  { id: 'employees', name: 'Werknemers', nameByRole: { manager: 'Mijn Team' }, href: '/employees', icon: Users, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { id: 'timesheet-approvals', name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['admin', 'manager'], companyTypes: ['employer'] },
+  { id: 'employees', name: 'Werknemers', nameByRole: { manager: 'Mijn Team' }, href: '/employees', icon: Users, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
+  { id: 'timesheet-approvals', name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
   { id: 'internal-projects', name: 'Interne Projecten', href: '/internal-projects', icon: FolderKanban, roles: ['admin', 'co-admin'], companyTypes: ['employer'] },
-  { id: 'payroll-processing', name: 'Loonverwerking', href: '/payroll-processing', icon: CreditCard, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { id: 'leave-approvals', name: 'Verlof Beheren', nameByRole: { manager: 'Verlof Goedkeuren' }, href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { id: 'absence-management', name: 'Verzuim Beheren', href: '/admin/absence-management', icon: Stethoscope, roles: ['admin', 'manager'], companyTypes: ['employer'] },
+  { id: 'payroll-processing', name: 'Loonverwerking', href: '/payroll-processing', icon: CreditCard, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
+  { id: 'leave-approvals', name: 'Verlof Beheren', nameByRole: { manager: 'Verlof Goedkeuren' }, href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
+  { id: 'absence-management', name: 'Verzuim Beheren', href: '/admin/absence-management', icon: Stethoscope, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
 
   // FINANCIEEL (alle bedrijfstypes)
-  { id: 'invoice-relations', name: 'Klanten & Leveranciers', href: '/invoice-relations', icon: Handshake, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'budgeting', name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'admin-expenses', name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin'], companyTypes: ['employer'] },
-  { id: 'outgoing-invoices', name: 'Verkoop', href: '/outgoing-invoices', icon: Send, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'incoming-invoices-stats', name: 'Inkoop', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'bank-statement-import', name: 'Bankafschrift Import', href: '/bank-statement-import', icon: FileInput, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'grootboekrekeningen', name: 'Rekeningschema', href: '/grootboekrekeningen', icon: BookOpen, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'btw-overzicht', name: 'BTW Overzicht', href: '/btw-overzicht', icon: Receipt, roles: ['admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'invoice-relations', name: 'Klanten & Leveranciers', href: '/invoice-relations', icon: Handshake, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'budgeting', name: 'Begroting', href: '/budgeting', icon: Wallet, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'admin-expenses', name: 'Declaraties', href: '/admin-expenses', icon: Receipt, roles: ['admin', 'co-admin'], companyTypes: ['employer'] },
+  { id: 'outgoing-invoices', name: 'Verkoop', href: '/outgoing-invoices', icon: Send, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'incoming-invoices-stats', name: 'Inkoop', href: '/incoming-invoices-stats', icon: PieChart, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'bank-statement-import', name: 'Bankafschrift Import', href: '/bank-statement-import', icon: FileInput, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'grootboekrekeningen', name: 'Rekeningschema', href: '/grootboekrekeningen', icon: BookOpen, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'btw-overzicht', name: 'BTW Overzicht', href: '/btw-overzicht', icon: Receipt, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // PROJECT (project bedrijven)
-  { id: 'project-production', name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin', 'manager'], companyTypes: ['project'] },
-  { id: 'project-statistics', name: 'Project Overzicht', href: '/project-statistics', icon: BarChart2, roles: ['admin'], companyTypes: ['project'] },
-  { id: 'project-team', name: 'Project Team', href: '/project-team', icon: Users, roles: ['admin'], companyTypes: ['project'] },
+  { id: 'project-production', name: 'Productie', href: '/project-production', icon: Factory, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['project'] },
+  { id: 'project-statistics', name: 'Project Overzicht', href: '/project-statistics', icon: BarChart2, roles: ['admin', 'co-admin'], companyTypes: ['project'] },
+  { id: 'project-team', name: 'Project Team', href: '/project-team', icon: Users, roles: ['admin', 'co-admin'], companyTypes: ['project'] },
 
   // STATISTIEKEN (alle bedrijfstypes)
-  { id: 'statistics-employer', name: 'Werkgever Stats', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['employer'] },
-  { id: 'statistics-project', name: 'Project Stats', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['project'] },
-  { id: 'statistics-holding', name: 'Holding Stats', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'manager'], companyTypes: ['holding', 'shareholder'] },
+  { id: 'statistics-employer', name: 'Werkgever Stats', href: '/statistics/employer', icon: TrendingUp, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
+  { id: 'statistics-project', name: 'Project Stats', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['project'] },
+  { id: 'statistics-holding', name: 'Holding Stats', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['holding', 'shareholder'] },
 
   // MIJN ZAKEN (employee/manager self-service)
-  { id: 'timesheets', name: 'Urenregistratie', nameByRole: { employee: 'Mijn Uren', manager: 'Mijn Uren' }, href: '/timesheets', icon: Clock, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project'] },
-  { id: 'leave', name: 'Verlof', nameByRole: { employee: 'Mijn Verlof' }, href: '/leave', icon: CalendarCheck, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'absence', name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'expenses-employee', name: 'Declaraties Medewerkers', nameByRole: { employee: 'Mijn Declaraties' }, href: '/expenses', icon: Receipt, roles: ['admin', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['admin', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'timesheets', name: 'Urenregistratie', nameByRole: { employee: 'Mijn Uren', manager: 'Mijn Uren' }, href: '/timesheets', icon: Clock, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['employer', 'project'] },
+  { id: 'leave', name: 'Verlof', nameByRole: { employee: 'Mijn Verlof' }, href: '/leave', icon: CalendarCheck, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'absence', name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'expenses-employee', name: 'Declaraties Medewerkers', nameByRole: { employee: 'Mijn Declaraties' }, href: '/expenses', icon: Receipt, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // SYSTEEM
   { id: 'upload', name: 'Upload', href: '/upload', icon: Upload, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'tasks', name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'companies', name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
-  { id: 'audit-log', name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
+  { id: 'companies', name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
+  { id: 'audit-log', name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
   { id: 'users', name: 'Gebruikers Beheer', href: '/admin/users', icon: UserPlus, roles: ['admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
-  { id: 'investment-pitch', name: 'Investment Pitch', href: '/investment-pitch', icon: LineChart, roles: ['admin'], companyTypes: ['project', 'holding'] },
-  { id: 'settings', name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'investment-pitch', name: 'Investment Pitch', href: '/investment-pitch', icon: LineChart, roles: ['admin', 'co-admin'], companyTypes: ['project', 'holding'] },
+  { id: 'settings', name: 'Instellingen', href: '/settings', icon: Settings, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 ];
 
 // ─── SECTION DEFINITIONS ────────────────────────────────────────────────────
@@ -239,11 +239,11 @@ export const getBottomNavDefaults = (
   }
 
   // EMPLOYER - per rol
-  if (userRole === 'admin') {
+  if (userRole === 'admin' || userRole === 'co-admin') {
     return [
       { href: '/outgoing-invoices', icon: 'Send', iconComponent: Send, label: 'Verkoop', gradient: 'from-primary-600 to-primary-700' },
       { href: '/timesheet-approvals', icon: 'CheckCircle2', iconComponent: CheckCircle2, label: 'Uren', gradient: 'from-primary-500 to-primary-600' },
-      { href: '/incoming-invoices', icon: 'Upload', iconComponent: Upload, label: 'Inkoop', gradient: 'from-primary-600 to-primary-700' },
+      { href: '/upload', icon: 'Upload', iconComponent: Upload, label: 'Upload', gradient: 'from-primary-600 to-primary-700' },
     ];
   }
 
