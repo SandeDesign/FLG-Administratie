@@ -101,13 +101,14 @@ const OutgoingInvoices: React.FC = () => {
   const [additionalRecipients, setAdditionalRecipients] = useState<string[]>([]);
 
   const loadInvoices = useCallback(async () => {
-    if (!user || !selectedCompany || !queryUserId) {
+    const effectiveUserId = queryUserId || selectedCompany?.userId;
+    if (!user || !selectedCompany || !effectiveUserId) {
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      const data = await outgoingInvoiceService.getInvoices(queryUserId, selectedCompany.id);
+      const data = await outgoingInvoiceService.getInvoices(effectiveUserId, selectedCompany.id);
       setInvoices(data);
     } catch (e) {
       showError('Fout', 'Kon facturen niet laden');
@@ -1269,9 +1270,13 @@ const OutgoingInvoices: React.FC = () => {
         <div className="p-6 text-center border border-gray-200 dark:border-gray-700 rounded-lg">
           <Send className="h-8 w-8 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {searchTerm ? 'Geen resultaten.' : 'Maak uw eerste factuur aan.'}
+            {searchTerm
+              ? 'Geen resultaten.'
+              : isReadOnly
+                ? 'Deze vestiging heeft nog geen verkoopfacturen.'
+                : 'Maak uw eerste factuur aan.'}
           </p>
-          {!searchTerm && (
+          {!searchTerm && !isReadOnly && (
             <Button onClick={handleCreateNew} icon={Plus} size="sm" className="mt-3">
               Nieuwe factuur
             </Button>
