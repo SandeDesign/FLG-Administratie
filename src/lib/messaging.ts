@@ -110,13 +110,6 @@ export const getCurrentDeviceToken = async (): Promise<string | null> => {
   const messaging = await getMessagingInstance();
   if (!messaging) return null;
 
-  if (!VAPID_KEY) {
-    console.error(
-      '[Messaging] VITE_FIREBASE_VAPID_KEY ontbreekt — zet deze in Netlify env vars.'
-    );
-    return null;
-  }
-
   try {
     // Zorg dat de SW geregistreerd is
     const registration = await navigator.serviceWorker.ready;

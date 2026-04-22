@@ -309,7 +309,9 @@ const Dashboard: React.FC = () => {
     } finally {
       setDashLoading(false);
     }
-  }, [user, selectedCompany, userRole, employees, loadInvoiceStats, adminUserId]);
+    // NB: `employees` bewust NIET in deps — anders re-loadt loadAdminData
+    // bij elke employees-mutatie (5+ extra reads per mutatie).
+  }, [user, selectedCompany?.id, userRole, loadInvoiceStats, adminUserId]);
 
   // ========== LOAD MANAGER DATA ==========
   const loadManagerData = useCallback(async () => {
