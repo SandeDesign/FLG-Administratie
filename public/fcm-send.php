@@ -140,7 +140,7 @@ function getAccessToken($sa) {
     $now = time();
     $claims = [
         'iss'   => $sa['client_email'],
-        'scope' => 'https://www.googleapis.com/auth/firebase.messaging https://www.googleapis.com/auth/datastore',
+        'scope' => 'https://www.googleapis.com/auth/firebase.messaging https://www.googleapis.com/auth/cloud-platform',
         'aud'   => 'https://oauth2.googleapis.com/token',
         'exp'   => $now + 3600,
         'iat'   => $now,
@@ -192,72 +192,155 @@ function getAccessToken($sa) {
 /**
  * Haal alle FCM tokens van een user op uit Firestore subcollectie.
  *
- * BELANGRIJK: We gebruiken runQuery, NIET documents.list.
- * Reden: de client maakt alleen `users/{uid}/fcmTokens/{token}` aan, zonder
- * eerst het parent document `users/{uid}` te schrijven. In Firestore heet dit
- * een "missing ancestor" / ghost parent. De REST `documents.list` endpoint
- * geeft dan 200 OK met lege body terug, terwijl de Web SDK de tokens wel
- * gewoon ziet. `runQuery` (structured query) respecteert ghost parents wel
- * en retourneert de documenten zoals verwacht.
+ * Probeert 3 methodes achter elkaar en retourneert de eerste die werkt.
+ * Elke methode's HTTP-code + (afgeknipte) raw response komt in $debug,
+ * zodat je exact ziet waar het hangt als ze allemaal 0 geven.
+ *
+ *   1) documents.list  — klassieke GET op subcollectie
+ *   2) runQuery        — structured query, scoped op de user-doc parent
+ *   3) collectionGroup — runQuery op root met allDescendants, filtert
+ *                        daarna in PHP op docName die met users/{uid}/ begint
  */
 function fetchTokensForUser($uid, $accessToken, &$debug) {
     $projectId = FCM_PROJECT_ID;
-
-    // POST naar runQuery op de parent `users/{uid}`, met een structured
-    // query die de subcollectie `fcmTokens` selecteert.
-    $parent = "projects/$projectId/databases/(default)/documents/users/" . rawurlencode($uid);
-    $url = "https://firestore.googleapis.com/v1/$parent:runQuery";
-
-    $query = [
-        'structuredQuery' => [
-            'from' => [['collectionId' => 'fcmTokens']],
-            'limit' => 100,
-        ],
+    $ctxHdr = [
+        "Authorization: Bearer $accessToken",
+        'Content-Type: application/json',
     ];
 
-    $ch = curl_init($url);
+    // ─── 1) documents.list ────────────────────────────────────────────────
+    $listUrl = "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/users/"
+             . rawurlencode($uid) . "/fcmTokens?pageSize=100";
+    $ch = curl_init($listUrl);
     curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($query),
-        CURLOPT_HTTPHEADER => [
-            "Authorization: Bearer $accessToken",
-            'Content-Type: application/json',
-        ],
+        CURLOPT_HTTPHEADER => $ctxHdr,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 15,
     ]);
-    $resp = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $listResp = curl_exec($ch);
+    $listCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    $debug['firestoreHttpCode'] = $code;
-    $debug['firestoreUrl'] = $url;
+    $debug['methods']['list'] = [
+        'httpCode' => $listCode,
+        'url'      => $listUrl,
+        'bodyPreview' => substr((string)$listResp, 0, 400),
+    ];
 
-    if ($code !== 200) {
-        $debug['firestoreError'] = substr((string)$resp, 0, 500);
-        return [];
-    }
-
-    // runQuery retourneert een array van objecten met { document: {...} }
-    // (en eventueel een leeg object als er 0 hits zijn).
-    $data = json_decode($resp, true);
     $out = [];
-    if (is_array($data)) {
-        foreach ($data as $entry) {
-            $doc = $entry['document'] ?? null;
-            if (!$doc) continue;
+    if ($listCode === 200) {
+        $data = json_decode($listResp, true);
+        foreach (($data['documents'] ?? []) as $doc) {
             $name = $doc['name'] ?? '';
             $token = $doc['fields']['token']['stringValue'] ?? null;
-            if (!$token && preg_match('#/fcmTokens/([^/]+)$#', $name, $m)) {
-                $token = $m[1];
-            }
-            if ($token) {
-                $out[] = ['token' => $token, 'docName' => $name];
-            }
+            if (!$token && preg_match('#/fcmTokens/([^/]+)$#', $name, $m)) $token = $m[1];
+            if ($token) $out[] = ['token' => $token, 'docName' => $name];
+        }
+        $debug['methods']['list']['parsed'] = count($out);
+        if (count($out) > 0) {
+            $debug['methodUsed'] = 'list';
+            return $out;
         }
     }
-    $debug['tokensParsed'] = count($out);
-    return $out;
+
+    // ─── 2) runQuery op user-doc parent ───────────────────────────────────
+    $rqParent = "projects/$projectId/databases/(default)/documents/users/" . rawurlencode($uid);
+    $rqUrl = "https://firestore.googleapis.com/v1/$rqParent:runQuery";
+    $rqBody = json_encode(['structuredQuery' => [
+        'from'  => [['collectionId' => 'fcmTokens']],
+        'limit' => 100,
+    ]]);
+    $ch = curl_init($rqUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $rqBody,
+        CURLOPT_HTTPHEADER => $ctxHdr,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+    ]);
+    $rqResp = curl_exec($ch);
+    $rqCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $debug['methods']['runQuery'] = [
+        'httpCode' => $rqCode,
+        'url'      => $rqUrl,
+        'bodyPreview' => substr((string)$rqResp, 0, 400),
+    ];
+
+    if ($rqCode === 200) {
+        $data = json_decode($rqResp, true);
+        if (is_array($data)) {
+            foreach ($data as $entry) {
+                $doc = $entry['document'] ?? null;
+                if (!$doc) continue;
+                $name = $doc['name'] ?? '';
+                $token = $doc['fields']['token']['stringValue'] ?? null;
+                if (!$token && preg_match('#/fcmTokens/([^/]+)$#', $name, $m)) $token = $m[1];
+                if ($token) $out[] = ['token' => $token, 'docName' => $name];
+            }
+        }
+        $debug['methods']['runQuery']['parsed'] = count($out);
+        if (count($out) > 0) {
+            $debug['methodUsed'] = 'runQuery';
+            return $out;
+        }
+    }
+
+    // ─── 3) collectionGroup runQuery (laatste redmiddel) ──────────────────
+    // Werkt zelfs als runQuery op document-parent 0 geeft, want scoped op
+    // root database met allDescendants=true. We filteren clientside op
+    // docName zodat we alleen tokens voor deze user pakken.
+    $cgParent = "projects/$projectId/databases/(default)/documents";
+    $cgUrl = "https://firestore.googleapis.com/v1/$cgParent:runQuery";
+    $cgBody = json_encode(['structuredQuery' => [
+        'from'  => [['collectionId' => 'fcmTokens', 'allDescendants' => true]],
+        'limit' => 1000,
+    ]]);
+    $ch = curl_init($cgUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $cgBody,
+        CURLOPT_HTTPHEADER => $ctxHdr,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 20,
+    ]);
+    $cgResp = curl_exec($ch);
+    $cgCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $debug['methods']['collectionGroup'] = [
+        'httpCode' => $cgCode,
+        'url'      => $cgUrl,
+        'bodyPreview' => substr((string)$cgResp, 0, 400),
+    ];
+
+    if ($cgCode === 200) {
+        $data = json_decode($cgResp, true);
+        $totalHits = 0;
+        $needle = "/users/" . $uid . "/fcmTokens/";
+        if (is_array($data)) {
+            foreach ($data as $entry) {
+                $doc = $entry['document'] ?? null;
+                if (!$doc) continue;
+                $name = $doc['name'] ?? '';
+                $totalHits++;
+                if (strpos($name, $needle) === false) continue;
+                $token = $doc['fields']['token']['stringValue'] ?? null;
+                if (!$token && preg_match('#/fcmTokens/([^/]+)$#', $name, $m)) $token = $m[1];
+                if ($token) $out[] = ['token' => $token, 'docName' => $name];
+            }
+        }
+        $debug['methods']['collectionGroup']['totalHitsAcrossAllUsers'] = $totalHits;
+        $debug['methods']['collectionGroup']['parsedForThisUser'] = count($out);
+        if (count($out) > 0) {
+            $debug['methodUsed'] = 'collectionGroup';
+            return $out;
+        }
+    }
+
+    $debug['methodUsed'] = 'none';
+    return [];
 }
 
 function deleteFirestoreDoc($docName, $accessToken) {

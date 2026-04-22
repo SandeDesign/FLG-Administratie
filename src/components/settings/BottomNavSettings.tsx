@@ -24,10 +24,16 @@ import {
   MoreVertical,
   ListTodo,
   PieChart,
+  BookOpen,
+  FileInput,
+  Handshake,
+  Receipt,
 } from 'lucide-react';
 
-// Beschikbare iconen voor bottom nav picker
-const AVAILABLE_ICONS = [
+type IconOption = { name: string; icon: any; label: string; gradient: string };
+
+// Icons voor admin / manager (de originele set)
+const ADMIN_ICONS: IconOption[] = [
   { name: 'Clock', icon: Clock, label: 'Uren', gradient: 'from-blue-500 to-blue-600' },
   { name: 'Users', icon: Users, label: 'Team', gradient: 'from-purple-500 to-purple-600' },
   { name: 'Send', icon: Send, label: 'Verkoop', gradient: 'from-green-500 to-green-600' },
@@ -41,6 +47,22 @@ const AVAILABLE_ICONS = [
   { name: 'Settings', icon: Settings, label: 'Profiel', gradient: 'from-gray-500 to-gray-600' },
 ];
 
+// Icons voor boekhouder — alleen pagina's waar zij toegang tot hebben
+const BOEKHOUDER_ICONS: IconOption[] = [
+  { name: 'Send', icon: Send, label: 'Verkoop', gradient: 'from-green-500 to-green-600' },
+  { name: 'PieChart', icon: PieChart, label: 'Inkoop', gradient: 'from-orange-500 to-orange-600' },
+  { name: 'BookOpen', icon: BookOpen, label: 'Grootboek', gradient: 'from-purple-500 to-purple-600' },
+  { name: 'Wallet', icon: Wallet, label: 'BTW', gradient: 'from-amber-500 to-amber-600' },
+  { name: 'FileInput', icon: FileInput, label: 'Bank', gradient: 'from-cyan-500 to-cyan-600' },
+  { name: 'Upload', icon: Upload, label: 'Upload', gradient: 'from-orange-500 to-orange-600' },
+  { name: 'Handshake', icon: Handshake, label: 'Relaties', gradient: 'from-indigo-500 to-indigo-600' },
+  { name: 'Receipt', icon: Receipt, label: 'Declaraties', gradient: 'from-pink-500 to-pink-600' },
+  { name: 'Settings', icon: Settings, label: 'Profiel', gradient: 'from-gray-500 to-gray-600' },
+];
+
+const getAvailableIcons = (role: string | null): IconOption[] =>
+  role === 'boekhouder' ? BOEKHOUDER_ICONS : ADMIN_ICONS;
+
 export const BottomNavSettings: React.FC = () => {
   const { user, userRole } = useAuth();
   const { selectedCompany } = useApp();
@@ -51,6 +73,7 @@ export const BottomNavSettings: React.FC = () => {
   const [selectedIcons, setSelectedIcons] = useState<string[]>([]);
 
   const companyType = selectedCompany?.companyType as CompanyType | undefined;
+  const availableIcons = getAvailableIcons(userRole);
 
   useEffect(() => {
     if (user && selectedCompany) {
@@ -109,10 +132,11 @@ export const BottomNavSettings: React.FC = () => {
 
       // Prefix boekhouder paden
       const prefix = userRole === 'boekhouder' ? '/boekhouder' : '';
+      const isBoekhouder = userRole === 'boekhouder';
 
       // Map icon names naar BottomNavItem objecten
       const bottomNavItems: BottomNavItem[] = selectedIcons.map(iconName => {
-        const iconConfig = AVAILABLE_ICONS.find(i => i.name === iconName);
+        const iconConfig = availableIcons.find(i => i.name === iconName);
         if (!iconConfig) throw new Error(`Icon ${iconName} not found`);
 
         // Bepaal href op basis van icon naam
@@ -123,11 +147,16 @@ export const BottomNavSettings: React.FC = () => {
         else if (iconName === 'Upload') href = `${prefix}/upload`;
         else if (iconName === 'CheckCircle2') href = (userRole === 'admin' || userRole === 'co-admin') ? '/timesheet-approvals' : '/payslips';
         else if (iconName === 'TrendingUp') href = `/statistics/${selectedCompany.companyType}`;
-        else if (iconName === 'Wallet') href = userRole === 'boekhouder' ? '/boekhouder/btw-overzicht' : '/budgeting';
+        else if (iconName === 'Wallet') href = isBoekhouder ? '/boekhouder/btw-overzicht' : '/budgeting';
         else if (iconName === 'Cpu') href = '/project-production';
         else if (iconName === 'PieChart') href = `${prefix}/incoming-invoices-stats`;
         else if (iconName === 'ListTodo') href = '/tasks';
         else if (iconName === 'Settings') href = `${prefix}/settings`;
+        // Boekhouder-only icons
+        else if (iconName === 'BookOpen') href = '/boekhouder/grootboekrekeningen';
+        else if (iconName === 'FileInput') href = '/boekhouder/bank-statement-import';
+        else if (iconName === 'Handshake') href = '/boekhouder/invoice-relations';
+        else if (iconName === 'Receipt') href = '/boekhouder/admin-expenses';
 
         return {
           href,
@@ -202,7 +231,7 @@ export const BottomNavSettings: React.FC = () => {
 
                 {/* 3 custom iconen */}
                 {selectedIcons.map((iconName, index) => {
-                  const iconConfig = AVAILABLE_ICONS.find(i => i.name === iconName);
+                  const iconConfig = availableIcons.find(i => i.name === iconName);
                   const Icon = iconConfig?.icon;
                   return (
                     <div key={index} className="text-center">
@@ -233,7 +262,7 @@ export const BottomNavSettings: React.FC = () => {
                     Icon {index + 1}
                   </label>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                    {AVAILABLE_ICONS.map((iconConfig) => {
+                    {availableIcons.map((iconConfig) => {
                       const Icon = iconConfig.icon;
                       const isSelected = selectedIcons[index] === iconConfig.name;
 
