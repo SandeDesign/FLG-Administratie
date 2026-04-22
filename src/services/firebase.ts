@@ -2026,7 +2026,7 @@ export const createTask = async (userId: string, taskData: any): Promise<string>
       );
     }
 
-    const taskToSave = convertToTimestamps(newTask);
+    const taskToSave = removeUndefinedValues(convertToTimestamps(newTask));
     const docRef = await addDoc(collection(db, 'businessTasks'), taskToSave);
 
     // Audit log
@@ -2173,7 +2173,7 @@ export const updateTask = async (taskId: string, userId: string, updates: any): 
       }
     }
 
-    const dataToSave = convertToTimestamps(updatedData);
+    const dataToSave = removeUndefinedValues(convertToTimestamps(updatedData));
     await updateDoc(taskRef, dataToSave);
 
     // Assignment diff → notify nieuwe toegewezenen
