@@ -154,12 +154,13 @@ export class NotificationService {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
 
-    const idToken = await currentUser.getIdToken();
-    const response = await fetch('/.netlify/functions/send-push', {
+    // Push gaat via onze eigen PHP proxy op internedata.nl. Die heeft de
+    // Firebase service account JSON lokaal (buiten webroot, afgeschermd via
+    // .htaccess) en authenticeert richting FCM met JWT.
+    const response = await fetch('https://internedata.nl/fcm-send.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`,
       },
       body: JSON.stringify({
         userIds: [targetUserId],
