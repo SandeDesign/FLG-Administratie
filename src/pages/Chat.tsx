@@ -4,8 +4,9 @@ import {
   MessageSquare,
   Send,
   ArrowLeft,
-  Handshake,
+  Building2,
   User,
+  Handshake,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -25,11 +26,32 @@ import { getUserSettings } from '../services/firebase';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
+import { Company } from '../types';
 
 interface ContactCandidate {
   uid: string;
   email: string;
   displayName?: string;
+}
+
+// Entry in de chat-sidebar: één bedrijf × één tegenpartij.
+interface ChatEntry {
+  chatId: string;
+  companyId: string;
+  companyName: string;
+  companyLogoUrl?: string;
+  adminUid: string;
+  boekhouderUid: string;
+  otherPartyLabel: string;      // boekhouder-email voor admin-kant, admin-email voor boekhouder-kant
+  otherPartyUid: string;
+  otherPartyEmail: string;
+  adminEmailForEnsure: string;
+  boekhouderEmailForEnsure: string;
+  unread: number;
+  lastMessage?: string;
+  lastMessageAt?: Date;
+  lastSenderName?: string;
+  hasMessages: boolean;
 }
 
 const formatTime = (d?: Date) => {
@@ -43,12 +65,16 @@ const formatTime = (d?: Date) => {
 };
 
 const Chat: React.FC = () => {
-  const { user, userRole } = useAuth();
-  const { assignedAdmins } = useApp();
+  const { user, userRole, adminUserId } = useAuth();
+  const { assignedAdmins, companies } = useApp();
   usePageTitle('Berichten');
 
   const [searchParams, setSearchParams] = useSearchParams();
   const role: ChatRole = userRole === 'boekhouder' ? 'boekhouder' : 'admin';
+
+  // Admin + co-admin delen chat-threads; queries gebeuren onder de primary
+  // admin-UID (= adminUserId). Voor boekhouders is dat hun eigen UID.
+  const adminSideUid = adminUserId || user?.uid || null;
 
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
@@ -57,7 +83,7 @@ const Chat: React.FC = () => {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
-  const [contacts, setContacts] = useState<ContactCandidate[]>([]);
+  const [boekhouderContacts, setBoekhouderContacts] = useState<ContactCandidate[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,9 +92,11 @@ const Chat: React.FC = () => {
   // ─── 1) Subscribe op alle chats van deze gebruiker ──────────────────────
   useEffect(() => {
     if (!user) return;
+    const subjectUid = role === 'boekhouder' ? user.uid : adminSideUid;
+    if (!subjectUid) return;
     setLoadingChats(true);
     const unsub = subscribeChatsForUser(
-      user.uid,
+      subjectUid,
       role,
       (list) => {
         setChats(list);
@@ -80,64 +108,56 @@ const Chat: React.FC = () => {
       }
     );
     return () => unsub();
-  }, [user, role]);
+  }, [user, role, adminSideUid]);
 
-  // ─── 2) Laad mogelijke contacten (om nieuwe chat te starten) ────────────
-  // Boekhouder: assignedAdmins direct uit context
-  // Admin: lijst van boekhouder-emails uit eigen userSettings + uid lookup
+  // ─── 2) Laad boekhouder-contacts (alleen nodig voor admin-kant) ─────────
+  // Admin kant: lookup boekhouder-UIDs obv boekhouderEmails uit PRIMARY
+  // admin's settings (zodat co-admins dezelfde lijst krijgen).
   useEffect(() => {
     if (!user) return;
+    if (role !== 'admin') {
+      setBoekhouderContacts([]);
+      return;
+    }
+    if (!adminSideUid) return;
     setLoadingContacts(true);
     const load = async () => {
       try {
-        if (role === 'boekhouder') {
-          setContacts(
-            assignedAdmins.map((a) => ({
-              uid: a.userId,
-              email: a.email,
-              displayName: a.displayName,
-            }))
-          );
-        } else {
-          // Admin: haal eigen settings op om boekhouderEmails te krijgen,
-          // dan voor elke email opzoeken welke uid die heeft (via userSettings).
-          const mySettings = await getUserSettings(user.uid);
-          const emails: string[] = mySettings?.boekhouderEmails || [];
-          if (emails.length === 0) {
-            setContacts([]);
-            return;
-          }
-          // Voor elke boekhouder-email zoek de bijbehorende userSettings doc
-          const { collection: col, getDocs: gd, query: q, where: w } = await import('firebase/firestore');
-          const { db } = await import('../lib/firebase');
-          const candidates: ContactCandidate[] = [];
-          await Promise.all(
-            emails.map(async (email) => {
-              try {
-                const snap = await gd(q(col(db, 'userSettings'), w('email', '==', email)));
-                snap.forEach((d) => {
-                  const data = d.data() as any;
-                  if (data.userId) {
-                    candidates.push({
-                      uid: data.userId,
-                      email,
-                      displayName: data.displayName,
-                    });
-                  }
-                });
-              } catch (err) {
-                console.warn('[Chat] lookup boekhouder email failed:', email, err);
-              }
-            })
-          );
-          setContacts(candidates);
+        const mySettings = await getUserSettings(adminSideUid);
+        const emails: string[] = mySettings?.boekhouderEmails || [];
+        if (emails.length === 0) {
+          setBoekhouderContacts([]);
+          return;
         }
+        const { collection: col, getDocs: gd, query: q, where: w } = await import('firebase/firestore');
+        const { db } = await import('../lib/firebase');
+        const candidates: ContactCandidate[] = [];
+        await Promise.all(
+          emails.map(async (email) => {
+            try {
+              const snap = await gd(q(col(db, 'userSettings'), w('email', '==', email)));
+              snap.forEach((d) => {
+                const data = d.data() as any;
+                if (data.userId) {
+                  candidates.push({
+                    uid: data.userId,
+                    email,
+                    displayName: data.displayName,
+                  });
+                }
+              });
+            } catch (err) {
+              console.warn('[Chat] lookup boekhouder email failed:', email, err);
+            }
+          })
+        );
+        setBoekhouderContacts(candidates);
       } finally {
         setLoadingContacts(false);
       }
     };
     load();
-  }, [user, role, assignedAdmins]);
+  }, [user, role, adminSideUid]);
 
   // ─── 3) URL-driven active chat (deep link via ?chat=...) ────────────────
   useEffect(() => {
@@ -159,7 +179,6 @@ const Chat: React.FC = () => {
       (list) => {
         setMessages(list);
         setLoadingMessages(false);
-        // markeer als gelezen
         markChatRead(activeChatId, role).catch(() => undefined);
       },
       (err) => {
@@ -170,21 +189,148 @@ const Chat: React.FC = () => {
     return () => unsub();
   }, [activeChatId, user, role]);
 
-  // Auto-scroll naar onderkant bij nieuwe berichten
   useEffect(() => {
     if (messages.length > 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages.length]);
 
+  // ─── 5) Bouw chat-entries (1 per bedrijf × tegenpartij) ─────────────────
+  const chatEntries: ChatEntry[] = useMemo(() => {
+    if (!user) return [];
+
+    // Index bestaande summaries op chatId zodat we per (company, boekhouder)
+    // de real-time data kunnen mappen.
+    const summaryById = new Map<string, ChatSummary>();
+    chats.forEach((c) => summaryById.set(c.id, c));
+
+    const entries: ChatEntry[] = [];
+
+    if (role === 'admin') {
+      // Voor elke boekhouder × elk bedrijf (van de primary admin) een entry.
+      // companies bevat alleen eigen bedrijven (AppContext); userId = primary admin.
+      const myCompanies = companies.filter((c) => c.userId === adminSideUid);
+      myCompanies.forEach((company) => {
+        boekhouderContacts.forEach((bh) => {
+          const chatId = buildChatId(company.id, bh.uid);
+          const summary = summaryById.get(chatId);
+          entries.push({
+            chatId,
+            companyId: company.id,
+            companyName: company.name,
+            companyLogoUrl: company.logoUrl,
+            adminUid: adminSideUid || user.uid,
+            boekhouderUid: bh.uid,
+            otherPartyLabel: bh.displayName || bh.email,
+            otherPartyUid: bh.uid,
+            otherPartyEmail: bh.email,
+            adminEmailForEnsure: user.email || '',
+            boekhouderEmailForEnsure: bh.email,
+            unread: summary?.adminUnread || 0,
+            lastMessage: summary?.lastMessage,
+            lastMessageAt: summary?.lastMessageAt,
+            lastSenderName: summary?.lastSenderName,
+            hasMessages: !!(summary && summary.lastMessage),
+          });
+        });
+      });
+    } else {
+      // Boekhouder: voor elk bedrijf dat de boekhouder beheert (companies
+      // context bevat alle bedrijven van alle assigned admins). 1 entry per
+      // bedrijf, tegenpartij = admin van dat bedrijf.
+      companies.forEach((company: Company) => {
+        const chatId = buildChatId(company.id, user.uid);
+        const summary = summaryById.get(chatId);
+        const adminInfo = assignedAdmins.find((a) => a.userId === company.userId);
+        entries.push({
+          chatId,
+          companyId: company.id,
+          companyName: company.name,
+          companyLogoUrl: company.logoUrl,
+          adminUid: company.userId,
+          boekhouderUid: user.uid,
+          otherPartyLabel: adminInfo?.displayName || adminInfo?.email || `Admin ${company.userId.substring(0, 6)}`,
+          otherPartyUid: company.userId,
+          otherPartyEmail: adminInfo?.email || '',
+          adminEmailForEnsure: adminInfo?.email || '',
+          boekhouderEmailForEnsure: user.email || '',
+          unread: summary?.boekhouderUnread || 0,
+          lastMessage: summary?.lastMessage,
+          lastMessageAt: summary?.lastMessageAt,
+          lastSenderName: summary?.lastSenderName,
+          hasMessages: !!(summary && summary.lastMessage),
+        });
+      });
+    }
+
+    // Toon bestaande chats die (om welke reden dan ook) niet in de
+    // berekende lijst zitten (bv. bedrijf inmiddels verwijderd) zodat
+    // geschiedenis niet verdwijnt.
+    chats.forEach((summary) => {
+      if (entries.some((e) => e.chatId === summary.id)) return;
+      entries.push({
+        chatId: summary.id,
+        companyId: summary.companyId,
+        companyName: summary.companyName || `Bedrijf ${summary.companyId.substring(0, 6)}`,
+        adminUid: summary.adminUid,
+        boekhouderUid: summary.boekhouderUid,
+        otherPartyLabel:
+          role === 'admin'
+            ? summary.boekhouderEmail || `Boekhouder ${summary.boekhouderUid.substring(0, 6)}`
+            : summary.adminEmail || `Admin ${summary.adminUid.substring(0, 6)}`,
+        otherPartyUid: role === 'admin' ? summary.boekhouderUid : summary.adminUid,
+        otherPartyEmail:
+          role === 'admin' ? summary.boekhouderEmail || '' : summary.adminEmail || '',
+        adminEmailForEnsure: summary.adminEmail || '',
+        boekhouderEmailForEnsure: summary.boekhouderEmail || '',
+        unread: role === 'admin' ? summary.adminUnread : summary.boekhouderUnread,
+        lastMessage: summary.lastMessage,
+        lastMessageAt: summary.lastMessageAt,
+        lastSenderName: summary.lastSenderName,
+        hasMessages: !!summary.lastMessage,
+      });
+    });
+
+    // Sorteer: unread / recente activiteit eerst, daarna alfabetisch bedrijf.
+    entries.sort((a, b) => {
+      if (a.unread !== b.unread) return b.unread - a.unread;
+      const at = a.lastMessageAt?.getTime() || 0;
+      const bt = b.lastMessageAt?.getTime() || 0;
+      if (at !== bt) return bt - at;
+      return a.companyName.localeCompare(b.companyName);
+    });
+
+    return entries;
+  }, [chats, companies, boekhouderContacts, assignedAdmins, role, user, adminSideUid]);
+
+  const activeEntry = useMemo(
+    () => chatEntries.find((e) => e.chatId === activeChatId),
+    [chatEntries, activeChatId]
+  );
+
+  // Groepeer per tegenpartij — admin: per boekhouder; boekhouder: per admin
+  const groupedEntries = useMemo(() => {
+    const groups = new Map<string, { label: string; entries: ChatEntry[] }>();
+    chatEntries.forEach((e) => {
+      const key = e.otherPartyUid;
+      const existing = groups.get(key) || { label: e.otherPartyLabel, entries: [] };
+      existing.entries.push(e);
+      groups.set(key, existing);
+    });
+    return Array.from(groups.values());
+  }, [chatEntries]);
+
   // ─── Handlers ───────────────────────────────────────────────────────────
-  const openChat = async (contact: ContactCandidate) => {
+  const openEntry = async (entry: ChatEntry) => {
     if (!user) return;
-    const adminUid = role === 'admin' ? user.uid : contact.uid;
-    const boekhouderUid = role === 'boekhouder' ? user.uid : contact.uid;
-    const adminEmail = role === 'admin' ? user.email || '' : contact.email;
-    const boekhouderEmail = role === 'boekhouder' ? user.email || '' : contact.email;
-    const id = await ensureChat(adminUid, boekhouderUid, adminEmail, boekhouderEmail);
+    const id = await ensureChat({
+      companyId: entry.companyId,
+      companyName: entry.companyName,
+      adminUid: entry.adminUid,
+      boekhouderUid: entry.boekhouderUid,
+      adminEmail: entry.adminEmailForEnsure,
+      boekhouderEmail: entry.boekhouderEmailForEnsure,
+    });
     setActiveChatId(id);
     const next = new URLSearchParams(searchParams);
     next.set('chat', id);
@@ -210,47 +356,20 @@ const Chat: React.FC = () => {
     }
   };
 
-  // Combineer contacts + bestaande chats voor de sidebar
-  const chatList = useMemo(() => {
-    const items: Array<{ chatId: string; label: string; subtitle: string; unread: number; lastMessage?: string; lastMessageAt?: Date; contactUid: string }> = [];
-    const seen = new Set<string>();
-    chats.forEach((c) => {
-      const otherUid = role === 'admin' ? c.boekhouderUid : c.adminUid;
-      const otherEmail = role === 'admin' ? c.boekhouderEmail : c.adminEmail;
-      const unread = role === 'admin' ? c.adminUnread : c.boekhouderUnread;
-      const contact = contacts.find((x) => x.uid === otherUid);
-      const label = contact?.displayName || otherEmail || `Gebruiker ${otherUid.substring(0, 6)}`;
-      items.push({
-        chatId: c.id,
-        label,
-        subtitle: c.lastMessage || '(nog geen berichten)',
-        unread,
-        lastMessage: c.lastMessage,
-        lastMessageAt: c.lastMessageAt,
-        contactUid: otherUid,
-      });
-      seen.add(otherUid);
-    });
-    // Voeg contacten toe waar nog geen chat voor bestaat
-    contacts.forEach((c) => {
-      if (seen.has(c.uid)) return;
-      const chatId = role === 'admin' ? buildChatId(user!.uid, c.uid) : buildChatId(c.uid, user!.uid);
-      items.push({
-        chatId,
-        label: c.displayName || c.email,
-        subtitle: 'Nog geen berichten',
-        unread: 0,
-        contactUid: c.uid,
-      });
-    });
-    return items;
-  }, [chats, contacts, role, user]);
-
-  const activeChat = useMemo(() => chatList.find((c) => c.chatId === activeChatId), [chatList, activeChatId]);
-
   if (!user) return null;
 
-  if (loadingChats && chats.length === 0) {
+  const emptyReason =
+    role === 'admin'
+      ? boekhouderContacts.length === 0
+        ? 'Nog geen boekhouders gekoppeld. Voeg er een toe via Instellingen → Boekhouders.'
+        : companies.filter((c) => c.userId === adminSideUid).length === 0
+          ? 'Nog geen bedrijven aangemaakt. Voeg een bedrijf toe om chat-threads te starten.'
+          : null
+      : companies.length === 0
+        ? 'Nog geen administraties toegewezen. Vraag een admin om jouw e-mail toe te voegen bij Instellingen → Boekhouders.'
+        : null;
+
+  if (loadingChats && chatEntries.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner />
@@ -258,16 +377,12 @@ const Chat: React.FC = () => {
     );
   }
 
-  if (chatList.length === 0) {
+  if (emptyReason) {
     return (
       <EmptyState
         icon={MessageSquare}
-        title={role === 'admin' ? 'Nog geen boekhouders gekoppeld' : 'Nog geen administraties toegewezen'}
-        description={
-          role === 'admin'
-            ? 'Voeg eerst een boekhouder toe via Instellingen → Boekhouders om te kunnen chatten.'
-            : 'Vraag een admin om jouw e-mail toe te voegen bij Instellingen → Boekhouders.'
-        }
+        title="Geen chats beschikbaar"
+        description={emptyReason}
       />
     );
   }
@@ -280,9 +395,7 @@ const Chat: React.FC = () => {
           Berichten
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          {role === 'admin'
-            ? 'Real-time chat met je boekhouder(s)'
-            : 'Real-time chat met je administraties'}
+          Real-time chat per bedrijf tussen admin-team en boekhouder
         </p>
       </div>
 
@@ -292,67 +405,87 @@ const Chat: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 h-[calc(100vh-220px)] min-h-[500px]">
-        {/* Sidebar — alleen tonen op lg of als geen chat actief op mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 h-[calc(100vh-220px)] min-h-[500px]">
+        {/* Sidebar */}
         <Card className={`${activeChatId ? 'hidden lg:block' : ''} overflow-hidden`}>
           <div className="p-3 border-b border-gray-100 dark:border-gray-700">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {role === 'admin' ? 'Boekhouders' : 'Administraties'}
+              {role === 'admin' ? 'Boekhouders & bedrijven' : 'Administraties & bedrijven'}
             </h2>
             {loadingContacts && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Laden…</p>
             )}
           </div>
           <div className="overflow-y-auto h-[calc(100%-50px)]">
-            {chatList.map((c) => (
-              <button
-                key={c.chatId}
-                onClick={() => openChat({ uid: c.contactUid, email: c.label })}
-                className={`w-full p-3 flex items-start gap-3 text-left border-b border-gray-100 dark:border-gray-700 transition-colors ${
-                  activeChatId === c.chatId
-                    ? 'bg-primary-50 dark:bg-primary-900/30'
-                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                }`}
-              >
-                <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+            {groupedEntries.map((group) => (
+              <div key={group.label} className="border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                <div className="px-3 py-2 bg-gray-50 dark:bg-gray-900/50 flex items-center gap-2">
                   {role === 'admin' ? (
-                    <User className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                    <User className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                   ) : (
-                    <Handshake className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                    <Handshake className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
                   )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {c.label}
-                    </p>
-                    {c.lastMessageAt && (
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
-                        {formatTime(c.lastMessageAt)}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                    {c.subtitle}
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 truncate">
+                    {group.label}
                   </p>
                 </div>
-                {c.unread > 0 && (
-                  <span className="bg-primary-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 flex-shrink-0">
-                    {c.unread}
-                  </span>
-                )}
-              </button>
+                {group.entries.map((e) => (
+                  <button
+                    key={e.chatId}
+                    onClick={() => openEntry(e)}
+                    className={`w-full p-3 flex items-start gap-3 text-left transition-colors ${
+                      activeChatId === e.chatId
+                        ? 'bg-primary-50 dark:bg-primary-900/30'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    }`}
+                  >
+                    {e.companyLogoUrl ? (
+                      <img
+                        src={e.companyLogoUrl}
+                        alt={e.companyName}
+                        className="h-9 w-9 rounded-lg object-contain bg-white border border-gray-200 flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="h-9 w-9 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {e.companyName}
+                        </p>
+                        {e.lastMessageAt && (
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                            {formatTime(e.lastMessageAt)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                        {e.hasMessages
+                          ? `${e.lastSenderName ? e.lastSenderName + ': ' : ''}${e.lastMessage}`
+                          : 'Nog geen berichten'}
+                      </p>
+                    </div>
+                    {e.unread > 0 && (
+                      <span className="bg-primary-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 flex-shrink-0">
+                        {e.unread}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         </Card>
 
         {/* Conversation pane */}
         <Card className={`${!activeChatId ? 'hidden lg:flex' : 'flex'} flex-col overflow-hidden`}>
-          {!activeChatId ? (
+          {!activeChatId || !activeEntry ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center text-gray-500 dark:text-gray-400">
                 <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Selecteer een gesprek om te starten</p>
+                <p className="text-sm">Selecteer een bedrijf om te chatten</p>
               </div>
             </div>
           ) : (
@@ -369,19 +502,23 @@ const Chat: React.FC = () => {
                 >
                   <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                 </button>
-                <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
-                  {role === 'admin' ? (
-                    <User className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                  ) : (
-                    <Handshake className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                  )}
-                </div>
-                <div className="min-w-0">
+                {activeEntry.companyLogoUrl ? (
+                  <img
+                    src={activeEntry.companyLogoUrl}
+                    alt={activeEntry.companyName}
+                    className="h-9 w-9 rounded-lg object-contain bg-white border border-gray-200 flex-shrink-0"
+                  />
+                ) : (
+                  <div className="h-9 w-9 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                    <Building2 className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                    {activeChat?.label || 'Gesprek'}
+                    {activeEntry.companyName}
                   </p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                    Real-time via Firestore
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                    {role === 'admin' ? 'Boekhouder:' : 'Admin:'} {activeEntry.otherPartyLabel}
                   </p>
                 </div>
               </div>
@@ -396,13 +533,25 @@ const Chat: React.FC = () => {
                     Stuur het eerste bericht om dit gesprek te starten.
                   </p>
                 ) : (
-                  messages.map((m) => {
+                  messages.map((m, idx) => {
                     const isMine = m.senderId === user.uid;
+                    // Toon senderName boven het bericht wanneer het NIET van mij is
+                    // en (a) van de admin-kant is (meerdere co-admins mogelijk)
+                    // of (b) de vorige afzender iemand anders was.
+                    const prev = idx > 0 ? messages[idx - 1] : null;
+                    const showSender =
+                      !isMine &&
+                      (!prev || prev.senderId !== m.senderId);
                     return (
                       <div
                         key={m.id}
-                        className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                        className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                       >
+                        {showSender && (
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5 px-1">
+                            {m.senderName}
+                          </span>
+                        )}
                         <div
                           className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
                             isMine

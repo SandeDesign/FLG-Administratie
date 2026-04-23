@@ -1,16 +1,18 @@
-// Chat service — real-time chat tussen admin en boekhouder via Firestore
+// Chat service — real-time chat per BEDRIJF tussen admin-team en boekhouder.
 //
 // Datamodel (Firestore):
 //   chats/{chatId}                     ← summary doc
-//     adminUid, boekhouderUid, adminEmail, boekhouderEmail
-//     lastMessage, lastMessageAt, lastSenderId
-//     adminUnread, boekhouderUnread    ← per-rol unread counter
+//     companyId, companyName, adminUid, boekhouderUid
+//     adminEmail, boekhouderEmail      ← optioneel, voor display
+//     lastMessage, lastMessageAt, lastSenderId, lastSenderName
+//     adminUnread, boekhouderUnread    ← per-kant gedeelde teller
 //     createdAt, updatedAt
 //   chats/{chatId}/messages/{messageId}
 //     senderId, senderRole, senderName, text, createdAt
 //
-// chatId = `${adminUid}_${boekhouderUid}` (deterministisch zodat beide
-// partijen dezelfde doc kunnen vinden zonder eerst te zoeken).
+// chatId = `${companyId}_${boekhouderUid}` — 1 thread per bedrijf per
+// boekhouder. Alle admins (primary + co-admins) binnen hetzelfde admin-team
+// delen dezelfde thread, want adminUid in het doc = PRIMARY admin uid.
 
 import {
   collection,
@@ -25,9 +27,7 @@ import {
   updateDoc,
   serverTimestamp,
   getDoc,
-  getDocs,
   Unsubscribe,
-  Timestamp,
   increment,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -36,6 +36,8 @@ export type ChatRole = 'admin' | 'boekhouder';
 
 export interface ChatSummary {
   id: string;
+  companyId: string;
+  companyName: string;
   adminUid: string;
   boekhouderUid: string;
   adminEmail?: string;
@@ -43,6 +45,7 @@ export interface ChatSummary {
   lastMessage?: string;
   lastMessageAt?: Date;
   lastSenderId?: string;
+  lastSenderName?: string;
   adminUnread: number;
   boekhouderUnread: number;
   createdAt?: Date;
@@ -65,50 +68,63 @@ const tsToDate = (v: any): Date | undefined => {
   return undefined;
 };
 
-export const buildChatId = (adminUid: string, boekhouderUid: string) =>
-  `${adminUid}_${boekhouderUid}`;
+export const buildChatId = (companyId: string, boekhouderUid: string) =>
+  `${companyId}_${boekhouderUid}`;
 
 /**
  * Initialiseer een chat summary doc als die nog niet bestaat. Idempotent.
+ * `adminUid` is de PRIMARY admin van het bedrijf; co-admins gebruiken
+ * diezelfde UID zodat ze dezelfde thread delen.
  */
 export const ensureChat = async (
-  adminUid: string,
-  boekhouderUid: string,
-  adminEmail?: string,
-  boekhouderEmail?: string
+  params: {
+    companyId: string;
+    companyName: string;
+    adminUid: string;
+    boekhouderUid: string;
+    adminEmail?: string;
+    boekhouderEmail?: string;
+  }
 ): Promise<string> => {
-  const chatId = buildChatId(adminUid, boekhouderUid);
+  const chatId = buildChatId(params.companyId, params.boekhouderUid);
   const ref = doc(db, 'chats', chatId);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
     await setDoc(ref, {
-      adminUid,
-      boekhouderUid,
-      adminEmail: adminEmail || '',
-      boekhouderEmail: boekhouderEmail || '',
+      companyId: params.companyId,
+      companyName: params.companyName,
+      adminUid: params.adminUid,
+      boekhouderUid: params.boekhouderUid,
+      adminEmail: params.adminEmail || '',
+      boekhouderEmail: params.boekhouderEmail || '',
       lastMessage: '',
       lastMessageAt: null,
       lastSenderId: null,
+      lastSenderName: '',
       adminUnread: 0,
       boekhouderUnread: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-  } else if ((adminEmail || boekhouderEmail) && (!snap.data()?.adminEmail || !snap.data()?.boekhouderEmail)) {
-    // Patch missing email fields als die nu wel bekend zijn.
-    await updateDoc(ref, {
-      adminEmail: adminEmail || snap.data()?.adminEmail || '',
-      boekhouderEmail: boekhouderEmail || snap.data()?.boekhouderEmail || '',
-      updatedAt: serverTimestamp(),
-    });
+  } else {
+    // Patch ontbrekende velden zodat oude threads consistent blijven
+    const data = snap.data() as any;
+    const patch: any = {};
+    if (!data.companyName && params.companyName) patch.companyName = params.companyName;
+    if (!data.adminEmail && params.adminEmail) patch.adminEmail = params.adminEmail;
+    if (!data.boekhouderEmail && params.boekhouderEmail)
+      patch.boekhouderEmail = params.boekhouderEmail;
+    if (Object.keys(patch).length > 0) {
+      patch.updatedAt = serverTimestamp();
+      await updateDoc(ref, patch);
+    }
   }
   return chatId;
 };
 
 /**
- * Subscribe op alle chats voor een gebruiker. Voor een admin: chats waar
- * adminUid === uid. Voor een boekhouder: chats waar boekhouderUid === uid.
- * Calls callback elke keer als data wijzigt. Returnt Unsubscribe.
+ * Subscribe op alle chats voor een gebruiker. Admin/co-admin: pass de
+ * PRIMARY admin uid zodat team-shared chats worden meegenomen.
  */
 export const subscribeChatsForUser = (
   uid: string,
@@ -125,6 +141,8 @@ export const subscribeChatsForUser = (
         const data = d.data() as any;
         return {
           id: d.id,
+          companyId: data.companyId,
+          companyName: data.companyName || '',
           adminUid: data.adminUid,
           boekhouderUid: data.boekhouderUid,
           adminEmail: data.adminEmail,
@@ -132,13 +150,13 @@ export const subscribeChatsForUser = (
           lastMessage: data.lastMessage,
           lastMessageAt: tsToDate(data.lastMessageAt),
           lastSenderId: data.lastSenderId,
+          lastSenderName: data.lastSenderName,
           adminUnread: data.adminUnread || 0,
           boekhouderUnread: data.boekhouderUnread || 0,
           createdAt: tsToDate(data.createdAt),
           updatedAt: tsToDate(data.updatedAt),
         };
       });
-      // Sorteer op lastMessageAt desc (recentste eerst). null/undefined onderaan.
       chats.sort((a, b) => {
         const at = a.lastMessageAt?.getTime() || 0;
         const bt = b.lastMessageAt?.getTime() || 0;
@@ -191,8 +209,8 @@ export const subscribeMessages = (
 };
 
 /**
- * Verstuur een bericht. Update ook de summary doc met lastMessage en
- * verhoogt de unread teller voor de andere partij.
+ * Verstuur een bericht + update summary (last message + unread counter
+ * voor de andere kant).
  */
 export const sendMessage = async (
   chatId: string,
@@ -209,20 +227,20 @@ export const sendMessage = async (
     createdAt: serverTimestamp(),
   });
 
-  // Verhoog unread voor de andere partij
   const unreadField = message.senderRole === 'admin' ? 'boekhouderUnread' : 'adminUnread';
 
   await updateDoc(chatRef, {
     lastMessage: message.text,
     lastMessageAt: serverTimestamp(),
     lastSenderId: message.senderId,
+    lastSenderName: message.senderName,
     [unreadField]: increment(1),
     updatedAt: serverTimestamp(),
   });
 };
 
 /**
- * Reset de unread counter voor de huidige rol. Aanroepen wanneer de chat
+ * Reset de unread teller voor de actieve rol. Aanroepen wanneer de chat
  * wordt geopend.
  */
 export const markChatRead = async (
@@ -237,7 +255,7 @@ export const markChatRead = async (
       updatedAt: serverTimestamp(),
     });
   } catch (err) {
-    // chat doesn't exist yet — niet erg
+    // chat bestaat nog niet — niet erg
     console.warn('[chatService] markChatRead failed:', err);
   }
 };
