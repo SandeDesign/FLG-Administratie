@@ -14,6 +14,7 @@ import { supplierService } from '../services/supplierService';
 import { Grootboekrekening, GrootboekCategory, GrootboekTemplate } from '../types/supplier';
 import { grootboekCategoryLabels } from '../utils/grootboekTemplate';
 import { generateGrootboekPDF } from '../lib/generateGrootboekPDF';
+import BankPartiesOverviewCards from '../components/banking/BankPartiesOverviewCards';
 
 const CATEGORIES: { value: GrootboekCategory; label: string }[] = Object.entries(grootboekCategoryLabels).map(
   ([value, label]) => ({ value: value as GrootboekCategory, label })
@@ -622,6 +623,17 @@ const Grootboekrekeningen: React.FC = () => {
         className="hidden"
         onChange={(e) => handleFileSelect(e, true)}
       />
+
+      {/* Boekhouder-overzicht: 3 samenvattingskaarten (rekeningschema +
+          crediteuren + debiteuren) bovenaan, zodat de boekhouder in één
+          oogopslag de huidige stand per bedrijf ziet. */}
+      {userRole === 'boekhouder' && selectedCompany && (
+        <BankPartiesOverviewCards
+          companyId={selectedCompany.id}
+          companyName={selectedCompany.name}
+          allowImportTemplate={false}
+        />
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="hidden lg:block">

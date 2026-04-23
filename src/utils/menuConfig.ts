@@ -40,6 +40,7 @@ import {
   MoreVertical,
   FolderKanban,
   BookOpen,
+  MessageSquare,
 } from 'lucide-react';
 
 export type CompanyType = 'employer' | 'project' | 'holding' | 'shareholder' | 'investor';
@@ -101,11 +102,17 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'statistics-holding', name: 'Holding Stats', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['holding', 'shareholder'] },
 
   // MIJN ZAKEN (employee/manager self-service)
-  { id: 'timesheets', name: 'Urenregistratie', nameByRole: { employee: 'Mijn Uren', manager: 'Mijn Uren' }, href: '/timesheets', icon: Clock, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['employer', 'project'] },
-  { id: 'leave', name: 'Verlof', nameByRole: { employee: 'Mijn Verlof' }, href: '/leave', icon: CalendarCheck, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'absence', name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'expenses-employee', name: 'Declaraties Medewerkers', nameByRole: { employee: 'Mijn Declaraties' }, href: '/expenses', icon: Receipt, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-  { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  // Expliciet NIET tonen op employer (loonmaatschappij) en project (werkmaatschappij)
+  // contexten — daar beheren admin/co-admin/manager andermans data; eigen zaken
+  // regelen zij via holding/shareholder context of direct via employee-dashboard.
+  { id: 'timesheets', name: 'Urenregistratie', nameByRole: { employee: 'Mijn Uren', manager: 'Mijn Uren' }, href: '/timesheets', icon: Clock, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: [] },
+  { id: 'leave', name: 'Verlof', nameByRole: { employee: 'Mijn Verlof' }, href: '/leave', icon: CalendarCheck, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['holding', 'shareholder'] },
+  { id: 'absence', name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['holding', 'shareholder'] },
+  { id: 'expenses-employee', name: 'Declaraties Medewerkers', nameByRole: { employee: 'Mijn Declaraties' }, href: '/expenses', icon: Receipt, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['holding', 'shareholder'] },
+  { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['holding', 'shareholder'] },
+
+  // COMMUNICATIE
+  { id: 'chat', name: 'Berichten', href: '/chat', hrefByRole: { boekhouder: '/boekhouder/chat' }, icon: MessageSquare, roles: ['admin', 'co-admin', 'boekhouder'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // SYSTEEM
   { id: 'upload', name: 'Upload', href: '/upload', hrefByRole: { boekhouder: '/boekhouder/upload' }, icon: Upload, roles: ['admin', 'co-admin', 'manager', 'boekhouder'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
@@ -134,7 +141,7 @@ const SECTION_ITEMS: Record<string, string[]> = {
   Financieel: ['invoice-relations', 'budgeting', 'admin-expenses', 'outgoing-invoices', 'incoming-invoices-stats', 'bank-statement-import', 'grootboekrekeningen', 'btw-overzicht'],
   Project: ['project-production', 'project-statistics', 'project-team'],
   'Mijn Zaken': ['timesheets', 'leave', 'absence', 'expenses-employee', 'payslips'],
-  Systeem: ['upload', 'tasks', 'companies', 'audit-log', 'users', 'investment-pitch', 'settings'],
+  Systeem: ['chat', 'upload', 'tasks', 'companies', 'audit-log', 'users', 'investment-pitch', 'settings'],
 };
 
 const SECTION_META: Array<{ title: string; icon: React.ComponentType<{ className?: string }>; color: string; defaultOpen?: boolean }> = [
@@ -213,6 +220,7 @@ export const ICON_MAP: Record<string, React.ComponentType<{ className?: string; 
   FileInput,
   Handshake,
   Receipt,
+  MessageSquare,
 };
 
 /**

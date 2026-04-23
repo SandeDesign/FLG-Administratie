@@ -16,6 +16,7 @@ import { useApp } from '../../contexts/AppContext';
 import { getFilteredNavigation, getNavigationSections, getItemDisplayName, CompanyType } from '../../utils/menuConfig';
 import { getUserSettings } from '../../services/firebase';
 import { getQuarterLabel } from '../../utils/dateFilters';
+import { useChatUnreadCount } from '../../hooks/useChatUnreadCount';
 
 interface MobileFullScreenMenuProps {
   isOpen: boolean;
@@ -25,6 +26,8 @@ interface MobileFullScreenMenuProps {
 export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOpen, onClose }) => {
   const { userRole, signOut, user } = useAuth();
   const { companies, selectedCompany, setSelectedCompany, selectedYear, setSelectedYear, selectedQuarter, setSelectedQuarter } = useApp();
+  const chatUnread = useChatUnreadCount();
+  const chatBadge = chatUnread > 0 ? (chatUnread > 99 ? '99+' : String(chatUnread)) : null;
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [favoritePages, setFavoritePages] = useState<string[]>([]);
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
@@ -271,12 +274,12 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`p-3 rounded-xl transition-all duration-300 ${ isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600' }`}>
+                    <div className={`p-3 rounded-xl transition-all duration-300 ${ isActive ? 'bg-white/20 backdrop-blur-sm shadow-inner border border-white/30' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600' }`}>
                       <LayoutDashboard className={`h-5 w-5 ${ isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300' }`} />
                     </div>
                     <span className="flex-1">Dashboard</span>
                     {isActive && (
-                      <div className="w-2 h-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"></div>
+                      <div className="w-2 h-2 rounded-full bg-white shadow-sm"></div>
                     )}
                   </>
                 )}
@@ -375,7 +378,12 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
                                 <ItemIcon className={`h-4 w-4 ${ isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400' }`} />
                               </div>
                               <span className="flex-1">{getItemDisplayName(item, userRole)}</span>
-                              {isActive && (
+                              {item.id === 'chat' && chatBadge && (
+                                <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center">
+                                  {chatBadge}
+                                </span>
+                              )}
+                              {isActive && !(item.id === 'chat' && chatBadge) && (
                                 <div className="w-2 h-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"></div>
                               )}
                             </>

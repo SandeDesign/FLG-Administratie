@@ -52,6 +52,8 @@ import BoekhouderSettings from './pages/boekhouder/Settings';
 import AdminExpenses from './pages/AdminExpenses';
 import AdminUsers from './pages/AdminUsers';
 import AdminRoles from './pages/AdminRoles';
+import Chat from './pages/Chat';
+import BoekhouderChat from './pages/boekhouder/Chat';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
@@ -171,6 +173,7 @@ function App() {
                           <Route path="tasks" element={<Tasks />} />
                           <Route path="payslips" element={<Payslips />} />
                           <Route path="audit-log" element={<AuditLogPage />} />
+                          <Route path="chat" element={<Chat />} />
                           <Route path="settings" element={<Settings />} />
                           
                           <Route path="employee-dashboard/*" element={<Navigate to="/" replace />} />
@@ -254,6 +257,7 @@ function App() {
                           <Route path="boekhouder/admin-expenses" element={<BoekhouderExpenses />} />
                           <Route path="boekhouder/upload" element={<BoekhouderUpload />} />
                           <Route path="boekhouder/settings" element={<BoekhouderSettings />} />
+                          <Route path="boekhouder/chat" element={<BoekhouderChat />} />
                           <Route path="boekhouder/incoming-invoices" element={<Navigate to="/boekhouder/upload?tab=facturen" replace />} />
                           <Route path="boekhouder/incoming-post" element={<Navigate to="/boekhouder/upload?tab=post" replace />} />
 
@@ -269,6 +273,7 @@ function App() {
                           <Route path="incoming-invoices" element={<Navigate to="/boekhouder/upload?tab=facturen" replace />} />
                           <Route path="incoming-post" element={<Navigate to="/boekhouder/upload?tab=post" replace />} />
                           <Route path="settings" element={<Navigate to="/boekhouder/settings" replace />} />
+                          <Route path="chat" element={<Navigate to="/boekhouder/chat" replace />} />
 
                           <Route path="*" element={<NotFound />} />
                         </Routes>
