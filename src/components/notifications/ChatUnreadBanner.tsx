@@ -13,18 +13,20 @@ import {
  * zijn voor de huidige gebruiker. Klikken navigeert naar de chatpagina.
  */
 const ChatUnreadBanner: React.FC = () => {
-  const { user, userRole } = useAuth();
+  const { user, userRole, adminUserId } = useAuth();
   const navigate = useNavigate();
   const [chats, setChats] = useState<ChatSummary[]>([]);
 
   const role = userRole === 'boekhouder' ? 'boekhouder' : 'admin';
   const isEligible = userRole === 'admin' || userRole === 'co-admin' || userRole === 'boekhouder';
+  // Admin + co-admin delen chat-threads → query onder primary adminUid
+  const subjectUid = role === 'boekhouder' ? user?.uid : (adminUserId || user?.uid);
 
   useEffect(() => {
-    if (!user || !isEligible) return;
-    const unsub = subscribeChatsForUser(user.uid, role, setChats);
+    if (!user || !isEligible || !subjectUid) return;
+    const unsub = subscribeChatsForUser(subjectUid, role, setChats);
     return () => unsub();
-  }, [user, role, isEligible]);
+  }, [user, role, isEligible, subjectUid]);
 
   if (!isEligible) return null;
 
