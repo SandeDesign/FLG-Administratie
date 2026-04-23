@@ -990,14 +990,20 @@ const BankStatementImport: React.FC = () => {
             Import en match bankafschriften met facturen
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-            <Shield className="w-4 h-4 mr-1" />
-            Admin Only
-          </span>
-        </div>
+        {userRole !== 'boekhouder' && (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+              <Shield className="w-4 h-4 mr-1" />
+              Admin Only
+            </span>
+          </div>
+        )}
       </div>
 
+      {/* Upload / preview zijn alleen relevant voor admin-rollen. De
+          boekhouder werkt op deze pagina alleen met bevestiging/matching
+          van reeds geïmporteerde transacties + de import-geschiedenis. */}
+      {userRole !== 'boekhouder' && (
       <Card>
         <div className="p-6 space-y-4">
           <div className="flex items-center justify-between">
@@ -1073,8 +1079,9 @@ const BankStatementImport: React.FC = () => {
           </div>
         </div>
       </Card>
+      )}
 
-      {showPreview && matchResults.length > 0 && (
+      {userRole !== 'boekhouder' && showPreview && matchResults.length > 0 && (
         <Card>
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
@@ -1380,142 +1387,6 @@ const BankStatementImport: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card>
-          <div className="p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center min-w-0">
-                <BookOpen className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Rekeningschema</span>
-              </h3>
-              <div className="flex items-center gap-1 flex-wrap">
-                {grootboekrekeningen.length > 0 && (
-                  <Button
-                    onClick={() => generateGrootboekPDF(grootboekrekeningen, selectedCompany?.name || 'Bedrijf')}
-                    variant="outline"
-                    className="text-xs px-2 py-1"
-                    title="Download PDF voor boekhouder"
-                  >
-                    <FileText className="w-3 h-3 mr-1" />
-                    PDF
-                  </Button>
-                )}
-                <Button
-                  onClick={handleImportTemplate}
-                  disabled={importingTemplate}
-                  variant="outline"
-                  className="text-xs px-2 py-1"
-                >
-                  {importingTemplate ? (
-                    <LoadingSpinner size="sm" />
-                  ) : (
-                    <>
-                      <Download className="w-3 h-3 mr-1" />
-                      <span className="hidden sm:inline">Importeer sjabloon</span>
-                      <span className="sm:hidden">Sjabloon</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {grootboekrekeningen.length}
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
-              grootboekrekeningen
-            </p>
-            {grootboekrekeningen.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {Object.entries(
-                  grootboekrekeningen.reduce((acc, gb) => {
-                    acc[gb.category] = (acc[gb.category] || 0) + 1;
-                    return acc;
-                  }, {} as Record<string, number>)
-                ).slice(0, 4).map(([cat, count]) => (
-                  <div key={cat} className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                    <span>{grootboekCategoryLabels[cat as keyof typeof grootboekCategoryLabels] || cat}</span>
-                    <span>{count}</span>
-                  </div>
-                ))}
-                {Object.keys(
-                  grootboekrekeningen.reduce((acc, gb) => {
-                    acc[gb.category] = true;
-                    return acc;
-                  }, {} as Record<string, boolean>)
-                ).length > 4 && (
-                  <div className="text-xs text-gray-500 dark:text-gray-500">
-                    + meer categorien...
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center mb-3">
-              <Users className="w-4 h-4 mr-2 text-red-500" />
-              Crediteuren
-            </h3>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {crediteuren.length}
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
-              leveranciers / schuldeisers
-            </p>
-            {crediteuren.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {crediteuren.slice(0, 4).map((c) => (
-                  <div key={c.id} className="flex justify-between text-xs">
-                    <span className="text-gray-600 dark:text-gray-400 truncate mr-2">
-                      {c.code} - {c.name}
-                    </span>
-                    <span className="text-red-600 whitespace-nowrap">
-                      {c.transactionCount}x
-                    </span>
-                  </div>
-                ))}
-                {crediteuren.length > 4 && (
-                  <div className="text-xs text-gray-500">+ {crediteuren.length - 4} meer...</div>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center mb-3">
-              <Users className="w-4 h-4 mr-2 text-green-500" />
-              Debiteuren
-            </h3>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {debiteuren.length}
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
-              klanten / betalers
-            </p>
-            {debiteuren.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {debiteuren.slice(0, 4).map((d) => (
-                  <div key={d.id} className="flex justify-between text-xs">
-                    <span className="text-gray-600 dark:text-gray-400 truncate mr-2">
-                      {d.code} - {d.name}
-                    </span>
-                    <span className="text-green-600 whitespace-nowrap">
-                      {d.transactionCount}x
-                    </span>
-                  </div>
-                ))}
-                {debiteuren.length > 4 && (
-                  <div className="text-xs text-gray-500">+ {debiteuren.length - 4} meer...</div>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
-      </div>
 
       <Card>
         <div className="p-4 sm:p-6 space-y-4">
