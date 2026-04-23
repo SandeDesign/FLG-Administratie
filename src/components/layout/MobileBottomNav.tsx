@@ -11,7 +11,6 @@ import { db } from '../../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { BottomNavItem } from '../../types';
 import { getBottomNavDefaults, ICON_MAP, CompanyType } from '../../utils/menuConfig';
-import { useChatUnreadCount } from '../../hooks/useChatUnreadCount';
 
 interface MobileBottomNavProps {
   onMenuClick: () => void;
@@ -19,7 +18,6 @@ interface MobileBottomNavProps {
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick }) => {
   const { user, userRole } = useAuth();
-  const chatUnread = useChatUnreadCount();
   const { selectedCompany } = useApp();
   const [customNavItems, setCustomNavItems] = useState<BottomNavItem[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,12 +90,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
       {/* Modern glasmorphism nav */}
       <div className="bg-white dark:bg-gray-800 backdrop-blur-xl border-t border-white/20 shadow-2xl">
         <div className="flex justify-around items-center px-2 py-3 max-w-full">
-          {finalNavItems.map(({ href, icon: Icon, label, gradient }) => {
-            // Badge: tonen als dit item naar de chat-pagina verwijst én er
-            // ongelezen berichten zijn (werkt voor zowel /chat als /boekhouder/chat).
-            const isChatEntry = href === '/chat' || href === '/boekhouder/chat';
-            const showBadge = isChatEntry && chatUnread > 0;
-            return (
+          {finalNavItems.map(({ href, icon: Icon, label, gradient }) => (
             <NavLink
               key={href}
               to={href}
@@ -126,11 +119,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
                       strokeWidth={2.2}
                       className="transition-all duration-300"
                     />
-                    {showBadge && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow">
-                        {chatUnread > 99 ? '99+' : chatUnread}
-                      </span>
-                    )}
                   </div>
 
                   {/* Label */}
@@ -140,8 +128,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onMenuClick })
                 </>
               )}
             </NavLink>
-            );
-          })}
+          ))}
 
           {/* Menu button */}
           <button

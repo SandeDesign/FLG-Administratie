@@ -15,10 +15,8 @@ import { getQuarterLabel } from '../../utils/dateFilters';
 import Sidebar from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileFullScreenMenu } from './MobileFullScreenMenu';
-import BoekhouderAdminSelector from './BoekhouderAdminSelector';
 import WeeklyTasksReminder, { WeeklyTasksReminderRef } from '../tasks/WeeklyTasksReminder';
 import PushPromptBanner from '../notifications/PushPromptBanner';
-import ChatUnreadBanner from '../notifications/ChatUnreadBanner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,8 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
   const [periodDropdownOpen, setPeriodDropdownOpen] = useState(false);
   const { userRole } = useAuth();
-  const { companies, selectedCompany, setSelectedCompany, selectedYear, setSelectedYear, selectedQuarter, setSelectedQuarter, currentEmployeeId, assignedAdmins } = useApp();
-  const isBoekhouder = userRole === 'boekhouder';
+  const { companies, selectedCompany, setSelectedCompany, selectedYear, setSelectedYear, selectedQuarter, setSelectedQuarter, currentEmployeeId } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const tasksReminderRef = useRef<WeeklyTasksReminderRef>(null);
@@ -99,54 +96,50 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             )}
           </div>
 
-          {/* RIGHT: Company Selector (admin / manager) of Administratie selector (boekhouder) */}
+          {/* RIGHT: Company Selector */}
           <div className="flex-1 flex justify-end items-center gap-1">
-            {isBoekhouder ? (
-              <BoekhouderAdminSelector variant="mobile" />
-            ) : (
-              <div className="relative">
-                <button
-                  onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
-                  className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <Building2 className="h-5 w-5 text-primary-600" />
-                  <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
+            <div className="relative">
+              <button
+                onClick={() => setCompanyDropdownOpen(!companyDropdownOpen)}
+                className="flex items-center space-x-1 px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <Building2 className="h-5 w-5 text-primary-600" />
+                <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-                {/* Dropdown Menu - Opens LEFT on mobile */}
-                {companyDropdownOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setCompanyDropdownOpen(false)}
-                    />
-                    <div className="absolute -left-48 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto lg:right-0">
-                      <div className="p-2 space-y-1">
-                        {companies && companies.map((company) => (
-                          <button
-                            key={company.id}
-                            onClick={() => {
-                              setSelectedCompany(company);
-                              setCompanyDropdownOpen(false);
-                            }}
-                            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left ${ selectedCompany?.id === company.id ? 'bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 text-primary-900 dark:text-primary-200' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300' }`}
-                          >
-                            {company.logoUrl ? (
-                              <img src={company.logoUrl} alt={company.name} className="h-8 w-8 object-contain rounded" />
-                            ) : (
-                              <div className={`p-1.5 rounded-lg ${ selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400' }`}>
-                                <Building2 className="h-3 w-3 text-white" />
-                              </div>
-                            )}
-                            <span className="font-medium text-sm">{company.name}</span>
-                          </button>
-                        ))}
-                      </div>
+              {/* Dropdown Menu - Opens LEFT on mobile */}
+              {companyDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setCompanyDropdownOpen(false)}
+                  />
+                  <div className="absolute -left-48 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto lg:right-0">
+                    <div className="p-2 space-y-1">
+                      {companies && companies.map((company) => (
+                        <button
+                          key={company.id}
+                          onClick={() => {
+                            setSelectedCompany(company);
+                            setCompanyDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left ${ selectedCompany?.id === company.id ? 'bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 text-primary-900 dark:text-primary-200' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300' }`}
+                        >
+                          {company.logoUrl ? (
+                            <img src={company.logoUrl} alt={company.name} className="h-8 w-8 object-contain rounded" />
+                          ) : (
+                            <div className={`p-1.5 rounded-lg ${ selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400' }`}>
+                              <Building2 className="h-3 w-3 text-white" />
+                            </div>
+                          )}
+                          <span className="font-medium text-sm">{company.name}</span>
+                        </button>
+                      ))}
                     </div>
-                  </>
-                )}
-              </div>
-            )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 
@@ -200,60 +193,55 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             )}
           </div>
 
-          {/* Company / Administratie Selector */}
-          {isBoekhouder ? (
-            <BoekhouderAdminSelector variant="desktop" />
-          ) : (
-            <div className="relative">
-              <button
-                onClick={() => { setCompanyDropdownOpen(!companyDropdownOpen); setPeriodDropdownOpen(false); }}
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{selectedCompany?.name || 'Selecteer bedrijf'}</span>
-                <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
+          {/* Company Selector */}
+          <div className="relative">
+            <button
+              onClick={() => { setCompanyDropdownOpen(!companyDropdownOpen); setPeriodDropdownOpen(false); }}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{selectedCompany?.name || 'Selecteer bedrijf'}</span>
+              <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform ${companyDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-              {companyDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setCompanyDropdownOpen(false)}
-                  />
-                  <div className="absolute -left-48 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto">
-                    <div className="p-2 space-y-1">
-                      {companies && companies.map((company) => (
-                        <button
-                          key={company.id}
-                          onClick={() => {
-                            setSelectedCompany(company);
-                            setCompanyDropdownOpen(false);
-                          }}
-                          className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left ${ selectedCompany?.id === company.id ? 'bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 text-primary-900 dark:text-primary-200' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300' }`}
-                        >
-                          {company.logoUrl ? (
-                            <img src={company.logoUrl} alt={company.name} className="h-8 w-8 object-contain rounded" />
-                          ) : (
-                            <div className={`p-1.5 rounded-lg ${ selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400' }`}>
-                              <Building2 className="h-3 w-3 text-white" />
-                            </div>
-                          )}
-                          <span className="font-medium text-sm">{company.name}</span>
-                        </button>
-                      ))}
-                    </div>
+            {companyDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setCompanyDropdownOpen(false)}
+                />
+                <div className="absolute -left-48 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 w-64 max-h-60 overflow-y-auto">
+                  <div className="p-2 space-y-1">
+                    {companies && companies.map((company) => (
+                      <button
+                        key={company.id}
+                        onClick={() => {
+                          setSelectedCompany(company);
+                          setCompanyDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors text-left ${ selectedCompany?.id === company.id ? 'bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700 text-primary-900 dark:text-primary-200' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300' }`}
+                      >
+                        {company.logoUrl ? (
+                          <img src={company.logoUrl} alt={company.name} className="h-8 w-8 object-contain rounded" />
+                        ) : (
+                          <div className={`p-1.5 rounded-lg ${ selectedCompany?.id === company.id ? 'bg-primary-500' : 'bg-gray-400' }`}>
+                            <Building2 className="h-3 w-3 text-white" />
+                          </div>
+                        )}
+                        <span className="font-medium text-sm">{company.name}</span>
+                      </button>
+                    ))}
                   </div>
-                </>
-              )}
-            </div>
-          )}
+                </div>
+              </>
+            )}
+          </div>
         </header>
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden pb-24 lg:pb-0">
           <div className="p-4 lg:p-6 space-y-4">
             <PushPromptBanner />
-            <ChatUnreadBanner />
             {children}
           </div>
         </main>

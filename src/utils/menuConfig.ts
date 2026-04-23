@@ -40,7 +40,6 @@ import {
   MoreVertical,
   FolderKanban,
   BookOpen,
-  MessageSquare,
 } from 'lucide-react';
 
 export type CompanyType = 'employer' | 'project' | 'holding' | 'shareholder' | 'investor';
@@ -108,9 +107,6 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'expenses-employee', name: 'Declaraties Medewerkers', nameByRole: { employee: 'Mijn Declaraties' }, href: '/expenses', icon: Receipt, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
-  // COMMUNICATIE
-  { id: 'chat', name: 'Berichten', href: '/chat', hrefByRole: { boekhouder: '/boekhouder/chat' }, icon: MessageSquare, roles: ['admin', 'co-admin', 'boekhouder'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
-
   // SYSTEEM
   { id: 'upload', name: 'Upload', href: '/upload', hrefByRole: { boekhouder: '/boekhouder/upload' }, icon: Upload, roles: ['admin', 'co-admin', 'manager', 'boekhouder'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'tasks', name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
@@ -138,7 +134,7 @@ const SECTION_ITEMS: Record<string, string[]> = {
   Financieel: ['invoice-relations', 'budgeting', 'admin-expenses', 'outgoing-invoices', 'incoming-invoices-stats', 'bank-statement-import', 'grootboekrekeningen', 'btw-overzicht'],
   Project: ['project-production', 'project-statistics', 'project-team'],
   'Mijn Zaken': ['timesheets', 'leave', 'absence', 'expenses-employee', 'payslips'],
-  Systeem: ['chat', 'upload', 'tasks', 'companies', 'audit-log', 'users', 'investment-pitch', 'settings'],
+  Systeem: ['upload', 'tasks', 'companies', 'audit-log', 'users', 'investment-pitch', 'settings'],
 };
 
 const SECTION_META: Array<{ title: string; icon: React.ComponentType<{ className?: string }>; color: string; defaultOpen?: boolean }> = [
@@ -217,7 +213,6 @@ export const ICON_MAP: Record<string, React.ComponentType<{ className?: string; 
   FileInput,
   Handshake,
   Receipt,
-  MessageSquare,
 };
 
 /**

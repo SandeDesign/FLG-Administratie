@@ -16,45 +16,37 @@ import {
   NavigationItem,
   CompanyType,
 } from '../../utils/menuConfig';
-import { useChatUnreadCount } from '../../hooks/useChatUnreadCount';
 
 // Navigation Item - Cleaner Design
-const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean; userRole: string | null; dynamicBadge?: string | null }> = ({ item, collapsed, userRole, dynamicBadge }) => {
-  const badge = dynamicBadge ?? item.badge;
-  return (
-    <NavLink
-      to={item.href}
-      className={({ isActive }) =>
-        `group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 ${
-          isActive
-            ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-l-3 border-primary-500 dark:border-primary-400'
-            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
-        } ${collapsed ? 'justify-center' : ''} relative`
-      }
-      title={collapsed ? getItemDisplayName(item, userRole) : undefined}
-    >
-      {({ isActive }) => (
-        <>
-          <item.icon className={`h-5 w-5 flex-shrink-0 ${ isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:hover:text-gray-400 dark:group-hover:text-gray-300' } ${collapsed ? '' : 'mr-3'}`} />
-          {/* Collapsed state: small red dot als er een badge is */}
-          {collapsed && badge && (
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-          )}
-          {!collapsed && (
-            <>
-              <span className="truncate">{getItemDisplayName(item, userRole)}</span>
-              {badge && (
-                <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium min-w-[18px] text-center">
-                  {badge}
-                </span>
-              )}
-            </>
-          )}
-        </>
-      )}
-    </NavLink>
-  );
-};
+const NavItem: React.FC<{ item: NavigationItem; collapsed: boolean; userRole: string | null }> = ({ item, collapsed, userRole }) => (
+  <NavLink
+    to={item.href}
+    className={({ isActive }) =>
+      `group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 ${
+        isActive
+          ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-l-3 border-primary-500 dark:border-primary-400'
+          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 dark:bg-gray-900 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
+      } ${collapsed ? 'justify-center' : ''}`
+    }
+    title={collapsed ? getItemDisplayName(item, userRole) : undefined}
+  >
+    {({ isActive }) => (
+      <>
+        <item.icon className={`h-5 w-5 flex-shrink-0 ${ isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:hover:text-gray-400 dark:group-hover:text-gray-300' } ${collapsed ? '' : 'mr-3'}`} />
+        {!collapsed && (
+          <>
+            <span className="truncate">{getItemDisplayName(item, userRole)}</span>
+            {item.badge && (
+              <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
+                {item.badge}
+              </span>
+            )}
+          </>
+        )}
+      </>
+    )}
+  </NavLink>
+);
 
 // Section Header - Cleaner Design
 const SectionHeader: React.FC<{
@@ -95,13 +87,6 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
   const { signOut, userRole, user } = useAuth();
-  const chatUnread = useChatUnreadCount();
-  const dynamicBadgeFor = (item: NavigationItem): string | null => {
-    if (item.id === 'chat' && chatUnread > 0) {
-      return chatUnread > 99 ? '99+' : String(chatUnread);
-    }
-    return null;
-  };
   const { selectedCompany } = useApp();
   const [collapsed, setCollapsed] = useState(true);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -232,7 +217,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
             {(collapsed || expandedSections.includes('Favorieten')) && (
               <div className={`space-y-0.5 ${collapsed ? '' : 'ml-2 pl-3 border-l border-gray-100 dark:border-gray-700 mt-1'}`}>
                 {favoriteItems.map((item) => (
-                  <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} dynamicBadge={dynamicBadgeFor(item)} />
+                  <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} />
                 ))}
               </div>
             )}
@@ -243,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
         {(userRole === 'manager' || userRole === 'boekhouder') ? (
           <div className="space-y-0.5">
             {filteredNavigation.filter(i => i.id !== 'dashboard').map((item) => (
-              <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} dynamicBadge={dynamicBadgeFor(item)} />
+              <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} />
             ))}
           </div>
         ) : (
@@ -263,7 +248,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogoClick }) => {
                 {(collapsed || expandedSections.includes(section.title)) && (
                   <div className={`space-y-0.5 ${collapsed ? '' : 'ml-2 pl-3 border-l border-gray-100 dark:border-gray-700'}`}>
                     {section.items.map((item) => (
-                      <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} dynamicBadge={dynamicBadgeFor(item)} />
+                      <NavItem key={item.id} item={item} collapsed={collapsed} userRole={userRole} />
                     ))}
                   </div>
                 )}
