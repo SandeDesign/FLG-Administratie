@@ -530,6 +530,28 @@ const BankStatementImport: React.FC = () => {
         }
       }
 
+      // Zorg dat elke bevestigde outgoing transactie óók in de suppliers-
+      // lijst komt (als de bon niet apart is geüpload, zou de leverancier
+      // daar anders nooit opduiken). Idempotent: alleen aangemaakt als er
+      // nog geen supplier met deze naam bestaat.
+      if (t && t.amount < 0 && t.beneficiary && !t.matchedInvoiceId) {
+        const abs = Math.abs(t.amount);
+        try {
+          await supplierService.ensureSupplierFromBankTransaction(
+            selectedCompany.id,
+            t.beneficiary,
+            {
+              amount: abs,
+              vatAmount: 0,
+              totalAmount: abs,
+              invoiceDate: t.date ? new Date(t.date) : new Date(),
+            }
+          );
+        } catch (err) {
+          console.warn('[confirm] ensureSupplier failed:', err);
+        }
+      }
+
       await bankImportService.confirmTransaction(
         transactionId,
         selectedCompany.id,
