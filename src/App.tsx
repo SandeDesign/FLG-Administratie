@@ -273,6 +273,7 @@ function App() {
                           <Route path="incoming-invoices" element={<Navigate to="/boekhouder/upload?tab=facturen" replace />} />
                           <Route path="incoming-post" element={<Navigate to="/boekhouder/upload?tab=post" replace />} />
                           <Route path="settings" element={<Navigate to="/boekhouder/settings" replace />} />
+                          <Route path="chat" element={<Navigate to="/boekhouder/chat" replace />} />
 
                           <Route path="*" element={<NotFound />} />
                         </Routes>
