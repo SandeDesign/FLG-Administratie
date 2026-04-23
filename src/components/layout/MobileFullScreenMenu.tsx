@@ -271,12 +271,12 @@ export const MobileFullScreenMenu: React.FC<MobileFullScreenMenuProps> = ({ isOp
               >
                 {({ isActive }) => (
                   <>
-                    <div className={`p-3 rounded-xl transition-all duration-300 ${ isActive ? 'bg-white dark:bg-gray-800/20 shadow-inner' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600' }`}>
+                    <div className={`p-3 rounded-xl transition-all duration-300 ${ isActive ? 'bg-white/20 backdrop-blur-sm shadow-inner border border-white/30' : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600' }`}>
                       <LayoutDashboard className={`h-5 w-5 ${ isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300' }`} />
                     </div>
                     <span className="flex-1">Dashboard</span>
                     {isActive && (
-                      <div className="w-2 h-2 rounded-full bg-white dark:bg-gray-800 shadow-sm"></div>
+                      <div className="w-2 h-2 rounded-full bg-white shadow-sm"></div>
                     )}
                   </>
                 )}
