@@ -7,6 +7,7 @@ import {
   Building2,
   User,
   Handshake,
+  Trash2,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -21,6 +22,7 @@ import {
   sendMessage,
   markChatRead,
   buildChatId,
+  deleteChat,
 } from '../services/chatService';
 import { getUserSettings } from '../services/firebase';
 import Card from '../components/ui/Card';
@@ -367,6 +369,22 @@ const Chat: React.FC = () => {
     }
   };
 
+  const handleDeleteChat = async (chatId: string) => {
+    if (!confirm('Dit gesprek definitief verwijderen? Alle berichten gaan verloren.')) return;
+    try {
+      await deleteChat(chatId);
+      if (activeChatId === chatId) {
+        setActiveChatId(null);
+        const next = new URLSearchParams(searchParams);
+        next.delete('chat');
+        setSearchParams(next, { replace: true });
+      }
+    } catch (err) {
+      console.error('[Chat] delete failed:', err);
+      setError('Verwijderen mislukt');
+    }
+  };
+
   if (!user) return null;
 
   const emptyReason =
@@ -440,51 +458,74 @@ const Chat: React.FC = () => {
                     {group.label}
                   </p>
                 </div>
-                {group.entries.map((e) => (
-                  <button
+                {group.entries.map((e) => {
+                  // Oude chats (uit vorig data-model) hebben geen companyId
+                  // en/of zijn niet te openen — toon altijd een delete-knop
+                  // voor dat geval. Voor normale entries alleen als er iets
+                  // bestaat (hasMessages).
+                  const isLegacy = !e.companyId;
+                  const canDelete = isLegacy || e.hasMessages;
+                  return (
+                  <div
                     key={e.chatId}
-                    onClick={() => openEntry(e)}
-                    className={`w-full p-3 flex items-start gap-3 text-left transition-colors ${
+                    className={`w-full flex items-start transition-colors group ${
                       activeChatId === e.chatId
                         ? 'bg-primary-50 dark:bg-primary-900/30'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                     }`}
                   >
-                    {e.companyLogoUrl ? (
-                      <img
-                        src={e.companyLogoUrl}
-                        alt={e.companyName}
-                        className="h-9 w-9 rounded-lg object-contain bg-white border border-gray-200 flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="h-9 w-9 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
-                        <Building2 className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {e.companyName}
+                    <button
+                      onClick={() => openEntry(e)}
+                      className="flex-1 min-w-0 p-3 flex items-start gap-3 text-left"
+                    >
+                      {e.companyLogoUrl ? (
+                        <img
+                          src={e.companyLogoUrl}
+                          alt={e.companyName}
+                          className="h-9 w-9 rounded-lg object-contain bg-white border border-gray-200 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="h-9 w-9 rounded-lg bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center flex-shrink-0">
+                          <Building2 className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {e.companyName}
+                          </p>
+                          {e.lastMessageAt && (
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                              {formatTime(e.lastMessageAt)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                          {e.hasMessages
+                            ? `${e.lastSenderName ? e.lastSenderName + ': ' : ''}${e.lastMessage}`
+                            : 'Nog geen berichten'}
                         </p>
-                        {e.lastMessageAt && (
-                          <span className="text-[10px] text-gray-500 dark:text-gray-400 flex-shrink-0">
-                            {formatTime(e.lastMessageAt)}
-                          </span>
-                        )}
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                        {e.hasMessages
-                          ? `${e.lastSenderName ? e.lastSenderName + ': ' : ''}${e.lastMessage}`
-                          : 'Nog geen berichten'}
-                      </p>
-                    </div>
-                    {e.unread > 0 && (
-                      <span className="bg-primary-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 flex-shrink-0">
-                        {e.unread}
-                      </span>
+                      {e.unread > 0 && (
+                        <span className="bg-primary-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 flex-shrink-0">
+                          {e.unread}
+                        </span>
+                      )}
+                    </button>
+                    {canDelete && (
+                      <button
+                        onClick={(ev) => { ev.stopPropagation(); handleDeleteChat(e.chatId); }}
+                        className={`p-2 mr-1 mt-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-opacity ${
+                          isLegacy ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'
+                        }`}
+                        title="Gesprek verwijderen"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     )}
-                  </button>
-                ))}
+                  </div>
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -532,6 +573,13 @@ const Chat: React.FC = () => {
                     {role === 'admin' ? 'Boekhouder:' : 'Admin:'} {activeEntry.otherPartyLabel}
                   </p>
                 </div>
+                <button
+                  onClick={() => handleDeleteChat(activeEntry.chatId)}
+                  className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0"
+                  title="Gesprek verwijderen"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50/50 dark:bg-gray-900/20">

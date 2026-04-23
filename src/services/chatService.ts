@@ -27,6 +27,8 @@ import {
   updateDoc,
   serverTimestamp,
   getDoc,
+  getDocs,
+  deleteDoc,
   Unsubscribe,
   increment,
 } from 'firebase/firestore';
@@ -258,6 +260,25 @@ export const markChatRead = async (
     // chat bestaat nog niet — niet erg
     console.warn('[chatService] markChatRead failed:', err);
   }
+};
+
+/**
+ * Verwijder een volledig chat-gesprek: alle messages in de subcollectie
+ * plus de summary doc zelf. Nodig voor het opruimen van oude gesprekken
+ * (bv. uit het vorige data-model zonder companyId).
+ */
+export const deleteChat = async (chatId: string): Promise<void> => {
+  const messagesRef = collection(db, 'chats', chatId, 'messages');
+  // Pak messages in batches van 100 en verwijder ze. Stop zodra er niks
+  // meer over is.
+  while (true) {
+    const snap = await getDocs(query(messagesRef, fsLimit(100)));
+    if (snap.empty) break;
+    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    if (snap.size < 100) break;
+  }
+  // Verwijder de summary doc
+  await deleteDoc(doc(db, 'chats', chatId));
 };
 
 /**
