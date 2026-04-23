@@ -28,6 +28,7 @@ import {
   FileInput,
   Handshake,
   Receipt,
+  MessageSquare,
 } from 'lucide-react';
 
 type IconOption = { name: string; icon: any; label: string; gradient: string };
@@ -44,6 +45,7 @@ const ADMIN_ICONS: IconOption[] = [
   { name: 'Wallet', icon: Wallet, label: 'Begroting', gradient: 'from-pink-500 to-pink-600' },
   { name: 'Cpu', icon: Cpu, label: 'Productie', gradient: 'from-cyan-500 to-cyan-600' },
   { name: 'ListTodo', icon: ListTodo, label: 'Taken', gradient: 'from-amber-500 to-amber-600' },
+  { name: 'MessageSquare', icon: MessageSquare, label: 'Berichten', gradient: 'from-sky-500 to-sky-600' },
   { name: 'Settings', icon: Settings, label: 'Profiel', gradient: 'from-gray-500 to-gray-600' },
 ];
 
@@ -57,6 +59,7 @@ const BOEKHOUDER_ICONS: IconOption[] = [
   { name: 'Upload', icon: Upload, label: 'Upload', gradient: 'from-orange-500 to-orange-600' },
   { name: 'Handshake', icon: Handshake, label: 'Relaties', gradient: 'from-indigo-500 to-indigo-600' },
   { name: 'Receipt', icon: Receipt, label: 'Declaraties', gradient: 'from-pink-500 to-pink-600' },
+  { name: 'MessageSquare', icon: MessageSquare, label: 'Berichten', gradient: 'from-sky-500 to-sky-600' },
   { name: 'Settings', icon: Settings, label: 'Profiel', gradient: 'from-gray-500 to-gray-600' },
 ];
 
@@ -152,6 +155,7 @@ export const BottomNavSettings: React.FC = () => {
         else if (iconName === 'PieChart') href = `${prefix}/incoming-invoices-stats`;
         else if (iconName === 'ListTodo') href = '/tasks';
         else if (iconName === 'Settings') href = `${prefix}/settings`;
+        else if (iconName === 'MessageSquare') href = `${prefix}/chat`;
         // Boekhouder-only icons
         else if (iconName === 'BookOpen') href = '/boekhouder/grootboekrekeningen';
         else if (iconName === 'FileInput') href = '/boekhouder/bank-statement-import';
