@@ -96,6 +96,59 @@ export const supplierService = {
   },
 
   /**
+   * Zorg dat er een `suppliers`-entry bestaat voor een leverancier met deze
+   * naam. Gebruikt bij bank-match/confirm: als de bon nog niet is geüpload
+   * is er nog geen supplier, maar de transactie geeft wel een bedrag waar
+   * we de crediteur alvast mee willen registreren zodat de leveranciers-
+   * lijst de juiste totalen laat zien.
+   *
+   * Idempotent:
+   *  - Als er al een supplier met deze naam bestaat, niets doen (de
+   *    amounts zijn al bijgehouden via bon-upload); returnt diens id.
+   *  - Anders: maak de supplier aan met het bedrag uit de transactie als
+   *    eerste invoiceCount=1 entry.
+   */
+  async ensureSupplierFromBankTransaction(
+    companyId: string,
+    supplierName: string,
+    amounts: InvoiceAmounts
+  ): Promise<{ id: string; created: boolean }> {
+    const q = query(
+      collection(db, SUPPLIERS_COLLECTION),
+      where('companyId', '==', companyId),
+      where('supplierName', '==', supplierName)
+    );
+
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return { id: snapshot.docs[0].id, created: false };
+    }
+
+    const now = Timestamp.fromDate(new Date());
+    const newSupplier: Record<string, any> = {
+      companyId,
+      supplierName,
+      supplierEmail: '',
+      totalAmountExVat: amounts.amount || 0,
+      totalVatAmount: amounts.vatAmount || 0,
+      totalAmountIncVat: amounts.totalAmount || 0,
+      invoiceCount: 1,
+      source: 'bank-match',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (amounts.invoiceDate) {
+      newSupplier.lastInvoiceDate = Timestamp.fromDate(
+        amounts.invoiceDate instanceof Date ? amounts.invoiceDate : new Date(amounts.invoiceDate)
+      );
+    }
+
+    const docRef = await addDoc(collection(db, SUPPLIERS_COLLECTION), newSupplier);
+    return { id: docRef.id, created: true };
+  },
+
+  /**
    * Get all suppliers for a company
    */
   async getSuppliers(companyId: string): Promise<Supplier[]> {

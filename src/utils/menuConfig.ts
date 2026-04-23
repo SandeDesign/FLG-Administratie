@@ -217,6 +217,7 @@ export const ICON_MAP: Record<string, React.ComponentType<{ className?: string; 
   FileInput,
   Handshake,
   Receipt,
+  MessageSquare,
 };
 
 /**

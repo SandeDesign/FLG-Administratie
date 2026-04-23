@@ -264,21 +264,32 @@ const Chat: React.FC = () => {
     }
 
     // Toon bestaande chats die (om welke reden dan ook) niet in de
-    // berekende lijst zitten (bv. bedrijf inmiddels verwijderd) zodat
-    // geschiedenis niet verdwijnt.
+    // berekende lijst zitten (bv. bedrijf inmiddels verwijderd of chat
+    // vanuit het oude data-model zonder companyId) zodat geschiedenis
+    // niet verdwijnt.
+    const shortId = (s: string | undefined | null): string => (s ? s.substring(0, 6) : '??????');
     chats.forEach((summary) => {
       if (entries.some((e) => e.chatId === summary.id)) return;
+      // Oude chats zonder companyId (uit vorige data-model) kunnen we niet
+      // correct scopen; toon ze wél zodat geschiedenis zichtbaar blijft,
+      // maar met generieke label.
+      const companyId = summary.companyId || '';
+      const companyName =
+        summary.companyName ||
+        (companyId ? `Bedrijf ${shortId(companyId)}` : 'Oud gesprek');
+      const adminUid = summary.adminUid || '';
+      const boekhouderUid = summary.boekhouderUid || '';
       entries.push({
         chatId: summary.id,
-        companyId: summary.companyId,
-        companyName: summary.companyName || `Bedrijf ${summary.companyId.substring(0, 6)}`,
-        adminUid: summary.adminUid,
-        boekhouderUid: summary.boekhouderUid,
+        companyId,
+        companyName,
+        adminUid,
+        boekhouderUid,
         otherPartyLabel:
           role === 'admin'
-            ? summary.boekhouderEmail || `Boekhouder ${summary.boekhouderUid.substring(0, 6)}`
-            : summary.adminEmail || `Admin ${summary.adminUid.substring(0, 6)}`,
-        otherPartyUid: role === 'admin' ? summary.boekhouderUid : summary.adminUid,
+            ? summary.boekhouderEmail || `Boekhouder ${shortId(boekhouderUid)}`
+            : summary.adminEmail || `Admin ${shortId(adminUid)}`,
+        otherPartyUid: role === 'admin' ? boekhouderUid : adminUid,
         otherPartyEmail:
           role === 'admin' ? summary.boekhouderEmail || '' : summary.adminEmail || '',
         adminEmailForEnsure: summary.adminEmail || '',
