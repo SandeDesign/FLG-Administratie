@@ -473,19 +473,26 @@ if ($method === 'GET') {
     }
     $health['oauthOk'] = true;
 
-    // Probeer Firestore root op te vragen — bewijs dat scope datastore werkt.
-    $url = "https://firestore.googleapis.com/v1/projects/" . FCM_PROJECT_ID . "/databases/(default)/documents";
-    $ch = curl_init($url);
+    // Probeer Firestore database metadata op te vragen — bewijs dat scope
+    // datastore werkt. NB: de '/documents' endpoint zonder collection-ID
+    // geeft altijd 404 (je moet een collection specificeren). In plaats
+    // daarvan gebruiken we projects.databases.get wat metadata retourneert.
+    $fsUrl = "https://firestore.googleapis.com/v1/projects/" . FCM_PROJECT_ID . "/databases/(default)";
+    $ch = curl_init($fsUrl);
     curl_setopt_array($ch, [
         CURLOPT_HTTPHEADER => ["Authorization: Bearer $accessToken"],
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
     ]);
-    curl_exec($ch);
+    $fsResp = curl_exec($ch);
     $fsCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     $health['firestoreHttpCode'] = $fsCode;
+    $health['firestoreUrl'] = $fsUrl;
     $health['firestoreOk'] = ($fsCode === 200);
+    if ($fsCode !== 200) {
+        $health['firestoreError'] = substr((string)$fsResp, 0, 300);
+    }
 
     $health['ok'] = $health['serviceAccountConfigured'] && $health['oauthOk'] && $health['firestoreOk'];
     jsonOut(200, $health);
