@@ -25,7 +25,7 @@ interface LeaveRequestModalProps {
 }
 
 const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, onSuccess, employeeId }) => {
-  const { user, adminUserId } = useAuth();
+  const { user, adminUserId, userRole } = useAuth();
   const { companies } = useApp();
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -107,6 +107,24 @@ const LeaveRequestModal: React.FC<LeaveRequestModalProps> = ({ isOpen, onClose, 
     if (calculatedDays <= 0) {
       showError('Ongeldige datums', 'Einddatum moet na startdatum liggen');
       return;
+    }
+
+    // Pre-approval: werknemers/managers mogen niet met terugwerkende kracht
+    // verlof aanvragen — verlof moet vooraf aangevraagd + goedgekeurd zijn.
+    // Admin/co-admin kunnen wél backdaten voor correcties.
+    const isSelfService = userRole === 'employee' || userRole === 'manager';
+    if (isSelfService) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(data.startDate);
+      start.setHours(0, 0, 0, 0);
+      if (start.getTime() < today.getTime()) {
+        showError(
+          'Verlof niet met terugwerkende kracht',
+          'Je kunt alleen verlof voor vandaag of later aanvragen. Voor eerder genomen vrije dagen: overleg met je leidinggevende of admin.'
+        );
+        return;
+      }
     }
 
     if (data.type === 'holiday' && leaveBalance) {

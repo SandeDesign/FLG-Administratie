@@ -553,9 +553,20 @@ export default function Timesheets() {
       );
       success('Uren ingediend', 'Urenregistratie succesvol ingediend voor goedkeuring');
       await loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting timesheet:', error);
-      showError('Fout bij indienen', 'Kon urenregistratie niet indienen');
+      // Gap-check faal: toon lijst van ontbrekende werkdagen met uitleg.
+      if (error?.name === 'IncompleteWeekError' && Array.isArray(error.missingDates)) {
+        const dagen = error.missingDates
+          .map((d: Date) => new Date(d).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'short' }))
+          .join(', ');
+        showError(
+          'Week niet compleet',
+          `Geef eerst voor elke werkdag aan wat je deed (gewerkt / verlof / ziek / onbetaald / overleg). Ontbreekt nog: ${dagen}.`
+        );
+      } else {
+        showError('Fout bij indienen', 'Kon urenregistratie niet indienen');
+      }
     } finally {
       setSaving(false);
     }
@@ -1027,7 +1038,59 @@ export default function Timesheets() {
                     </div>
                   )}
 
-                  {/* Input Fields */}
+                  {/* Verplichte day-status — sluit gaploos af voor indienen */}
+                  <div className="mb-3">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Status van de dag <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={entry.dayStatus || (entry.regularHours > 0 ? 'worked' : '')}
+                      onChange={(e) => {
+                        const newStatus = e.target.value;
+                        updateEntry(index, 'dayStatus' as any, newStatus);
+                        // Als niet 'worked' → uren terug op 0 zodat totaal klopt.
+                        if (newStatus && newStatus !== 'worked') {
+                          if (entry.regularHours > 0) updateEntry(index, 'regularHours', 0);
+                        }
+                      }}
+                      disabled={isReadOnly}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm font-medium ${
+                        entry.dayStatus
+                          ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-gray-900 dark:text-gray-100'
+                          : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-gray-900 dark:text-gray-100'
+                      } disabled:opacity-60`}
+                    >
+                      <option value="">— Kies een status —</option>
+                      <option value="worked">Gewerkt</option>
+                      <option value="holiday">Verlof</option>
+                      <option value="sick">Ziek</option>
+                      <option value="unpaid">Onbetaald afwezig</option>
+                      <option value="meeting">Overleg / training</option>
+                    </select>
+                    {!entry.dayStatus && (
+                      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                        Verplicht om aan te geven voordat de week ingediend kan worden.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Optionele reden voor niet-gewerkt */}
+                  {entry.dayStatus && entry.dayStatus !== 'worked' && (
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Korte toelichting (optioneel)
+                      </label>
+                      <Input
+                        type="text"
+                        value={entry.statusReason || ''}
+                        onChange={(e) => updateEntry(index, 'statusReason' as any, e.target.value)}
+                        disabled={isReadOnly}
+                        placeholder="Bv. vrije dag, doktersafspraak, geplande training..."
+                      />
+                    </div>
+                  )}
+
+                  {/* Input Fields — alleen relevant als 'Gewerkt' */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Uren</label>
@@ -1038,7 +1101,7 @@ export default function Timesheets() {
                         step="0.5"
                         value={entry.regularHours}
                         onChange={(e) => updateEntry(index, 'regularHours', parseFloat(e.target.value) || 0)}
-                        disabled={isReadOnly}
+                        disabled={isReadOnly || (!!entry.dayStatus && entry.dayStatus !== 'worked')}
                         className="text-center font-semibold text-lg"
                         placeholder="0"
                       />
@@ -1051,7 +1114,7 @@ export default function Timesheets() {
                         step="1"
                         value={entry.travelKilometers}
                         onChange={(e) => updateEntry(index, 'travelKilometers', parseFloat(e.target.value) || 0)}
-                        disabled={isReadOnly}
+                        disabled={isReadOnly || (!!entry.dayStatus && entry.dayStatus !== 'worked')}
                         className="text-center font-semibold text-lg"
                         placeholder="0"
                       />

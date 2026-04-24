@@ -24,6 +24,7 @@ import { getEmployeeById, getLeaveRequests } from '../services/firebase';
 import { getWeeklyTimesheets, getWeekNumber } from '../services/timesheetService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import IncompleteWeekBanner from '../components/timesheet/IncompleteWeekBanner';
 
 const EmployeeDashboard: React.FC = () => {
   const { user, adminUserId, currentEmployeeId } = useAuth();
@@ -192,6 +193,9 @@ const EmployeeDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {/* Gap-compliance waarschuwing — bovenaan voor maximale zichtbaarheid */}
+      <IncompleteWeekBanner targetRoute="/employee-dashboard/timesheets" />
+
       {/* Header Section */}
       <div className="hidden lg:block bg-gradient-to-r from-primary-600 to-primary-700 dark:from-gray-800 dark:to-gray-800 dark:border dark:border-gray-700 rounded-2xl p-8 text-white shadow-lg">
         <div className="flex items-start justify-between mb-6">

@@ -169,15 +169,40 @@ export const updateWeeklyTimesheet = async (
   await updateDoc(docRef, updateData);
 };
 
+/**
+ * Error die wordt gegooid wanneer een week niet ingediend kan worden
+ * omdat niet alle werkdagen een status hebben.
+ */
+export class IncompleteWeekError extends Error {
+  missingDates: Date[];
+  constructor(missingDates: Date[]) {
+    super('Week is niet compleet: nog werkdagen zonder status.');
+    this.name = 'IncompleteWeekError';
+    this.missingDates = missingDates;
+  }
+}
+
 export const submitWeeklyTimesheet = async (
   id: string,
   userId: string,
   submittedBy: string
 ): Promise<void> => {
+  // Valideer gaploosheid: alle werkdagen moeten een dayStatus hebben
+  // (of — voor legacy entries — uren > 0 die als 'worked' tellen).
+  const ts = await getWeeklyTimesheet(id, userId);
+  if (!ts) throw new Error('Weekbriefje niet gevonden.');
+
+  const { checkWeekComplete } = await import('../utils/timesheetCompliance');
+  const check = checkWeekComplete(ts);
+  if (!check.isComplete) {
+    throw new IncompleteWeekError(check.missingDates);
+  }
+
   await updateWeeklyTimesheet(id, userId, {
     status: 'submitted',
     submittedAt: new Date(),
-    submittedBy
+    submittedBy,
+    lockedAt: new Date(),
   });
 };
 
