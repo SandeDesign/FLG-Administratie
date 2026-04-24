@@ -148,6 +148,72 @@ export const generateAndUploadPayslipPdf = async (
   }
 };
 
+/**
+ * Upload een bestaande PDF als loonstrook voor een werknemer.
+ * Voor boekhouder-workflow: zij leveren maandelijks de loonstroken
+ * aan (geen in-app generatie) en uploaden die per medewerker.
+ *
+ * adminUserId = primary admin UID (voor collection-scope)
+ * generatedBy = uid van de uploader (boekhouder of admin)
+ */
+export const uploadPayslipForEmployee = async (params: {
+  adminUserId: string;
+  employeeId: string;
+  companyId: string;
+  file: File;
+  periodStartDate: Date;
+  periodEndDate: Date;
+  paymentDate: Date;
+  generatedBy: string;
+}): Promise<string> => {
+  const {
+    adminUserId,
+    employeeId,
+    companyId,
+    file,
+    periodStartDate,
+    periodEndDate,
+    paymentDate,
+    generatedBy,
+  } = params;
+
+  // 1) Maak payslip-doc aan zodat we een stabiel ID hebben voor het pad.
+  const docRef = await addDoc(collection(db, 'payslips'), convertToTimestamps({
+    userId: adminUserId,
+    employeeId,
+    companyId,
+    payrollPeriodId: '',
+    payrollCalculationId: '',
+    periodStartDate,
+    periodEndDate,
+    paymentDate,
+    pdfUrl: '',
+    pdfStoragePath: '',
+    generatedAt: new Date(),
+    generatedBy,
+    uploadedByBoekhouder: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }));
+
+  // 2) Upload de PDF onder payslips/{adminUserId}/{companyId}/{payslipId}.pdf
+  //    zodat het pad duidelijk per bedrijf gepartitioneerd is.
+  const fileName = `payslip-${docRef.id}.pdf`;
+  const storagePath = `payslips/${adminUserId}/${companyId}/${fileName}`;
+  const storageRef = ref(storage, storagePath);
+  await uploadBytes(storageRef, file);
+  const downloadURL = await getDownloadURL(storageRef);
+
+  // 3) Patch het doc met pdfUrl + pdfStoragePath.
+  await updateDoc(doc(db, 'payslips', docRef.id), {
+    pdfUrl: downloadURL,
+    pdfStoragePath: storagePath,
+    updatedAt: Timestamp.fromDate(new Date()),
+  });
+
+  return docRef.id;
+};
+
 export const createPayslipFromCalculation = async (
   userId: string,
   calculation: any,

@@ -49,6 +49,7 @@ import BoekhouderBtwOverzicht from './pages/boekhouder/BtwOverzicht';
 import BoekhouderExpenses from './pages/boekhouder/Expenses';
 import BoekhouderUpload from './pages/boekhouder/Upload';
 import BoekhouderSettings from './pages/boekhouder/Settings';
+import BoekhouderPayslipUpload from './pages/boekhouder/PayslipUpload';
 import AdminExpenses from './pages/AdminExpenses';
 import AdminUsers from './pages/AdminUsers';
 import AdminRoles from './pages/AdminRoles';
@@ -210,9 +211,11 @@ function App() {
                           <Route path="admin/leave-approvals" element={<AdminLeaveApprovals />} />
                           <Route path="admin/absence-management" element={<AdminAbsenceManagement />} />
 
-                          {/* Manager self-service: eigen verlof en verzuim */}
+                          {/* Manager self-service: eigen verlof, verzuim, declaraties en loonstroken */}
                           <Route path="leave" element={<Leave />} />
                           <Route path="absence" element={<Absence />} />
+                          <Route path="expenses" element={<Expenses />} />
+                          <Route path="payslips" element={<Payslips />} />
 
                           {/* Manager kan facturatie beheren */}
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
@@ -258,6 +261,7 @@ function App() {
                           <Route path="boekhouder/upload" element={<BoekhouderUpload />} />
                           <Route path="boekhouder/settings" element={<BoekhouderSettings />} />
                           <Route path="boekhouder/chat" element={<BoekhouderChat />} />
+                          <Route path="boekhouder/payslip-upload" element={<BoekhouderPayslipUpload />} />
                           <Route path="boekhouder/incoming-invoices" element={<Navigate to="/boekhouder/upload?tab=facturen" replace />} />
                           <Route path="boekhouder/incoming-post" element={<Navigate to="/boekhouder/upload?tab=post" replace />} />
 
