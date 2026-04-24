@@ -94,7 +94,8 @@ const UitgaandeFacturenTab: React.FC<Props> = ({ selectedCompany }) => {
 
     setSaving(true);
     try {
-      const uploadRes = await uploadFile(uploadedFile, selectedCompany.name, 'Verkoop', form.invoiceNumber);
+      // companyId meegeven → nieuwe structuur: FLG-Administratie/{id}__{slug}/Verkoop/{year}/{invoiceNumber}.ext
+      const uploadRes = await uploadFile(uploadedFile, selectedCompany.name, 'Verkoop', form.invoiceNumber, selectedCompany.id);
       if (!uploadRes.success) throw new Error('Upload mislukt');
 
       const vatAmount = +(amount * (form.btwPct / 100)).toFixed(2);

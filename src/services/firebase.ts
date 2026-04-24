@@ -2843,37 +2843,50 @@ export const markPostAsProcessed = async (postId: string, userId: string): Promi
 };
 
 /**
- * Upload post file to proxy
+ * Upload post-file (binnenkomende post) naar internedata.nl.
+ * Gebruikt nu proxy2.php via de uniforme uploadFileToInternedata zodat
+ * post in dezelfde folder-boom zit als facturen:
+ *   FLG-Administratie/{companyId}__{slug}/Post/{year}/{yyyy-MM-dd}_{subject-slug}.ext
+ *
+ * Signature uitgebreid met optionele companyId, receivedDate en subject
+ * voor een nette filename. Backwards-compat: zonder die velden valt het
+ * terug op timestamp-based naamgeving en de legacy-structuur.
  */
 export const uploadPostFile = async (
   file: File,
-  companyName: string
+  companyName: string,
+  opts?: {
+    companyId?: string;
+    receivedDate?: Date;
+    subject?: string;
+  }
 ): Promise<{ url: string; path: string }> => {
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('companyFolder', companyName);
-    formData.append('filename', `post-${Date.now()}-${file.name}`);
+    const { uploadFileToInternedata, uploadFile, slugify } = await import('./fileUploadService');
 
-    const response = await fetch('https://internedata.nl/proxy3.php', {
-      method: 'POST',
-      body: formData,
-    });
+    if (opts?.companyId) {
+      // Nieuwe gestructureerde upload met jaar + nette filename
+      const date = opts.receivedDate || new Date();
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const subjectSlug = opts.subject ? slugify(opts.subject) : 'post';
+      const customFileName = `${yyyy}-${mm}-${dd}_${subjectSlug}`;
 
-    if (!response.ok) {
-      throw new Error('Upload failed');
+      const res = await uploadFileToInternedata({
+        file,
+        companyId: opts.companyId,
+        companyName,
+        folderType: 'Post',
+        year: yyyy,
+        customFileName,
+      });
+      return { url: res.fileUrl, path: res.storagePath };
     }
 
-    const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.error || 'Upload failed');
-    }
-
-    return {
-      url: result.url,
-      path: result.path,
-    };
+    // Legacy-fallback (oude aanroepen zonder companyId)
+    const res = await uploadFile(file, companyName, 'Post', `post-${Date.now()}`);
+    return { url: res.fileUrl, path: '' };
   } catch (error) {
     console.error('Error uploading post file:', error);
     throw error;

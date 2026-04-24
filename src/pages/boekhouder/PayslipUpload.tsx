@@ -112,6 +112,10 @@ const PayslipUpload: React.FC = () => {
         adminUserId: selectedCompany.userId,
         employeeId: selectedEmployeeId,
         companyId: selectedCompany.id,
+        companyName: selectedCompany.name,
+        employeeCode: selectedEmployee
+          ? `${selectedEmployee.personalInfo.firstName}-${selectedEmployee.personalInfo.lastName}`
+          : undefined,
         file,
         periodStartDate: periodStart,
         periodEndDate: periodEnd,

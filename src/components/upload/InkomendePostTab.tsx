@@ -146,7 +146,11 @@ const InkomendePostTab: React.FC<Props> = ({ selectedCompany }) => {
     try {
       setUploading(true);
 
-      const uploadResult = await uploadPostFile(uploadedFile, selectedCompany.name);
+      const uploadResult = await uploadPostFile(uploadedFile, selectedCompany.name, {
+        companyId: selectedCompany.id,
+        receivedDate: formData.receivedDate ? new Date(formData.receivedDate) : new Date(),
+        subject: formData.subject,
+      });
 
       const postData = {
         companyId: selectedCompany.id,
