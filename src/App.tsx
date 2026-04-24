@@ -217,11 +217,12 @@ function App() {
                           <Route path="expenses" element={<Expenses />} />
                           <Route path="payslips" element={<Payslips />} />
 
-                          {/* Manager kan facturatie beheren — géén inkoop */}
+                          {/* Manager kan facturatie beheren — géén inkoop, géén upload */}
                           <Route path="invoice-relations" element={<InvoiceRelations />} />
                           <Route path="budgeting" element={<Budgeting />} />
                           <Route path="outgoing-invoices" element={<OutgoingInvoices />} />
-                          <Route path="upload" element={<Upload />} />
+                          {/* Upload volledig dichtgezet voor manager — redirect naar dashboard */}
+                          <Route path="upload" element={<Navigate to="/" replace />} />
                           {/* Inkoop-routes verborgen voor manager — redirect naar dashboard */}
                           <Route path="incoming-invoices" element={<Navigate to="/" replace />} />
                           <Route path="incoming-invoices-stats" element={<Navigate to="/" replace />} />
