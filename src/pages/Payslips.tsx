@@ -14,7 +14,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { usePageTitle } from '../contexts/PageTitleContext';
 
 export default function Payslips() {
-  const { user, userRole } = useAuth();
+  const { user, userRole, adminUserId } = useAuth();
   const { currentEmployeeId, selectedCompany, employees } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('Loonstroken');

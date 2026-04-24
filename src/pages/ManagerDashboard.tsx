@@ -25,24 +25,21 @@ import { getPendingTimesheets } from '../services/timesheetService';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import { isWeekInQuarter, isInQuarter } from '../utils/dateFilters';
 
+// Moet overeenkomen met wat ProjectProduction.tsx schrijft naar `productionWeeks`.
+// Veld is `week` (niet weekNumber) en `totalHours` (niet totalProduced/totalValue).
 interface ProductionWeek {
   id: string;
-  weekNumber: number;
+  week: number;
   year: number;
-  totalProduced: number;
-  totalValue: number;
+  totalHours: number;
+  totalEntries: number;
   status: string;
   createdAt: any;
 }
 
-interface IncomingInvoice {
-  id: string;
-  supplierName: string;
-  invoiceNumber: string;
-  totalAmount: number;
-  status: string;
-  createdAt: any;
-}
+// Vaste weekly target uren per werkmaatschappij. Basisscenario: 120u/week.
+// Later verplaatsbaar naar company-level instelling als gewenst.
+const WEEKLY_HOURS_TARGET = 120;
 
 const ManagerDashboard: React.FC = () => {
   const { user, adminUserId } = useAuth();
@@ -62,14 +59,11 @@ const ManagerDashboard: React.FC = () => {
     return (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24) <= days;
   };
   const [productionWeeks, setProductionWeeks] = useState<ProductionWeek[]>([]);
-  const [incomingInvoices, setIncomingInvoices] = useState<IncomingInvoice[]>([]);
   const [stats, setStats] = useState({
     totalTeam: 0,
     activeMembers: 0,
     totalProduction: 0,
     totalProductionValue: 0,
-    totalInvoices: 0,
-    totalInvoiceAmount: 0,
   });
 
   const isProjectCompany = selectedCompany?.companyType === 'project' || selectedCompany?.companyType === 'work_company';
@@ -92,10 +86,12 @@ const ManagerDashboard: React.FC = () => {
       }
       setTeamMembers(filteredEmployees.slice(0, 8));
 
-      // Load production weeks
+      // Load production weeks — per monteur 1 doc per week, geaggregeerd naar
+      // 1 team-regel per week hieronder.
       let productionData: ProductionWeek[] = [];
-      let totalProduction = 0;
+      let totalProductionHours = 0;
       let totalProductionValue = 0;
+      const companyHourlyRate = selectedCompany.hourlyRate || 0;
 
       if (isProjectCompany) {
         try {
@@ -106,41 +102,46 @@ const ManagerDashboard: React.FC = () => {
           );
           const productionSnap = await getDocs(productionQuery);
           const allProduction = productionSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductionWeek));
-          productionData = allProduction.filter(pw => {
+
+          // Filter op jaar + kwartaal
+          const inPeriod = allProduction.filter(pw => {
             if (pw.year !== selectedYear) return false;
-            return isWeekInQuarter(pw.weekNumber, selectedQuarter);
+            return isWeekInQuarter(pw.week, selectedQuarter);
           });
+
+          // Aggregeer per week: meerdere monteurs schrijven los
+          const byWeek = new Map<number, ProductionWeek>();
+          inPeriod.forEach(pw => {
+            const existing = byWeek.get(pw.week);
+            if (existing) {
+              existing.totalHours = (existing.totalHours || 0) + (pw.totalHours || 0);
+              existing.totalEntries = (existing.totalEntries || 0) + (pw.totalEntries || 0);
+            } else {
+              byWeek.set(pw.week, {
+                id: `agg-${pw.year}-${pw.week}`,
+                week: pw.week,
+                year: pw.year,
+                totalHours: pw.totalHours || 0,
+                totalEntries: pw.totalEntries || 0,
+                status: pw.status,
+                createdAt: pw.createdAt,
+              });
+            }
+          });
+
+          productionData = Array.from(byWeek.values()).sort((a, b) => b.week - a.week);
+
           productionData.forEach(pw => {
-            totalProduction += pw.totalProduced || 0;
-            totalProductionValue += pw.totalValue || 0;
+            totalProductionHours += pw.totalHours || 0;
+            // Omzet = uren × uurtarief × BTW (conform ProjectStatistics berekening)
+            totalProductionValue += (pw.totalHours || 0) * companyHourlyRate * 1.21;
           });
         } catch (e) {
           console.log('Could not load production data:', e);
         }
       }
 
-      // Load incoming invoices
-      let invoiceData: IncomingInvoice[] = [];
-      let totalInvoiceAmount = 0;
-
-      try {
-        const invoiceQuery = query(
-          collection(db, 'incomingInvoices'),
-          where('companyId', '==', selectedCompany.id),
-          orderBy('createdAt', 'desc')
-        );
-        const invoiceSnap = await getDocs(invoiceQuery);
-        const allInvoices = invoiceSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as IncomingInvoice));
-        invoiceData = allInvoices.filter(inv => {
-          const docDate = inv.createdAt;
-          const date = docDate ? (typeof docDate === 'string' ? new Date(docDate) : docDate.toDate?.() || docDate) : null;
-          return date && isInQuarter(date, selectedYear, selectedQuarter);
-        });
-        invoiceData.forEach(inv => { totalInvoiceAmount += inv.totalAmount || 0; });
-      } catch (e) {
-        console.log('Could not load invoice data:', e);
-      }
-
+      // Manager ziet geen inkoop-bonnen meer op het dashboard.
       const [tsData, leaveData, tasksData] = await Promise.all([
         getPendingTimesheets(adminUserId, selectedCompany.id).catch(() => []),
         getPendingLeaveApprovals(selectedCompany.id, adminUserId).catch(() => []),
@@ -151,14 +152,11 @@ const ManagerDashboard: React.FC = () => {
       setTasks(tasksData);
 
       setProductionWeeks(productionData);
-      setIncomingInvoices(invoiceData);
       setStats({
         totalTeam: filteredEmployees.length,
         activeMembers: filteredEmployees.filter(e => e.status === 'active').length,
-        totalProduction,
+        totalProduction: totalProductionHours,
         totalProductionValue,
-        totalInvoices: invoiceData.length,
-        totalInvoiceAmount,
       });
     } catch (error) {
       console.error('Error loading manager data:', error);
@@ -215,16 +213,19 @@ const ManagerDashboard: React.FC = () => {
               <div className="bg-white/20 dark:bg-gray-800/40 backdrop-blur-sm rounded-lg p-4 border border-white/30 dark:border-gray-700/50">
                 <div className="flex items-center gap-2 mb-2">
                   <Package className="h-4 w-4 text-white" />
-                  <p className="text-xs text-white/90">Productie</p>
+                  <p className="text-xs text-white/90">Uren</p>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats.totalProduction}</p>
+                <p className="text-2xl font-bold text-white">{stats.totalProduction.toFixed(1)}u</p>
+                <p className="text-[10px] text-white/70">
+                  Target: {(productionWeeks.length * WEEKLY_HOURS_TARGET).toFixed(0)}u ({productionWeeks.length}×{WEEKLY_HOURS_TARGET})
+                </p>
               </div>
               <div className="bg-white/20 dark:bg-gray-800/40 backdrop-blur-sm rounded-lg p-4 border border-white/30 dark:border-gray-700/50">
                 <div className="flex items-center gap-2 mb-2">
                   <Euro className="h-4 w-4 text-white" />
-                  <p className="text-xs text-white/90">Waarde</p>
+                  <p className="text-xs text-white/90">Omzet (incl. BTW)</p>
                 </div>
-                <p className="text-2xl font-bold text-white">€{stats.totalProductionValue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-white">€{stats.totalProductionValue.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}</p>
               </div>
             </>
           )}
@@ -305,17 +306,6 @@ const ManagerDashboard: React.FC = () => {
                   </div>
                 </div>
               </button>
-              <button onClick={() => navigate('/upload?tab=facturen')} className="group">
-                <div className="rounded-xl p-6 bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="p-4 bg-primary-100 dark:bg-primary-900/30 rounded-xl mb-3 group-hover:scale-110 transition-transform">
-                      <Upload className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                    </div>
-                    <h3 className="font-bold text-sm mb-1">Inkoop</h3>
-                    <p className="text-xs text-white/80">Facturen</p>
-                  </div>
-                </div>
-              </button>
               <button onClick={() => navigate('/tasks')} className="group">
                 <div className="rounded-xl p-6 bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95">
                   <div className="flex flex-col items-center text-center">
@@ -368,91 +358,95 @@ const ManagerDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Production Overview */}
+      {/* Production Overview — per week: uren vs 120u-target + uursaldo + omzet */}
       {isProjectCompany && productionWeeks.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              Recente Productie
-            </h2>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                Recente Productie
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Target: {WEEKLY_HOURS_TARGET}u/week · uurtarief €{(selectedCompany?.hourlyRate || 0).toFixed(2)} excl. BTW
+              </p>
+            </div>
             <button onClick={() => navigate('/project-production')} className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium">
               Alles bekijken →
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {productionWeeks.map((week) => (
-              <Card key={week.id} className="p-4 hover:shadow-lg transition">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                      <Factory className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            {productionWeeks.slice(0, 6).map((week) => {
+              const hours = week.totalHours || 0;
+              const saldo = hours - WEEKLY_HOURS_TARGET;
+              const pct = Math.min(100, Math.round((hours / WEEKLY_HOURS_TARGET) * 100));
+              const saldoColor = saldo >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400';
+              const barColor = saldo >= 0 ? 'bg-emerald-500' : hours > 0 ? 'bg-amber-500' : 'bg-red-500';
+              const hourlyRate = selectedCompany?.hourlyRate || 0;
+              const value = hours * hourlyRate * 1.21;
+              return (
+                <Card key={week.id} className="p-4 hover:shadow-lg transition">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                        <Factory className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">Week {week.week}</span>
                     </div>
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">Week {week.weekNumber}</span>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                      {week.totalEntries || 0} regels
+                    </span>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${week.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'}`}>
-                    {week.status === 'completed' ? 'Afgerond' : 'Open'}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Geproduceerd:</span>
-                    <span className="font-medium">{week.totalProduced || 0} stuks</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Waarde:</span>
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">€{(week.totalValue || 0).toLocaleString()}</span>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Incoming Invoices */}
-      {incomingInvoices.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <FileText className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-              Recente Inkoopbonnen
-            </h2>
-            <button onClick={() => navigate('/upload?tab=facturen')} className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
-              Alles bekijken →
-            </button>
+                  {/* Uren vs target */}
+                  <div className="space-y-1 mb-3">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500 dark:text-gray-400">Uren</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {hours.toFixed(1)} / {WEEKLY_HOURS_TARGET}u
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className={`h-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Uursaldo */}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Uursaldo</span>
+                    <span className={`font-semibold ${saldoColor}`}>
+                      {saldo >= 0 ? '+' : ''}{saldo.toFixed(1)}u
+                    </span>
+                  </div>
+
+                  {/* Omzet */}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">Omzet (incl. BTW)</span>
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                      €{value.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
-          <Card className="divide-y divide-gray-100 dark:divide-gray-700">
-            {incomingInvoices.map((invoice) => (
-              <div key={invoice.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
-                    <Upload className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">{invoice.supplierName || 'Onbekend'}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{invoice.invoiceNumber}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">€{(invoice.totalAmount || 0).toFixed(2)}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${ invoice.status === 'approved' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : invoice.status === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' }`}>
-                    {invoice.status === 'approved' ? 'Goedgekeurd' : invoice.status === 'rejected' ? 'Afgewezen' : 'In behandeling'}
-                  </span>
-                </div>
+
+          {/* Periode-totaal */}
+          <Card className="mt-4 p-4 bg-emerald-50 dark:bg-gray-800 border-l-4 border-emerald-500">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <p className="text-xs text-emerald-700 dark:text-gray-400 uppercase tracking-wider">Totaal uren {selectedQuarter ? `Q${selectedQuarter}` : ''} {selectedYear}</p>
+                <p className="text-xl font-bold text-emerald-900 dark:text-gray-100">{stats.totalProduction.toFixed(1)}u</p>
               </div>
-            ))}
-          </Card>
-          <Card className="mt-4 p-4 bg-primary-50 dark:bg-gray-800 border-l-4 border-primary-500">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Euro className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                <div>
-                  <p className="text-sm text-primary-700 dark:text-gray-400">Totaal Inkoop {selectedQuarter ? `Q${selectedQuarter}` : ''} {selectedYear}</p>
-                  <p className="text-2xl font-bold text-primary-900 dark:text-gray-100">€{stats.totalInvoiceAmount.toFixed(2)}</p>
-                </div>
+              <div>
+                <p className="text-xs text-emerald-700 dark:text-gray-400 uppercase tracking-wider">Target</p>
+                <p className="text-xl font-bold text-emerald-900 dark:text-gray-100">{(productionWeeks.length * WEEKLY_HOURS_TARGET).toFixed(0)}u</p>
+                <p className="text-[11px] text-emerald-700 dark:text-gray-400">{productionWeeks.length} weken × {WEEKLY_HOURS_TARGET}u</p>
               </div>
-              <p className="text-sm text-primary-700 dark:text-gray-400">{stats.totalInvoices} facturen</p>
+              <div>
+                <p className="text-xs text-emerald-700 dark:text-gray-400 uppercase tracking-wider">Omzet (incl. BTW)</p>
+                <p className="text-xl font-bold text-emerald-900 dark:text-gray-100">€{stats.totalProductionValue.toLocaleString('nl-NL', { maximumFractionDigits: 0 })}</p>
+              </div>
             </div>
           </Card>
         </div>
@@ -486,7 +480,7 @@ const ManagerDashboard: React.FC = () => {
       )}
 
       {/* Empty State */}
-      {!loading && productionWeeks.length === 0 && incomingInvoices.length === 0 && teamMembers.length === 0 && (
+      {!loading && productionWeeks.length === 0 && teamMembers.length === 0 && (
         <Card className="p-8 text-center">
           <FileText className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Nog geen data</h3>
