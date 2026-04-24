@@ -198,6 +198,9 @@ function App() {
                           {/* Manager kan productie beheren */}
                           <Route path="project-production" element={<ProjectProduction />} />
 
+                          {/* Manager kan interne projecten inzien (read-only) */}
+                          <Route path="internal-projects" element={<InternalProjects />} />
+
                           {/* ✅ STATISTICS ROUTES */}
                           <Route path="statistics/employer" element={<EmployerStatistics />} />
                           <Route path="statistics/project" element={<ProjectStatistics />} />

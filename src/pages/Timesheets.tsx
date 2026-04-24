@@ -499,6 +499,22 @@ export default function Timesheets() {
       return;
     }
 
+    // Per-dag effort-check: gewerkt <8u zonder toelichting blokkeert indienen.
+    const daysNeedingEffort = currentTimesheet.entries.filter((e) => {
+      const status = e.dayStatus || (e.regularHours > 0 ? 'worked' : '');
+      return status === 'worked' && (e.regularHours || 0) > 0 && (e.regularHours || 0) < 8 && !(e.effortNote && e.effortNote.trim());
+    });
+    if (daysNeedingEffort.length > 0) {
+      const dagen = daysNeedingEffort
+        .map((e) => new Date(e.date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'short' }))
+        .join(', ');
+      showError(
+        'Effort-toelichting vereist',
+        `Bij minder dan 8 uur gewerkt moet je per dag aangeven wat je hebt gedaan om toch waarde toe te voegen (bv. kantoor gebeld/geappt). Ontbreekt nog: ${dagen}.`
+      );
+      return;
+    }
+
     const contractHoursPerWeek = employeeData.contractInfo?.hoursPerWeek || 40;
     const contractHoursPerDay = contractHoursPerWeek / 5;
     const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
@@ -937,6 +953,8 @@ export default function Timesheets() {
           const daySick = getDaySick(entry.date);
           const hasLeaveOrSick = dayLeave || daySick;
 
+          const meetsDailyTarget = (entry.regularHours || 0) >= 8;
+
           return (
             <div key={index}>
               {/* Day Card - Collapsible Header */}
@@ -949,6 +967,8 @@ export default function Timesheets() {
                     : daySick
                     ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
                     : dayLeave
+                    ? 'border-emerald-300 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+                    : hasData && meetsDailyTarget
                     ? 'border-emerald-300 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
                     : hasData
                     ? 'border-orange-300 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30'
@@ -1038,57 +1058,89 @@ export default function Timesheets() {
                     </div>
                   )}
 
-                  {/* Verplichte day-status — sluit gaploos af voor indienen */}
-                  <div className="mb-3">
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Status van de dag <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={entry.dayStatus || (entry.regularHours > 0 ? 'worked' : '')}
-                      onChange={(e) => {
-                        const newStatus = e.target.value;
-                        updateEntry(index, 'dayStatus' as any, newStatus);
-                        // Als niet 'worked' → uren terug op 0 zodat totaal klopt.
-                        if (newStatus && newStatus !== 'worked') {
-                          if (entry.regularHours > 0) updateEntry(index, 'regularHours', 0);
-                        }
-                      }}
-                      disabled={isReadOnly}
-                      className={`w-full px-3 py-2 rounded-lg border text-sm font-medium ${
-                        entry.dayStatus
-                          ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-gray-900 dark:text-gray-100'
-                          : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-gray-900 dark:text-gray-100'
-                      } disabled:opacity-60`}
-                    >
-                      <option value="">— Kies een status —</option>
-                      <option value="worked">Gewerkt</option>
-                      <option value="holiday">Verlof</option>
-                      <option value="sick">Ziek</option>
-                      <option value="unpaid">Onbetaald afwezig</option>
-                      <option value="meeting">Overleg / training</option>
-                    </select>
-                    {!entry.dayStatus && (
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
-                        Verplicht om aan te geven voordat de week ingediend kan worden.
-                      </p>
-                    )}
-                  </div>
+                  {(() => {
+                    // Effectieve status: expliciet gezet óf legacy (uren>0 = gewerkt)
+                    const effectiveStatus = entry.dayStatus || (entry.regularHours > 0 ? 'worked' : '');
+                    const isFilled = !!effectiveStatus;
+                    const isWorked = effectiveStatus === 'worked';
+                    const needsEffortNote = isWorked && entry.regularHours > 0 && entry.regularHours < 8;
+                    return (
+                      <>
+                        {/* Verplichte day-status — subtiele styling, rand geeft feedback */}
+                        <div className="mb-3">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Status van de dag <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={effectiveStatus}
+                            onChange={(e) => {
+                              const newStatus = e.target.value;
+                              updateEntry(index, 'dayStatus' as any, newStatus);
+                              if (newStatus && newStatus !== 'worked') {
+                                if (entry.regularHours > 0) updateEntry(index, 'regularHours', 0);
+                              }
+                            }}
+                            disabled={isReadOnly}
+                            className={`w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
+                              isFilled
+                                ? 'border-gray-300 dark:border-gray-600'
+                                : 'border-amber-400 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-900/40'
+                            } disabled:opacity-60`}
+                          >
+                            <option value="">— Kies een status —</option>
+                            <option value="worked">Gewerkt</option>
+                            <option value="holiday">Verlof</option>
+                            <option value="sick">Ziek</option>
+                            <option value="unpaid">Onbetaald afwezig</option>
+                            <option value="meeting">Overleg / training</option>
+                          </select>
+                          {!isFilled && (
+                            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                              Verplicht om aan te geven voordat de week ingediend kan worden.
+                            </p>
+                          )}
+                        </div>
 
-                  {/* Optionele reden voor niet-gewerkt */}
-                  {entry.dayStatus && entry.dayStatus !== 'worked' && (
-                    <div className="mb-3">
-                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Korte toelichting (optioneel)
-                      </label>
-                      <Input
-                        type="text"
-                        value={entry.statusReason || ''}
-                        onChange={(e) => updateEntry(index, 'statusReason' as any, e.target.value)}
-                        disabled={isReadOnly}
-                        placeholder="Bv. vrije dag, doktersafspraak, geplande training..."
-                      />
-                    </div>
-                  )}
+                        {/* Reden bij niet-gewerkt */}
+                        {isFilled && !isWorked && (
+                          <div className="mb-3">
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Korte toelichting (optioneel)
+                            </label>
+                            <Input
+                              type="text"
+                              value={entry.statusReason || ''}
+                              onChange={(e) => updateEntry(index, 'statusReason' as any, e.target.value)}
+                              disabled={isReadOnly}
+                              placeholder="Bv. vrije dag, doktersafspraak, geplande training..."
+                            />
+                          </div>
+                        )}
+
+                        {/* Verplichte effort-toelichting bij gewerkt < 8u */}
+                        {needsEffortNote && (
+                          <div className="mb-3">
+                            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Minder dan 8 uur gewerkt — wat heb je gedaan? <span className="text-red-500">*</span>
+                            </label>
+                            <Input
+                              type="text"
+                              value={entry.effortNote || ''}
+                              onChange={(e) => updateEntry(index, 'effortNote' as any, e.target.value)}
+                              disabled={isReadOnly}
+                              placeholder="Bv. kantoor gebeld/geappt, administratie bijgewerkt, klant contact..."
+                              className={entry.effortNote ? '' : 'border-amber-400 dark:border-amber-600'}
+                            />
+                            {!entry.effortNote && (
+                              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                                Vereist: welke effort heb je geleverd om toch bij te dragen?
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Input Fields — alleen relevant als 'Gewerkt' */}
                   <div className="grid grid-cols-2 gap-3">
