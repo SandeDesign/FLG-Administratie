@@ -48,6 +48,9 @@ export interface TimesheetEntry {
   dayStatus?: DayStatus;
   /** Optionele vrije tekst bij niet-gewerkt (reden afwezigheid). */
   statusReason?: string;
+  /** Toelichting bij GEWERKT maar minder dan 8u: welke effort heb je
+   *  toch geleverd (kantoor gebeld, klanten geappt, administratie, etc.)? */
+  effortNote?: string;
   createdAt: Date;
   updatedAt: Date;
 }
