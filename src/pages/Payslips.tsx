@@ -28,12 +28,15 @@ export default function Payslips() {
   const [generating, setGenerating] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!user || !adminUserId || !selectedCompany) {
+    if (!user || !selectedCompany) {
       setLoading(false);
       return;
     }
 
-    const effectiveEmployeeId = (userRole === 'admin' || userRole === 'co-admin') ? selectedEmployeeId : currentEmployeeId;
+    const isSelfService = userRole === 'manager' || userRole === 'employee';
+    const effectiveEmployeeId = isSelfService
+      ? currentEmployeeId
+      : selectedEmployeeId;
 
     if (!effectiveEmployeeId) {
       setLoading(false);
@@ -50,7 +53,15 @@ export default function Payslips() {
       }
       setEmployeeData(employee);
 
-      const allPayslips = await getPayslips(adminUserId, effectiveEmployeeId);
+      // Voor self-service (manager/employee): payslips staan onder de primary
+      // admin's userId (= employee.userId), NIET onder hun eigen adminUserId
+      // (die bij managers gelijk is aan manager.uid). Voor admin/co-admin:
+      // gebruik adminUserId uit AuthContext zoals gewoonlijk.
+      const payrollAdminUserId = isSelfService
+        ? employee.userId
+        : (adminUserId || employee.userId);
+
+      const allPayslips = await getPayslips(payrollAdminUserId, effectiveEmployeeId);
       const filtered = allPayslips.filter(
         p => p.periodStartDate.getFullYear() === selectedYear
       );
@@ -61,7 +72,7 @@ export default function Payslips() {
     } finally {
       setLoading(false);
     }
-  }, [user, userRole, currentEmployeeId, selectedEmployeeId, selectedCompany, selectedYear, showError]);
+  }, [user, userRole, adminUserId, currentEmployeeId, selectedEmployeeId, selectedCompany, selectedYear, showError]);
 
   useEffect(() => {
     loadData();
@@ -190,6 +201,24 @@ export default function Payslips() {
           icon={Building2}
           title="Geen bedrijf geselecteerd"
           description="Selecteer een bedrijf uit de dropdown in de zijbalk om loonstroken te bekijken."
+        />
+      </div>
+    );
+  }
+
+  // Manager/employee zonder gekoppelde werknemer: toon duidelijke melding
+  // ipv een lege pagina. Dit gebeurt als het user-role doc geen employeeId
+  // heeft (nog niet gelinkt door admin).
+  if ((userRole === 'manager' || userRole === 'employee') && !currentEmployeeId) {
+    return (
+      <div className="space-y-6">
+        <div className="hidden lg:block">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Loonstroken</h1>
+        </div>
+        <EmptyState
+          icon={FileText}
+          title="Je profiel is niet gekoppeld"
+          description="Je account is nog niet aan een werknemer-profiel gekoppeld. Vraag een admin om dit te doen — dan verschijnen je loonstroken hier automatisch."
         />
       </div>
     );
