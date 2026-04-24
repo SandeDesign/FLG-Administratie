@@ -118,7 +118,7 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'payslip-upload', name: 'Loonstroken uploaden', href: '/boekhouder/payslip-upload', icon: FileText, roles: ['boekhouder'], companyTypes: ['employer'] },
 
   // SYSTEEM
-  { id: 'upload', name: 'Upload', href: '/upload', hrefByRole: { boekhouder: '/boekhouder/upload' }, icon: Upload, roles: ['admin', 'co-admin', 'manager', 'boekhouder'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'upload', name: 'Upload', href: '/upload', hrefByRole: { boekhouder: '/boekhouder/upload' }, icon: Upload, roles: ['admin', 'co-admin', 'boekhouder'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'tasks', name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'companies', name: 'Bedrijven', href: '/companies', icon: Building2, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'holding', 'shareholder'] },
   { id: 'audit-log', name: 'Audit Log', href: '/audit-log', icon: Shield, roles: ['admin', 'co-admin'], companyTypes: ['employer', 'holding', 'shareholder'] },

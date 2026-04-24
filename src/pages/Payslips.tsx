@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FileText, Download, Calendar, Building2, User, RefreshCw } from 'lucide-react';
+import { FileText, Download, Calendar, Building2, User, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Payslip } from '../types/payslip';
-import { getPayslips, markPayslipAsDownloaded, regeneratePayslipPdf } from '../services/payslipService';
+import { getPayslips, markPayslipAsDownloaded, regeneratePayslipPdf, approvePayslip, markPayslipPaid } from '../services/payslipService';
 import { getEmployeeById, getCompany } from '../services/firebase';
 import { getPayrollCalculations } from '../services/payrollService';
 import { useToast } from '../hooks/useToast';
@@ -26,6 +26,7 @@ export default function Payslips() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [downloading, setDownloading] = useState<string | null>(null);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [approving, setApproving] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     if (!user || !selectedCompany) {
@@ -61,7 +62,17 @@ export default function Payslips() {
         ? employee.userId
         : (adminUserId || employee.userId);
 
-      const allPayslips = await getPayslips(payrollAdminUserId, effectiveEmployeeId);
+      // Werknemer + manager (self-service) zien alleen goedgekeurde /
+      // uitbetaalde loonstroken. Concepten (boekhouder heeft geüpload,
+      // admin nog niet goedgekeurd) blijven voor hen verborgen.
+      // Admin/co-admin zien alles incl. draft zodat ze kunnen goedkeuren.
+      const statusFilter = isSelfService ? ['approved', 'paid'] as const : undefined;
+      const allPayslips = await getPayslips(
+        payrollAdminUserId,
+        effectiveEmployeeId,
+        undefined,
+        statusFilter as any
+      );
       const filtered = allPayslips.filter(
         p => p.periodStartDate.getFullYear() === selectedYear
       );
@@ -80,6 +91,49 @@ export default function Payslips() {
 
   const getMonthName = (date: Date): string => {
     return date.toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
+  };
+
+  const handleApprovePayslip = async (payslip: Payslip) => {
+    if (!user || !payslip.id) return;
+    const defaultDate = payslip.periodEndDate.toISOString().slice(0, 10);
+    const input = prompt(
+      `Goedkeuren van loonstrook ${getMonthName(payslip.periodStartDate)}.\n\n` +
+        'Voer de uitbetaaldatum in (formaat: JJJJ-MM-DD):',
+      defaultDate
+    );
+    if (input === null) return; // geannuleerd
+    const parsed = input.trim() ? new Date(input.trim()) : undefined;
+    if (parsed && isNaN(parsed.getTime())) {
+      showError('Ongeldige datum', 'Gebruik JJJJ-MM-DD zoals 2026-01-15');
+      return;
+    }
+    try {
+      setApproving(payslip.id);
+      await approvePayslip(payslip.id, user.uid, parsed);
+      success('Goedgekeurd', 'Loonstrook is goedgekeurd en nu zichtbaar voor de werknemer.');
+      await loadData();
+    } catch (err) {
+      console.error('[Payslips] approve failed:', err);
+      showError('Fout', 'Kon loonstrook niet goedkeuren.');
+    } finally {
+      setApproving(null);
+    }
+  };
+
+  const handleMarkPaid = async (payslip: Payslip) => {
+    if (!user || !payslip.id) return;
+    if (!confirm(`Markeer loonstrook ${getMonthName(payslip.periodStartDate)} als uitbetaald?`)) return;
+    try {
+      setApproving(payslip.id);
+      await markPayslipPaid(payslip.id, user.uid);
+      success('Uitbetaald', 'Loonstrook is gemarkeerd als uitbetaald.');
+      await loadData();
+    } catch (err) {
+      console.error('[Payslips] markPaid failed:', err);
+      showError('Fout', 'Kon loonstrook niet markeren als uitbetaald.');
+    } finally {
+      setApproving(null);
+    }
   };
 
   const handleGeneratePdf = async (payslip: Payslip) => {
@@ -298,73 +352,120 @@ export default function Payslips() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {payslips.map((payslip) => (
-            <Card key={payslip.id} className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-primary-50 rounded-xl">
-                      <FileText className="h-6 w-6 text-primary-600" />
+          {payslips.map((payslip) => {
+            const status = (payslip.status || 'approved') as 'draft' | 'approved' | 'paid';
+            const isAdminRole = userRole === 'admin' || userRole === 'co-admin';
+            const statusBadge = {
+              draft: { label: 'Concept — nog niet goedgekeurd', cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200' },
+              approved: { label: 'Goedgekeurd', cls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200' },
+              paid: { label: 'Uitbetaald', cls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' },
+            }[status];
+            return (
+              <Card key={payslip.id} className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-primary-50 rounded-xl">
+                        <FileText className="h-6 w-6 text-primary-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                          {getMonthName(payslip.periodStartDate)}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {payslip.periodStartDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })} - {payslip.periodEndDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                        {getMonthName(payslip.periodStartDate)}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {payslip.periodStartDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })} - {payslip.periodEndDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}
-                      </p>
-                    </div>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusBadge.cls}`}>
+                      {statusBadge.label}
+                    </span>
                   </div>
-                </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Gegenereerd:</span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
-                      {payslip.generatedAt.toLocaleDateString('nl-NL')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">Uitbetaling:</span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
-                      {payslip.paymentDate.toLocaleDateString('nl-NL')}
-                    </span>
-                  </div>
-                  {payslip.downloadedAt && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-400 dark:text-gray-500">Gedownload:</span>
-                      <span className="text-gray-400 dark:text-gray-500">
-                        {payslip.downloadedAt.toLocaleDateString('nl-NL')}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 dark:text-gray-400">Gegenereerd:</span>
+                      <span className="text-gray-900 dark:text-gray-100 font-medium">
+                        {payslip.generatedAt.toLocaleDateString('nl-NL')}
                       </span>
                     </div>
+                    {payslip.paymentDate && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">Uitbetaling:</span>
+                        <span className="text-gray-900 dark:text-gray-100 font-medium">
+                          {payslip.paymentDate.toLocaleDateString('nl-NL')}
+                        </span>
+                      </div>
+                    )}
+                    {!payslip.paymentDate && status !== 'draft' && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">Uitbetaling:</span>
+                        <span className="text-gray-400 dark:text-gray-500 italic">nog niet ingevuld</span>
+                      </div>
+                    )}
+                    {payslip.downloadedAt && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-400 dark:text-gray-500">Gedownload:</span>
+                        <span className="text-gray-400 dark:text-gray-500">
+                          {payslip.downloadedAt.toLocaleDateString('nl-NL')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Admin/co-admin: approve-knop voor draft */}
+                  {isAdminRole && status === 'draft' && (
+                    <Button
+                      onClick={() => handleApprovePayslip(payslip)}
+                      className="w-full"
+                      size="sm"
+                      variant="success"
+                      loading={approving === payslip.id}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Goedkeuren + uitbetaaldatum
+                    </Button>
+                  )}
+
+                  {/* Admin/co-admin: markeer als betaald */}
+                  {isAdminRole && status === 'approved' && (
+                    <Button
+                      onClick={() => handleMarkPaid(payslip)}
+                      className="w-full"
+                      size="sm"
+                      variant="secondary"
+                      loading={approving === payslip.id}
+                    >
+                      Markeer als uitbetaald
+                    </Button>
+                  )}
+
+                  {!payslip.pdfUrl || payslip.pdfUrl.trim() === '' ? (
+                    <Button
+                      onClick={() => handleGeneratePdf(payslip)}
+                      className="w-full"
+                      size="sm"
+                      variant="success"
+                      loading={generating === payslip.id}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      {generating === payslip.id ? 'Genereren...' : 'Genereer PDF'}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleDownload(payslip)}
+                      className="w-full"
+                      size="sm"
+                      loading={downloading === payslip.id}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      {downloading === payslip.id ? 'Downloaden...' : 'Download PDF'}
+                    </Button>
                   )}
                 </div>
-
-                {!payslip.pdfUrl || payslip.pdfUrl.trim() === '' ? (
-                  <Button
-                    onClick={() => handleGeneratePdf(payslip)}
-                    className="w-full"
-                    size="sm"
-                    variant="success"
-                    loading={generating === payslip.id}
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    {generating === payslip.id ? 'Genereren...' : 'Genereer PDF'}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleDownload(payslip)}
-                    className="w-full"
-                    size="sm"
-                    loading={downloading === payslip.id}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    {downloading === payslip.id ? 'Downloaden...' : 'Download PDF'}
-                  </Button>
-                )}
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 

@@ -29,7 +29,8 @@ const PayslipUpload: React.FC = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [month, setMonth] = useState<number>(new Date().getMonth()); // 0-11
-  const [paymentDate, setPaymentDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  // Uitbetaaldatum wordt NIET meer door de boekhouder ingevuld — dat doet
+  // admin/co-admin bij goedkeuring. Boekhouder uploadt alleen de PDF + periode.
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -105,7 +106,6 @@ const PayslipUpload: React.FC = () => {
     if (!user || !selectedCompany || !selectedEmployeeId || !file) return;
     const periodStart = new Date(year, month, 1);
     const periodEnd = new Date(year, month + 1, 0); // laatste dag van de maand
-    const payDate = paymentDate ? new Date(paymentDate) : periodEnd;
 
     try {
       setUploading(true);
@@ -120,7 +120,6 @@ const PayslipUpload: React.FC = () => {
         file,
         periodStartDate: periodStart,
         periodEndDate: periodEnd,
-        paymentDate: payDate,
         generatedBy: user.uid,
       });
       success('Loonstrook geüpload', `${MONTHS[month]} ${year} opgeslagen voor ${selectedEmployee?.personalInfo.firstName || 'medewerker'}`);
@@ -217,7 +216,7 @@ const PayslipUpload: React.FC = () => {
           </div>
 
           {/* Periode */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Maand
@@ -248,20 +247,16 @@ const PayslipUpload: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                Uitbetaaldatum
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="date"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-            </div>
+          </div>
+
+          {/* Info voor boekhouder over approval-flow */}
+          <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-200">
+            <p className="font-medium mb-1">Goedkeuringsflow</p>
+            <p>
+              Na upload staat de loonstrook als <strong>concept</strong>. De admin of co-admin van dit bedrijf
+              moet hem goedkeuren en de uitbetaaldatum invullen — pas daarna
+              is de loonstrook zichtbaar voor de werknemer.
+            </p>
           </div>
 
           {/* Bestand */}

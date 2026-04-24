@@ -40,7 +40,7 @@ function formatFirebaseDate(dateVal: any, options?: Intl.DateTimeFormatOptions):
 }
 
 export default function TimesheetApprovals() {
-  const { user, adminUserId } = useAuth();
+  const { user, adminUserId, userRole, currentEmployeeId } = useAuth();
   const { selectedCompany, employees, selectedYear, selectedQuarter } = useApp();
   const { success, error: showError } = useToast();
   usePageTitle('Uren goedkeuren');
@@ -94,9 +94,17 @@ export default function TimesheetApprovals() {
     try {
       setLoading(true);
 
-      const pendingTimesheets = await getAllPendingTimesheets(adminUserId);
+      let pendingTimesheets = await getAllPendingTimesheets(adminUserId);
       const companyIdForAll = selectedCompany?.id || '';
-      const allTimesheetsData = companyIdForAll ? await loadAllTimesheets(adminUserId, companyIdForAll) : [];
+      let allTimesheetsData = companyIdForAll ? await loadAllTimesheets(adminUserId, companyIdForAll) : [];
+
+      // Manager mag z'n eigen uren NIET zelf goedkeuren — admin/co-admin
+      // doet dat. Filter ze eruit zodat manager ze niet ziet (en dus ook
+      // niet per ongeluk kan approven). Admin/co-admin ziet ze wel.
+      if (userRole === 'manager' && currentEmployeeId) {
+        pendingTimesheets = pendingTimesheets.filter((t) => t.employeeId !== currentEmployeeId);
+        allTimesheetsData = allTimesheetsData.filter((t) => t.employeeId !== currentEmployeeId);
+      }
 
       const summaries: EmployeeTimesheetSummary[] = [];
 
