@@ -76,8 +76,8 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // HR / PERSONEEL (employer)
   { id: 'employees', name: 'Werknemers', nameByRole: { manager: 'Mijn Team' }, href: '/employees', icon: Users, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
   { id: 'timesheet-approvals', name: 'Uren Goedkeuren', href: '/timesheet-approvals', icon: ClipboardList, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
-  { id: 'internal-projects', name: 'Interne Projecten', href: '/internal-projects', icon: FolderKanban, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
-  { id: 'payroll-processing', name: 'Loonverwerking', href: '/payroll-processing', icon: CreditCard, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
+  { id: 'internal-projects', name: 'Interne Projecten', href: '/internal-projects', icon: FolderKanban, roles: ['admin', 'co-admin'], companyTypes: ['employer'] },
+  { id: 'payroll-processing', name: 'Loonverwerking', href: '/payslips', icon: CreditCard, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
   { id: 'leave-approvals', name: 'Verlof Beheren', nameByRole: { manager: 'Verlof Goedkeuren' }, href: '/admin/leave-approvals', icon: CalendarCheck, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
   { id: 'absence-management', name: 'Verzuim Beheren', href: '/admin/absence-management', icon: Stethoscope, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer'] },
 
