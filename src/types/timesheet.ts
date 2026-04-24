@@ -81,6 +81,17 @@ export interface WeeklyTimesheet {
   processedAt?: Date;
   /** Moment waarop de week definitief op slot ging (= bij indienen). */
   lockedAt?: Date;
+  /**
+   * Review-antwoorden wanneer de week onder de 40-uur norm blijft.
+   * Verplicht in te vullen voor de werknemer de week mag indienen.
+   */
+  lowHoursReview?: {
+    dailyContact: string;      // Is er dagelijks contact geweest met kantoor?
+    effortInvested: string;    // Heb jij zelf alle effort erin gestoken effectief te zijn?
+    suggestions: string;       // Welke suggesties kun jij bedenken om tijd effectiever te maken?
+    submittedAt: Date;
+    actualWeeklyHours: number; // snapshot van het totaal op het moment van indienen
+  };
   createdAt: Date;
   updatedAt: Date;
 }

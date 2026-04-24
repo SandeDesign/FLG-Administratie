@@ -45,6 +45,13 @@ export default function Timesheets() {
   // Verlof & Ziekte state
   const [weekLeaveRequests, setWeekLeaveRequests] = useState<LeaveRequest[]>([]);
   const [weekSickLeaves, setWeekSickLeaves] = useState<SickLeave[]>([]);
+  // Low-hours review modal state
+  const [showLowHoursModal, setShowLowHoursModal] = useState(false);
+  const [reviewAnswers, setReviewAnswers] = useState({
+    dailyContact: '',
+    effortInvested: '',
+    suggestions: '',
+  });
   // Interne projecten
   const [internalProjects, setInternalProjects] = useState<InternalProject[]>([]);
   const [assignedTasks, setAssignedTasks] = useState<BusinessTask[]>([]);
@@ -499,8 +506,31 @@ export default function Timesheets() {
       return;
     }
 
+    // Auto-patch: dagen met een actieve verlof-/ziek-registratie krijgen
+    // automatisch dayStatus='holiday'/'sick' zodat de gap-check niet op
+    // ze struikelt. Geen dropdown nodig op die dagen.
+    const patchedEntries = currentTimesheet.entries.map((e) => {
+      if (e.dayStatus) return e;
+      const leave = getDayLeave(e.date);
+      const sick = getDaySick(e.date);
+      if (sick) return { ...e, dayStatus: 'sick' as const };
+      if (leave) return { ...e, dayStatus: 'holiday' as const };
+      return e;
+    });
+    if (patchedEntries.some((e, i) => e.dayStatus !== currentTimesheet.entries[i].dayStatus)) {
+      try {
+        await updateWeeklyTimesheet(currentTimesheet.id, queryUserId, { entries: patchedEntries });
+        setCurrentTimesheet({ ...currentTimesheet, entries: patchedEntries });
+      } catch (err) {
+        console.error('[Timesheets] auto-patch leave/sick dayStatus failed:', err);
+      }
+    }
+
     // Per-dag effort-check: gewerkt <8u zonder toelichting blokkeert indienen.
+    // Weekend (za/zo) is niet verplicht — die slaan we over.
     const daysNeedingEffort = currentTimesheet.entries.filter((e) => {
+      const dow = new Date(e.date).getDay();
+      if (dow === 0 || dow === 6) return false; // weekend
       const status = e.dayStatus || (e.regularHours > 0 ? 'worked' : '');
       return status === 'worked' && (e.regularHours || 0) > 0 && (e.regularHours || 0) < 8 && !(e.effortNote && e.effortNote.trim());
     });
@@ -515,49 +545,13 @@ export default function Timesheets() {
       return;
     }
 
-    const contractHoursPerWeek = employeeData.contractInfo?.hoursPerWeek || 40;
-    const contractHoursPerDay = contractHoursPerWeek / 5;
-    const workDays = currentTimesheet.entries.filter(e => e.regularHours > 0).length;
-    const averageHoursPerDay = workDays > 0 ? currentTimesheet.totalRegularHours / workDays : 0;
-    
-    const expectedWeeklyHours = contractHoursPerWeek;
+    // < 40u in de week (exclusief weekend) → 3-vraag review-modal vereist.
+    // Al eerder ingevuld? Dan slaan we de modal over.
     const actualWeeklyHours = currentTimesheet.totalRegularHours;
-    const underPerformanceThreshold = expectedWeeklyHours * 0.85;
-    
-    if (workDays > 0 && actualWeeklyHours < underPerformanceThreshold) {
-      const explanation = prompt(
-        `Volgens uw contract werkt u ${contractHoursPerWeek} uur per week (${contractHoursPerDay.toFixed(1)} uur per dag).\n` +
-        `Deze week heeft u ${actualWeeklyHours} uur geregistreerd (${averageHoursPerDay.toFixed(1)} uur gemiddeld per werkdag).\n\n` +
-        `Geef een verklaring voor de lagere uren (bijv. ziekte, verlof, training, deeltijd afspraak, etc.):`
-      );
-      
-      if (explanation === null) {
-        return;
-      }
-      
-      if (!explanation.trim()) {
-        showError('Verklaring vereist', 'Een verklaring is verplicht bij minder uren dan uw contract');
-        return;
-      }
-      
-      const updatedTimesheet = {
-        ...currentTimesheet,
-        lowHoursExplanation: explanation.trim(),
-        contractHoursPerWeek: contractHoursPerWeek,
-        actualHoursThisWeek: actualWeeklyHours,
-        averageHoursPerDay: averageHoursPerDay,
-        updatedAt: new Date()
-      };
-      
-      setCurrentTimesheet(updatedTimesheet);
-      
-      try {
-        await updateWeeklyTimesheet(updatedTimesheet.id, queryUserId, updatedTimesheet);
-      } catch (error) {
-        console.error('Error saving explanation:', error);
-        showError('Fout bij opslaan', 'Kon verklaring niet opslaan');
-        return;
-      }
+    const LOW_HOURS_THRESHOLD = 40;
+    if (actualWeeklyHours < LOW_HOURS_THRESHOLD && !currentTimesheet.lowHoursReview) {
+      setShowLowHoursModal(true);
+      return; // wacht op modal-submit
     }
 
     setSaving(true);
@@ -582,6 +576,55 @@ export default function Timesheets() {
         );
       } else {
         showError('Fout bij indienen', 'Kon urenregistratie niet indienen');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /**
+   * Low-hours review modal submit: sla antwoorden op, sluit modal en
+   * triggert handleSubmit opnieuw (die ziet nu lowHoursReview bestaat
+   * en slaat de modal over).
+   */
+  const handleLowHoursReviewSubmit = async () => {
+    if (!currentTimesheet || !currentTimesheet.id || !queryUserId) return;
+    const { dailyContact, effortInvested, suggestions } = reviewAnswers;
+    if (!dailyContact.trim() || !effortInvested.trim() || !suggestions.trim()) {
+      showError('Alle vragen vereist', 'Beantwoord alle drie de vragen voordat je indient.');
+      return;
+    }
+    const review = {
+      dailyContact: dailyContact.trim(),
+      effortInvested: effortInvested.trim(),
+      suggestions: suggestions.trim(),
+      submittedAt: new Date(),
+      actualWeeklyHours: currentTimesheet.totalRegularHours,
+    };
+    try {
+      await updateWeeklyTimesheet(currentTimesheet.id, queryUserId, { lowHoursReview: review });
+      const updated = { ...currentTimesheet, lowHoursReview: review };
+      setCurrentTimesheet(updated);
+      setShowLowHoursModal(false);
+      setReviewAnswers({ dailyContact: '', effortInvested: '', suggestions: '' });
+      // Direct indienen — review is nu opgeslagen.
+      setSaving(true);
+      await submitWeeklyTimesheet(
+        currentTimesheet.id,
+        queryUserId,
+        user?.displayName || user?.email || 'Werknemer'
+      );
+      success('Uren ingediend', 'Review + urenregistratie succesvol ingediend.');
+      await loadData();
+    } catch (err: any) {
+      console.error('[Timesheets] low-hours review submit failed:', err);
+      if (err?.name === 'IncompleteWeekError') {
+        const dagen = (err.missingDates || [])
+          .map((d: Date) => new Date(d).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'short' }))
+          .join(', ');
+        showError('Week niet compleet', `Nog openstaande werkdagen: ${dagen}`);
+      } else {
+        showError('Fout', 'Kon review + urenregistratie niet indienen.');
       }
     } finally {
       setSaving(false);
@@ -1059,50 +1102,82 @@ export default function Timesheets() {
                   )}
 
                   {(() => {
-                    // Effectieve status: expliciet gezet óf legacy (uren>0 = gewerkt)
-                    const effectiveStatus = entry.dayStatus || (entry.regularHours > 0 ? 'worked' : '');
+                    // Zaterdag (6) en zondag (0) zijn niet verplicht — geen
+                    // status-dropdown en geen effort-prompt. Werknemer kan
+                    // wel gewoon uren voor weekenddienst invoeren.
+                    const dayOfWeek = entry.date.getDay();
+                    const isWeekendDay = dayOfWeek === 0 || dayOfWeek === 6;
+
+                    // Verlof en ziekte komen AUTOMATISCH uit die modules. Als er
+                    // voor deze dag een leave/sick-record is, slaan we de dropdown
+                    // over en tellen we de dag als ingevuld (met auto-status).
+                    const autoStatus = daySick ? 'sick' : dayLeave ? 'holiday' : null;
+                    const effectiveStatus =
+                      autoStatus ||
+                      entry.dayStatus ||
+                      (entry.regularHours > 0 ? 'worked' : '');
                     const isFilled = !!effectiveStatus;
                     const isWorked = effectiveStatus === 'worked';
-                    const needsEffortNote = isWorked && entry.regularHours > 0 && entry.regularHours < 8;
+                    // Effort-note alleen op werkdagen (ma-vr).
+                    const needsEffortNote = !isWeekendDay && isWorked && entry.regularHours > 0 && entry.regularHours < 8;
+
+                    // Weekend zonder uren/status → niks tonen, geen druk.
+                    if (isWeekendDay && !entry.dayStatus && entry.regularHours === 0 && !autoStatus) {
+                      return null;
+                    }
                     return (
                       <>
-                        {/* Verplichte day-status — subtiele styling, rand geeft feedback */}
-                        <div className="mb-3">
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Status van de dag <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            value={effectiveStatus}
-                            onChange={(e) => {
-                              const newStatus = e.target.value;
-                              updateEntry(index, 'dayStatus' as any, newStatus);
-                              if (newStatus && newStatus !== 'worked') {
-                                if (entry.regularHours > 0) updateEntry(index, 'regularHours', 0);
-                              }
-                            }}
-                            disabled={isReadOnly}
-                            className={`w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
-                              isFilled
-                                ? 'border-gray-300 dark:border-gray-600'
-                                : 'border-amber-400 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-900/40'
-                            } disabled:opacity-60`}
-                          >
-                            <option value="">— Kies een status —</option>
-                            <option value="worked">Gewerkt</option>
-                            <option value="holiday">Verlof</option>
-                            <option value="sick">Ziek</option>
-                            <option value="unpaid">Onbetaald afwezig</option>
-                            <option value="meeting">Overleg / training</option>
-                          </select>
-                          {!isFilled && (
-                            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
-                              Verplicht om aan te geven voordat de week ingediend kan worden.
+                        {autoStatus ? (
+                          // Leave/sick = automatisch geregistreerd — laat zien dat
+                          // het al gevuld is, geen keuze nodig.
+                          <div className="mb-3 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/60">
+                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                              Status van de dag
                             </p>
-                          )}
-                        </div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-0.5">
+                              {autoStatus === 'sick' ? 'Ziek' : 'Verlof'}
+                            </p>
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                              Automatisch geregistreerd via {autoStatus === 'sick' ? 'Ziekteverzuim' : 'Verlof'}-module.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="mb-3">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Status van de dag <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={effectiveStatus}
+                              onChange={(e) => {
+                                const newStatus = e.target.value;
+                                updateEntry(index, 'dayStatus' as any, newStatus);
+                                if (newStatus && newStatus !== 'worked') {
+                                  if (entry.regularHours > 0) updateEntry(index, 'regularHours', 0);
+                                }
+                              }}
+                              disabled={isReadOnly}
+                              className={`w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
+                                isFilled
+                                  ? 'border-gray-300 dark:border-gray-600'
+                                  : 'border-amber-400 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-900/40'
+                              } disabled:opacity-60`}
+                            >
+                              <option value="">— Kies een status —</option>
+                              <option value="worked">Gewerkt</option>
+                              <option value="unpaid">Onbetaald afwezig</option>
+                              <option value="meeting">Overleg / training</option>
+                            </select>
+                            {!isFilled && (
+                              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                                Verplicht om aan te geven voordat de week ingediend kan worden.
+                                Verlof of ziek? Registreer dat via de aparte modules.
+                              </p>
+                            )}
+                          </div>
+                        )}
 
-                        {/* Reden bij niet-gewerkt */}
-                        {isFilled && !isWorked && (
+                        {/* Reden bij niet-gewerkt (alleen voor handmatige statussen) */}
+                        {!autoStatus && isFilled && !isWorked && (
                           <div className="mb-3">
                             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Korte toelichting (optioneel)
@@ -1112,7 +1187,7 @@ export default function Timesheets() {
                               value={entry.statusReason || ''}
                               onChange={(e) => updateEntry(index, 'statusReason' as any, e.target.value)}
                               disabled={isReadOnly}
-                              placeholder="Bv. vrije dag, doktersafspraak, geplande training..."
+                              placeholder="Bv. training, meeting, administratie..."
                             />
                           </div>
                         )}
@@ -1317,6 +1392,81 @@ export default function Timesheets() {
             <Send className="h-4 w-4 mr-2" />
             Indienen
           </Button>
+        </div>
+      )}
+
+      {/* Low-hours review modal: <40u in een week → 3 verplichte vragen */}
+      {showLowHoursModal && currentTimesheet && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                Minder dan 40 uur deze week
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Je hebt <strong>{currentTimesheet.totalRegularHours}u</strong> geregistreerd. Voordat je
+                kan indienen willen we 3 dingen van je weten — niet om je te pesten,
+                maar om samen beter te worden.
+              </p>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  1. Is er dagelijks contact geweest met kantoor? <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={reviewAnswers.dailyContact}
+                  onChange={(e) => setReviewAnswers({ ...reviewAnswers, dailyContact: e.target.value })}
+                  rows={2}
+                  placeholder="Bv. elke ochtend kort gebeld met collega X over de planning..."
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  2. Heb jij zelf alle effort erin gestoken om effectief te zijn? <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={reviewAnswers.effortInvested}
+                  onChange={(e) => setReviewAnswers({ ...reviewAnswers, effortInvested: e.target.value })}
+                  rows={2}
+                  placeholder="Wat heb je concreet gedaan om waarde toe te voegen?"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  3. Welke suggesties heb je om jouw tijd effectiever te maken — voor jezelf én voor het bedrijf? <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={reviewAnswers.suggestions}
+                  onChange={(e) => setReviewAnswers({ ...reviewAnswers, suggestions: e.target.value })}
+                  rows={3}
+                  placeholder="Bv. betere planning door X, andere tools, training, klus-overleg..."
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+              <Button
+                onClick={() => setShowLowHoursModal(false)}
+                variant="secondary"
+                className="flex-1"
+              >
+                Annuleren
+              </Button>
+              <Button
+                onClick={handleLowHoursReviewSubmit}
+                loading={saving}
+                className="flex-1"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Review + Indienen
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
