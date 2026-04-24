@@ -3,10 +3,10 @@
 // UNIFORME MAP-STRUCTUUR OP INTERNEDATA.NL
 // ────────────────────────────────────────
 //   FLG-Administratie/
-//     {companyId}__{companyNameSlug}/      ← stabiele key (id) + leesbare slug
+//     {Bedrijfsnaam}/                      ← leesbare bedrijfsnaam (zoals "Buddy BV")
 //       Verkoop/{year}/{invoiceNumber}.pdf
 //       Inkoop/{year}/INK-{year}-####.pdf
-//       Post/{year}/{yyyy-MM-dd}_{subject-slug}.pdf
+//       Post/{year}/{yyyy-MM-dd}_{onderwerp}.pdf
 //       Loonstroken/{year}/{employeeCode}_{yyyy-MM}.pdf
 //
 // proxy2.php doet recursieve folder-creatie — de JS hoeft alleen de
@@ -18,30 +18,28 @@ const BASE_FOLDER = 'FLG-Administratie';
 export type FolderType = 'Verkoop' | 'Inkoop' | 'Post' | 'Loonstroken';
 
 /**
- * Maak een bestands- en pad-veilige slug van een string.
- * Nederlandse diacritics → ascii, spaties/speciale tekens → underscore,
- * lowercase, max 60 chars.
+ * Slug voor bestandsnamen (NIET voor folder). Houdt leesbaarheid maar
+ * maakt veilig voor bestandssysteem: alleen alnum, spaties, dash en
+ * underscore. Diacritics blijven behouden zodat 'é' etc. niet vreemde
+ * namen worden.
  */
 export const slugify = (input: string): string => {
   return (input || '')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')      // diacritics weg
-    .replace(/[^a-zA-Z0-9\- ]+/g, '')     // alleen alnum, space, dash
+    .replace(/[\/\\?*:|"<>]+/g, '')   // filesystem-verboden tekens weg
+    .replace(/\s+/g, '_')             // spaties → _
     .trim()
-    .replace(/\s+/g, '_')                  // spaties → _
-    .toLowerCase()
-    .slice(0, 60) || 'onbekend';
+    .slice(0, 80) || 'onbekend';
 };
 
 /**
- * Bouw de stabiele company-folder-key.
- * Altijd `{companyId}__{slug}` zodat de id de waarheid is en de slug
- * de map vindbaar houdt ook na hernoemen (nieuwe naam → nieuwe slug,
- * maar de id blijft hetzelfde → oude én nieuwe mappen bestaan naast
- * elkaar; een renaming-migratie is een apart script).
+ * Path-veilige variant van de bedrijfsnaam voor gebruik als folder.
+ * Strip alleen karakters die op filesystems écht niet mogen
+ * (/, \, ?, *, :, |, ", <, >); spaties en hoofdletters blijven zodat
+ * "Buddy BV" en "DeInstallatie BV" gewoon herkenbaar zichtbaar zijn.
  */
-export const companyFolderKey = (companyId: string, companyName: string): string => {
-  return `${companyId}__${slugify(companyName)}`;
+export const companyFolderKey = (_companyId: string, companyName: string): string => {
+  const cleaned = (companyName || '').replace(/[\/\\?*:|"<>]+/g, '').trim();
+  return cleaned || 'Onbekend';
 };
 
 export interface UploadOptions {
