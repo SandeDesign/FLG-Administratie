@@ -19,6 +19,7 @@ import BoekhouderAdminSelector from './BoekhouderAdminSelector';
 import WeeklyTasksReminder, { WeeklyTasksReminderRef } from '../tasks/WeeklyTasksReminder';
 import PushPromptBanner from '../notifications/PushPromptBanner';
 import ChatUnreadBanner from '../notifications/ChatUnreadBanner';
+import IncompleteWeekBanner from '../timesheet/IncompleteWeekBanner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -254,6 +255,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="p-4 lg:p-6 space-y-4">
             <PushPromptBanner />
             <ChatUnreadBanner />
+            <IncompleteWeekBanner />
             {children}
           </div>
         </main>
