@@ -499,6 +499,26 @@ export default function Timesheets() {
       return;
     }
 
+    // Auto-patch: dagen met een actieve verlof-/ziek-registratie krijgen
+    // automatisch dayStatus='holiday'/'sick' zodat de gap-check niet op
+    // ze struikelt. Geen dropdown nodig op die dagen.
+    const patchedEntries = currentTimesheet.entries.map((e) => {
+      if (e.dayStatus) return e;
+      const leave = getDayLeave(e.date);
+      const sick = getDaySick(e.date);
+      if (sick) return { ...e, dayStatus: 'sick' as const };
+      if (leave) return { ...e, dayStatus: 'holiday' as const };
+      return e;
+    });
+    if (patchedEntries.some((e, i) => e.dayStatus !== currentTimesheet.entries[i].dayStatus)) {
+      try {
+        await updateWeeklyTimesheet(currentTimesheet.id, queryUserId, { entries: patchedEntries });
+        setCurrentTimesheet({ ...currentTimesheet, entries: patchedEntries });
+      } catch (err) {
+        console.error('[Timesheets] auto-patch leave/sick dayStatus failed:', err);
+      }
+    }
+
     // Per-dag effort-check: gewerkt <8u zonder toelichting blokkeert indienen.
     const daysNeedingEffort = currentTimesheet.entries.filter((e) => {
       const status = e.dayStatus || (e.regularHours > 0 ? 'worked' : '');
@@ -1059,50 +1079,70 @@ export default function Timesheets() {
                   )}
 
                   {(() => {
-                    // Effectieve status: expliciet gezet óf legacy (uren>0 = gewerkt)
-                    const effectiveStatus = entry.dayStatus || (entry.regularHours > 0 ? 'worked' : '');
+                    // Verlof en ziekte komen AUTOMATISCH uit die modules. Als er
+                    // voor deze dag een leave/sick-record is, slaan we de dropdown
+                    // over en tellen we de dag als ingevuld (met auto-status).
+                    const autoStatus = daySick ? 'sick' : dayLeave ? 'holiday' : null;
+                    const effectiveStatus =
+                      autoStatus ||
+                      entry.dayStatus ||
+                      (entry.regularHours > 0 ? 'worked' : '');
                     const isFilled = !!effectiveStatus;
                     const isWorked = effectiveStatus === 'worked';
                     const needsEffortNote = isWorked && entry.regularHours > 0 && entry.regularHours < 8;
                     return (
                       <>
-                        {/* Verplichte day-status — subtiele styling, rand geeft feedback */}
-                        <div className="mb-3">
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Status van de dag <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            value={effectiveStatus}
-                            onChange={(e) => {
-                              const newStatus = e.target.value;
-                              updateEntry(index, 'dayStatus' as any, newStatus);
-                              if (newStatus && newStatus !== 'worked') {
-                                if (entry.regularHours > 0) updateEntry(index, 'regularHours', 0);
-                              }
-                            }}
-                            disabled={isReadOnly}
-                            className={`w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
-                              isFilled
-                                ? 'border-gray-300 dark:border-gray-600'
-                                : 'border-amber-400 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-900/40'
-                            } disabled:opacity-60`}
-                          >
-                            <option value="">— Kies een status —</option>
-                            <option value="worked">Gewerkt</option>
-                            <option value="holiday">Verlof</option>
-                            <option value="sick">Ziek</option>
-                            <option value="unpaid">Onbetaald afwezig</option>
-                            <option value="meeting">Overleg / training</option>
-                          </select>
-                          {!isFilled && (
-                            <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
-                              Verplicht om aan te geven voordat de week ingediend kan worden.
+                        {autoStatus ? (
+                          // Leave/sick = automatisch geregistreerd — laat zien dat
+                          // het al gevuld is, geen keuze nodig.
+                          <div className="mb-3 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/60">
+                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                              Status van de dag
                             </p>
-                          )}
-                        </div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mt-0.5">
+                              {autoStatus === 'sick' ? 'Ziek' : 'Verlof'}
+                            </p>
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                              Automatisch geregistreerd via {autoStatus === 'sick' ? 'Ziekteverzuim' : 'Verlof'}-module.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="mb-3">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Status van de dag <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={effectiveStatus}
+                              onChange={(e) => {
+                                const newStatus = e.target.value;
+                                updateEntry(index, 'dayStatus' as any, newStatus);
+                                if (newStatus && newStatus !== 'worked') {
+                                  if (entry.regularHours > 0) updateEntry(index, 'regularHours', 0);
+                                }
+                              }}
+                              disabled={isReadOnly}
+                              className={`w-full px-3 py-2 rounded-lg border text-sm font-medium bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
+                                isFilled
+                                  ? 'border-gray-300 dark:border-gray-600'
+                                  : 'border-amber-400 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-900/40'
+                              } disabled:opacity-60`}
+                            >
+                              <option value="">— Kies een status —</option>
+                              <option value="worked">Gewerkt</option>
+                              <option value="unpaid">Onbetaald afwezig</option>
+                              <option value="meeting">Overleg / training</option>
+                            </select>
+                            {!isFilled && (
+                              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
+                                Verplicht om aan te geven voordat de week ingediend kan worden.
+                                Verlof of ziek? Registreer dat via de aparte modules.
+                              </p>
+                            )}
+                          </div>
+                        )}
 
-                        {/* Reden bij niet-gewerkt */}
-                        {isFilled && !isWorked && (
+                        {/* Reden bij niet-gewerkt (alleen voor handmatige statussen) */}
+                        {!autoStatus && isFilled && !isWorked && (
                           <div className="mb-3">
                             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                               Korte toelichting (optioneel)
@@ -1112,7 +1152,7 @@ export default function Timesheets() {
                               value={entry.statusReason || ''}
                               onChange={(e) => updateEntry(index, 'statusReason' as any, e.target.value)}
                               disabled={isReadOnly}
-                              placeholder="Bv. vrije dag, doktersafspraak, geplande training..."
+                              placeholder="Bv. training, meeting, administratie..."
                             />
                           </div>
                         )}
