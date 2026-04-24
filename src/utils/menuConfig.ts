@@ -101,15 +101,15 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   { id: 'statistics-project', name: 'Project Stats', href: '/statistics/project', icon: TrendingUp, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['project'] },
   { id: 'statistics-holding', name: 'Holding Stats', href: '/statistics/holding', icon: TrendingUp, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['holding', 'shareholder'] },
 
-  // MIJN ZAKEN (employee/manager self-service)
-  // Expliciet NIET tonen op employer (loonmaatschappij) en project (werkmaatschappij)
-  // contexten — daar beheren admin/co-admin/manager andermans data; eigen zaken
-  // regelen zij via holding/shareholder context of direct via employee-dashboard.
-  { id: 'timesheets', name: 'Urenregistratie', nameByRole: { employee: 'Mijn Uren', manager: 'Mijn Uren' }, href: '/timesheets', icon: Clock, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: [] },
-  { id: 'leave', name: 'Verlof', nameByRole: { employee: 'Mijn Verlof' }, href: '/leave', icon: CalendarCheck, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['holding', 'shareholder'] },
-  { id: 'absence', name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['admin', 'co-admin', 'employee', 'manager'], companyTypes: ['holding', 'shareholder'] },
-  { id: 'expenses-employee', name: 'Declaraties Medewerkers', nameByRole: { employee: 'Mijn Declaraties' }, href: '/expenses', icon: Receipt, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['holding', 'shareholder'] },
-  { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['admin', 'co-admin', 'employee'], companyTypes: ['holding', 'shareholder'] },
+  // MIJN ZAKEN (manager + employee self-service)
+  // Admin/co-admin zien deze NIET in het menu — zij werken niet binnen een
+  // bedrijf maar beheren het alleen. Manager en employee gebruiken het
+  // dagelijks voor eigen uren/verlof/verzuim/declaraties/loonstroken.
+  { id: 'timesheets', name: 'Urenregistratie', nameByRole: { employee: 'Mijn Uren', manager: 'Mijn Uren' }, href: '/timesheets', icon: Clock, roles: ['employee', 'manager'], companyTypes: ['employer', 'project'] },
+  { id: 'leave', name: 'Verlof', nameByRole: { employee: 'Mijn Verlof' }, href: '/leave', icon: CalendarCheck, roles: ['employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'absence', name: 'Ziekteverzuim', href: '/absence', icon: HeartPulse, roles: ['employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'expenses-employee', name: 'Declaraties Medewerkers', nameByRole: { employee: 'Mijn Declaraties' }, href: '/expenses', icon: Receipt, roles: ['employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
+  { id: 'payslips', name: 'Loonstroken', nameByRole: { employee: 'Mijn Loonstroken' }, href: '/payslips', icon: FileText, roles: ['employee', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
   // COMMUNICATIE
   { id: 'chat', name: 'Berichten', href: '/chat', hrefByRole: { boekhouder: '/boekhouder/chat' }, icon: MessageSquare, roles: ['admin', 'co-admin', 'boekhouder'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
