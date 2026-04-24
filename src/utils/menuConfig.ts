@@ -114,6 +114,9 @@ export const ALL_NAVIGATION_ITEMS: NavigationItem[] = [
   // COMMUNICATIE
   { id: 'chat', name: 'Berichten', href: '/chat', hrefByRole: { boekhouder: '/boekhouder/chat' }, icon: MessageSquare, roles: ['admin', 'co-admin', 'boekhouder'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
 
+  // LOONSTROKEN UPLOAD (alleen boekhouder, alleen op loonmaatschappij)
+  { id: 'payslip-upload', name: 'Loonstroken uploaden', href: '/boekhouder/payslip-upload', icon: FileText, roles: ['boekhouder'], companyTypes: ['employer'] },
+
   // SYSTEEM
   { id: 'upload', name: 'Upload', href: '/upload', hrefByRole: { boekhouder: '/boekhouder/upload' }, icon: Upload, roles: ['admin', 'co-admin', 'manager', 'boekhouder'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
   { id: 'tasks', name: 'Taken', href: '/tasks', icon: ListChecks, roles: ['admin', 'co-admin', 'manager'], companyTypes: ['employer', 'project', 'holding', 'shareholder'] },
@@ -141,7 +144,7 @@ const SECTION_ITEMS: Record<string, string[]> = {
   Financieel: ['invoice-relations', 'budgeting', 'admin-expenses', 'outgoing-invoices', 'incoming-invoices-stats', 'bank-statement-import', 'grootboekrekeningen', 'btw-overzicht'],
   Project: ['project-production', 'project-statistics', 'project-team'],
   'Mijn Zaken': ['timesheets', 'leave', 'absence', 'expenses-employee', 'payslips'],
-  Systeem: ['chat', 'upload', 'tasks', 'companies', 'audit-log', 'users', 'investment-pitch', 'settings'],
+  Systeem: ['chat', 'payslip-upload', 'upload', 'tasks', 'companies', 'audit-log', 'users', 'investment-pitch', 'settings'],
 };
 
 const SECTION_META: Array<{ title: string; icon: React.ComponentType<{ className?: string }>; color: string; defaultOpen?: boolean }> = [

@@ -14,8 +14,7 @@ import { db } from '../lib/firebase';
 import { Payslip, PayslipData } from '../types/payslip';
 import { PayrollCalculation } from '../types/payroll';
 import { Employee, Company } from '../types';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../lib/firebase';
+// Firebase Storage niet meer gebruikt — alles via uploadFileToInternedata.
 import { generatePayslipPdfBlob } from './payslipPdfGenerator';
 
 const convertTimestamps = (data: any) => {
@@ -121,31 +120,134 @@ export const createPayslip = async (
 export const generateAndUploadPayslipPdf = async (
   payslipData: PayslipData,
   payslipId: string,
-  userId: string
+  _userId: string,
+  ctx?: {
+    companyId?: string;
+    companyName?: string;
+    employeeCode?: string;
+    periodStartDate?: Date;
+  }
 ): Promise<string> => {
   try {
     const pdfBlob = await generatePayslipPdfBlob(payslipData);
+    const file = new File([pdfBlob], `payslip-${payslipId}.pdf`, { type: 'application/pdf' });
 
-    const fileName = `payslip-${payslipId}-${Date.now()}.pdf`;
-    const storagePath = `payslips/${userId}/${fileName}`;
-    const storageRef = ref(storage, storagePath);
+    // Upload via internedata.nl met de uniforme folder-structuur:
+    //   FLG-Administratie/{companyId}__{slug}/Loonstroken/{year}/{employeeCode}_{yyyy-MM}.pdf
+    // Voor backwards-compat: als er geen companyId/companyName in ctx zit,
+    // gebruiken we een generieke filename onder Loonstroken van een
+    // 'onbekend' bedrijf — dat is een legacy-codepad dat we gaandeweg
+    // uitfaseren.
+    const { uploadFileToInternedata, slugify } = await import('./fileUploadService');
+    const periodDate = ctx?.periodStartDate || new Date();
+    const yyyy = periodDate.getFullYear();
+    const mm = String(periodDate.getMonth() + 1).padStart(2, '0');
+    const empPart = ctx?.employeeCode ? slugify(ctx.employeeCode) : payslipId;
+    const customFileName = `${empPart}_${yyyy}-${mm}`;
 
-    await uploadBytes(storageRef, pdfBlob);
-
-    const downloadURL = await getDownloadURL(storageRef);
+    const uploadResult = await uploadFileToInternedata({
+      file,
+      companyId: ctx?.companyId || 'onbekend',
+      companyName: ctx?.companyName || 'onbekend',
+      folderType: 'Loonstroken',
+      year: yyyy,
+      customFileName,
+      extension: 'pdf',
+    });
 
     const payslipRef = doc(db, 'payslips', payslipId);
     await updateDoc(payslipRef, {
-      pdfUrl: downloadURL,
-      pdfStoragePath: storagePath,
+      pdfUrl: uploadResult.fileUrl,
+      pdfStoragePath: uploadResult.storagePath,
       updatedAt: Timestamp.fromDate(new Date())
     });
 
-    return downloadURL;
+    return uploadResult.fileUrl;
   } catch (error) {
     console.error('Error generating payslip PDF:', error);
     throw new Error('Failed to generate payslip PDF');
   }
+};
+
+/**
+ * Upload een bestaande PDF als loonstrook voor een werknemer.
+ * Voor boekhouder-workflow: zij leveren maandelijks de loonstroken
+ * aan (geen in-app generatie) en uploaden die per medewerker.
+ *
+ * adminUserId = primary admin UID (voor collection-scope)
+ * generatedBy = uid van de uploader (boekhouder of admin)
+ */
+export const uploadPayslipForEmployee = async (params: {
+  adminUserId: string;
+  employeeId: string;
+  companyId: string;
+  companyName: string;
+  /** Optioneel medewerker-code voor nette filename, anders fallback employeeId */
+  employeeCode?: string;
+  file: File;
+  periodStartDate: Date;
+  periodEndDate: Date;
+  paymentDate: Date;
+  generatedBy: string;
+}): Promise<string> => {
+  const {
+    adminUserId,
+    employeeId,
+    companyId,
+    companyName,
+    employeeCode,
+    file,
+    periodStartDate,
+    periodEndDate,
+    paymentDate,
+    generatedBy,
+  } = params;
+
+  // 1) Maak payslip-doc aan zodat we een stabiel ID hebben voor referentie.
+  const docRef = await addDoc(collection(db, 'payslips'), convertToTimestamps({
+    userId: adminUserId,
+    employeeId,
+    companyId,
+    payrollPeriodId: '',
+    payrollCalculationId: '',
+    periodStartDate,
+    periodEndDate,
+    paymentDate,
+    pdfUrl: '',
+    pdfStoragePath: '',
+    generatedAt: new Date(),
+    generatedBy,
+    uploadedByBoekhouder: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }));
+
+  // 2) Upload de PDF naar internedata.nl:
+  //    FLG-Administratie/{companyId}__{slug}/Loonstroken/{year}/{employeeCode}_{yyyy-MM}.pdf
+  const { uploadFileToInternedata, slugify } = await import('./fileUploadService');
+  const yyyy = periodStartDate.getFullYear();
+  const mm = String(periodStartDate.getMonth() + 1).padStart(2, '0');
+  const empPart = employeeCode ? slugify(employeeCode) : employeeId.substring(0, 10);
+  const customFileName = `${empPart}_${yyyy}-${mm}`;
+
+  const uploadResult = await uploadFileToInternedata({
+    file,
+    companyId,
+    companyName,
+    folderType: 'Loonstroken',
+    year: yyyy,
+    customFileName,
+    extension: 'pdf',
+  });
+
+  // 3) Patch het doc met pdfUrl + pdfStoragePath.
+  await updateDoc(doc(db, 'payslips', docRef.id), {
+    pdfUrl: uploadResult.fileUrl,
+    pdfStoragePath: uploadResult.storagePath,
+    updatedAt: Timestamp.fromDate(new Date()),
+  });
+
+  return docRef.id;
 };
 
 export const createPayslipFromCalculation = async (
@@ -348,7 +450,14 @@ export const regeneratePayslipPdf = async (
 ): Promise<string> => {
   try {
     const pdfData = await generatePayslipData(company, employee, calculation);
-    const downloadURL = await generateAndUploadPayslipPdf(pdfData, payslipId, userId);
+    const downloadURL = await generateAndUploadPayslipPdf(pdfData, payslipId, userId, {
+      companyId: company?.id,
+      companyName: company?.name,
+      employeeCode: employee?.personalInfo
+        ? `${employee.personalInfo.firstName}-${employee.personalInfo.lastName}`
+        : undefined,
+      periodStartDate: calculation?.periodStartDate,
+    });
     return downloadURL;
   } catch (error) {
     console.error('Error regenerating payslip PDF:', error);

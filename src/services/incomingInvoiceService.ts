@@ -12,8 +12,8 @@ import {
   Timestamp,
   runTransaction
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../lib/firebase';
+// Firebase Storage niet meer gebruikt — alles via uploadFile → internedata.nl
+import { db } from '../lib/firebase';
 import { uploadFile } from './fileUploadService';
 
 export interface OCRData {
@@ -131,7 +131,9 @@ export const uploadAndSaveInvoice = async (
 ): Promise<{ invoiceId: string; fileUrl: string }> => {
   const referenceNumber = await generateIncomingInvoiceReference(companyId);
 
-  const uploadResult = await uploadFile(file, companyName, 'Inkoop', referenceNumber);
+  // Upload naar internedata.nl:
+  //   FLG-Administratie/{companyId}__{slug}/Inkoop/{year}/{referenceNumber}.ext
+  const uploadResult = await uploadFile(file, companyName, 'Inkoop', referenceNumber, companyId);
 
   const now = new Date();
   const supplierInvoiceNumber = ocrData?.invoiceNumber || metadata?.invoiceNumber || '';
@@ -171,13 +173,12 @@ export const incomingInvoiceService = {
     metadata?: Partial<IncomingInvoice>
   ): Promise<string> {
     try {
-      // Upload file to storage
-      const fileName = `incoming-invoices/${companyId}/${Date.now()}-${file.name}`;
-      const storageRef = ref(storage, fileName);
-      
-      await uploadBytes(storageRef, file);
-      const fileUrl = await getDownloadURL(storageRef);
-      
+      // Upload naar internedata.nl (géén Firebase Storage). Zelfde
+      // FLG-Administratie/{companyId}__{slug}/Inkoop/{year}/... structuur
+      // als uploadAndSaveInvoice.
+      const uploaded = await uploadFile(file, metadata?.companyName || '', 'Inkoop', undefined, companyId);
+      const fileUrl = uploaded.fileUrl;
+
       // Process OCR if it's a PDF or image
       const ocrData = await this.processOCR(file);
       
