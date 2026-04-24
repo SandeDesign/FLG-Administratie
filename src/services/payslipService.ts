@@ -12,7 +12,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Payslip, PayslipData } from '../types/payslip';
+import { Payslip, PayslipData, PayslipStatus } from '../types/payslip';
 import { PayrollCalculation } from '../types/payroll';
 import { Employee, Company } from '../types';
 // Firebase Storage niet meer gebruikt — alles via uploadFileToInternedata.
@@ -55,7 +55,14 @@ const convertToTimestamps = (data: any) => {
 export const getPayslips = async (
   userId: string,
   employeeId?: string,
-  payrollPeriodId?: string
+  payrollPeriodId?: string,
+  /**
+   * Alleen loonstroken met deze status(sen) meegeven. Default: alle.
+   * Voor werknemer-self-service: geef ['approved', 'paid'] mee zodat
+   * draft-loonstroken (boekhouder heeft geüpload, nog niet goedgekeurd)
+   * niet lekken.
+   */
+  statusFilter?: PayslipStatus[]
 ): Promise<Payslip[]> => {
   let q = query(
     collection(db, 'payslips'),
@@ -75,6 +82,13 @@ export const getPayslips = async (
 
   if (payrollPeriodId) {
     payslips = payslips.filter(p => p.payrollPeriodId === payrollPeriodId);
+  }
+
+  if (statusFilter && statusFilter.length > 0) {
+    payslips = payslips.filter(p => {
+      const s = p.status || 'approved'; // legacy docs zonder status gelden als approved
+      return statusFilter.includes(s);
+    });
   }
 
   return payslips;
@@ -188,7 +202,6 @@ export const uploadPayslipForEmployee = async (params: {
   file: File;
   periodStartDate: Date;
   periodEndDate: Date;
-  paymentDate: Date;
   generatedBy: string;
 }): Promise<string> => {
   const {
@@ -200,11 +213,13 @@ export const uploadPayslipForEmployee = async (params: {
     file,
     periodStartDate,
     periodEndDate,
-    paymentDate,
     generatedBy,
   } = params;
 
-  // 1) Maak payslip-doc aan zodat we een stabiel ID hebben voor referentie.
+  // 1) Maak payslip-doc aan in status 'draft' — zichtbaar voor
+  //    admin/co-admin/boekhouder, verborgen voor werknemer tot
+  //    admin/co-admin goedkeurt. paymentDate blijft leeg; admin vult
+  //    dat bij approval.
   const docRef = await addDoc(collection(db, 'payslips'), convertToTimestamps({
     userId: adminUserId,
     employeeId,
@@ -213,9 +228,9 @@ export const uploadPayslipForEmployee = async (params: {
     payrollCalculationId: '',
     periodStartDate,
     periodEndDate,
-    paymentDate,
     pdfUrl: '',
     pdfStoragePath: '',
+    status: 'draft',
     generatedAt: new Date(),
     generatedBy,
     uploadedByBoekhouder: true,
@@ -439,6 +454,48 @@ export const generatePayslipData = async (
  */
 export const deletePayslip = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'payslips', id));
+};
+
+/**
+ * Admin/co-admin keurt een loonstrook goed — zet status op 'approved'
+ * en (optioneel) de paymentDate. Vanaf dit moment zichtbaar voor de
+ * werknemer zelf.
+ */
+export const approvePayslip = async (
+  id: string,
+  approvedBy: string,
+  paymentDate?: Date
+): Promise<void> => {
+  const payload: Record<string, any> = {
+    status: 'approved',
+    approvedAt: Timestamp.fromDate(new Date()),
+    approvedBy,
+    updatedAt: Timestamp.fromDate(new Date()),
+  };
+  if (paymentDate) {
+    payload.paymentDate = Timestamp.fromDate(paymentDate);
+  }
+  await updateDoc(doc(db, 'payslips', id), payload);
+};
+
+/**
+ * Admin/co-admin markeert loonstrook als uitbetaald.
+ */
+export const markPayslipPaid = async (
+  id: string,
+  paidBy: string,
+  paymentDate?: Date
+): Promise<void> => {
+  const payload: Record<string, any> = {
+    status: 'paid',
+    paidAt: Timestamp.fromDate(new Date()),
+    paidBy,
+    updatedAt: Timestamp.fromDate(new Date()),
+  };
+  if (paymentDate) {
+    payload.paymentDate = Timestamp.fromDate(paymentDate);
+  }
+  await updateDoc(doc(db, 'payslips', id), payload);
 };
 
 export const markPayslipAsDownloaded = async (id: string, userId: string): Promise<void> => {

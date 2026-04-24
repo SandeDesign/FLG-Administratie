@@ -1026,11 +1026,11 @@ const Dashboard: React.FC = () => {
 
             <Card
               className="p-4 bg-indigo-50 dark:bg-gray-800 border-indigo-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate('/payroll-processing')}
+              onClick={() => navigate('/payslips')}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-indigo-700 dark:text-gray-400">Loonverwerking</p>
+                  <p className="text-xs font-medium text-indigo-700 dark:text-gray-400">Loonstroken</p>
                   <p className="text-2xl font-bold text-indigo-900 dark:text-gray-100 mt-2">→</p>
                   <p className="text-xs text-indigo-600 dark:text-gray-500 mt-2">bekijk details</p>
                 </div>

@@ -1,3 +1,13 @@
+/**
+ * Status van een loonstrook:
+ *   draft     — boekhouder heeft (PDF) aangemaakt, nog niet goedgekeurd.
+ *               Zichtbaar voor admin/co-admin/boekhouder, NIET voor werknemer.
+ *   approved  — admin/co-admin heeft goedgekeurd (evt. paymentDate gezet).
+ *               Zichtbaar voor werknemer + admin/co-admin.
+ *   paid      — uitbetaling gemarkeerd (admin/co-admin).
+ */
+export type PayslipStatus = 'draft' | 'approved' | 'paid';
+
 export interface Payslip {
   id?: string;
   userId: string;
@@ -7,11 +17,20 @@ export interface Payslip {
   payrollCalculationId: string;
   periodStartDate: Date;
   periodEndDate: Date;
-  paymentDate: Date;
+  /** Datum van uitbetaling — alleen gezet door admin/co-admin bij approve. */
+  paymentDate?: Date;
   pdfUrl: string;
   pdfStoragePath: string;
   generatedAt: Date;
   generatedBy: string;
+  /** Wie (uid) de boekhouder-upload heeft gedaan, voor audit. */
+  uploadedByBoekhouder?: boolean;
+  /** Goedkeuringsflow velden */
+  status?: PayslipStatus;
+  approvedAt?: Date;
+  approvedBy?: string;
+  paidAt?: Date;
+  paidBy?: string;
   emailedAt?: Date;
   downloadedAt?: Date;
   createdAt: Date;
