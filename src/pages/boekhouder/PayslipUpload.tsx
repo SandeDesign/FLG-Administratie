@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FileText, Upload, Calendar, User, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
+import { FileText, Upload, Calendar, User, CheckCircle2, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import { usePageTitle } from '../../contexts/PageTitleContext';
 import { useToast } from '../../hooks/useToast';
 import { getEmployees } from '../../services/firebase';
-import { uploadPayslipForEmployee, getPayslips } from '../../services/payslipService';
+import { uploadPayslipForEmployee, getPayslips, deletePayslip } from '../../services/payslipService';
 import { Employee } from '../../types';
 import { Payslip } from '../../types/payslip';
 import Card from '../../components/ui/Card';
@@ -37,6 +37,7 @@ const PayslipUpload: React.FC = () => {
   // bevestiging dat er al iets staat.
   const [recent, setRecent] = useState<Payslip[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -132,6 +133,21 @@ const PayslipUpload: React.FC = () => {
       showError('Uploaden mislukt');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDeletePayslip = async (payslipId: string) => {
+    if (!confirm('Weet je zeker dat je deze loonstrook wilt verwijderen?')) return;
+    try {
+      setDeletingId(payslipId);
+      await deletePayslip(payslipId);
+      setRecent((prev) => prev.filter((p) => p.id !== payslipId));
+      success('Loonstrook verwijderd');
+    } catch (err) {
+      console.error('[PayslipUpload] delete failed:', err);
+      showError('Verwijderen mislukt');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -295,23 +311,58 @@ const PayslipUpload: React.FC = () => {
               <p className="text-sm text-gray-500 dark:text-gray-400">Nog geen loonstroken geüpload.</p>
             ) : (
               <div className="space-y-2">
-                {recent.map((p) => (
-                  <a
-                    key={p.id}
-                    href={p.pdfUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-3 p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors text-sm"
-                  >
-                    <FileText className="h-4 w-4 text-primary-600 flex-shrink-0" />
-                    <span className="flex-1 min-w-0 truncate text-gray-900 dark:text-gray-100">
-                      {MONTHS[p.periodStartDate.getMonth()].charAt(0).toUpperCase() + MONTHS[p.periodStartDate.getMonth()].slice(1)} {p.periodStartDate.getFullYear()}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> {p.pdfUrl ? 'Beschikbaar' : 'Zonder PDF'}
-                    </span>
-                  </a>
-                ))}
+                {recent.map((p) => {
+                  const monthLabel =
+                    MONTHS[p.periodStartDate.getMonth()].charAt(0).toUpperCase() +
+                    MONTHS[p.periodStartDate.getMonth()].slice(1);
+                  const hasPdf = !!p.pdfUrl;
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors text-sm"
+                    >
+                      {hasPdf ? (
+                        <a
+                          href={p.pdfUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex-1 min-w-0 flex items-center gap-3"
+                          title="Open PDF in nieuwe tab"
+                        >
+                          <FileText className="h-4 w-4 text-primary-600 flex-shrink-0" />
+                          <span className="flex-1 min-w-0 truncate text-gray-900 dark:text-gray-100">
+                            {monthLabel} {p.periodStartDate.getFullYear()}
+                          </span>
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 flex-shrink-0">
+                            <CheckCircle2 className="h-3 w-3" /> PDF
+                          </span>
+                        </a>
+                      ) : (
+                        <div className="flex-1 min-w-0 flex items-center gap-3">
+                          <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                          <span className="flex-1 min-w-0 truncate text-gray-500 dark:text-gray-400">
+                            {monthLabel} {p.periodStartDate.getFullYear()}
+                          </span>
+                          <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 flex-shrink-0">
+                            Zonder PDF
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => handleDeletePayslip(p.id!)}
+                        disabled={!!deletingId}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0 disabled:opacity-50"
+                        title="Verwijderen"
+                      >
+                        {deletingId === p.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

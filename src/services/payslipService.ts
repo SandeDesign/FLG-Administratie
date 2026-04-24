@@ -5,6 +5,7 @@ import {
   getDoc,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -425,6 +426,19 @@ export const generatePayslipData = async (
       ytdEmployerContribution: 0
     }
   };
+};
+
+/**
+ * Verwijder een loonstrook. Haalt ook de PDF weg (voor zover mogelijk):
+ *  - legacy Firebase Storage bestanden worden ongemoeid gelaten (bucket
+ *    wordt niet meer gebruikt voor nieuwe uploads); alleen het Firestore
+ *    doc verdwijnt. Die bestanden op oude paden blijven nog bestaan
+ *    tot handmatige opruiming.
+ *  - Nieuwe uploads via internedata.nl kunnen via een PHP delete-endpoint
+ *    worden opgeruimd — zodra dat endpoint er is, hier toevoegen.
+ */
+export const deletePayslip = async (id: string): Promise<void> => {
+  await deleteDoc(doc(db, 'payslips', id));
 };
 
 export const markPayslipAsDownloaded = async (id: string, userId: string): Promise<void> => {
