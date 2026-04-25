@@ -89,6 +89,13 @@ export interface WeeklyTimesheet {
     dailyContact: string;      // Is er dagelijks contact geweest met kantoor?
     effortInvested: string;    // Heb jij zelf alle effort erin gestoken effectief te zijn?
     suggestions: string;       // Welke suggesties kun jij bedenken om tijd effectiever te maken?
+    /**
+     * Extra antwoord wanneer 'suggestions' opdrachtgever-blame keywords
+     * bevat (bv. "riset planning te laag"). Werknemer moet dan ook
+     * aangeven wat ZIJ/het team zelf kunnen doen — voorkomt dat alle
+     * suggesties op opdrachtgevers worden afgeschoven.
+     */
+    suggestionsSelf?: string;
     submittedAt: Date;
     actualWeeklyHours: number; // snapshot van het totaal op het moment van indienen
   };

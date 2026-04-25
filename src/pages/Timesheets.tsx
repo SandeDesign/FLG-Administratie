@@ -25,6 +25,7 @@ import { getEmployeeById, getLeaveRequests, getSickLeaveRecords, getTasksAssigne
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { usePageTitle } from '../contexts/PageTitleContext';
+import { containsOpdrachtgeverBlame } from '../utils/timesheetCompliance';
 
 export default function Timesheets() {
   const { user, userRole } = useAuth();
@@ -51,6 +52,7 @@ export default function Timesheets() {
     dailyContact: '',
     effortInvested: '',
     suggestions: '',
+    suggestionsSelf: '',
   });
   // Interne projecten
   const [internalProjects, setInternalProjects] = useState<InternalProject[]>([]);
@@ -589,24 +591,37 @@ export default function Timesheets() {
    */
   const handleLowHoursReviewSubmit = async () => {
     if (!currentTimesheet || !currentTimesheet.id || !queryUserId) return;
-    const { dailyContact, effortInvested, suggestions } = reviewAnswers;
+    const { dailyContact, effortInvested, suggestions, suggestionsSelf } = reviewAnswers;
     if (!dailyContact.trim() || !effortInvested.trim() || !suggestions.trim()) {
       showError('Alle vragen vereist', 'Beantwoord alle drie de vragen voordat je indient.');
       return;
     }
-    const review = {
+    // Soft-check: als suggesties opdrachtgevers blamen, eis een tweede
+    // antwoord over wat de werknemer/het team zelf kan doen.
+    const needsSelfReflection = containsOpdrachtgeverBlame(suggestions);
+    if (needsSelfReflection && !suggestionsSelf.trim()) {
+      showError(
+        'Aanvullend antwoord vereist',
+        'Je suggestie verwijst naar een opdrachtgever — geef ook aan wat jij of het team zelf kunnen doen.'
+      );
+      return;
+    }
+    const review: any = {
       dailyContact: dailyContact.trim(),
       effortInvested: effortInvested.trim(),
       suggestions: suggestions.trim(),
       submittedAt: new Date(),
       actualWeeklyHours: currentTimesheet.totalRegularHours,
     };
+    if (needsSelfReflection && suggestionsSelf.trim()) {
+      review.suggestionsSelf = suggestionsSelf.trim();
+    }
     try {
       await updateWeeklyTimesheet(currentTimesheet.id, queryUserId, { lowHoursReview: review });
       const updated = { ...currentTimesheet, lowHoursReview: review };
       setCurrentTimesheet(updated);
       setShowLowHoursModal(false);
-      setReviewAnswers({ dailyContact: '', effortInvested: '', suggestions: '' });
+      setReviewAnswers({ dailyContact: '', effortInvested: '', suggestions: '', suggestionsSelf: '' });
       // Direct indienen — review is nu opgeslagen.
       setSaving(true);
       await submitWeeklyTimesheet(
@@ -1372,28 +1387,120 @@ export default function Timesheets() {
         })}
       </div>
 
-      {/* Action Buttons */}
-      {!isReadOnly && (
-        <div className="flex gap-2 sm:gap-3">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            variant="secondary"
-            className="flex-1 sm:flex-none"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Opslaan
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={saving || !currentTimesheet.id}
-            className="flex-1"
-          >
-            <Send className="h-4 w-4 mr-2" />
-            Indienen
-          </Button>
-        </div>
-      )}
+      {/* Action Buttons + missingItems-controle */}
+      {!isReadOnly && (() => {
+        // Compute alle ontbrekende items voor de huidige week.
+        const missing: Array<{
+          key: string;
+          label: string;
+          dayIndex?: number;
+          openReview?: boolean;
+        }> = [];
+
+        currentTimesheet.entries.forEach((e, idx) => {
+          const dow = new Date(e.date).getDay();
+          const isWeekend = dow === 0 || dow === 6;
+          if (isWeekend) return;
+
+          const dayLeave = getDayLeave(e.date);
+          const daySick = getDaySick(e.date);
+          const autoStatus = daySick ? 'sick' : dayLeave ? 'holiday' : null;
+          const effective = autoStatus || e.dayStatus || (e.regularHours > 0 ? 'worked' : '');
+          const dayLabel = new Date(e.date).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'short' });
+
+          if (!effective) {
+            missing.push({
+              key: `status-${idx}`,
+              label: `${dayLabel}: status van de dag ontbreekt`,
+              dayIndex: idx,
+            });
+          } else if (
+            effective === 'worked' &&
+            (e.regularHours || 0) > 0 &&
+            (e.regularHours || 0) < 8 &&
+            !(e.effortNote && e.effortNote.trim())
+          ) {
+            missing.push({
+              key: `effort-${idx}`,
+              label: `${dayLabel}: minder dan 8u gewerkt — toelichting ontbreekt`,
+              dayIndex: idx,
+            });
+          }
+        });
+
+        // Week-review check (<40u en nog geen review).
+        if (
+          currentTimesheet.totalRegularHours > 0 &&
+          currentTimesheet.totalRegularHours < 40 &&
+          !currentTimesheet.lowHoursReview
+        ) {
+          missing.push({
+            key: 'review',
+            label: `Weektotaal ${currentTimesheet.totalRegularHours}u — review-vragen niet beantwoord`,
+            openReview: true,
+          });
+        }
+
+        const submitDisabled = saving || !currentTimesheet.id || missing.length > 0;
+
+        return (
+          <>
+            {missing.length > 0 && (
+              <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="h-9 w-9 rounded-full bg-amber-500 text-white flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-bold">{missing.length}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                      Nog {missing.length} {missing.length === 1 ? 'punt' : 'punten'} af te ronden voordat je kunt indienen
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {missing.map((m) => (
+                        <li key={m.key}>
+                          <button
+                            onClick={() => {
+                              if (m.openReview) {
+                                setShowLowHoursModal(true);
+                              } else if (typeof m.dayIndex === 'number') {
+                                setExpandedDay(m.dayIndex);
+                              }
+                            }}
+                            className="text-left text-xs text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 underline underline-offset-2 decoration-amber-400/60 hover:decoration-amber-500"
+                          >
+                            • {m.label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2 sm:gap-3">
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                variant="secondary"
+                className="flex-1 sm:flex-none"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Opslaan
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={submitDisabled}
+                className="flex-1"
+                title={missing.length > 0 ? 'Vul eerst de ontbrekende punten in' : undefined}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {missing.length > 0 ? `Indienen (${missing.length} open)` : 'Indienen'}
+              </Button>
+            </div>
+          </>
+        );
+      })()}
 
       {/* Low-hours review modal: <40u in een week → 3 verplichte vragen */}
       {showLowHoursModal && currentTimesheet && (
@@ -1447,6 +1554,25 @@ export default function Timesheets() {
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
+
+              {/* Soft-check: opdrachtgever-blame in vraag 3 → extra zelfreflectie. */}
+              {containsOpdrachtgeverBlame(reviewAnswers.suggestions) && (
+                <div>
+                  <div className="mb-1 p-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-200">
+                    Je verwijst naar een opdrachtgever. Dat mag, maar focus ook op wat <strong>jij of het team</strong> zelf kunnen veranderen — daar heb je invloed op.
+                  </div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    3b. Los van wat opdrachtgevers leveren — wat kun jij of het team zelf doen om beter bij te dragen? <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={reviewAnswers.suggestionsSelf}
+                    onChange={(e) => setReviewAnswers({ ...reviewAnswers, suggestionsSelf: e.target.value })}
+                    rows={3}
+                    placeholder="Bv. proactief klanten bellen, eigen administratie verbeteren, collega's helpen, training oppakken..."
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="p-5 border-t border-gray-200 dark:border-gray-700 flex gap-3">
