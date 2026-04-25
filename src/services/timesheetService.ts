@@ -45,8 +45,24 @@ const convertTimestamps = (data: any) => {
   return converted;
 };
 
+/**
+ * Strip undefined keys recursief (Firestore weigert undefined waarden).
+ * Null wordt wél behouden — null is een geldige Firestore-waarde, undefined niet.
+ */
+const stripUndefined = <T extends Record<string, any>>(data: T): T => {
+  const out: any = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v === undefined) continue;
+    out[k] = v;
+  }
+  return out as T;
+};
+
 const convertToTimestamps = (data: any) => {
-  const converted = { ...data };
+  // Eerst undefined-keys eruit filteren zodat Firestore niet klapt op
+  // optionele velden die niet gezet zijn (bv. branchId, effortNote,
+  // statusReason, lockedAt op oude entries).
+  const converted: any = stripUndefined({ ...data });
 
   if (converted.date instanceof Date) {
     converted.date = Timestamp.fromDate(converted.date);
@@ -68,6 +84,16 @@ const convertToTimestamps = (data: any) => {
   }
   if (converted.updatedAt instanceof Date) {
     converted.updatedAt = Timestamp.fromDate(converted.updatedAt);
+  }
+  if (converted.lockedAt instanceof Date) {
+    converted.lockedAt = Timestamp.fromDate(converted.lockedAt);
+  }
+  // Genest object: lowHoursReview.submittedAt → Timestamp
+  if (converted.lowHoursReview) {
+    converted.lowHoursReview = stripUndefined({ ...converted.lowHoursReview });
+    if (converted.lowHoursReview.submittedAt instanceof Date) {
+      converted.lowHoursReview.submittedAt = Timestamp.fromDate(converted.lowHoursReview.submittedAt);
+    }
   }
 
   if (converted.entries && Array.isArray(converted.entries)) {

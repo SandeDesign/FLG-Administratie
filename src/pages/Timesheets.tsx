@@ -1387,14 +1387,14 @@ export default function Timesheets() {
         })}
       </div>
 
-      {/* Action Buttons + missingItems-controle */}
+      {/* Action Buttons + missingItems-info (informatief; de submit-flow
+          handelt validatie zelf af — onder 40u opent automatisch het
+          review-modal in handleSubmit). */}
       {!isReadOnly && (() => {
-        // Compute alle ontbrekende items voor de huidige week.
         const missing: Array<{
           key: string;
           label: string;
-          dayIndex?: number;
-          openReview?: boolean;
+          dayIndex: number;
         }> = [];
 
         currentTimesheet.entries.forEach((e, idx) => {
@@ -1428,56 +1428,8 @@ export default function Timesheets() {
           }
         });
 
-        // Week-review check (<40u en nog geen review).
-        if (
-          currentTimesheet.totalRegularHours > 0 &&
-          currentTimesheet.totalRegularHours < 40 &&
-          !currentTimesheet.lowHoursReview
-        ) {
-          missing.push({
-            key: 'review',
-            label: `Weektotaal ${currentTimesheet.totalRegularHours}u — review-vragen niet beantwoord`,
-            openReview: true,
-          });
-        }
-
-        const submitDisabled = saving || !currentTimesheet.id || missing.length > 0;
-
         return (
           <>
-            {missing.length > 0 && (
-              <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-full bg-amber-500 text-white flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold">{missing.length}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-                      Nog {missing.length} {missing.length === 1 ? 'punt' : 'punten'} af te ronden voordat je kunt indienen
-                    </p>
-                    <ul className="mt-2 space-y-1">
-                      {missing.map((m) => (
-                        <li key={m.key}>
-                          <button
-                            onClick={() => {
-                              if (m.openReview) {
-                                setShowLowHoursModal(true);
-                              } else if (typeof m.dayIndex === 'number') {
-                                setExpandedDay(m.dayIndex);
-                              }
-                            }}
-                            className="text-left text-xs text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 underline underline-offset-2 decoration-amber-400/60 hover:decoration-amber-500"
-                          >
-                            • {m.label}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="flex gap-2 sm:gap-3">
               <Button
                 onClick={handleSave}
@@ -1490,14 +1442,40 @@ export default function Timesheets() {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={submitDisabled}
+                disabled={saving || !currentTimesheet.id}
                 className="flex-1"
-                title={missing.length > 0 ? 'Vul eerst de ontbrekende punten in' : undefined}
               >
                 <Send className="h-4 w-4 mr-2" />
-                {missing.length > 0 ? `Indienen (${missing.length} open)` : 'Indienen'}
+                Indienen
               </Button>
             </div>
+
+            {missing.length > 0 && (
+              <div className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="h-9 w-9 rounded-full bg-amber-500 text-white flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-bold">{missing.length}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                      Nog {missing.length} {missing.length === 1 ? 'punt' : 'punten'} open
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {missing.map((m) => (
+                        <li key={m.key}>
+                          <button
+                            onClick={() => setExpandedDay(m.dayIndex)}
+                            className="text-left text-xs text-amber-800 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100"
+                          >
+                            • {m.label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         );
       })()}
