@@ -142,6 +142,42 @@ export const canRequestLeaveAsEmployee = (startDate: Date, now: Date = new Date(
   return start.getTime() >= today.getTime();
 };
 
+/**
+ * Keywords die wijzen op "opdrachtgever-blame" als verklaring voor te
+ * weinig uren. Wanneer een werknemer in z'n suggesties-antwoord op de
+ * low-hours review deze keywords gebruikt, willen we een follow-up
+ * vraag stellen ("en wat kun jij/het team zelf doen?") om te voorkomen
+ * dat alle suggesties op opdrachtgevers worden afgeschoven.
+ *
+ * Houd dit lokaal gedragen — uitbreiden mag gerust met nieuwe synoniemen
+ * als ze in de praktijk opduiken.
+ */
+const OPDRACHTGEVER_BLAME_KEYWORDS = [
+  'riset',
+  'opdrachtgever',
+  'klant',
+  'planning te laag',
+  'planning was laag',
+  'lage planning',
+  'te weinig werk',
+  'geen werk',
+  'tekort werk',
+  'tekort aan werk',
+  'niks te doen',
+  'niets te doen',
+  'weinig planning',
+];
+
+/**
+ * True wanneer het antwoord termen bevat die wijzen op opdrachtgever-
+ * blame. Case-insensitive substring-match.
+ */
+export const containsOpdrachtgeverBlame = (text: string): boolean => {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return OPDRACHTGEVER_BLAME_KEYWORDS.some((kw) => lower.includes(kw));
+};
+
 /** Label per DayStatus voor UI. */
 export const DAY_STATUS_LABELS: Record<DayStatus, string> = {
   worked: 'Gewerkt',
