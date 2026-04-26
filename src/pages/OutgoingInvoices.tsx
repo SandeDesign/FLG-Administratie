@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Send, Search, Calendar, Euro, Building2, User, CheckCircle, AlertCircle, Clock, Edit, Trash2, ChevronDown, X, ArrowLeft, TrendingUp, Eye, Factory, Copy } from 'lucide-react';
+import { Plus, Send, Search, Calendar, Euro, Building2, User, CheckCircle, AlertCircle, Clock, Edit, Trash2, ChevronDown, X, ArrowLeft, TrendingUp, Eye, Factory, Copy, MailCheck, MailX, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -515,6 +515,7 @@ const OutgoingInvoices: React.FC = () => {
         logoUrl: selectedCompany?.logoUrl,
       };
       const html = await outgoingInvoiceService.generateInvoiceHTML(invoice, info);
+      const callbackUrl = `${window.location.origin}/api/invoice-delivery-callback`;
       const payload = {
         event: 'invoice.sent',
         timestamp: new Date().toISOString(),
@@ -530,7 +531,8 @@ const OutgoingInvoices: React.FC = () => {
         },
         company: { id: selectedCompany?.id, name: selectedCompany?.name },
         user: { id: user?.uid, email: user?.email },
-        htmlContent: html
+        htmlContent: html,
+        callbackUrl,
       };
       const res = await fetch(MAKE_WEBHOOK_URL, {
         method: 'POST',
@@ -636,14 +638,26 @@ const OutgoingInvoices: React.FC = () => {
   };
 
   const getStatusColor = (status: OutgoingInvoice['status']) => {
-    const colors = {
+    const colors: Record<string, string> = {
       draft: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700',
       sent: 'bg-primary-50 text-primary-700 border-primary-200',
       paid: 'bg-green-50 text-green-700 border-green-200',
+      partial: 'bg-orange-50 text-orange-700 border-orange-200',
       overdue: 'bg-red-50 text-red-700 border-red-200',
       cancelled: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700'
     };
     return colors[status] || colors.draft;
+  };
+
+  const getDeliveryBadge = (invoice: OutgoingInvoice) => {
+    if (invoice.status !== 'sent' && invoice.status !== 'overdue') return null;
+    if (!invoice.deliveryStatus || invoice.deliveryStatus === 'pending') {
+      return <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800"><Loader2 className="h-2.5 w-2.5 animate-spin" />Wacht op bevestiging</span>;
+    }
+    if (invoice.deliveryStatus === 'delivered') {
+      return <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"><MailCheck className="h-2.5 w-2.5" />Bezorgd</span>;
+    }
+    return <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"><MailX className="h-2.5 w-2.5" />Bezorging mislukt</span>;
   };
 
   const getStatusIcon = (status: OutgoingInvoice['status']) => {
@@ -1290,8 +1304,8 @@ const OutgoingInvoices: React.FC = () => {
             <div className="col-span-3">Klant</div>
             <div className="col-span-2">Bedrag excl.</div>
             <div className="col-span-1">BTW</div>
-            <div className="col-span-2">Datum</div>
-            <div className="col-span-2">Status</div>
+            <div className="col-span-1">Datum</div>
+            <div className="col-span-3">Status / Bezorging</div>
           </div>
 
           <div className="space-y-1">
@@ -1309,11 +1323,13 @@ const OutgoingInvoices: React.FC = () => {
                     <div className="col-span-3 text-xs text-gray-700 dark:text-gray-300">{invoice.clientName}</div>
                     <div className="col-span-2 text-xs font-semibold text-gray-900 dark:text-gray-100">€{(invoice.amount || 0).toFixed(2)}</div>
                     <div className="col-span-1 text-xs text-gray-600 dark:text-gray-400">€{(invoice.vatAmount || 0).toFixed(2)}</div>
-                    <div className="col-span-2 text-xs text-gray-600 dark:text-gray-400">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div>
-                    <div className="col-span-1">
+                    <div className="col-span-1 text-xs text-gray-600 dark:text-gray-400">{invoice.invoiceDate.toLocaleDateString('nl-NL')}</div>
+                    <div className="col-span-3 flex items-center gap-1.5 flex-wrap">
                       <span className={`inline-flex items-center gap-0.5 px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(invoice.status)}`}>
                         <StatusIcon className="h-3 w-3" />
+                        <span>{getStatusText(invoice.status)}</span>
                       </span>
+                      {getDeliveryBadge(invoice)}
                     </div>
                     <div className="col-span-1 text-right">
                       <ChevronDown className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -1373,6 +1389,42 @@ const OutgoingInvoices: React.FC = () => {
                               <span>€{invoice.totalAmount.toFixed(2)}</span>
                             </div>
                           </div>
+                        </div>
+                      )}
+
+                      {/* Verzendinformatie */}
+                      {(invoice.sentAt || invoice.deliveryStatus) && (
+                        <div className="bg-white dark:bg-gray-800 rounded p-3 text-xs space-y-1.5">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Verzendinformatie</p>
+                          {invoice.sentAt && (
+                            <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                              <Send className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span>Verstuurd op: <span className="font-medium text-gray-900 dark:text-gray-100">{invoice.sentAt.toLocaleString('nl-NL')}</span></span>
+                            </div>
+                          )}
+                          {invoice.deliveryStatus === 'pending' && (
+                            <div className="flex items-center gap-1.5 text-yellow-600 dark:text-yellow-500">
+                              <Loader2 className="h-3.5 w-3.5 flex-shrink-0 animate-spin" />
+                              <span>Bezorging wacht op bevestiging van Make.com</span>
+                            </div>
+                          )}
+                          {invoice.deliveryStatus === 'delivered' && (
+                            <div className="flex items-center gap-1.5 text-green-600 dark:text-green-500">
+                              <MailCheck className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span>E-mail bezorgd{invoice.deliveredAt ? ` op ${invoice.deliveredAt.toLocaleString('nl-NL')}` : ''}</span>
+                            </div>
+                          )}
+                          {invoice.deliveryStatus === 'failed' && (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 text-red-600 dark:text-red-500">
+                                <MailX className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span className="font-medium">E-mail bezorging mislukt</span>
+                              </div>
+                              {invoice.deliveryError && (
+                                <p className="text-red-500 dark:text-red-400 pl-5">{invoice.deliveryError}</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
 

@@ -54,6 +54,9 @@ export interface OutgoingInvoice {
   additionalRecipients?: string[]; // Extra email ontvangers
   ExtraOntvangers: 'ja' | 'nee'; // Filter voor extra mail flow
   pdfUrl?: string;
+  deliveryStatus?: 'pending' | 'delivered' | 'failed';
+  deliveredAt?: Date;
+  deliveryError?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -214,6 +217,7 @@ export const outgoingInvoiceService = {
           dueDate: data.dueDate.toDate(),
           paidAt: data.paidAt?.toDate(),
           sentAt: data.sentAt?.toDate(),
+          deliveredAt: data.deliveredAt?.toDate(),
           createdAt: data.createdAt.toDate(),
           updatedAt: data.updatedAt.toDate()
         } as OutgoingInvoice;
@@ -257,11 +261,38 @@ export const outgoingInvoiceService = {
     try {
       await this.updateInvoice(invoiceId, {
         status: 'sent',
-        sentAt: new Date()
+        sentAt: new Date(),
+        deliveryStatus: 'pending',
+        deliveredAt: undefined,
+        deliveryError: undefined,
       });
     } catch (error) {
       console.error('Error sending invoice:', error);
       throw new Error('Kon factuur niet versturen');
+    }
+  },
+
+  async updateDeliveryStatus(
+    invoiceId: string,
+    deliveryStatus: 'delivered' | 'failed',
+    deliveryError?: string
+  ): Promise<void> {
+    try {
+      const docRef = doc(db, COLLECTION_NAME, invoiceId);
+      const updateData: Record<string, unknown> = {
+        deliveryStatus,
+        updatedAt: Timestamp.fromDate(new Date()),
+      };
+      if (deliveryStatus === 'delivered') {
+        updateData.deliveredAt = Timestamp.fromDate(new Date());
+      }
+      if (deliveryError) {
+        updateData.deliveryError = deliveryError;
+      }
+      await updateDoc(docRef, updateData);
+    } catch (error) {
+      console.error('Error updating delivery status:', error);
+      throw new Error('Kon bezorgstatus niet bijwerken');
     }
   },
 
