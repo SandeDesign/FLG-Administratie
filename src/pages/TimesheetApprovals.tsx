@@ -548,6 +548,39 @@ export default function TimesheetApprovals() {
                                       </div>
                                     )}
 
+                                    {/* Low Hours Review Antwoorden */}
+                                    {timesheet.lowHoursReview && (
+                                      <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg space-y-3">
+                                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
+                                          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                          Antwoorden medewerker (weinig uren)
+                                          <span className="ml-auto font-normal text-amber-700 dark:text-amber-400">
+                                            {timesheet.lowHoursReview.actualWeeklyHours}u ingevuld
+                                          </span>
+                                        </p>
+                                        <div className="space-y-2">
+                                          <div>
+                                            <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">1. Is er dagelijks contact geweest met kantoor?</p>
+                                            <p className="text-xs text-amber-900 dark:text-amber-200 mt-0.5 whitespace-pre-wrap">{timesheet.lowHoursReview.dailyContact}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">2. Heb jij zelf alle effort erin gestoken om effectief te zijn?</p>
+                                            <p className="text-xs text-amber-900 dark:text-amber-200 mt-0.5 whitespace-pre-wrap">{timesheet.lowHoursReview.effortInvested}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">3. Welke suggesties heb je om tijd effectiever te maken?</p>
+                                            <p className="text-xs text-amber-900 dark:text-amber-200 mt-0.5 whitespace-pre-wrap">{timesheet.lowHoursReview.suggestions}</p>
+                                          </div>
+                                          {timesheet.lowHoursReview.suggestionsSelf && (
+                                            <div>
+                                              <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">3b. Wat kun jij of het team zelf doen?</p>
+                                              <p className="text-xs text-amber-900 dark:text-amber-200 mt-0.5 whitespace-pre-wrap">{timesheet.lowHoursReview.suggestionsSelf}</p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
                                     {/* Daily Details */}
                                     <div>
                                       <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
@@ -781,6 +814,29 @@ export default function TimesheetApprovals() {
                                     <p className="text-xs text-red-600 dark:text-red-400 mt-1 italic">
                                       Verklaring: {(timesheet as any).lowHoursExplanation}
                                     </p>
+                                  )}
+                                  {timesheet.lowHoursReview && (
+                                    <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-[11px] space-y-1.5">
+                                      <p className="font-semibold text-amber-800 dark:text-amber-300">Antwoorden medewerker ({timesheet.lowHoursReview.actualWeeklyHours}u)</p>
+                                      <div>
+                                        <span className="font-medium text-amber-700 dark:text-amber-400">Dagelijks contact: </span>
+                                        <span className="text-amber-900 dark:text-amber-200">{timesheet.lowHoursReview.dailyContact}</span>
+                                      </div>
+                                      <div>
+                                        <span className="font-medium text-amber-700 dark:text-amber-400">Eigen inzet: </span>
+                                        <span className="text-amber-900 dark:text-amber-200">{timesheet.lowHoursReview.effortInvested}</span>
+                                      </div>
+                                      <div>
+                                        <span className="font-medium text-amber-700 dark:text-amber-400">Suggesties: </span>
+                                        <span className="text-amber-900 dark:text-amber-200">{timesheet.lowHoursReview.suggestions}</span>
+                                      </div>
+                                      {timesheet.lowHoursReview.suggestionsSelf && (
+                                        <div>
+                                          <span className="font-medium text-amber-700 dark:text-amber-400">Eigen actie: </span>
+                                          <span className="text-amber-900 dark:text-amber-200">{timesheet.lowHoursReview.suggestionsSelf}</span>
+                                        </div>
+                                      )}
+                                    </div>
                                   )}
                                   {timesheet.approvedAt && (
                                     <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
