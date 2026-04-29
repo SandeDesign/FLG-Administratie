@@ -27,6 +27,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import { containsOpdrachtgeverBlame } from '../utils/timesheetCompliance';
 import { isPublicHoliday } from '../utils/leaveCalculations';
+import { AuditService } from '../services/auditService';
 
 export default function Timesheets() {
   const { user, userRole } = useAuth();
@@ -387,6 +388,30 @@ export default function Timesheets() {
         'Term niet toegestaan',
         'De term "Riset" is gereserveerd voor automatische ITKnecht-import. Beschrijf je werkzaamheden anders.'
       );
+      // Paper trail — fire-and-forget, blokkeert de UI niet
+      AuditService.logAction(
+        queryUserId!,
+        'update' as any,
+        'time_entry' as any,
+        currentTimesheet.id || 'draft',
+        {
+          companyId: currentTimesheet.companyId,
+          severity: 'critical' as any,
+          metadata: {
+            reason: 'riset_attempt_field',
+            field: String(field),
+            attemptedValue: (value as string).slice(0, 100),
+            employeeId: currentTimesheet.employeeId,
+            weekNumber: currentTimesheet.weekNumber,
+            year: currentTimesheet.year,
+          },
+          performedBy: {
+            uid: user?.uid || queryUserId!,
+            email: user?.email || 'unknown',
+            role: (userRole as any) || 'employee',
+          },
+        }
+      ).catch(() => {});
       // Forceer re-render zodat React het controlled input terugzet naar
       // de vorige waarde (zonder dit blijft de DOM-waarde staan ondanks
       // dat state niet is gewijzigd).
@@ -456,6 +481,29 @@ export default function Timesheets() {
         'Term niet toegestaan',
         'De term "Riset" is gereserveerd voor automatische ITKnecht-import. Beschrijf je werkzaamheden anders.'
       );
+      AuditService.logAction(
+        queryUserId!,
+        'update' as any,
+        'time_entry' as any,
+        currentTimesheet.id || 'draft',
+        {
+          companyId: currentTimesheet.companyId,
+          severity: 'critical' as any,
+          metadata: {
+            reason: 'riset_attempt_activity',
+            field: 'workActivity.description',
+            attemptedValue: (value as string).slice(0, 100),
+            employeeId: currentTimesheet.employeeId,
+            weekNumber: currentTimesheet.weekNumber,
+            year: currentTimesheet.year,
+          },
+          performedBy: {
+            uid: user?.uid || queryUserId!,
+            email: user?.email || 'unknown',
+            role: (userRole as any) || 'employee',
+          },
+        }
+      ).catch(() => {});
       setCurrentTimesheet(ts => ts ? { ...ts } : ts);
       return;
     }
