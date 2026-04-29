@@ -36,6 +36,7 @@ const AuditLogPage: React.FC = () => {
   usePageTitle('Audit Log');
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fraudOnly, setFraudOnly] = useState(false);
   const [filters, setFilters] = useState<{
     entityType?: AuditEntityType;
     action?: AuditAction;
@@ -240,6 +241,26 @@ const AuditLogPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Fraude-pogingen filter */}
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => setFraudOnly(f => !f)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                fraudOnly
+                  ? 'bg-red-100 dark:bg-red-900/30 border-red-400 dark:border-red-600 text-red-800 dark:text-red-300'
+                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              <Shield className="h-4 w-4" />
+              Fraude-pogingen
+            </button>
+            {fraudOnly && (
+              <span className="text-xs text-red-600 dark:text-red-400">
+                Toont alleen geblokkeerde "Riset" invoerpogingen
+              </span>
+            )}
+          </div>
+
           {loading ? (
             <div className="flex justify-center py-12">
               <LoadingSpinner />
@@ -265,7 +286,7 @@ const AuditLogPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {auditLogs.map((log) => (
+                  {auditLogs.filter(log => !fraudOnly || (log.metadata?.reason as string)?.startsWith('riset_attempt')).map((log) => (
                     <tr key={log.id} className="hover:bg-gray-50 dark:bg-gray-900">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{log.createdAt.toLocaleString('nl-NL')}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -274,7 +295,19 @@ const AuditLogPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{getActionLabel(log.action)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{getEntityTypeLabel(log.entityType)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">{log.entityId.substring(0, 8)}...</td>
+                      <td className="px-6 py-4 text-sm font-mono text-gray-600 dark:text-gray-400">
+                        <div>{log.entityId.substring(0, 8)}...</div>
+                        {log.metadata && (
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 space-y-0.5 font-sans">
+                            {log.metadata.reason && <div><span className="font-semibold">reden:</span> {log.metadata.reason}</div>}
+                            {log.metadata.field && <div><span className="font-semibold">veld:</span> {log.metadata.field}</div>}
+                            {log.metadata.attemptedValue && <div><span className="font-semibold">waarde:</span> "{log.metadata.attemptedValue}"</div>}
+                            {log.metadata.weekNumber && <div><span className="font-semibold">week:</span> {log.metadata.weekNumber}/{log.metadata.year}</div>}
+                            {log.metadata.employeeId && <div><span className="font-semibold">medewerker:</span> {log.metadata.employeeId.substring(0, 12)}...</div>}
+                            {log.metadata.previousStatus && <div><span className="font-semibold">vorige status:</span> {log.metadata.previousStatus}</div>}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(log.severity)}`}>{log.severity}</span>
                       </td>
@@ -286,7 +319,7 @@ const AuditLogPage: React.FC = () => {
 
             {/* Mobiele cards */}
             <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-              {auditLogs.map((log) => (
+              {auditLogs.filter(log => !fraudOnly || (log.metadata?.reason as string)?.startsWith('riset_attempt')).map((log) => (
                 <div key={log.id} className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{log.performedBy.name || log.performedBy.email}</span>
@@ -300,6 +333,15 @@ const AuditLogPage: React.FC = () => {
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     {log.createdAt.toLocaleString('nl-NL')}
                   </div>
+                  {log.metadata && (
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500 space-y-0.5">
+                      {log.metadata.reason && <div><span className="font-semibold">reden:</span> {log.metadata.reason}</div>}
+                      {log.metadata.field && <div><span className="font-semibold">veld:</span> {log.metadata.field}</div>}
+                      {log.metadata.attemptedValue && <div><span className="font-semibold">waarde:</span> "{log.metadata.attemptedValue}"</div>}
+                      {log.metadata.weekNumber && <div><span className="font-semibold">week:</span> {log.metadata.weekNumber}/{log.metadata.year}</div>}
+                      {log.metadata.previousStatus && <div><span className="font-semibold">vorige status:</span> {log.metadata.previousStatus}</div>}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

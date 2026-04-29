@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -88,10 +88,23 @@ import { PageTitleProvider } from './contexts/PageTitleContext';
 import { ToastContainer } from './components/ui/Toast';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
+import AppUpdateModal from './components/AppUpdateModal';
 
 function App() {
   const AppContent: React.FC = () => {
     const { userRole, loading } = useAuth();
+    const [showUpdate, setShowUpdate] = useState(false);
+    const [updateReg, setUpdateReg] = useState<ServiceWorkerRegistration | null>(null);
+
+    useEffect(() => {
+      const handler = (e: Event) => {
+        const reg = (e as CustomEvent<{ reg: ServiceWorkerRegistration }>).detail.reg;
+        setUpdateReg(reg);
+        setShowUpdate(true);
+      };
+      window.addEventListener('swUpdateAvailable', handler);
+      return () => window.removeEventListener('swUpdateAvailable', handler);
+    }, []);
 
     if (loading) {
       return (
@@ -102,6 +115,7 @@ function App() {
     }
 
     return (
+      <>
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
@@ -324,6 +338,10 @@ function App() {
           }
         />
       </Routes>
+      {showUpdate && (
+        <AppUpdateModal reg={updateReg} onDismiss={() => setShowUpdate(false)} />
+      )}
+      </>
     );
   };
 

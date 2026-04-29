@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Check, X, Clock, ChevronDown, AlertCircle, CheckCircle, User, Calendar, MapPin, Filter } from 'lucide-react';
+import { Check, X, Clock, ChevronDown, AlertCircle, CheckCircle, User, Calendar, MapPin, Filter, RotateCcw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -9,8 +9,10 @@ import { WeeklyTimesheet } from '../types/timesheet';
 import {
   getAllPendingTimesheets,
   approveWeeklyTimesheet,
-  rejectWeeklyTimesheet
+  rejectWeeklyTimesheet,
+  updateWeeklyTimesheet
 } from '../services/timesheetService';
+import { AuditService } from '../services/auditService';
 import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
@@ -200,6 +202,77 @@ export default function TimesheetApprovals() {
     } catch (error) {
       console.error('Error rejecting timesheet:', error);
       showError('Fout bij afwijzen', 'Kon urenregistratie niet afwijzen');
+    }
+  };
+
+  const handleReopenTimesheet = async (timesheet: WeeklyTimesheet) => {
+    if (!user || !adminUserId) return;
+    const confirmed = window.confirm(
+      `Week ${timesheet.weekNumber} (${timesheet.year}) heropenen?\n\nAlle ingevulde uren worden gewist en de medewerker kan opnieuw beginnen. Dit wordt gelogd in het audit log.`
+    );
+    if (!confirmed) return;
+    try {
+      const emptyEntries = timesheet.entries.map(e => ({
+        ...e,
+        regularHours: 0,
+        overtimeHours: 0,
+        eveningHours: 0,
+        nightHours: 0,
+        weekendHours: 0,
+        travelKilometers: 0,
+        dayStatus: undefined,
+        statusReason: undefined,
+        effortNote: undefined,
+        notes: undefined,
+        workActivities: [],
+        updatedAt: new Date(),
+      }));
+      await updateWeeklyTimesheet(timesheet.id!, timesheet.userId, {
+        entries: emptyEntries,
+        status: 'draft',
+        totalRegularHours: 0,
+        totalOvertimeHours: 0,
+        totalEveningHours: 0,
+        totalNightHours: 0,
+        totalWeekendHours: 0,
+        totalTravelKilometers: 0,
+        submittedAt: undefined,
+        submittedBy: undefined,
+        approvedAt: undefined,
+        approvedBy: undefined,
+        rejectedAt: undefined,
+        rejectedBy: undefined,
+        rejectionReason: undefined,
+        lockedAt: undefined,
+        lowHoursReview: undefined,
+      });
+      await AuditService.logAction(
+        adminUserId,
+        'update' as any,
+        'time_entry' as any,
+        timesheet.id!,
+        {
+          companyId: timesheet.companyId,
+          severity: 'warning' as any,
+          metadata: {
+            reason: 'timesheet_reopened_by_admin',
+            previousStatus: timesheet.status,
+            employeeId: timesheet.employeeId,
+            weekNumber: timesheet.weekNumber,
+            year: timesheet.year,
+          },
+          performedBy: {
+            uid: user.uid,
+            email: user.email || 'unknown',
+            role: (userRole as any) || 'admin',
+          },
+        }
+      );
+      success('Week heropend', `Week ${timesheet.weekNumber} is geleegd en staat opnieuw op concept.`);
+      await loadData();
+    } catch (error) {
+      console.error('Error reopening timesheet:', error);
+      showError('Fout bij heropenen', 'Kon week niet heropenen');
     }
   };
 
@@ -750,7 +823,7 @@ export default function TimesheetApprovals() {
                               const isPending = selectedEmployee.pendingTimesheets.some(t => t.id === timesheet.id);
 
                               return (
-                                <button
+                                <div
                                   key={timesheet.id}
                                   onClick={() => {
                                     if (isPending) {
@@ -851,7 +924,18 @@ export default function TimesheetApprovals() {
                                       )}
                                     </p>
                                   )}
-                                </button>
+                                  {(userRole === 'admin' || userRole === 'co-admin' || userRole === 'manager') && timesheet.status !== 'draft' && (
+                                    <div className="mt-2 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        onClick={() => handleReopenTimesheet(timesheet)}
+                                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-orange-300 dark:border-orange-700 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+                                      >
+                                        <RotateCcw className="h-3 w-3" />
+                                        Heropenen
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               );
                             })
                         )}
