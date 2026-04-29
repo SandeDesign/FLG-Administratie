@@ -387,6 +387,10 @@ export default function Timesheets() {
         'Term niet toegestaan',
         'De term "Riset" is gereserveerd voor automatische ITKnecht-import. Beschrijf je werkzaamheden anders.'
       );
+      // Forceer re-render zodat React het controlled input terugzet naar
+      // de vorige waarde (zonder dit blijft de DOM-waarde staan ondanks
+      // dat state niet is gewijzigd).
+      setCurrentTimesheet(ts => ts ? { ...ts } : ts);
       return;
     }
 
@@ -452,6 +456,7 @@ export default function Timesheets() {
         'Term niet toegestaan',
         'De term "Riset" is gereserveerd voor automatische ITKnecht-import. Beschrijf je werkzaamheden anders.'
       );
+      setCurrentTimesheet(ts => ts ? { ...ts } : ts);
       return;
     }
 
