@@ -208,6 +208,13 @@ export class IncompleteWeekError extends Error {
   }
 }
 
+// Gereserveerde term: alleen automatische ITKnecht-import mag "Riset" in
+// notes/beschrijvingen schrijven. Voorkomt dat een monteur valse uren
+// onder die naam registreert (omzeiling van client-side blokkade via
+// dev-tools).
+const FORBIDDEN_RISET = /\briset\b/i;
+const ALLOWED_ITKNECHT_NOTES = /^productie uren riset$/i;
+
 export const submitWeeklyTimesheet = async (
   id: string,
   userId: string,
@@ -217,6 +224,26 @@ export const submitWeeklyTimesheet = async (
   // (of — voor legacy entries — uren > 0 die als 'worked' tellen).
   const ts = await getWeeklyTimesheet(id, userId);
   if (!ts) throw new Error('Weekbriefje niet gevonden.');
+
+  for (const entry of ts.entries) {
+    // Notes mag de gereserveerde marker zijn (ITKnecht), maar geen andere
+    // tekst die "Riset" bevat. statusReason en effortNote zijn altijd
+    // handmatige invoer en mogen nooit "Riset" bevatten.
+    if (entry.notes && FORBIDDEN_RISET.test(entry.notes) && !ALLOWED_ITKNECHT_NOTES.test(entry.notes.trim())) {
+      throw new Error('Gereserveerde term "Riset" niet toegestaan in handmatige notities.');
+    }
+    if (entry.statusReason && FORBIDDEN_RISET.test(entry.statusReason)) {
+      throw new Error('Gereserveerde term "Riset" niet toegestaan in handmatige toelichting.');
+    }
+    if (entry.effortNote && FORBIDDEN_RISET.test(entry.effortNote)) {
+      throw new Error('Gereserveerde term "Riset" niet toegestaan in handmatige toelichting.');
+    }
+    for (const wa of entry.workActivities || []) {
+      if (!wa.isITKnechtImport && wa.description && FORBIDDEN_RISET.test(wa.description)) {
+        throw new Error('Gereserveerde term "Riset" niet toegestaan in handmatige werkzaamheden.');
+      }
+    }
+  }
 
   const { checkWeekComplete } = await import('../utils/timesheetCompliance');
   const check = checkWeekComplete(ts);

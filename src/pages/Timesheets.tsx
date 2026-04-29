@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock, Save, Send, Download, ChevronLeft, ChevronRight, User, Palmtree, HeartPulse, FolderKanban, ListChecks } from 'lucide-react';
+import { Calendar, Clock, Save, Send, Download, ChevronLeft, ChevronRight, User, Palmtree, HeartPulse, FolderKanban, ListChecks, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import Button from '../components/ui/Button';
@@ -271,6 +271,10 @@ export default function Timesheets() {
       });
 
       if (dayIndex !== -1) {
+        // Markeer als ITKnecht-import via notes "Productie uren Riset".
+        // De term "Riset" is gereserveerd: handmatige invoer wordt
+        // geblokkeerd in updateEntry/updateWorkActivity, dus deze marker
+        // is een betrouwbare bron voor read-only detectie.
         updatedEntries[dayIndex] = {
           ...updatedEntries[dayIndex],
           regularHours: dayTotalHours,
@@ -279,7 +283,8 @@ export default function Timesheets() {
           eveningHours: 0,
           nightHours: 0,
           weekendHours: 0,
-          notes: ` Riset`,
+          notes: 'Productie uren Riset',
+          dayStatus: 'worked',
           updatedAt: new Date()
         };
       }
@@ -325,8 +330,63 @@ export default function Timesheets() {
     loadData();
   }, [loadData]);
 
+  // Auto-patch: zodra timesheet + verlof/ziek-data binnen zijn, vul
+  // ontbrekende dayStatus voor verlof/ziek-dagen direct in. Hierdoor ziet
+  // de monteur de status meteen, niet pas na een gefaalde submit.
+  useEffect(() => {
+    if (!currentTimesheet?.id || !queryUserId) return;
+    const patched = currentTimesheet.entries.map((e) => {
+      if (e.dayStatus) return e;
+      const sick = weekSickLeaves.find((s) => {
+        const start = s.startDate instanceof Date ? s.startDate : new Date(s.startDate);
+        const end = s.endDate ? (s.endDate instanceof Date ? s.endDate : new Date(s.endDate)) : new Date();
+        const d = new Date(e.date); d.setHours(0, 0, 0, 0);
+        const ss = new Date(start); ss.setHours(0, 0, 0, 0);
+        const ee = new Date(end); ee.setHours(0, 0, 0, 0);
+        return d >= ss && d <= ee;
+      });
+      if (sick) return { ...e, dayStatus: 'sick' as const };
+      const leave = weekLeaveRequests.find((l) => {
+        const start = l.startDate instanceof Date ? l.startDate : new Date(l.startDate);
+        const end = l.endDate instanceof Date ? l.endDate : new Date(l.endDate);
+        const d = new Date(e.date); d.setHours(0, 0, 0, 0);
+        const ss = new Date(start); ss.setHours(0, 0, 0, 0);
+        const ee = new Date(end); ee.setHours(0, 0, 0, 0);
+        return d >= ss && d <= ee;
+      });
+      if (leave) return { ...e, dayStatus: 'holiday' as const };
+      return e;
+    });
+    const changed = patched.some((e, i) => e.dayStatus !== currentTimesheet.entries[i].dayStatus);
+    if (changed) {
+      setCurrentTimesheet({ ...currentTimesheet, entries: patched });
+      updateWeeklyTimesheet(currentTimesheet.id, queryUserId, { entries: patched }).catch((err) => {
+        console.error('[Timesheets] auto-patch leave/sick dayStatus failed:', err);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTimesheet?.id, weekLeaveRequests, weekSickLeaves]);
+
+  // Gereserveerde term voor automatische ITKnecht-import. Mag niet
+  // voorkomen in handmatige tekst-velden — voorkomt fraude waarbij een
+  // monteur valse uren onder de naam "Riset" registreert.
+  const FORBIDDEN_RISET = /\briset\b/i;
+  const RISET_VELDEN = new Set<keyof TimesheetEntry>(['notes', 'statusReason', 'effortNote']);
+
   const updateEntry = (index: number, field: keyof TimesheetEntry, value: number | string) => {
     if (!currentTimesheet) return;
+
+    if (
+      typeof value === 'string' &&
+      RISET_VELDEN.has(field) &&
+      FORBIDDEN_RISET.test(value)
+    ) {
+      showError(
+        'Term niet toegestaan',
+        'De term "Riset" is gereserveerd voor automatische ITKnecht-import. Beschrijf je werkzaamheden anders.'
+      );
+      return;
+    }
 
     const updatedEntries = [...currentTimesheet.entries];
     updatedEntries[index] = {
@@ -379,10 +439,24 @@ export default function Timesheets() {
   const updateWorkActivity = (entryIndex: number, activityIndex: number, field: keyof WorkActivity, value: WorkActivity[keyof WorkActivity]) => {
     if (!currentTimesheet) return;
 
+    const existing = currentTimesheet.entries[entryIndex]?.workActivities?.[activityIndex];
+    if (
+      field === 'description' &&
+      typeof value === 'string' &&
+      !existing?.isITKnechtImport &&
+      FORBIDDEN_RISET.test(value)
+    ) {
+      showError(
+        'Term niet toegestaan',
+        'De term "Riset" is gereserveerd voor automatische ITKnecht-import. Beschrijf je werkzaamheden anders.'
+      );
+      return;
+    }
+
     const updatedEntries = [...currentTimesheet.entries];
     const entry = updatedEntries[entryIndex];
     const activities = [...(entry.workActivities || [])];
-    
+
     activities[activityIndex] = {
       ...activities[activityIndex],
       [field]: value
@@ -500,32 +574,75 @@ export default function Timesheets() {
     }
   };
 
+  const handleResetWeek = async () => {
+    if (!currentTimesheet?.id || !queryUserId) return;
+    if (currentTimesheet.status !== 'draft') {
+      showError('Niet toegestaan', 'Alleen concept-weken kunnen worden geleegd.');
+      return;
+    }
+    const confirmed = window.confirm(
+      'Weet je zeker dat je alle ingevulde uren van deze week wilt verwijderen?\n\nDit kan niet ongedaan worden gemaakt. Daarna kun je opnieuw ophalen of handmatig invullen.'
+    );
+    if (!confirmed) return;
+
+    const emptyEntries: TimesheetEntry[] = currentTimesheet.entries.map((e) => ({
+      ...e,
+      regularHours: 0,
+      overtimeHours: 0,
+      eveningHours: 0,
+      nightHours: 0,
+      weekendHours: 0,
+      travelKilometers: 0,
+      dayStatus: undefined,
+      statusReason: undefined,
+      effortNote: undefined,
+      notes: '',
+      workActivities: [],
+      updatedAt: new Date(),
+    }));
+
+    setSaving(true);
+    try {
+      await updateWeeklyTimesheet(currentTimesheet.id, queryUserId, {
+        entries: emptyEntries,
+        totalRegularHours: 0,
+        totalOvertimeHours: 0,
+        totalEveningHours: 0,
+        totalNightHours: 0,
+        totalWeekendHours: 0,
+        totalTravelKilometers: 0,
+        lowHoursReview: undefined,
+        updatedAt: new Date(),
+      });
+      setCurrentTimesheet({
+        ...currentTimesheet,
+        entries: emptyEntries,
+        totalRegularHours: 0,
+        totalOvertimeHours: 0,
+        totalEveningHours: 0,
+        totalNightHours: 0,
+        totalWeekendHours: 0,
+        totalTravelKilometers: 0,
+        lowHoursReview: undefined,
+        updatedAt: new Date(),
+      });
+      success('Week geleegd', 'Alle uren zijn verwijderd. Je kunt nu opnieuw ophalen of invullen.');
+    } catch (err) {
+      console.error('Error resetting week:', err);
+      showError('Fout bij legen', 'Kon week niet legen');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!currentTimesheet || !currentTimesheet.id || !user || !queryUserId || !employeeData) return;
 
     if (currentTimesheet.totalRegularHours === 0 && currentTimesheet.totalTravelKilometers === 0) {
-      showError('Geen uren ingevoerd', 'Voer minimaal één uur of kilometer in om in te dienen');
-      return;
-    }
-
-    // Auto-patch: dagen met een actieve verlof-/ziek-registratie krijgen
-    // automatisch dayStatus='holiday'/'sick' zodat de gap-check niet op
-    // ze struikelt. Geen dropdown nodig op die dagen.
-    const patchedEntries = currentTimesheet.entries.map((e) => {
-      if (e.dayStatus) return e;
-      const leave = getDayLeave(e.date);
-      const sick = getDaySick(e.date);
-      if (sick) return { ...e, dayStatus: 'sick' as const };
-      if (leave) return { ...e, dayStatus: 'holiday' as const };
-      return e;
-    });
-    if (patchedEntries.some((e, i) => e.dayStatus !== currentTimesheet.entries[i].dayStatus)) {
-      try {
-        await updateWeeklyTimesheet(currentTimesheet.id, queryUserId, { entries: patchedEntries });
-        setCurrentTimesheet({ ...currentTimesheet, entries: patchedEntries });
-      } catch (err) {
-        console.error('[Timesheets] auto-patch leave/sick dayStatus failed:', err);
-      }
+      const confirmed = window.confirm(
+        'Je hebt 0 uur en 0 kilometer ingevuld voor deze week.\n\nHeb je de uren al opgehaald via ITKnecht?\n\nKlik OK om toch in te dienen, Annuleren om terug te gaan.'
+      );
+      if (!confirmed) return;
     }
 
     // Per-dag effort-check: gewerkt <8u zonder toelichting blokkeert indienen.
@@ -567,7 +684,8 @@ export default function Timesheets() {
       await loadData();
     } catch (error: any) {
       console.error('Error submitting timesheet:', error);
-      // Gap-check faal: toon lijst van ontbrekende werkdagen met uitleg.
+      // Gap-check faal: toon lijst van ontbrekende werkdagen met uitleg
+      // en open de eerste ontbrekende dag direct voor de monteur.
       if (error?.name === 'IncompleteWeekError' && Array.isArray(error.missingDates)) {
         const dagen = error.missingDates
           .map((d: Date) => new Date(d).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'short' }))
@@ -576,6 +694,17 @@ export default function Timesheets() {
           'Week niet compleet',
           `Geef eerst voor elke werkdag aan wat je deed (gewerkt / verlof / ziek / onbetaald / overleg). Ontbreekt nog: ${dagen}.`
         );
+        const isSameDay = (a: Date, b: Date) => {
+          const da = new Date(a); da.setHours(0, 0, 0, 0);
+          const db = new Date(b); db.setHours(0, 0, 0, 0);
+          return da.getTime() === db.getTime();
+        };
+        const firstMissingIdx = currentTimesheet.entries.findIndex((e) =>
+          error.missingDates.some((d: Date) => isSameDay(new Date(d), new Date(e.date)))
+        );
+        if (firstMissingIdx >= 0) setExpandedDay(firstMissingIdx);
+      } else if (error?.message && /\bRiset\b/.test(error.message)) {
+        showError('Term niet toegestaan', error.message);
       } else {
         showError('Fout bij indienen', 'Kon urenregistratie niet indienen');
       }
@@ -638,6 +767,17 @@ export default function Timesheets() {
           .map((d: Date) => new Date(d).toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'short' }))
           .join(', ');
         showError('Week niet compleet', `Nog openstaande werkdagen: ${dagen}`);
+        const isSameDay = (a: Date, b: Date) => {
+          const da = new Date(a); da.setHours(0, 0, 0, 0);
+          const db = new Date(b); db.setHours(0, 0, 0, 0);
+          return da.getTime() === db.getTime();
+        };
+        const idx = currentTimesheet.entries.findIndex((e) =>
+          (err.missingDates || []).some((d: Date) => isSameDay(new Date(d), new Date(e.date)))
+        );
+        if (idx >= 0) setExpandedDay(idx);
+      } else if (err?.message && /\bRiset\b/.test(err.message)) {
+        showError('Term niet toegestaan', err.message);
       } else {
         showError('Fout', 'Kon review + urenregistratie niet indienen.');
       }
@@ -888,6 +1028,20 @@ export default function Timesheets() {
               )}
             </Button>
           )}
+
+          {/* Week legen — alleen op draft-weken die al opgeslagen zijn */}
+          {effectiveEmployeeId && selectedCompany && currentTimesheet?.id && currentTimesheet?.status === 'draft' && (
+            <Button
+              onClick={handleResetWeek}
+              disabled={saving || importing}
+              variant="secondary"
+              size="sm"
+              className="text-xs sm:text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              Week legen
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1001,17 +1155,95 @@ export default function Timesheets() {
         </Card>
       )}
 
+      {/* Live completeness checklist — alleen bij draft. Geeft de
+          monteur direct overzicht van wat er nog moet gebeuren voor
+          inleveren, zodat hij niet pas op submit-faal ontdekt wat mist. */}
+      {!isReadOnly && (() => {
+        const items: Array<{ key: string; label: string; ok: boolean; dayIndex: number }> = [];
+        currentTimesheet.entries.forEach((e, idx) => {
+          const dow = new Date(e.date).getDay();
+          if (dow === 0 || dow === 6) return;
+          const dayLabel = new Date(e.date).toLocaleDateString('nl-NL', { weekday: 'long' });
+          const dayLeave = getDayLeave(e.date);
+          const daySick = getDaySick(e.date);
+          const auto = daySick ? 'sick' : dayLeave ? 'holiday' : null;
+          const eff = auto || e.dayStatus || (e.regularHours > 0 ? 'worked' : '');
+          if (!eff) {
+            items.push({ key: `s-${idx}`, label: `${dayLabel} — status ontbreekt`, ok: false, dayIndex: idx });
+          } else if (
+            eff === 'worked' &&
+            (e.regularHours || 0) > 0 &&
+            (e.regularHours || 0) < 8 &&
+            !(e.effortNote && e.effortNote.trim())
+          ) {
+            items.push({ key: `e-${idx}`, label: `${dayLabel} — toelichting <8u ontbreekt`, ok: false, dayIndex: idx });
+          } else {
+            items.push({ key: `ok-${idx}`, label: `${dayLabel} — compleet`, ok: true, dayIndex: idx });
+          }
+        });
+        const allOk = items.length > 0 && items.every((i) => i.ok);
+        if (items.length === 0) return null;
+        return (
+          <div className={`rounded-xl border-2 p-3 sm:p-4 ${
+            allOk
+              ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20'
+              : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20'
+          }`}>
+            <p className={`text-sm font-semibold mb-2 ${
+              allOk ? 'text-emerald-800 dark:text-emerald-200' : 'text-amber-900 dark:text-amber-200'
+            }`}>
+              {allOk ? '✓ Week compleet — klaar om in te dienen' : 'Wat moet je nog doen voor deze week?'}
+            </p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+              {items.map((it) => (
+                <li key={it.key}>
+                  <button
+                    onClick={() => setExpandedDay(it.dayIndex)}
+                    className={`w-full text-left text-xs px-2 py-1 rounded transition-colors ${
+                      it.ok
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : 'text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40 font-medium'
+                    }`}
+                  >
+                    {it.ok ? '✓' : '✗'} {it.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
+
       {/* Days List - Collapsible */}
       <div className="space-y-2">
         {currentTimesheet.entries.map((entry, index) => {
           const isExpanded = expandedDay === index;
           const hasData = entry.regularHours > 0 || entry.travelKilometers > 0 || (entry.workActivities?.length || 0) > 0;
-          const isImported = entry.notes?.includes('import');
+          // ITKnecht-import herkennen via gereserveerde notes-marker.
+          // Handmatige invoer van "Riset" is geblokkeerd in updateEntry/
+          // updateWorkActivity, dus deze marker is betrouwbaar.
+          const isImported = !!entry.notes && /\briset\b/i.test(entry.notes);
           const dayLeave = getDayLeave(entry.date);
           const daySick = getDaySick(entry.date);
           const hasLeaveOrSick = dayLeave || daySick;
 
           const meetsDailyTarget = (entry.regularHours || 0) >= 8;
+
+          // Inline indicators op de collapsed card: monteur ziet vóór
+          // openen al wat er ontbreekt.
+          const dayOfWeek = entry.date.getDay();
+          const isWeekendDay = dayOfWeek === 0 || dayOfWeek === 6;
+          const autoStatusBadge = daySick ? 'sick' : dayLeave ? 'holiday' : null;
+          const effectiveStatusBadge =
+            autoStatusBadge || entry.dayStatus || (entry.regularHours > 0 ? 'worked' : '');
+          const missingStatus = !isWeekendDay && !effectiveStatusBadge && !isReadOnly;
+          const missingEffort =
+            !isWeekendDay &&
+            effectiveStatusBadge === 'worked' &&
+            (entry.regularHours || 0) > 0 &&
+            (entry.regularHours || 0) < 8 &&
+            !(entry.effortNote && entry.effortNote.trim()) &&
+            !isReadOnly;
 
           return (
             <div key={index}>
@@ -1022,6 +1254,10 @@ export default function Timesheets() {
                 className={`w-full p-3 sm:p-4 rounded-lg border-2 transition-all text-left flex items-center justify-between ${
                   isExpanded
                     ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                    : missingStatus
+                    ? 'border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                    : missingEffort
+                    ? 'border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30'
                     : daySick
                     ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
                     : dayLeave
@@ -1045,6 +1281,16 @@ export default function Timesheets() {
 
                   {/* Quick Summary */}
                   <div className="flex items-center gap-2 text-xs sm:text-sm font-medium flex-wrap justify-end">
+                    {missingStatus && (
+                      <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-xs">
+                        Status ontbreekt
+                      </span>
+                    )}
+                    {missingEffort && (
+                      <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-xs">
+                        Toelichting ontbreekt
+                      </span>
+                    )}
                     {dayLeave && (
                       <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded flex items-center gap-1">
                         <Palmtree className="h-3 w-3" />
@@ -1156,6 +1402,20 @@ export default function Timesheets() {
                               Automatisch geregistreerd via {autoStatus === 'sick' ? 'Ziekteverzuim' : 'Verlof'}-module.
                             </p>
                           </div>
+                        ) : isImported ? (
+                          // ITKnecht-import: status is automatisch 'Gewerkt'.
+                          // Geen dropdown — de monteur mag deze dag niet bewerken.
+                          <div className="mb-3 p-3 rounded-lg border border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20">
+                            <p className="text-xs font-medium text-primary-700 dark:text-primary-300">
+                              Status van de dag
+                            </p>
+                            <p className="text-sm font-semibold text-primary-900 dark:text-primary-100 mt-0.5">
+                              Productie uren Riset
+                            </p>
+                            <p className="text-[11px] text-primary-600 dark:text-primary-400 mt-0.5">
+                              Automatisch geïmporteerd via ITKnecht. Niet bewerkbaar.
+                            </p>
+                          </div>
                         ) : (
                           <div className="mb-3">
                             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1243,7 +1503,7 @@ export default function Timesheets() {
                         step="0.5"
                         value={entry.regularHours}
                         onChange={(e) => updateEntry(index, 'regularHours', parseFloat(e.target.value) || 0)}
-                        disabled={isReadOnly || (!!entry.dayStatus && entry.dayStatus !== 'worked')}
+                        disabled={isReadOnly || isImported || (!!entry.dayStatus && entry.dayStatus !== 'worked')}
                         className="text-center font-semibold text-lg"
                         placeholder="0"
                       />
@@ -1256,7 +1516,7 @@ export default function Timesheets() {
                         step="1"
                         value={entry.travelKilometers}
                         onChange={(e) => updateEntry(index, 'travelKilometers', parseFloat(e.target.value) || 0)}
-                        disabled={isReadOnly || (!!entry.dayStatus && entry.dayStatus !== 'worked')}
+                        disabled={isReadOnly || isImported || (!!entry.dayStatus && entry.dayStatus !== 'worked')}
                         className="text-center font-semibold text-lg"
                         placeholder="0"
                       />
@@ -1270,8 +1530,8 @@ export default function Timesheets() {
                       type="text"
                       value={entry.notes || ''}
                       onChange={(e) => updateEntry(index, 'notes', e.target.value)}
-                      disabled={isReadOnly}
-                      placeholder="Notities of opmerkingen..."
+                      disabled={isReadOnly || isImported}
+                      placeholder={isImported ? 'Automatisch geïmporteerd' : 'Notities of opmerkingen...'}
                       className="text-sm"
                     />
                   </div>
@@ -1280,7 +1540,7 @@ export default function Timesheets() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">Werkzaamheden</label>
-                      {!isReadOnly && (
+                      {!isReadOnly && !isImported && (
                         <Button
                           onClick={() => addWorkActivity(index)}
                           size="sm"
