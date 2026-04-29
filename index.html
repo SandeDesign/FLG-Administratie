@@ -23,7 +23,17 @@
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js').catch(err => console.log('SW registration failed:', err));
+        navigator.serviceWorker.register('/service-worker.js').then(function(reg) {
+          reg.addEventListener('updatefound', function() {
+            var newWorker = reg.installing;
+            newWorker.addEventListener('statechange', function() {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // Nieuwe SW staat te wachten — stuur event naar React app
+                window.dispatchEvent(new CustomEvent('swUpdateAvailable', { detail: { reg: reg } }));
+              }
+            });
+          });
+        }).catch(function(err) { console.error('SW registration failed:', err); });
       }
     </script>
   </body>

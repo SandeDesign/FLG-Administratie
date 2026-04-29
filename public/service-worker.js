@@ -79,7 +79,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ─── App shell caching (bestaande gedrag) ───────────────────────────────────
-const CACHE_NAME = 'flg-admin-v2.2.1.1.1.1.1.1.1.1.1.1.1.1';
+const CACHE_NAME = 'flg-admin-v3';
 const urlsToCache = ['/', '/Logo.png', '/manifest.json', '/index.html'];
 
 self.addEventListener('install', (event) => {
@@ -89,7 +89,15 @@ self.addEventListener('install', (event) => {
       return cache.addAll(urlsToCache);
     })
   );
-  self.skipWaiting();
+  // Geen self.skipWaiting() — de app vraagt de gebruiker om te vernieuwen
+  // via het swUpdateAvailable event zodat ze de changelog kunnen zien.
+});
+
+// Laat de React-app beslissen wanneer de nieuwe SW actief wordt.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {

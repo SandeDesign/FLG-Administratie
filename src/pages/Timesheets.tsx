@@ -26,6 +26,7 @@ import { useToast } from '../hooks/useToast';
 import { EmptyState } from '../components/ui/EmptyState';
 import { usePageTitle } from '../contexts/PageTitleContext';
 import { containsOpdrachtgeverBlame } from '../utils/timesheetCompliance';
+import { isPublicHoliday } from '../utils/leaveCalculations';
 
 export default function Timesheets() {
   const { user, userRole } = useAuth();
@@ -355,6 +356,7 @@ export default function Timesheets() {
         return d >= ss && d <= ee;
       });
       if (leave) return { ...e, dayStatus: 'holiday' as const };
+      if (isPublicHoliday(new Date(e.date))) return { ...e, dayStatus: 'holiday_public' as const };
       return e;
     });
     const changed = patched.some((e, i) => e.dayStatus !== currentTimesheet.entries[i].dayStatus);
@@ -1441,6 +1443,7 @@ export default function Timesheets() {
                               <option value="worked">Gewerkt</option>
                               <option value="unpaid">Onbetaald afwezig</option>
                               <option value="meeting">Overleg / training</option>
+                              <option value="holiday_public">Feestdag</option>
                             </select>
                             {!isFilled && (
                               <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1">
