@@ -187,4 +187,5 @@ export const DAY_STATUS_LABELS: Record<DayStatus, string> = {
   meeting: 'Overleg / training',
   weekend: 'Weekend',
   holiday_public: 'Feestdag',
+  partial_work: 'Geen / half werk uitgevoerd',
 };

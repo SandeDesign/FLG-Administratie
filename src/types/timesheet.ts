@@ -11,8 +11,10 @@ export type TimesheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 
  *   meeting  — overleg / training / bedrijfs-dag
  *   weekend  — weekend/niet-werkdag (auto voor za/zo)
  *   holiday_public — nationale feestdag (auto)
+ *   partial_work   — geen of half werk uitgevoerd (impliceert lage uren —
+ *                    triggert automatisch de low-hours review bij indienen)
  */
-export type DayStatus = 'worked' | 'holiday' | 'sick' | 'unpaid' | 'meeting' | 'weekend' | 'holiday_public';
+export type DayStatus = 'worked' | 'holiday' | 'sick' | 'unpaid' | 'meeting' | 'weekend' | 'holiday_public' | 'partial_work';
 
 export interface WorkActivity {
   hours: number;
