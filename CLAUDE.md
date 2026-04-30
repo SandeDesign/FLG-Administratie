@@ -13,23 +13,27 @@ Dit bestand is de primaire context voor Claude Code in dit project.
 ## 2. Tech Stack
 
 **Frontend:**
-- Framework: React 18.3 met React Router DOM 6 (SPA, geen Next.js)
-- Taal: TypeScript (strict)
-- Styling: Tailwind CSS 3.4
-- UI Library: Eigen componenten + Lucide React icons
-- Formulieren: React Hook Form + Yup validatie
-- Grafieken: Recharts
-- PDF generatie: @react-pdf/renderer, jsPDF, pdf-lib
-- OCR: Tesseract.js (client-side) + Claude Vision API (server-side via Netlify + PHP proxy)
-- Build tool: Vite 5.4
-- Kalender: FullCalendar (@fullcalendar/react, daygrid, timegrid, interaction)
-- Microsoft integratie: @azure/msal-browser
+- Framework: React 18.3 met React Router DOM 6.25 (SPA, geen Next.js)
+- Taal: TypeScript 5.5 (strict, ES2020 target, géén path aliases)
+- Styling: Tailwind CSS 3.4 (class-based dark mode, bronze/brown primary palette, Inter font)
+- UI Library: Eigen componenten + Lucide React icons (^0.344)
+- Formulieren: React Hook Form 7 + Yup 1.7 validatie (via @hookform/resolvers)
+- Datum/tijd: date-fns ^4.1
+- Grafieken: Recharts ^3.2
+- PDF generatie: @react-pdf/renderer ^4.3, jsPDF ^3, pdf-lib ^1.17, pdfjs-dist ^5.4
+- Excel/CSV: xlsx ^0.18
+- DOM-naar-canvas: html2canvas ^1.4 (PDF-snapshots)
+- OCR: Tesseract.js ^6 (client-side fallback) + Claude Vision API (server-side via Netlify + PHP proxy)
+- Build tool: Vite ^5.4 (manual chunk-splitting voor react-vendor)
+- Kalender: FullCalendar 6.1 (@fullcalendar/react, daygrid, timegrid, interaction)
+- Microsoft integratie: @azure/msal-browser ^5.4 (Graph API: Calendars.Read, User.Read)
 
 **Backend / Serverless:**
-- Firebase (Firestore, Auth, Storage, Realtime Database) — project: `alloon`
-- Netlify Functions (serverless) — voor Claude Vision OCR, push notificaties, task reminders
+- Firebase (Firestore, Auth, Realtime Database) — project: `alloon`
+  > Firebase Storage is NIET meer in gebruik — alle bestandsuploads gaan via internedata.nl proxy
+- Netlify Functions (Node 18, esbuild) — voor Claude Vision OCR, push notificaties, task reminders, invoice delivery callback
 - PHP proxy op eigen host — URL: https://internedata.nl
-- Make.com webhooks — zie sectie 6
+- Make.com webhooks — zie sectie 10
 
 **Hosting:**
 - Frontend: Netlify
@@ -43,33 +47,35 @@ Dit bestand is de primaire context voor Claude Code in dit project.
 FLG-Administratie/
 ├── src/
 │   ├── components/
-│   │   ├── absence/          # Verzuim: ziekmelding, herstel, statistieken
-│   │   ├── banking/          # Bank transactie overzicht kaarten
-│   │   ├── company/          # Bedrijf/vestiging modals
-│   │   ├── employee/         # Medewerker modals
-│   │   ├── expense/          # Declaratie modals
-│   │   ├── invoices/         # Factuur aanmaak en werkbon import
-│   │   ├── layout/           # Layout, Sidebar, MobileNav, BoekhouderAdminSelector
-│   │   ├── leave/            # Verlof: saldo, aanvraag modal
+│   │   ├── absence/          # Verzuim: AbsenceStatsCard, RecoveryModal, SickLeaveModal
+│   │   ├── banking/          # BankPartiesOverviewCards (klant/leverancier-overzicht uit bank)
+│   │   ├── company/          # CompanyModal, BranchModal
+│   │   ├── employee/         # EmployeeModal
+│   │   ├── expense/          # ExpenseModal
+│   │   ├── invoices/         # CreateInvoiceModal, FactuurWerkbonnenImport
+│   │   ├── layout/           # Layout, Sidebar, MobileNav, MobileBottomNav, EmployeeLayout, BoekhouderAdminSelector
+│   │   ├── leave/            # LeaveBalanceCard, LeaveRequestModal
 │   │   ├── notifications/    # NotificationCenter, PushPromptBanner, PushDiagnostics, ChatUnreadBanner
-│   │   ├── payslip/          # Loonstrook PDF template
-│   │   ├── settings/         # Bottom nav settings, bedrijven zichtbaarheid
+│   │   ├── payslip/          # PayslipPDFTemplate (loonstrook PDF)
+│   │   ├── settings/         # BottomNavSettings, CompaniesVisibilitySettings
 │   │   ├── tasks/            # WeeklyTasksReminder, TaskScheduleSidebar, ScheduledTaskPopover
 │   │   ├── timesheet/        # IncompleteWeekBanner
+│   │   ├── upload/           # InkomendeFacturenTab, InkomendePostTab, UitgaandeFacturenTab (tabs voor /upload pagina)
 │   │   └── ui/               # Button, Card, Input, Modal, Toast, ActionMenu, CompanySelector, SmartCompanySelector, PeriodSelector, EmptyState, LoadingSpinner
 │   ├── contexts/             # AuthContext, AppContext, DarkModeContext, PageTitleContext
 │   ├── hooks/                # useToast, useChatUnreadCount
-│   ├── lib/                  # Firebase config, generateBtwPDF, generateGrootboekPDF, generateInvestmentPDF, messaging
-│   ├── pages/                # Alle admin/manager pagina's
+│   ├── lib/                  # firebase, msalConfig, messaging, generateBtwPDF, generateGrootboekPDF, generateInvestmentPDF
+│   ├── pages/                # Alle top-level pagina's (admin/manager/employee gedeeld)
 │   │   └── boekhouder/       # Boekhouder-specifieke pagina's (eigen prefix /boekhouder/*)
-│   ├── services/             # Firebase CRUD, OCR, facturatie, audit, payroll, etc.
-│   ├── types/                # TypeScript interfaces (Company, Employee, etc.)
+│   ├── services/             # Firebase CRUD, OCR, facturatie, audit, payroll, etc. (zie sectie 6)
+│   ├── types/                # TypeScript interfaces (zie sectie 7)
 │   ├── utils/                # menuConfig, themeColors, validation, leaveCalculations, timesheetCompliance, poortwachterTracking, etc.
+│   ├── App.tsx               # Router + protected routes per rol
 │   └── index.css             # Tailwind base styles
 ├── netlify/
 │   └── functions/            # claude-ocr.ts, claude-vision-ocr.ts, send-push.ts, scheduled-task-reminders.ts, invoice-delivery-callback.ts
 │       └── _lib/             # firebaseAdmin.ts, push.ts (gedeeld door functions)
-├── public/                   # Logo's, manifest.json, service-worker.js, PHP proxies (proxy3.php, claude-vision-ocr.php, fcm-send.php)
+├── public/                   # Logo's, manifest.json, service-worker.js, PHP proxies (proxy3.php, claude-vision-ocr.php, fcm-send.php — proxy2.php draait op host zelf)
 ├── tailwind.config.js
 ├── vite.config.ts
 ├── tsconfig.json
@@ -94,7 +100,7 @@ FLG-Administratie/
 - `/login`, `/register`, `/reset-password`
 
 **Admin & Co-Admin routes (`/`):**
-- `/companies`, `/employees`
+- `/` (Dashboard), `/companies`, `/employees`
 - `/project-production`, `/project-statistics`, `/project-team`
 - `/statistics/employer`, `/statistics/project`, `/statistics/holding`
 - `/admin/dashboard`, `/admin/users`, `/admin/roles`
@@ -106,9 +112,16 @@ FLG-Administratie/
 - `/grootboekrekeningen`, `/btw-overzicht`
 - `/tasks`, `/payslips`, `/audit-log`, `/chat`, `/settings`
 - `/investment-pitch` (ook beschikbaar zonder layout voor frame mode)
+- Legacy redirects: `/incoming-invoices` → `/upload?tab=facturen`, `/incoming-post` → `/upload?tab=post`
 
 **Manager routes (`/`):**
-Subset van admin: teams, timesheets, goedkeuringen, statistieken, interne projecten, verlof/verzuim beheer. Geen upload, factuurupload, admin users/roles.
+- `/` (ManagerDashboard), `/employees` ("Mijn Team"), `/project-production`, `/internal-projects`
+- `/statistics/*`, `/timesheets`, `/timesheet-approvals`, `/timesheet-export`
+- `/admin/leave-approvals` ("Verlof Goedkeuren"), `/admin/absence-management`
+- Self-service: `/leave`, `/absence`, `/expenses`, `/payslips`
+- Beperkt financieel: `/invoice-relations`, `/budgeting`, `/outgoing-invoices`
+- `/tasks`, `/settings`
+- Geen upload, geen inkoop, geen admin users/roles, geen audit-log
 
 **Boekhouder routes (`/boekhouder/*`):**
 - `/boekhouder` (dashboard), `/boekhouder/invoice-relations`, `/boekhouder/outgoing-invoices`
@@ -116,8 +129,10 @@ Subset van admin: teams, timesheets, goedkeuringen, statistieken, interne projec
 - `/boekhouder/grootboekrekeningen`, `/boekhouder/btw-overzicht`
 - `/boekhouder/admin-expenses`, `/boekhouder/upload`, `/boekhouder/settings`
 - `/boekhouder/chat`, `/boekhouder/payslip-upload`
+- Niet-prefixed paden (`/invoice-relations`, etc.) redirecten automatisch naar `/boekhouder/*`
 
 **Employee routes (`/employee-dashboard/*`):**
+- `/` redirect naar `/employee-dashboard`
 - `/employee-dashboard` (home), `/employee-dashboard/leave`, `/employee-dashboard/absence`
 - `/employee-dashboard/expenses`, `/employee-dashboard/timesheets`
 - `/employee-dashboard/agenda`, `/employee-dashboard/tasks`, `/employee-dashboard/payslips`
@@ -145,13 +160,17 @@ Subset van admin: teams, timesheets, goedkeuringen, statistieken, interne projec
 - Admin beheer: `/admin/users`, `/admin/roles`
 
 ### Urenregistratie (`/timesheets`)
-- Wekelijkse timesheets invoeren per dag
-- Dag-statussen: gewerkt, vrij, ziek, onbetaald, vergadering, weekend
-- Automatische compliance-controle (min. 40 uur per week)
-- `IncompleteWeekBanner` waarschuwt bij lage uren
+- Wekelijkse timesheets invoeren per dag (gaploos verplicht: elke werkdag een `dayStatus`)
+- Dag-statussen (`DayStatus` in `types/timesheet.ts`): `worked`, `holiday` (auto via verlof), `sick` (auto via ziekteverzuim), `unpaid`, `meeting`, `holiday_public`, `partial_work` (geen/half werk uitgevoerd), `weekend`
+- Automatische compliance-controle (min. 40 uur per week, anders 3-vraag low-hours review verplicht via `lowHoursReview`)
+- `partial_work` triggert óók automatisch de low-hours review, ongeacht weektotaal
+- Bij gewerkt < 8u verplicht een `effortNote` (wat heb je toch bijgedragen?)
+- `IncompleteWeekBanner` waarschuwt bij ontbrekende dag-statussen
+- "Riset"-marker is gereserveerd voor ITKnecht-import; manuele invoer met die term wordt geblokkeerd
 - Goedkeuringsflow: `/timesheet-approvals`
 - Export: `/timesheet-export`
-- Import vanuit ITKnecht via Make.com webhook
+- Import vanuit ITKnecht via Make.com webhook (zie sectie 10)
+- Compliance utilities in `utils/timesheetCompliance.ts` (gap-check, deadline vrijdag 17:00, `containsOpdrachtgeverBlame`)
 
 ### Verlofbeheer (`/leave`, `/admin/leave-approvals`)
 - Verloftypen: vakantie, ziekte, bijzonder, onbetaald, ouderschapsverlof, zorgverlof, ATV
@@ -270,7 +289,8 @@ Drie tabbladen:
 | `incomingInvoiceService.ts` | Inkomende facturen OCR, matching, goedkeuringsflow |
 | `bankImportService.ts` | Bankafschrift parsing, transactiematching, reconciliatie |
 | `payrollService.ts` | Loontijdvakbeheer, berekeningen, belastingverwerking |
-| `payslipService.ts` | Loonstrook aanmaken en PDF generatie |
+| `payslipService.ts` | Loonstrook aanmaken en beheren (CRUD, status) |
+| `payslipPdfGenerator.ts` | PDF rendering helper voor loonstroken |
 | `supplierService.ts` | Leverancier/klant relatiebeheer |
 | `notificationService.ts` | Notificaties aanmaken en versturen (email, push, in-app) |
 | `notificationTargeting.ts` | Gebruikerstargeting voor notificaties |
@@ -306,21 +326,25 @@ Drie tabbladen:
 | `export.ts` | Export configuraties |
 | `internalProject.ts` | Interne project structuren |
 | `absence.ts` | SickLeave, AbsenceStatistics |
+| `statistics.types` | ⚠️ Statistieken types — bestand mist `.ts` extensie (zie sectie 15) |
 
 ## 8. Navigatie & Menu (`src/utils/menuConfig.ts`)
 
-**28 navigatie-items** gedefinieerd in `ALL_NAVIGATION_ITEMS`:
+**35 navigatie-items** gedefinieerd in `ALL_NAVIGATION_ITEMS`:
 - Elk item heeft: `id`, `name`, `href`, `icon`, `roles[]`, `companyTypes[]`
 - Support voor rol-specifieke namen en hrefs via `nameByRole` en `hrefByRole`
-- Boekhouder krijgt automatisch `/boekhouder/*` prefix
+- Boekhouder krijgt automatisch `/boekhouder/*` prefix via `hrefByRole`
+- Items worden gefilterd door `getFilteredNavigation(role, companyType)` en gegroepeerd per sectie via `getNavigationSections()`
 
 **6 navigatie-secties (collapsible):**
-1. **Statistieken** — Werkgever, project, holding statistieken
-2. **HR** — Medewerkers, urenbeheer, interne projecten, loonstroken, verlof, verzuim
-3. **Financieel** — Relaties, budgettering, declaraties, verkoop, inkoop, bank, grootboek, BTW
-4. **Project** — Productie, projectstatistieken, projectteam
-5. **Mijn Zaken** — Timesheets, verlof, verzuim, declaraties, loonstroken (selfservice)
-6. **Systeem** — Chat, upload, taken, bedrijven, audit log, gebruikers, investment pitch, instellingen
+1. **Statistieken** (3 items) — statistics-employer, statistics-project, statistics-holding
+2. **HR** (6 items) — employees, timesheet-approvals, internal-projects, payroll-processing, leave-approvals, absence-management
+3. **Financieel** (8 items) — invoice-relations, budgeting, admin-expenses, outgoing-invoices, incoming-invoices-stats, bank-statement-import, grootboekrekeningen, btw-overzicht
+4. **Project** (3 items) — project-production, project-statistics, project-team
+5. **Mijn Zaken** (5 items) — timesheets, leave, absence, expenses-employee, payslips
+6. **Systeem** (9 items) — chat, payslip-upload, upload, tasks, companies, audit-log, users, investment-pitch, settings
+
+(Dashboard staat los buiten de secties = 35 items totaal.)
 
 **Bedrijfstype context:**
 - Items gefilterd op `companyType`: employer, project, holding, shareholder, investor
@@ -354,11 +378,12 @@ Drie tabbladen:
 
 | Scenario naam | Trigger | Doel | Webhook URL |
 |---|---|---|---|
-| ITKnecht Uren Import | HTTP webhook | Uren ophalen uit ITKnecht per monteur/week | `https://hook.eu2.make.com/wh18u8c7x989zoakqxqmomjoy2cpfd3b` |
+| ITKnecht Uren Import | HTTP webhook | Uren ophalen uit ITKnecht per monteur/week (gebruikt in `itknechtService.ts` én `Timesheets.tsx`) | `https://hook.eu2.make.com/wh18u8c7x989zoakqxqmomjoy2cpfd3b` |
 | ITKnecht Factuur Data | HTTP webhook | Factuurdata ophalen per week | `https://hook.eu2.make.com/223n5535ioeop4mjrooygys09al7c2ib` |
-| Uitgaande Facturen | HTTP webhook | Factuurgegevens versturen voor verwerking | `https://hook.eu2.make.com/ttdixmxlu9n7rvbnxgfomilht2ihllc2` |
-| Productie Import | HTTP webhook | Productiedata importeren vanuit extern systeem | `https://hook.eu2.make.com/qmvow9qbpesofmm9p8srgvck550i7xr6` |
-| Betaling Webhook | HTTP webhook | Notificatie bij betaalmarkering inkomende factuur | `https://hook.eu2.make.com/8jntdat5emrvrcfgoq7giviwvtjx9nwt` |
+| Uitgaande Facturen | HTTP webhook | Factuurgegevens versturen voor verwerking (`OutgoingInvoices.tsx`) | `https://hook.eu2.make.com/ttdixmxlu9n7rvbnxgfomilht2ihllc2` |
+| Productie Import | HTTP webhook | Productiedata importeren (monteur, uren, locaties, klant) | `https://hook.eu2.make.com/qmvow9qbpesofmm9p8srgvck550i7xr6` |
+| Inkomende Factuur — Aanmaak | HTTP webhook | Nieuwe leveranciersfactuur registreren | `https://hook.eu2.make.com/8jntdat5emrvrcfgoq7giviwvtjx9nwt` |
+| Inkomende Factuur — Workflow | HTTP webhook | Statusupdate / verwerkingsflow inkomende factuur | `https://hook.eu2.make.com/sphpptl7j3x0aadqjidzb5r17uatkr5b` |
 
 **Payload ITKnecht Uren:**
 ```json
@@ -385,14 +410,14 @@ Drie tabbladen:
 
 **Host:** https://internedata.nl
 
-| Endpoint | Methode | Doel |
-|---|---|---|
-| `/proxy2.php` | POST | Bestanden uploaden naar internedata.nl (facturen, documenten) |
-| `/proxy3.php` | POST | Inkomende post bestanden ophalen per bedrijf |
-| `/claude-vision-ocr.php` | POST | OCR via Claude Vision API (factuur scanning) |
-| `/fcm-send.php` | POST | FCM push notificaties versturen |
+| Endpoint | Methode | Gebruikt door | Doel |
+|---|---|---|---|
+| `/proxy2.php` | POST | `services/fileUploadService.ts` | Recursieve upload naar uniforme structuur `FLG-Administratie/{CompanyName}/{Category}/{year}/` (Verkoop, Inkoop, Post, Loonstroken) |
+| `/proxy3.php` | POST | (legacy) | Inkomende post bestanden ophalen per bedrijf |
+| `/claude-vision-ocr.php` | POST | `services/ocrService.ts` | OCR via Claude Vision API (factuur scanning) |
+| `/fcm-send.php` | POST/GET | `services/notificationService.ts`, `PushDiagnostics` | FCM push notificaties versturen + GET als health-check |
 
-**Waarom PHP proxy:** CORS omzeilen, API keys (Anthropic) verbergen op server, bestandsopslag op eigen host.
+**Waarom PHP proxy:** CORS omzeilen, API keys (Anthropic) verbergen op server, bestandsopslag op eigen host (vervangt Firebase Storage).
 
 ## 12. Netlify Functions (`netlify/functions/`)
 
@@ -454,9 +479,12 @@ VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
 VITE_FIREBASE_MEASUREMENT_ID=...
+VITE_MICROSOFT_CLIENT_ID=...  # MSAL — Microsoft Graph (calendar agenda integratie)
 
 # Netlify Functions
-ANTHROPIC_API_KEY=...  # Voor Claude Vision OCR
+ANTHROPIC_API_KEY=...  # Voor Claude Vision OCR (claude-ocr.ts, claude-vision-ocr.ts)
+# Firebase Admin: standaard service account credentials (GOOGLE_APPLICATION_CREDENTIALS
+# of FIREBASE_* env vars zoals geconfigureerd in netlify/functions/_lib/firebaseAdmin.ts)
 
 # Nooit committen:
 # - API keys
@@ -467,10 +495,11 @@ ANTHROPIC_API_KEY=...  # Voor Claude Vision OCR
 ## 15. Bekende Issues / TODO
 
 - [ ] Firebase config bevat hardcoded fallback waarden in `src/lib/firebase.ts` — zou volledig op env vars moeten draaien
-- [ ] `src/components/sedy6Ka59` — ongeldig bestand, lijkt corrupt of per ongeluk aangemaakt, verwijderen
-- [ ] `src/types/statistics.types` — mist `.ts` extensie
+- [ ] `src/components/sedy6Ka59` — leeg/ongeldig bestand (0 bytes), opruimen
+- [ ] `src/types/statistics.types` — mist `.ts` extensie (zou `statistics.types.ts` moeten zijn)
 - [ ] TypeScript `any` wordt nog op meerdere plekken gebruikt
-- [ ] Sommige Make.com webhook URLs staan hardcoded in services/pages — beter via env vars
+- [ ] Make.com webhook URLs staan hardcoded in services/pages (`itknechtService.ts`, `itknechtFactuurService.ts`, `OutgoingInvoices.tsx`, `ProjectProduction.tsx`, `IncomingInvoicesStats.tsx`, `Timesheets.tsx`) — beter via env vars
+- [ ] `package.json` heet nog `vite-react-typescript-starter` v0.0.0 — zou hernoemd moeten worden naar FLG-Administratie
 
 ## 16. SandeDesign Ecosysteem Context
 
@@ -495,4 +524,4 @@ ANTHROPIC_API_KEY=...  # Voor Claude Vision OCR
 ---
 
 *Gegenereerd via CLAUDE.md basis template — SandeDesign*
-*Laatst bijgewerkt: 2026-04-28*
+*Laatst bijgewerkt: 2026-04-30*
