@@ -720,10 +720,13 @@ export default function Timesheets() {
     }
 
     // < 40u in de week (exclusief weekend) → 3-vraag review-modal vereist.
-    // Al eerder ingevuld? Dan slaan we de modal over.
+    // Ook wanneer een dag op 'Geen / half werk uitgevoerd' staat triggeren we
+    // de review automatisch — die status impliceert te lage uren, ongeacht
+    // het weektotaal. Al eerder ingevuld? Dan slaan we de modal over.
     const actualWeeklyHours = currentTimesheet.totalRegularHours;
     const LOW_HOURS_THRESHOLD = 40;
-    if (actualWeeklyHours < LOW_HOURS_THRESHOLD && !currentTimesheet.lowHoursReview) {
+    const hasPartialWorkDay = currentTimesheet.entries.some((e) => e.dayStatus === 'partial_work');
+    if ((actualWeeklyHours < LOW_HOURS_THRESHOLD || hasPartialWorkDay) && !currentTimesheet.lowHoursReview) {
       setShowLowHoursModal(true);
       return; // wacht op modal-submit
     }
@@ -1481,7 +1484,9 @@ export default function Timesheets() {
                               onChange={(e) => {
                                 const newStatus = e.target.value;
                                 updateEntry(index, 'dayStatus' as any, newStatus);
-                                if (newStatus && newStatus !== 'worked') {
+                                // Bij niet-gewerkt uren leegmaken — behalve bij
+                                // 'partial_work' (half werk = wel uren mogelijk).
+                                if (newStatus && newStatus !== 'worked' && newStatus !== 'partial_work') {
                                   if (entry.regularHours > 0) updateEntry(index, 'regularHours', 0);
                                 }
                               }}
@@ -1494,6 +1499,7 @@ export default function Timesheets() {
                             >
                               <option value="">— Kies een status —</option>
                               <option value="worked">Gewerkt</option>
+                              <option value="partial_work">Geen / half werk uitgevoerd</option>
                               <option value="unpaid">Onbetaald afwezig</option>
                               <option value="meeting">Overleg / training</option>
                               <option value="holiday_public">Feestdag</option>
@@ -1559,7 +1565,7 @@ export default function Timesheets() {
                         step="0.5"
                         value={entry.regularHours}
                         onChange={(e) => updateEntry(index, 'regularHours', parseFloat(e.target.value) || 0)}
-                        disabled={isReadOnly || isImported || (!!entry.dayStatus && entry.dayStatus !== 'worked')}
+                        disabled={isReadOnly || isImported || (!!entry.dayStatus && entry.dayStatus !== 'worked' && entry.dayStatus !== 'partial_work')}
                         className="text-center font-semibold text-lg"
                         placeholder="0"
                       />
@@ -1572,7 +1578,7 @@ export default function Timesheets() {
                         step="1"
                         value={entry.travelKilometers}
                         onChange={(e) => updateEntry(index, 'travelKilometers', parseFloat(e.target.value) || 0)}
-                        disabled={isReadOnly || isImported || (!!entry.dayStatus && entry.dayStatus !== 'worked')}
+                        disabled={isReadOnly || isImported || (!!entry.dayStatus && entry.dayStatus !== 'worked' && entry.dayStatus !== 'partial_work')}
                         className="text-center font-semibold text-lg"
                         placeholder="0"
                       />
